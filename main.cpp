@@ -1,0 +1,378 @@
+#include "kblib.h"
+#include "kblib_containers.h"
+#include "kblib_icu.h"
+
+#include <iostream>
+#include <list>
+#include <map>
+
+template <typename C>
+constexpr const char type_name[] = "unknown";
+
+template <>
+[[maybe_unused]] constexpr const char type_name<char>[] = "char";
+template <>
+[[maybe_unused]] constexpr const char type_name<unsigned char>[] =
+    "unsigned char";
+template <>
+[[maybe_unused]] constexpr const char type_name<signed char>[] = "signed char";
+
+template <int depth>
+struct bad_iterator {
+  int* p;
+  constexpr bad_iterator<depth - 1> operator->() const noexcept { return {p}; }
+};
+
+template <>
+struct bad_iterator<0> {
+  int* p;
+  constexpr int* operator->() const noexcept { return p; }
+};
+
+constexpr bool test() noexcept {
+  int i{};
+  return &i == kblib::to_pointer(&i) &&
+         &i == kblib::to_pointer(bad_iterator<0>{&i}) &&
+         &i == kblib::to_pointer(bad_iterator<1>{&i}) &&
+         &i == kblib::to_pointer(bad_iterator<100>{&i});
+}
+
+static_assert(test(), "");
+
+void test(std::streamsize s) { std::cout << s << '\n'; }
+
+void poly_test();
+
+int main() {
+  std::cout << kblib::signed_cast<unsigned>(-1ll) << '\n'
+            << kblib::signed_cast<signed>(static_cast<unsigned short>(78))
+            << '\n';
+  static_assert(
+      std::is_same<signed short, decltype(kblib::signed_cast<signed>(
+                                     std::declval<unsigned short>()))>::value,
+      "");
+  static_assert(
+      std::is_same<unsigned short, decltype(kblib::signed_cast<unsigned>(
+                                       std::declval<unsigned short>()))>::value,
+      "");
+  static_assert(std::is_same<signed short, decltype(kblib::signed_cast<signed>(
+                                               std::declval<short>()))>::value,
+                "");
+  static_assert(
+      std::is_same<unsigned short, decltype(kblib::signed_cast<unsigned>(
+                                       std::declval<unsigned short>()))>::value,
+      "");
+  static_assert(
+      std::is_same<signed int, decltype(kblib::signed_cast<signed>(
+                                   std::declval<unsigned int>()))>::value,
+      "");
+  std::cout << type_name<std::make_signed_t<char>> << '\n';
+  std::cout << type_name<std::make_signed_t<unsigned char>> << '\n';
+  std::cout << type_name<std::make_unsigned_t<char>> << '\n';
+  std::cout << type_name<std::make_unsigned_t<signed char>> << '\n';
+  std::cout << "char is "
+            << (std::is_signed<char>::value ? "signed" : "not signed") << '\n';
+  //  auto _1 = kblib::signed_cast<signed>(0.0);
+  //  auto _2 = kblib::signed_cast<double>(0);
+
+#if __cplusplus >= 201703L
+  auto filestr = kblib::get_file_contents("");
+  auto filevec = kblib::get_file_contents<std::vector<uint8_t>>("");
+  auto filewstr = kblib::get_file_contents<std::u32string>("");
+#endif
+
+  for (int b = 0; b < 62; ++b) {
+    long long i = 1ll << b;
+    std::pair<int, int> lengths[] = {
+        {std::to_string(i).length(), kblib::digitsOf(i)},
+        {std::to_string(-i).length(), kblib::digitsOf(-i)},
+    };
+    for (auto test : lengths) {
+      if (test.first != test.second) {
+        std::cout << "digitsOf failure at: " << i << ".\nExpected "
+                  << test.first << ", got " << test.second << ".\n";
+        break;
+      }
+    }
+  }
+
+  auto p = kblib::to_unique(new auto([] {}), [](auto* p) {
+    std::cout << p << '\n';
+    delete p;
+  });
+  test(kblib::max);
+  test(kblib::min);
+
+  std::cout << "base 62 test:"
+            << "\n0 -> " << kblib::to_string<62>(0) << "\n1 -> "
+            << kblib::to_string<62>(1) << "\n-1 -> " << kblib::to_string<62>(-1)
+            << "\n10 -> " << kblib::to_string<62>(10) << "\n26 -> "
+            << kblib::to_string<62>(26) << "\n36 -> "
+            << kblib::to_string<62>(36) << "\n61 -> "
+            << kblib::to_string<62>(61) << "\n62 -> "
+            << kblib::to_string<62>(62) << "\n63 -> "
+            << kblib::to_string<62>(63) << "\n630 -> "
+            << kblib::to_string<62>(630) << '\n';
+  std::cout<<kblib::to_string(65536, 2)<<'\n';
+
+  {
+    constexpr auto target = std::array<int, 10>{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
+    auto i1 = kblib::buildiota<std::vector<int>>(10, 0);
+    auto i2 = kblib::buildiota<std::vector<int>>(10, 0, 1);
+    constexpr auto i3 = kblib::buildiota<std::array<int, 10>>(0);
+    constexpr auto i4 = kblib::buildiota<std::array<int, 10>>(0, 1);
+    auto i5 =
+        kblib::buildiota<kblib::construct_with_size<std::vector<int>, 10>>(0);
+    auto print_arr = [&](auto c) {
+      for (const auto& v : c) {
+        std::cout << v << ", ";
+      }
+      std::cout << '\n';
+    };
+
+    if (!(i1.size() == target.size() &&
+          kblib::equal(i1.begin(), i1.end(), target.begin()))) {
+      std::cout << "buildiota2<C>(size, value) failed.\n";
+      print_arr(i1);
+    }
+    if (!(i2.size() == target.size() &&
+          kblib::equal(i2.begin(), i2.end(), target.begin()))) {
+      std::cout << "buildiota2<C>(size, value, incr) failed.\n";
+      print_arr(i2);
+    }
+    static_assert(i3.size() == target.size() &&
+                      kblib::equal(i3.begin(), i3.end(), target.begin()),
+                  "");
+    static_assert(i4.size() == target.size() &&
+                      kblib::equal(i4.begin(), i4.end(), target.begin()),
+                  "");
+    if (!(i5.size() == target.size() &&
+          kblib::equal(i5.begin(), i5.end(), target.begin()))) {
+      std::cout
+          << "buildiota2<construct_with_size<C, size>>(value, incr) failed.\n";
+      print_arr(i5);
+    }
+
+    auto range = kblib::range(0, 9);
+    if (!kblib::equal(range.begin(), range.end(), target.begin())) {
+      std::cout << "range(0, 9) failed.\n";
+      print_arr(range);
+    }
+
+    auto l = kblib::buildiota<std::list<int>>(10, 9, -1);
+    auto li = kblib::buildiota<std::vector<std::list<int>::iterator>>(
+        l.size(), l.begin());
+    {
+      decltype(li) its;
+      const auto end = l.end();
+      for (auto it = l.begin(); it != end; ++it) {
+        its.push_back(it);
+      }
+      if (its != li) {
+        std::cout << "buildiota<C>(size, value) failed for iterator case.\n";
+        auto print_itarr = [&](auto c) {
+          for (const auto& v : c) {
+            std::cout << kblib::to_pointer(v) << ", ";
+          }
+          std::cout << '\n';
+        };
+        print_itarr(its);
+        print_itarr(li);
+      }
+    }
+    print_arr(l);
+    auto range1 = kblib::range(9, 0, -1);
+    if (!kblib::equal(range1.begin(), range1.end(), l.begin())) {
+      std::cout << "range(9, 0, -1) failed.\n";
+      print_arr(range1);
+    }
+  }
+  poly_test();
+  {
+    std::map<int, int> m;
+    const auto& cm = m;
+
+    // m[0] doesn't exist
+    assert(kblib::try_get(m, 0) == nullptr);
+    // Works for const maps
+    assert(kblib::try_get(cm, 0) == nullptr);
+    // Make m[0]
+    m[0] = 0;
+
+    // Basic correctness testing
+    assert(kblib::try_get(m, 0) == &m[0]);
+    *kblib::try_get(m, 0) = 1;
+    assert(m[0] == 1);
+
+    // Returns pointer to const when given const map
+    //*kblib::try_get(cm, 0) = 1;
+
+    // Can't call for temporaries because it would return a dangling pointer
+    //kblib::try_get(std::map<int, int>{{0, 1}}, 0);
+  }
+}
+
+struct good_base {
+  good_base() = default;
+  virtual ~good_base() noexcept { std::cout << "~good_base\n"; }
+
+  virtual void bark() const { std::cout << "good_base\n"; }
+};
+struct good_derived : good_base {
+  virtual ~good_derived() noexcept { std::cout << "~good_derived\n"; }
+
+  void bark() const override { std::cout << "good_derived\n"; }
+};
+struct unrelated {};
+struct bad_nocopy : good_base {
+  bad_nocopy() = default;
+  bad_nocopy(const bad_nocopy&) = delete;
+};
+
+struct bad_base1 {
+  virtual void bark() const { std::cout << "bad_base1\n"; }
+  ~bad_base1() noexcept { std::cout << "~bad_base1\n"; }
+};
+struct bad_derived1 : bad_base1 {
+  virtual void bark() const { std::cout << "bad_derived1\n"; }
+  ~bad_derived1() noexcept { std::cout << "~bad_derived1\n"; }
+};
+
+struct bad_base2 {
+  bad_base2() = default;
+  virtual ~bad_base2() noexcept { std::cout << "~bad_base2\n"; }
+  virtual void bark() const { std::cout << "bad_base2\n"; }
+};
+struct bad_derived2 : protected bad_base2 {
+  virtual void bark() const { std::cout << "bad_derived2\n"; }
+  virtual ~bad_derived2() noexcept { std::cout << "~bad_derived2\n"; }
+};
+struct small_base {
+  small_base() = default;
+  virtual ~small_base() noexcept = default;
+  virtual void bark() const { std::cout << "small_base\n"; }
+  virtual int id() const { return 0; }
+};
+struct big_derived : small_base {
+  std::size_t x =
+      (x = 1,
+       kblib::FNVa_a<std::size_t>(
+           reinterpret_cast<const char (&)[sizeof(big_derived)]>(*this)));
+  void bark() const override {
+    std::cout << "big_derived " << std::hex << x << "\n";
+  }
+  virtual ~big_derived() noexcept = default;
+  int id() const override { return 1; }
+};
+
+struct not_copyable {
+  not_copyable() = default;
+  not_copyable(const not_copyable&) = delete;
+  not_copyable(not_copyable&&) = default;
+  virtual ~not_copyable() = default;
+};
+
+struct copyable_derived : not_copyable {
+  copyable_derived() = default;
+  copyable_derived(const copyable_derived&) : not_copyable() {}
+};
+
+void poly_test() {
+  {
+    kblib::poly_obj<good_base> o1, o2{std::in_place};
+    assert(!o1.has_value());
+    assert(o2.has_value());
+    o2->bark();                                             // good_base
+    o1 = kblib::poly_obj<good_base>::make<good_derived>();  // temporary deleted
+    assert(o1.has_value());
+    o1->bark();  // good_derived
+    o2 = o1;     // o2 ~good_base
+    o2->bark();  // good_derived
+    // kblib::poly_obj<good_base> o3 =
+    // kblib::poly_obj<good_base>::make<bad_nocopy>();
+  }
+
+  {
+    // Warning issued because of non-virtual destructor call
+    kblib::poly_obj<bad_base1> o3, o4{std::in_place};
+    // unsafe - no virtual destructor
+    // o3 = kblib::poly_obj<bad_base1>::make<bad_derived1>();
+  }
+
+  {
+    kblib::poly_obj<bad_base2> o5, o6{std::in_place};
+    // illegal - non-public base
+    // o5 = kblib::poly_obj<bad_base2>::make<bad_derived2>();
+  }
+
+  {
+    // illegal - unrelated types
+    // kblib::poly_obj<good_base>::make<unrelated>();
+    // illegal - derived too big
+    // kblib::poly_obj<bad_base3>::make<bad_derived3>();
+    // fine
+    kblib::poly_obj<small_base, sizeof(big_derived)> o7, o8{std::in_place};
+    o8->bark();
+    o7 = kblib::poly_obj<small_base, sizeof(big_derived)>::make<big_derived>();
+    assert(o7.has_value());
+    o7->bark();
+  }
+
+  {
+    // A poly_obj of non-copyable type is allowed and non-copyable
+    kblib::poly_obj<not_copyable> o1{std::in_place}, o2;
+    // illegal
+    // o2 = o1;
+    // legal
+    o2 = std::move(o1);
+    // legal
+    auto o3 = kblib::poly_obj<not_copyable>::make<copyable_derived>();
+    // illegal (can't copy even if derived is copyable)
+    // o1 = o3;
+  }
+
+  {
+    auto r = [n = static_cast<unsigned short>(16127)]() mutable {
+      n ^= 19937;
+      n *= 4889;
+      return kblib::FNV32a({reinterpret_cast<char*>(&n), sizeof(n)});
+    };
+
+    using obj = kblib::poly_obj<small_base, sizeof(big_derived)>;
+
+    std::vector<obj> polyvec;
+    int g[2] = {};
+    std::generate_n(std::back_inserter(polyvec), 128, [&] {
+      if ((r() % 2)) {
+        ++g[1];
+        return obj::make<big_derived>();
+      } else {
+        ++g[0];
+        return obj(std::in_place);
+      }
+    });
+    std::cout << std::dec << "\ng: " << g[0] << ' ' << g[1] << '\n';
+
+    int c[2] = {};
+    char ab[] = "ab";
+    for (const auto& o : polyvec) {
+      ++c[o->id()];
+      std::cout << ab[o->id()];
+    }
+    std::cout << "\nc: " << c[0] << ' ' << c[1] << '\n';
+  }
+  {
+    std::istringstream is{"line1\nline2\nline3\n"};
+    std::string line;
+    while (is >> kblib::get_line(line)) {
+      std::cout<<std::quoted(line)<<'\n';
+    }
+  }
+  {
+    std::wistringstream is{L"line1\nline2\nline3\n"};
+    std::wstring line;
+    while (is >> kblib::get_line(line)) {
+      std::wcout<<std::quoted(line)<<'\n';
+    }
+  }
+}
