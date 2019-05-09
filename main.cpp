@@ -106,10 +106,11 @@ int main() {
       << type_name_f<kblib::detail::next_larger_signed<short>::type>() << '\n'
       << "int:         "
       << type_name_f<kblib::detail::next_larger_signed<int>::type>() << '\n';
-// long long can't be promoted
+  // long long can't be promoted
   // std::cout
   //     << "long long:   "
-  //     << type_name_f<kblib::detail::next_larger_signed<long long>::type>() << '\n';
+  //     << type_name_f<kblib::detail::next_larger_signed<long long>::type>() <<
+  //     '\n';
 
 #if __cplusplus >= 201703L
   auto filestr = kblib::get_file_contents("");
@@ -166,27 +167,6 @@ int main() {
       std::cout << '\n';
     };
 
-    {
-      std::array<int, 10> haystack{1, 1, 2, 5, 6, 2, 4, 7, 0, 6};
-      const int N = 5;
-
-      std::cout<<"get_max_n: max "<<N<<" of\n  ";
-      print_arr(haystack);
-
-      auto maxN = kblib::get_max_n<std::vector<int>>(haystack.begin(), haystack.end(), N);
-      std::cout<<"Basic:\n  ";
-      print_arr(maxN);
-
-      std::vector<int> maxN_copy;
-      std::cout<<"Copied:\n  ";
-      kblib::get_max_n(haystack.begin(), haystack.end(), std::back_inserter(maxN_copy), 5);
-      print_arr(maxN_copy);
-
-      std::cout<<"Sorted by multiset:\n  ";
-      auto maxN_sorted = kblib::get_max_n<std::multiset<int>>(haystack.begin(), haystack.end(), N);
-      print_arr(maxN_sorted);
-    }
-
     if (!(i1.size() == target.size() &&
           kblib::equal(i1.begin(), i1.end(), target.begin()))) {
       std::cout << "buildiota2<C>(size, value) failed.\n";
@@ -242,6 +222,50 @@ int main() {
     if (!kblib::equal(range1.begin(), range1.end(), l.begin())) {
       std::cout << "range(9, 0, -1) failed.\n";
       print_arr(range1);
+    }
+
+    {
+      std::array<int, 10> haystack{1, 1, 2, 5, 6, 2, 4, 7, 0, 6};
+      const int N = 5;
+
+      std::cout << "get_max_n: max " << N << " of\n  ";
+      print_arr(haystack);
+
+      auto maxN = kblib::get_max_n<std::vector<int>>(haystack.begin(),
+                                                     haystack.end(), N);
+      std::cout << "Basic:\n  ";
+      print_arr(maxN);
+
+      std::vector<int> maxN_copy;
+      std::cout << "Copied:\n  ";
+      kblib::get_max_n(haystack.begin(), haystack.end(),
+                       std::back_inserter(maxN_copy), 5);
+      print_arr(maxN_copy);
+
+      std::cout << "Sorted by multiset:\n  ";
+      auto maxN_sorted = kblib::get_max_n<std::multiset<int>>(
+          haystack.begin(), haystack.end(), N);
+      print_arr(maxN_sorted);
+
+      std::cout << "Raw partial_sort_copy:\n  ";
+      std::vector<int> maxN_psc(N);
+      std::partial_sort_copy(haystack.begin(), haystack.end(), maxN_psc.begin(),
+                             maxN_psc.end(), std::greater<>{});
+      print_arr(maxN_psc);
+
+      // SFINAE prevents get_max_n from being called with invalid arguments,
+      // even though count has moved from third to fourth on this overload. It
+      // will also fail when the output range is not assignable.
+
+      // kblib::get_max_n(haystack.begin(), haystack.end(), maxN.cbegin(), 1);
+      // kblib::get_max_n(haystack.begin(), haystack.end(), 1, maxN.begin());
+
+      std::cout<<"Range test:\n  ";
+      auto range = kblib::range(0, 50, 3);
+      print_arr(range);
+      std::cout<<"Top 5:\n  ";
+      auto maxN_range = kblib::get_max_n<std::vector<int>>(range.begin(), range.end(), 5);
+      print_arr(maxN_range);
     }
   }
   poly_test();

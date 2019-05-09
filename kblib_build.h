@@ -792,7 +792,6 @@ template <
     typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
 KBLIB_NODISCARD Container get_max_n(It begin, It end, std::size_t count,
                                     Comp cmp = {}) {
-  assert(begin + count <= end);
   Container c(count);
   std::partial_sort_copy(begin, end, c.begin(), c.end(), std::not_fn(cmp));
   return c;
@@ -822,6 +821,12 @@ KBLIB_NODISCARD Container get_max_n(It begin, It end, std::size_t count,
  * @brief Copies the count greatest elements according to cmp of the range
  * [begin, end) to the range beginning at d_begin.
  *
+ * Note that this function uses O(count) extra memory to store a mutable range
+ * for sorting. Directly calling std::partial_sort_copy with a properly sized
+ * container will be more efficient than this function because it avoids
+ * allocating extra working memory. This function should rather be used for
+ * non-random-access output ranges.
+ *
  * @param begin The beginning of the range.
  * @param end One past the end of the range.
  * @param d_begin The beginning of the output range.
@@ -834,8 +839,7 @@ template <typename Comp = std::less<>, typename IIt, typename OIt,
           typename ElementT = typename std::iterator_traits<IIt>::value_type>
 auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
                Comp cmp = {})
-    -> return_assert_t<is_output_iterator<OIt, ElementT>::value,
-                       OIt> {
+    -> return_assert_t<is_output_iterator<OIt, ElementT>::value, OIt> {
   auto temp = get_max_n<std::vector<ElementT>>(begin, end, count, cmp);
   return std::move(temp.begin(), temp.end(), d_begin);
 }
