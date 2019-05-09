@@ -137,8 +137,7 @@ constexpr construct_type assign_traits =
 
 template <typename T>
 struct disable_conditional : construct_conditional<construct_traits<T>>,
-                             assign_conditional<assign_traits<T>> {
-};
+                             assign_conditional<assign_traits<T>> {};
 
 inline void noop(void*, void*) {}
 inline void noop(void*, const void*) {}
@@ -201,9 +200,9 @@ erased_construct_helper<construct_traits<T>> make_ops_t() {
 
 // Inline polymorphic object. Generally mimics the interface of std::optional
 template <typename Obj, std::size_t Capacity = sizeof(Obj)>
-class poly_obj : detail::construct_conditional<detail::construct_traits<Obj>>,
-                 detail::erased_construct_helper<detail::construct_traits<Obj>>,
-                 detail::disable_conditional<Obj> {
+class poly_obj
+    : detail::disable_conditional<Obj>,
+      detail::erased_construct_helper<detail::construct_traits<Obj>> {
   static_assert(Capacity >= sizeof(Obj),
                 "Capacity must be large enough for the object type.");
   using disabler = detail::disable_conditional<Obj>;

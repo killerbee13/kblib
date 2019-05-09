@@ -2,9 +2,12 @@
 #include "kblib_containers.h"
 #include "kblib_icu.h"
 
+#include <array>
 #include <iostream>
 #include <list>
 #include <map>
+#include <set>
+#include <string_view>
 
 template <typename C>
 constexpr const char type_name[] = "unknown";
@@ -16,6 +19,25 @@ template <>
     "unsigned char";
 template <>
 [[maybe_unused]] constexpr const char type_name<signed char>[] = "signed char";
+
+template <class T>
+constexpr std::string_view type_name_f() {
+  using namespace std;
+#ifdef __clang__
+  string_view p = __PRETTY_FUNCTION__;
+  return string_view(p.data() + 36, p.size() - 36 - 1);
+#elif defined(__GNUC__)
+  string_view p = __PRETTY_FUNCTION__;
+#if __cplusplus < 201402
+  return string_view(p.data() + 36, p.size() - 36 - 1);
+#else
+  return string_view(p.data() + 49, p.find(';', 49) - 49);
+#endif
+#elif defined(_MSC_VER)
+  string_view p = __FUNCSIG__;
+  return string_view(p.data() + 84, p.size() - 84 - 7);
+#endif
+}
 
 template <int depth>
 struct bad_iterator {
@@ -75,6 +97,20 @@ int main() {
   //  auto _1 = kblib::signed_cast<signed>(0.0);
   //  auto _2 = kblib::signed_cast<double>(0);
 
+  std::cout
+      << "Next_larger: \n"
+      << "signed char: "
+      << type_name_f<kblib::detail::next_larger_signed<signed char>::type>()
+      << '\n'
+      << "short:       "
+      << type_name_f<kblib::detail::next_larger_signed<short>::type>() << '\n'
+      << "int:         "
+      << type_name_f<kblib::detail::next_larger_signed<int>::type>() << '\n';
+// long long can't be promoted
+  // std::cout
+  //     << "long long:   "
+  //     << type_name_f<kblib::detail::next_larger_signed<long long>::type>() << '\n';
+
 #if __cplusplus >= 201703L
   auto filestr = kblib::get_file_contents("");
   auto filevec = kblib::get_file_contents<std::vector<uint8_t>>("");
@@ -113,7 +149,7 @@ int main() {
             << kblib::to_string<62>(62) << "\n63 -> "
             << kblib::to_string<62>(63) << "\n630 -> "
             << kblib::to_string<62>(630) << '\n';
-  std::cout<<kblib::to_string(65536, 2)<<'\n';
+  std::cout << kblib::to_string(65536, 2) << '\n';
 
   {
     constexpr auto target = std::array<int, 10>{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
@@ -129,6 +165,27 @@ int main() {
       }
       std::cout << '\n';
     };
+
+    {
+      std::array<int, 10> haystack{1, 1, 2, 5, 6, 2, 4, 7, 0, 6};
+      const int N = 5;
+
+      std::cout<<"get_max_n: max "<<N<<" of\n  ";
+      print_arr(haystack);
+
+      auto maxN = kblib::get_max_n<std::vector<int>>(haystack.begin(), haystack.end(), N);
+      std::cout<<"Basic:\n  ";
+      print_arr(maxN);
+
+      std::vector<int> maxN_copy;
+      std::cout<<"Copied:\n  ";
+      kblib::get_max_n(haystack.begin(), haystack.end(), std::back_inserter(maxN_copy), 5);
+      print_arr(maxN_copy);
+
+      std::cout<<"Sorted by multiset:\n  ";
+      auto maxN_sorted = kblib::get_max_n<std::multiset<int>>(haystack.begin(), haystack.end(), N);
+      print_arr(maxN_sorted);
+    }
 
     if (!(i1.size() == target.size() &&
           kblib::equal(i1.begin(), i1.end(), target.begin()))) {
@@ -208,7 +265,7 @@ int main() {
     //*kblib::try_get(cm, 0) = 1;
 
     // Can't call for temporaries because it would return a dangling pointer
-    //kblib::try_get(std::map<int, int>{{0, 1}}, 0);
+    // kblib::try_get(std::map<int, int>{{0, 1}}, 0);
   }
 }
 
@@ -365,14 +422,14 @@ void poly_test() {
     std::istringstream is{"line1\nline2\nline3\n"};
     std::string line;
     while (is >> kblib::get_line(line)) {
-      std::cout<<std::quoted(line)<<'\n';
+      std::cout << std::quoted(line) << '\n';
     }
   }
   {
     std::wistringstream is{L"line1\nline2\nline3\n"};
     std::wstring line;
     while (is >> kblib::get_line(line)) {
-      std::wcout<<std::quoted(line)<<'\n';
+      std::wcout << std::quoted(line) << '\n';
     }
   }
 }

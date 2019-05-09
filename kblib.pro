@@ -21,10 +21,11 @@ HEADERS += \
     kblib_variant.h \
     kblib_traits.h \
     kblib_tdecl.h \
-    kblib_logic.h
+    kblib_logic.h \
+    kblib_iterators.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
-QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces
+QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags
 QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi
 
 QMAKE_CXXFLAGS += -fsanitize=address,undefined

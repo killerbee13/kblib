@@ -2,6 +2,7 @@
 #define KBLIB_BUILD_H
 
 #include "kblib_fakestd.h"
+#include "kblib_iterators.h"
 #include "kblib_tdecl.h"
 
 #include <algorithm>
@@ -18,21 +19,19 @@ namespace kblib {
 namespace detail {
 
 template <typename C, typename = decltype(std::declval<C&>().resize(0))>
-constexpr bool calc_resizable() {
+constexpr bool calc_resizable() noexcept {
   return true;
 }
 
+template <typename C, int = std::tuple_size<C>::value>
+constexpr bool calc_resizable() noexcept {
+  return false;
+}
+
+constexpr bool calc_resizable(...) noexcept { return false; }
+
 // Note that when a type that is not resizable, but also doesn't have a
 // constexpr size, is passed, there is a hard error.
-template <typename C, int = std::tuple_size<C>::value>
-constexpr bool calc_resizable() {
-  return false;
-}
-
-constexpr bool calc_resizable(...) {
-  return false;
-}
-
 template <typename C>
 struct is_resizable {
   constexpr static bool value = calc_resizable<C>();
@@ -57,13 +56,16 @@ constexpr bool has_reserve_v = has_reserve<C>::value;
 
 template <typename C,
           typename std::enable_if<detail::has_reserve_v<C>, int>::type = 0>
-void try_reserve(C& c, std::size_t s) {
+void try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) {
   c.reserve(s);
+  return;
 }
 
 template <typename C,
           typename std::enable_if<!detail::has_reserve_v<C>, int>::type = 0>
-void try_reserve(C&, std::size_t) {}
+void try_reserve(C&, std::size_t) noexcept {
+  return;
+}
 
 /**
  * @brief Constructs a container by applying a UnaryFunction to every element of
@@ -416,16 +418,31 @@ KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) {
 template <typename C, typename T>
 void erase(C& c, const T& val) {
   c.erase(std::remove(c.begin(), c.end(), val), c.end());
+  return;
 }
 
+/**
+ * @brief Abbreviation of the erase-remove idiom as a free function.
+ *
+ * @param c The container to erase from.
+ * @param p Erase all elements on which p returns true.
+ */
 template <typename C, typename UnaryPredicate>
 void erase_if(C& c, UnaryPredicate p) {
   c.erase(std::remove_if(c.begin(), c.end(), p), c.end());
+  return;
 }
 
-// find_last (like for string)
-// Searches a range for the last occurence of a match, and returns an iterator
-// to it.
+/**
+ * @brief Searches a range for the last occurence of a match, and returns an
+ * iterator to it.
+ *
+ * @param begin Beginning of the range to search
+ * @param end One past the end of the range
+ * @param v The value to find
+ * @return It Iterator to the last element equal to v, or end if no such
+ * element.
+ */
 template <typename It, typename T>
 KBLIB_NODISCARD It find_last(It begin, It end, const T& v) {
   if (begin == end) {
@@ -445,6 +462,16 @@ KBLIB_NODISCARD It find_last(It begin, It end, const T& v) {
   return result;
 }
 
+/**
+ * @brief Searches a range for the last element on which a predicate returns
+ * true.
+ *
+ * @param begin Beginning of the range to search
+ * @param end One past the end of the range
+ * @param p The predicate for comparison
+ * @return It Iterator to the last element for which p returned true, or end if
+ * no such element.
+ */
 template <typename It, typename Pred>
 KBLIB_NODISCARD It find_last_if(It begin, It end, Pred p) {
   if (begin == end) {
@@ -464,6 +491,16 @@ KBLIB_NODISCARD It find_last_if(It begin, It end, Pred p) {
   return result;
 }
 
+/**
+ * @brief Searches a range for the last element on which a predicate returns
+ * false.
+ *
+ * @param begin Beginning of the range to search
+ * @param end One past the end of the range
+ * @param p The predicate for comparison
+ * @return It Iterator to the last element for which p returned false, or end if
+ * no such element.
+ */
 template <typename It, typename Pred>
 KBLIB_NODISCARD It find_last_if_not(It begin, It end, Pred p) {
   if (begin == end) {
@@ -483,24 +520,43 @@ KBLIB_NODISCARD It find_last_if_not(It begin, It end, Pred p) {
   return result;
 }
 
-// find_in:
-// 1. Finds v in range [begin, end) and returns the offset from begin
-
+/**
+ * @brief Find the offset of the first ocurrence of v in a range from the
+ * beginning.
+ *
+ * @param begin The beginning of the range to search.
+ * @param end One past the end of the range.
+ * @param v The value to search for.
+ * @return size_t The offset from begin of the first element equal to v, or
+ * distance(begin, end) if not found.
+ */
 template <typename It, typename T>
 KBLIB_NODISCARD size_t find_in(It begin, It end, const T& v) {
   return std::find(begin, end, v) - begin;
 }
 
-// find_in_if, find_in_if_not:
-// 1. Finds first value in range [begin, end) for which p returns true and
-// returns the offset from begin
-// 2. Finds first value in range [begin, end) for which p returns false and
-// returns the offset from begin
-
+/**
+ * @brief Find the offset of the first element for which p returns true.
+ *
+ * @param begin The beginning of the range to search.
+ * @param end One past the end of the range.
+ * @param p The predicate to check.
+ * @return size_t The offset from begin of the element found, or distance(begin,
+ * end) if not.
+ */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_in_if(It begin, It end, UnaryPredicate p) {
   return std::find_if(begin, end, p) - begin;
 }
+/**
+ * @brief Find the offset of the first element for which p returns false.
+ *
+ * @param begin The beginning of the range to search.
+ * @param end One past the end of the range.
+ * @param p The predicate to check.
+ * @return size_t The offset from begin of the element found, or distance(begin,
+ * end) if not.
+ */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_in_if_not(It begin, It end, UnaryPredicate p) {
   return std::find_if_not(begin, end, p) - begin;
@@ -509,29 +565,57 @@ KBLIB_NODISCARD size_t find_in_if_not(It begin, It end, UnaryPredicate p) {
 // find_last_in:
 // 1. Finds last v in range [begin, end) and returns the offset from begin
 
+/**
+ * @brief Find the offset of the last ocurrence of v in a range from the
+ * beginning.
+ *
+ * @param begin The beginning of the range to search.
+ * @param end One past the end of the range.
+ * @param v The value to search for.
+ * @return size_t The offset from begin of the element found, or distance(begin,
+ * end) if not.
+ */
 template <typename It, typename T>
 KBLIB_NODISCARD size_t find_last_in(It begin, It end, const T& v) {
   return kblib::find_last(begin, end, v) - begin;
 }
 
-// find_last_in_if, find_last_in_if_not:
-// 1. Finds last value in range [begin, end) for which p returns true and
-// returns the offset from begin
-// 2. Finds last value in range [begin, end) for which p returns false and
-// returns the offset from begin
-
+/**
+ * @brief Find the offset of the last element for which p returns true.
+ *
+ * @param begin The beginning of the range to search.
+ * @param end One past the end of the range.
+ * @param p The predicate to check.
+ * @return size_t The offset from begin of the element found, or distance(begin,
+ * end) if not.
+ */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if(It begin, It end, UnaryPredicate p) {
   return kblib::find_last_if(begin, end, p) - begin;
 }
+/**
+ * @brief Find the offset of the last element for which p returns false.
+ *
+ * @param begin The beginning of the range to search.
+ * @param end One past the end of the range.
+ * @param p The predicate to check.
+ * @return size_t The offset from begin of the element found, or distance(begin,
+ * end) if not.
+ */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if_not(It begin, It end, UnaryPredicate p) {
   return kblib::find_last_if_not(begin, end, p) - begin;
 }
 
-// find_in:
-// 1. Finds v in c and returns the offset from the beginning of c
-
+/**
+ * @brief Find the first element in c equal to v and return the position.
+ *
+ * Equivalent to find_in(std::begin(c), std::end(c), v)
+ *
+ * @param c The container to search.
+ * @param v The value to search for.
+ * @return size_t The position of the element found, or c.size() if not.
+ */
 template <typename Container, typename T>
 KBLIB_NODISCARD size_t find_in(const Container& c, const T& v) {
   return std::find(std::begin(c), std::end(c), v) - std::begin(c);
@@ -543,16 +627,30 @@ size_t find_in(ExecutionPolicy&& policy, const Container& c, const T& v) {
 }
 #endif
 
-// find_in_if, find_in_if_not:
-// 1. Finds first value in c for which p returns true and returns the offset
-// from the beginning of c
-// 2. Finds first value in c for which p returns false and returns the offset
-// from the beginning of c
-
 template <typename Container, typename UnaryPredicate>
+/**
+ * @brief Find the first element in c for which p returns true and return the
+ * position.
+ *
+ * Equivalent to find_in_if(std::begin(c), std::end(c), p)
+ *
+ * @param c The container to search in.
+ * @param p The predicate to check.
+ * @return size_t The position of the element found, or c.size() if not.
+ */
 KBLIB_NODISCARD size_t find_in_if(const Container& c, UnaryPredicate p) {
   return std::find_if(std::begin(c), std::end(c), p) - std::begin(c);
 }
+/**
+ * @brief Find the first element in c for which p returns false and return the
+ * position.
+ *
+ * Equivalent to find_in_if_not(std::begin(c), std::end(c), p)
+ *
+ * @param c The container to search in.
+ * @param p The predicate to check.
+ * @return size_t The position of the element found, or c.size() if not.
+ */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_in_if_not(const Container& c, UnaryPredicate p) {
   return std::find_if_not(std::begin(c), std::end(c), p) - std::begin(c);
@@ -568,10 +666,16 @@ size_t find_in_if_not(ExecutionPolicy&& policy, const Container& c, UnaryPredica
 }
 #endif
 
-// find_last_in:
-// 1. Finds v in c and returns the offset from the beginning of c
-
 template <typename Container, typename T>
+/**
+ * @brief Find the last element in c equal to v and return the position.
+ *
+ * Equivalent to find_last_in(std::begin(c), std::end(c), v)
+ *
+ * @param c The container to search.
+ * @param v The value to search for.
+ * @return size_t The position of the element found, or c.size() if not.
+ */
 KBLIB_NODISCARD size_t find_last_in(const Container& c, const T& v) {
   return kblib::find_last(std::begin(c), std::end(c), v) - std::begin(c);
 }
@@ -582,29 +686,158 @@ KBLIB_NODISCARD size_t find_last_in(const Container& c, const T& v) {
 // 2. Finds first value in c for which p returns false and returns the offset
 // from the beginning of c
 
+/**
+ * @brief Find the last element in c for which p returns true and return the
+ * position.
+ *
+ * Equivalent to find_last_in_if(std::begin(c), std::end(c), p)
+ *
+ * @param c The container to search in.
+ * @param p The predicate to check.
+ * @return size_t The position of the element found, or c.size() if not.
+ */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if(const Container& c, UnaryPredicate p) {
   return kblib::find_last_if(std::begin(c), std::end(c), p) - std::begin(c);
 }
+/**
+ * @brief Find the last element in c for which p returns true and return the
+ * position.
+ *
+ * Equivalent to find_last_in_if_not(std::begin(c), std::end(c), p)
+ *
+ * @param c The container to search in.
+ * @param p The predicate to check.
+ * @return size_t The position of the element found, or c.size() if not.
+ */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if_not(const Container& c,
                                            UnaryPredicate p) {
   return kblib::find_last_if_not(std::begin(c), std::end(c), p) - std::begin(c);
 }
 
-template <typename Container, typename Comp = std::less<>, typename It>
-KBLIB_NODISCARD Container get_max_n(It begin, It end, int count,
+/**
+ * @brief Returns a container of the greatest count elements according to cmp of
+ * the range [begin, end), in arbitrary order. This overload works for linear
+ * containers.
+ *
+ * This function is included because its performance is sometimes better than
+ * the new version, and additionally, it does not rely on
+ * default-constructibility for the value type.
+ *
+ * @attention The returned container will not be sorted, unless it is something
+ * like std::multiset which will use the other overload.
+ *
+ * @param begin The beginning of the range.
+ * @param end One past the end of the range.
+ * @param count The number of elements to copy out of the range.
+ * @param cmp The comparison function to use.
+ * @return Container The greatest count elements of the range, in arbitrary
+ * order.
+ */
+template <
+    typename Container, typename Comp = std::less<>, typename It,
+    typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
+KBLIB_NODISCARD Container get_max_n_old(It begin, It end, std::size_t count,
+                                        Comp cmp = {}) {
+  assert(begin + count <= end);
+  Container c{begin, begin + count};
+  std::for_each(begin + count, end, [&](const auto& v) {
+    auto& min = *std::min_element(c.begin(), c.end(), cmp);
+    if (cmp(min, v)) {
+      min = v;
+    }
+  });
+  return c;
+}
+
+/**
+ * @brief Returns a container of the greatest count elements according to cmp of
+ * the range [begin, end). This overload works for set-like types.
+ *
+ * This function is included because its performance is sometimes better than
+ * the new version, and additionally, it does not rely on
+ * default-constructibility for the value type.
+ *
+ * @param begin The beginning of the range.
+ * @param end One past the end of the range.
+ * @param count The number of elements to copy out of the range.
+ * @param cmp The comparison function to use.
+ * @return Container The greatest count elements of the range, in arbitrary
+ * order.
+ */
+template <typename Container, typename Comp = std::less<>, typename It,
+          typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
+KBLIB_NODISCARD Container get_max_n_old(It begin, It end, std::size_t count,
+                                        Comp cmp = {}) {
+  auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
+      begin, end, count, cmp);
+  return Container{temp.begin(), temp.end()};
+}
+
+/**
+ * @brief Returns a container of the greatest count elements according to cmp of
+ * the range [begin, end), in descending order. This overload works for linear
+ * containers.
+ *
+ * @param begin The beginning of the range.
+ * @param end One past the end of the range.
+ * @param count The number of elements to copy out of the range.
+ * @param cmp The comparison function to use.
+ * @return Container The greatest count elements of the range, in arbitrary
+ * order.
+ */
+template <
+    typename Container, typename Comp = std::less<>, typename It,
+    typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
+KBLIB_NODISCARD Container get_max_n(It begin, It end, std::size_t count,
                                     Comp cmp = {}) {
   assert(begin + count <= end);
-  return std::accumulate(begin + count, end, Container{begin, begin + count},
-                         [&](Container c, const auto& v) {
-                           auto& min =
-                               *std::min_element(c.begin(), c.end(), cmp);
-                           if (cmp(min, v)) {
-                             min = v;
-                           }
-                           return c;
-                         });
+  Container c(count);
+  std::partial_sort_copy(begin, end, c.begin(), c.end(), std::not_fn(cmp));
+  return c;
+}
+
+/**
+ * @brief Returns a container of the greatest count elements according to cmp of
+ * the range [begin, end). This overload works for set-like containers.
+ *
+ * @param begin The beginning of the range.
+ * @param end One past the end of the range.
+ * @param count The number of elements to copy out of the range.
+ * @param cmp The comparison function to use.
+ * @return Container The greatest count elements of the range, in arbitrary
+ * order.
+ */
+template <typename Container, typename Comp = std::less<>, typename It,
+          typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
+KBLIB_NODISCARD Container get_max_n(It begin, It end, std::size_t count,
+                                    Comp cmp = {}) {
+  auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(begin, end,
+                                                                    count, cmp);
+  return Container{temp.begin(), temp.end()};
+}
+
+/**
+ * @brief Copies the count greatest elements according to cmp of the range
+ * [begin, end) to the range beginning at d_begin.
+ *
+ * @param begin The beginning of the range.
+ * @param end One past the end of the range.
+ * @param d_begin The beginning of the output range.
+ * @param count The number of elements to copy out of the range.
+ * @param cmp The comparison function to use.
+ * @return return_assert_t<is_output_iterator<OIt, ElementT>::value, OIt> An
+ * iterator derived by assigning to and advancing d_begin count times.
+ */
+template <typename Comp = std::less<>, typename IIt, typename OIt,
+          typename ElementT = typename std::iterator_traits<IIt>::value_type>
+auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
+               Comp cmp = {})
+    -> return_assert_t<is_output_iterator<OIt, ElementT>::value,
+                       OIt> {
+  auto temp = get_max_n<std::vector<ElementT>>(begin, end, count, cmp);
+  return std::move(temp.begin(), temp.end(), d_begin);
 }
 
 template <typename It, typename It2, typename BinaryFunction>
@@ -673,7 +906,7 @@ build_copy(Range&& r, typename Container::allocator_type allocator =
 template <
     typename Container, typename InputIt,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
-NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
+KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
   Container out{};
   auto pos = std::begin(out);
   auto end = std::end(out);
@@ -686,7 +919,7 @@ NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
 template <
     typename Container, typename Range,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
-NODISCARD constexpr Container build_copy(Range&& r) {
+KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
   Container out{};
   auto first = std::begin(r);
   auto last = std::end(r);
@@ -762,11 +995,12 @@ build_copy_n_if(InputIt first, Size count, Predicate f,
 
 template <typename T, std::size_t N>
 struct vec : std::array<T, N> {
-//  template <typename Vec,
-//            typename std::enable_if<detail::is_resizable_v<Vec>, int>::type = 0>
-//  operator Vec() const {
-//    return {this->begin(), this->end()};
-//  }
+  //  template <typename Vec,
+  //            typename std::enable_if<detail::is_resizable_v<Vec>, int>::type
+  //            = 0>
+  //  operator Vec() const {
+  //    return {this->begin(), this->end()};
+  //  }
 
   template <typename U>
   operator std::vector<U>() const {
@@ -781,7 +1015,7 @@ struct vec : std::array<T, N> {
 
 #if __cplusplus >= 201703L
 template <typename... Ts>
-vec(Ts...) -> vec<std::common_type_t<Ts...>, sizeof...(Ts)>;
+vec(Ts...)->vec<std::common_type_t<Ts...>, sizeof...(Ts)>;
 #endif
 
 // transform_accumulate

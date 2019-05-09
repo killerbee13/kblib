@@ -1,6 +1,9 @@
 #ifndef KBLIB_FAKESTD_H
 #define KBLIB_FAKESTD_H
 
+#include "kblib_tdecl.h"
+
+#include <array>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -11,11 +14,8 @@
 #define KBLIB_FAKESTD (__cplusplus < 201703L)
 #endif
 
-// Note that has_cpp_attribute(nodiscard) does not work with Clang
-#if defined(__has_cpp_attribute) && __has_cpp_attribute(nodiscard)
-#define NODISCARD [[nodiscard]]
-#endif
-
+// Note that has_cpp_attribute(nodiscard) does not work with at least certain
+// versions of Clang
 #if __cplusplus > 201402L
 #define KBLIB_NODISCARD [[nodiscard]]
 #else
@@ -191,6 +191,17 @@ struct metafunction_success<T, fakestd::void_t<typename T::type>>
 template <typename... T>
 struct is_callable : metafunction_success<fakestd::invoke_result<T...>> {};
 
+template <bool V, typename T>
+struct return_assert {};
+
+template <typename T>
+struct return_assert<true, T> {
+  using type = T;
+};
+
+template <bool V, typename T>
+using return_assert_t = typename return_assert<V, T>::type;
+
 template <typename T>
 std::unique_ptr<T> to_unique(T* p) {
   return std::unique_ptr<T>(p);
@@ -229,6 +240,133 @@ KBLIB_NODISCARD
   return to_unsigned(x);
 }
 
+namespace detail {
+
+template <typename T>
+constexpr std::intmax_t max_val = std::numeric_limits<T>::max();
+
+constexpr unsigned long long msb(unsigned long long x) {
+  x |= (x >> 1);
+  x |= (x >> 2);
+  x |= (x >> 4);
+  x |= (x >> 8);
+  x |= (x >> 16);
+  x |= (x >> 32);
+  return (x & ~(x >> 1));
+}
+
+template <typename Num>
+constexpr Num msb_possible() {
+  return std::numeric_limits<Num>::max() ^
+         (std::numeric_limits<Num>::max() >> 1);
+}
+
+template <class... Args>
+struct type_list {
+  template <std::size_t N>
+  using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
+};
+
+template <auto K, typename V>
+struct type_map_el {
+  constexpr static auto key = K;
+  using value = V;
+};
+
+template <typename Key, typename Comp, typename... Vals>
+struct type_map {
+  using types = type_list<Vals...>;
+  template <std::size_t I>
+  using element = typename types::template type<I>;
+
+  template <Key key, std::size_t I = 0>
+  constexpr static auto get() {
+    static_assert(I < sizeof...(Vals), "key not found");
+    if constexpr (Comp{}(key, element<I>::key)) {
+      return tag<typename element<I>::value>{};
+    } else {
+      return get<key, I + 1>();
+    }
+  }
+
+  template <Key key, typename Default = void, std::size_t I = 0>
+  constexpr static auto get_default() {
+    if constexpr (I == sizeof...(Vals)) {
+      return Default();
+    } else if constexpr (Comp{}(key, element<I>::key)) {
+      return tag<typename element<I>::value>{};
+    } else {
+      return get<key, I + 1>();
+    }
+  }
+};
+
+template <typename N>
+using make_smap_el =
+    type_map_el<static_cast<std::intmax_t>(msb_possible<N>()), N>;
+
+template <typename T>
+struct next_larger_signed {
+  static_assert(max_val<T> < max_val<std::intmax_t>,
+                "Cannot safely promote intmax_t.");
+  struct false_compare {
+    template <typename U>
+    constexpr bool operator()(U, U) {
+      return true;
+    }
+  };
+
+  using ints_map = type_map<
+      std::intmax_t, std::less<std::intmax_t>, make_smap_el<std::int_least8_t>,
+      make_smap_el<std::int_least16_t>, make_smap_el<std::int_least32_t>,
+      make_smap_el<std::int_least64_t>, make_smap_el<std::intmax_t>>;
+
+  using type =
+      typename decltype(ints_map::template get_default<max_val<T> + 1>())::type;
+};
+
+template <typename N, bool = std::is_signed<N>::value>
+struct filter_signed;
+
+template <typename N>
+struct filter_signed<N, true> {
+  using type = N;
+};
+
+template <typename N>
+using filter_signed_t = typename filter_signed<N>::type;
+
+template <typename N, bool = std::is_unsigned<N>::value>
+struct filter_unsigned;
+
+template <typename N>
+struct filter_unsigned<N, true> {
+  using type = N;
+};
+
+template <typename N>
+using filter_unsigned_t = typename filter_unsigned<N>::type;
+
+}  // namespace detail
+
+template <typename N, typename = void>
+struct safe_signed;
+
+template <typename N>
+struct safe_signed<N, std::enable_if_t<std::is_integral<N>::value, void>> {
+  using type = std::conditional_t<
+      std::is_signed<N>::value, N,
+      typename detail::next_larger_signed<std::make_signed_t<N>>::type>;
+};
+
+template <typename N>
+using safe_signed_t = typename safe_signed<N>::type;
+
+template <typename N>
+KBLIB_NODISCARD safe_signed_t<N> signed_promote(N x) {
+  return static_cast<safe_signed_t<N>>(x);
+}
+
 template <typename C, typename T,
           bool = std::is_const<typename std::remove_reference<C>::type>::value>
 struct copy_const {
@@ -251,6 +389,68 @@ using copy_const_t = typename copy_const<C, V>::type;
 //  static_assert(std::is_integral<F>::value && std::is_integral<A>::value,
 //                "signed_cast arguments must be integral.");
 //}
+
+template <typename T, typename = void>
+struct value_detected : std::false_type {};
+
+template <typename T>
+struct value_detected<T, fakestd::void_t<typename T::value_type>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool value_detected_v = value_detected<T>::value;
+
+template <typename T, typename = void>
+struct key_detected : std::false_type {};
+
+template <typename T>
+struct key_detected<T, fakestd::void_t<typename T::key_type>> : std::true_type {
+};
+
+template <typename T>
+constexpr bool key_detected_v = key_detected<T>::value;
+
+template <typename T, typename = void>
+struct mapped_detected : std::false_type {};
+
+template <typename T>
+struct mapped_detected<T, fakestd::void_t<typename T::mapped_type>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool mapped_detected_v = mapped_detected<T>::value;
+
+template <typename Container, bool = key_detected_v<Container>,
+          typename T = typename Container::value_type>
+struct value_type_linear {};
+
+template <typename Container>
+struct value_type_linear<Container, false, typename Container::value_type> {
+  using type = typename Container::value_type;
+};
+
+template <typename Container>
+using value_type_linear_t = typename value_type_linear<Container>::type;
+
+template <typename Container>
+constexpr static bool is_linear_container_v =
+    value_detected_v<Container> && !key_detected_v<Container>;
+
+template <typename Container, bool = key_detected_v<Container>,
+          bool = mapped_detected_v<Container>>
+struct key_type_setlike {};
+
+template <typename Container>
+struct key_type_setlike<Container, true, false> {
+  using type = typename Container::key_type;
+};
+
+template <typename Container>
+using key_type_setlike_t = typename key_type_setlike<Container>::type;
+
+template <typename Container>
+constexpr static bool is_setlike_v =
+    key_detected_v<Container> && !mapped_detected_v<Container>;
 
 template <class InputIt1, class InputIt2>
 constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2) {

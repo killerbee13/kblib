@@ -2,6 +2,7 @@
 #define KBLIB_CONTAINERS_H
 
 #include "kblib_fakestd.h"
+#include "kblib_iterators.h"
 #include "kblib_tdecl.h"
 
 #include <cstddef>
@@ -38,23 +39,6 @@ auto try_get(Map& map, Key&& key)
     return nullptr;
   else
     return &it->second;
-}
-
-template <typename ptr>
-struct to_pointer_impl {
-  constexpr auto operator()(ptr p) const noexcept {
-    return to_pointer_impl<decltype(p.operator->())>{}(p.operator->());
-  }
-};
-
-template <typename T>
-struct to_pointer_impl<T*> {
-  constexpr T* operator()(T* p) const noexcept { return p; }
-};
-
-template <typename P>
-constexpr auto to_pointer(P p) noexcept {
-  return to_pointer_impl<P>{}(p);
 }
 
 template <typename iterator>
