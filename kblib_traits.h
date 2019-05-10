@@ -1,6 +1,7 @@
 #ifndef KBLIB_TRAITS_H_INCLUDED_
 #define KBLIB_TRAITS_H_INCLUDED_
 
+#include <array>
 #include <cstring>
 #include <tuple>
 #include <type_traits>
