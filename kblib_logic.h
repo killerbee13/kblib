@@ -6,14 +6,22 @@
 namespace kblib {
 
 template <bool A, bool B>
-struct implies : std::bool_constant<true> {};
+/**
+ * @brief
+ *
+ */
+struct implies : std::integral_constant<bool, true> {};
 
 template <>
-struct implies<true, false> : std::bool_constant<false> {};
+/**
+ * @brief
+ *
+ */
+struct implies<true, false> : std::integral_constant<bool, false> {};
 
 #if __cplusplus >= 201703L
 template <bool A, bool B>
-constexpr inline bool implies_v = implies<A, B>::value;
+constexpr inline bool implies_v = implies<A, B>::value; /**< TODO: describe */
 #endif
 
 }

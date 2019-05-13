@@ -106,7 +106,7 @@ To lexical_cast(const From& val, const char* type = typeid(To).name()) {
 
 template <int base, typename Int>
 inline std::string to_string(Int num) {
-  static_assert(base <= 62 && base > 0);
+  static_assert(base <= 62 && base > 0, "Supported bases are 1 thru 62.");
   constexpr auto digits = remove_null_terminator(
       "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
   std::string ret;

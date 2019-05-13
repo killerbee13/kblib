@@ -48,6 +48,25 @@ struct invoke_result<decltype(void(detail::INVOKE(std::declval<F>(),
 template <class F, class... ArgTypes>
 struct invoke_result : detail::invoke_result<void, F, ArgTypes...> {};
 
+template <typename F, typename... ArgTypes>
+using invoke_result_t = typename invoke_result<F, ArgTypes...>::type;
+
+template<typename Fn, typename... Args,
+        std::enable_if_t<std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0 >
+constexpr decltype(auto) invoke(Fn&& f, Args&&... args)
+    noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
+{
+    return std::mem_fn(f)(std::forward<Args>(args)...);
+}
+
+template<typename Fn, typename... Args,
+         std::enable_if_t<!std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
+constexpr decltype(auto) invoke(Fn&& f, Args&&... args)
+    noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
+{
+    return std::forward<Fn>(f)(std::forward<Args>(args)...);
+}
+
 template <typename... Ts>
 struct make_void {
   typedef void type;
@@ -130,7 +149,7 @@ struct is_nothrow_swappable
     : public std::integral_constant<
           bool, detail::nothrow_swappable_with<Tp&>::value> {};
 
-#if ____cplusplus >= 201703L
+#if KBLIB_USE_CXX17
 
 template <class Tp, class Up>
 struct is_swappable_with
@@ -173,6 +192,32 @@ template <class Tp>
 inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<Tp>::value;
 
 #endif
+
+namespace detail {
+template <typename F>
+struct not_fn_t {
+  explicit not_fn_t(F&& f) : fd(std::forward<F>(f)) {}
+  not_fn_t(const not_fn_t&) = default;
+  not_fn_t(not_fn_t&&) = default;
+
+  template<class... Args> auto operator()(Args&&... args) &
+   -> decltype(!std::declval<invoke_result_t<std::decay_t<F>&, Args...>>()) {
+    return !invoke(fd, std::forward<Args>(args)...);
+  }
+
+  template<class... Args> auto operator()(Args&&... args) const&
+   -> decltype(!std::declval<invoke_result_t<std::decay_t<F> const&, Args...>>()) {
+    return !invoke(std::move(fd), std::forward<Args>(args)...);
+  }
+
+  std::decay_t<F> fd;
+};
+}
+
+template <typename F>
+detail::not_fn_t<F> not_fn(F&& f) {
+  return detail::not_fn_t<F>(std::forward<F>(f));
+}
 
 }  // namespace fakestd
 #else
@@ -239,6 +284,8 @@ KBLIB_NODISCARD
     signed_cast(F x) {
   return to_unsigned(x);
 }
+
+#if KBLIB_USE_CXX17
 
 namespace detail {
 
@@ -366,6 +413,8 @@ template <typename N>
 KBLIB_NODISCARD safe_signed_t<N> signed_promote(N x) {
   return static_cast<safe_signed_t<N>>(x);
 }
+
+#endif
 
 template <typename C, typename T,
           bool = std::is_const<typename std::remove_reference<C>::type>::value>

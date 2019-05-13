@@ -164,8 +164,8 @@ class stack {
 
   // Capacity
 
-  [[nodiscard]] bool empty() const noexcept { return backing.empty(); }
-  [[nodiscard]] size_type size() const noexcept { return backing.size(); }
+  KBLIB_NODISCARD bool empty() const noexcept { return backing.empty(); }
+  KBLIB_NODISCARD size_type size() const noexcept { return backing.size(); }
 
   // Modifiers
 

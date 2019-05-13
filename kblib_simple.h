@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <initializer_list>
 #include <string_view>
+#include <limits>
+
+#include "kblib_tdecl.h"
 
 namespace kblib {
 
@@ -16,9 +19,17 @@ template <typename UInt>
 struct fnv_prime {};
 
 template <>
+/**
+ * @brief
+ *
+ */
 struct fnv_prime<std::uint32_t>
     : std::integral_constant<std::uint32_t, 16777619ul> {};
 template <>
+/**
+ * @brief
+ *
+ */
 struct fnv_prime<std::uint64_t>
     : std::integral_constant<std::uint64_t, 1099511628211ull> {};
 
@@ -29,9 +40,17 @@ template <typename UInt>
 struct fnv_offset {};
 
 template <>
+/**
+ * @brief
+ *
+ */
 struct fnv_offset<std::uint32_t>
     : std::integral_constant<std::uint32_t, 2166136261ul> {};
 template <>
+/**
+ * @brief
+ *
+ */
 struct fnv_offset<std::uint64_t>
     : std::integral_constant<std::uint64_t, 14695981039346656037ull> {};
 
@@ -130,53 +149,203 @@ constexpr std::uint64_t operator""_fnv64(const char* str, std::size_t length) {
 
 }  // namespace literals
 
+/**
+ * @brief A range generator, similar to Python 3's range().
+ *
+ * Generates a half-open range, [min, max).
+ */
 template <typename Int>
 class range_t {
  public:
+  /**
+   * @brief 2- and 3-argument constructor. Explicitly specify start, end, and optionally the step amount.
+   *
+   * @param min_ The first value in the range.
+   * @param max_ The end of the range.
+   * @param step_ The difference between values in the range.
+   */
   range_t(Int min_, Int max_, Int step_ = 1)
-      : min(min_), max(max_), step(step_) {}
-  range_t(Int max) : range_t(0, max) {}
+      : min(min_), max(max_), step(step_) {normalize();}
+  /**
+   * @brief 1-argument constructor. Start is implicitly zero and step is implicitly 1.
+   *
+   * @param max The end of the range.
+   */
+  range_t(Int max) : range_t(0, max, 0) {}
 
+  /**
+   * @brief A helper struct which acts as an iterator for the range elements, as they are generated on the fly.
+   *
+   */
   struct dummyptr {
-    Int val, step{1};
+    Int val, step{1}; /**< TODO: describe */
+    /**
+     * @brief Return the "pointed-to" value.
+     *
+     * @return Int operator
+     */
     Int operator*() { return val; }
+    /**
+     * @brief Prefix increment. Advance to the next value in the range.
+     *
+     * @return dummyptr& *this.
+     */
     dummyptr& operator++() {
       val += step;
       return *this;
     }
-    dummyptr operator++(int) { return {val += step}; }
-    friend bool operator==(dummyptr l, dummyptr r) {
-      if (l.step > 0)
-        return l.val >= r.val;
-      else
-        return l.val <= r.val;
+    /**
+     * @brief Postfix increment. Advance to the next value in the range, but return the current value.
+     *
+     * @return dummyptr A copy of the pre-incrementing value of *this.
+     */
+    dummyptr operator++(int) {
+      auto ret = *this;
+      val += step;
+      return ret;
     }
+    /**
+     * @brief Compare two range iterators for equality.
+     *
+     * Range iterators compare equal if they point to the same value and have the same step.
+     */
+    friend bool operator==(dummyptr l, dummyptr r) {
+      return l.val == r.val && l.step == r.step;
+    }
+    /**
+     * @brief Compare two range iterators for inequality.
+     *
+     * Range iterators compare equal if they point to the same value and have the same step.
+     */
     friend bool operator!=(dummyptr l, dummyptr r) {
+      return l.val != r.val || l.step != r.step;
+    }
+    /**
+     * @brief Compare two range iterators.
+     *
+     * For range iterators, (A < B) is true when A can be advanced until (*A - *B) changes sign.
+     */
+    friend bool operator<(dummyptr l, dummyptr r) {
       if (l.step > 0)
         return l.val < r.val;
       else
         return l.val > r.val;
     }
+    /**
+     * @brief Compare two range iterators.
+     *
+     * For range iterators, (A < B) is true when A can be advanced until (*A - *B) changes sign.
+     */
+    friend bool operator<=(dummyptr l, dummyptr r) {return !(r < l);}
+    /**
+     * @brief Compare two range iterators.
+     *
+     * For range iterators, (A < B) is true when A can be advanced until (*A - *B) changes sign.
+     */
+    friend bool operator>(dummyptr l, dummyptr r) {return r < l;}
+    /**
+     * @brief Compare two range iterators.
+     *
+     * For range iterators, (A < B) is true when A can be advanced until (*A - *B) changes sign.
+     */
+    friend bool operator>=(dummyptr l, dummyptr r) {return !(l < r);}
   };
 
+  /**
+   * @brief Returns an iterator to the beginning of the range.
+   */
   dummyptr begin() const { return {min, step}; }
+  /**
+   * @brief Return an iterator to the end of the range.
+   */
   dummyptr end() const { return {max, step}; }
+
+  /**
+   * @brief Returns the distance between start() and stop().
+   */
+  std::size_t size() const { return (max - min) / step; }
+
+  /**
+   * @brief Compare l and r for equality.
+   *
+   * Ranges are equal when they generate identical ranges.
+   */
+  friend bool operator==(range_t l, range_t r) {
+    return (l.begin() == r.begin()) && (l.end() == r.end());
+  }
+  /**
+   * @brief Compare l and r for inequality.
+   *
+   * Ranges are equal when they generate identical ranges.
+   */
+  friend bool operator!=(range_t l, range_t r) {
+    return (l.begin() != r.begin()) || (l.end() != r.end());
+  }
 
  private:
   Int min, max, step;
+
+  void normalize() {
+    auto difference = max - min;
+    auto remainder = difference % step;
+    if (remainder != 0) {
+      max -= remainder;
+    }
+    if (min == max) {
+      min = 0;
+      max = 0;
+      step = 1;
+    }
+    if (step == 0) {
+      if (min != std::numeric_limits<Int>::max()) {
+        max = min + 1;
+      } else {
+        max = min - 1;
+      }
+    }
+  }
 };
 
 template <typename Int>
+/**
+ * @brief
+ *
+ * @param min
+ * @param max
+ * @param step
+ * @return range_t<Int>
+ */
 range_t<Int> range(Int min, Int max, Int step = 0) {
-  return {min, max, step};
+  if (step == 0) {
+    if (min <= max) {
+      return {min, max, 1};
+    } else {
+      return {min, max, -1};
+    }
+  } else {
+    return {min, max, step};
+  }
 }
 
 template <typename Int>
+/**
+ * @brief
+ *
+ * @param max
+ * @return range_t<Int>
+ */
 range_t<Int> range(Int max) {
   return {max};
 }
 
 template <typename Container>
+/**
+ * @brief
+ *
+ * @param A
+ * @param B
+ * @return Container
+ */
 Container arraycat(Container A, Container&& B) {
   A.insert(A.end(), B.begin(), B.end());
   return A;
@@ -187,6 +356,11 @@ Container arraycat(Container A, Container&& B) {
 // stored. This is indexable because temporaries live until the end of their
 // full-expression, rather than sub-expression
 template <typename T>
+/**
+ * @brief
+ *
+ * @param a
+ */
 constexpr auto a(const std::initializer_list<T>& a) {
   return a.begin();
 }
@@ -194,17 +368,35 @@ constexpr auto a(const std::initializer_list<T>& a) {
 // auto v = a({2, 3, 5, 7, 9, 11})[2];
 
 template <typename T>
+/**
+ * @brief
+ *
+ */
 using alias = T;
 
 template <typename, typename T>
+/**
+ * @brief
+ *
+ */
 struct ignore {
+  /**
+   * @brief
+   *
+   */
   using type = T;
 };
 template <typename U, typename T>
+/**
+ * @brief
+ *
+ */
 using ignore_t = typename ignore<U, T>::type;
 
+#if KBLIB_USE_CXX17
 template <bool... args>
 constexpr bool conjunction = (args && ...);
+#endif
 
 }  // namespace kblib
 

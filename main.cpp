@@ -9,17 +9,6 @@
 #include <set>
 #include <string_view>
 
-template <typename C>
-constexpr const char type_name[] = "unknown";
-
-template <>
-[[maybe_unused]] constexpr const char type_name<char>[] = "char";
-template <>
-[[maybe_unused]] constexpr const char type_name<unsigned char>[] =
-    "unsigned char";
-template <>
-[[maybe_unused]] constexpr const char type_name<signed char>[] = "signed char";
-
 template <class T>
 constexpr std::string_view type_name_f() {
   using namespace std;
@@ -38,6 +27,17 @@ constexpr std::string_view type_name_f() {
   return string_view(p.data() + 84, p.size() - 84 - 7);
 #endif
 }
+
+template <typename C>
+constexpr const char type_name[] = "unknown";
+
+template <>
+KBLIB_UNUSED constexpr const char type_name<char>[] = "char";
+template <>
+KBLIB_UNUSED constexpr const char type_name<unsigned char>[] =
+    "unsigned char";
+template <>
+KBLIB_UNUSED constexpr const char type_name<signed char>[] = "signed char";
 
 template <int depth>
 struct bad_iterator {
@@ -63,7 +63,9 @@ static_assert(test(), "");
 
 void test(std::streamsize s) { std::cout << s << '\n'; }
 
+#if KBLIB_USE_CXX17
 void poly_test();
+#endif
 
 int main() {
   std::cout << kblib::signed_cast<unsigned>(-1ll) << '\n'
@@ -96,7 +98,7 @@ int main() {
             << (std::is_signed<char>::value ? "signed" : "not signed") << '\n';
   //  auto _1 = kblib::signed_cast<signed>(0.0);
   //  auto _2 = kblib::signed_cast<double>(0);
-
+#if KBLIB_USE_CXX17
   std::cout
       << "Next_larger: \n"
       << "signed char: "
@@ -112,7 +114,7 @@ int main() {
   //     << type_name_f<kblib::detail::next_larger_signed<long long>::type>() <<
   //     '\n';
 
-#if __cplusplus >= 201703L
+
   auto filestr = kblib::get_file_contents("");
   auto filevec = kblib::get_file_contents<std::vector<uint8_t>>("");
   auto filewstr = kblib::get_file_contents<std::u32string>("");
@@ -156,8 +158,8 @@ int main() {
     constexpr auto target = std::array<int, 10>{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
     auto i1 = kblib::buildiota<std::vector<int>>(10, 0);
     auto i2 = kblib::buildiota<std::vector<int>>(10, 0, 1);
-    constexpr auto i3 = kblib::buildiota<std::array<int, 10>>(0);
-    constexpr auto i4 = kblib::buildiota<std::array<int, 10>>(0, 1);
+    auto i3 = kblib::buildiota<std::array<int, 10>>(0);
+    auto i4 = kblib::buildiota<std::array<int, 10>>(0, 1);
     auto i5 =
         kblib::buildiota<kblib::construct_with_size<std::vector<int>, 10>>(0);
     auto print_arr = [&](auto c) {
@@ -177,12 +179,12 @@ int main() {
       std::cout << "buildiota2<C>(size, value, incr) failed.\n";
       print_arr(i2);
     }
-    static_assert(i3.size() == target.size() &&
-                      kblib::equal(i3.begin(), i3.end(), target.begin()),
-                  "");
-    static_assert(i4.size() == target.size() &&
-                      kblib::equal(i4.begin(), i4.end(), target.begin()),
-                  "");
+    assert(i3.size() == target.size() &&
+                      kblib::equal(i3.begin(), i3.end(), target.begin())
+                  );
+    assert(i4.size() == target.size() &&
+                      kblib::equal(i4.begin(), i4.end(), target.begin())
+                  );
     if (!(i5.size() == target.size() &&
           kblib::equal(i5.begin(), i5.end(), target.begin()))) {
       std::cout
@@ -267,8 +269,30 @@ int main() {
       auto maxN_range = kblib::get_max_n<std::vector<int>>(range.begin(), range.end(), 5);
       print_arr(maxN_range);
     }
+
+    std::cout<<"Ranges:\nrange(10): ";
+    print_arr(kblib::range(10));
+    std::cout<<"range(0, 10): ";
+    print_arr(kblib::range(0, 10));
+    std::cout<<"range(0, 10, 2): ";
+    print_arr(kblib::range(0, 10, 2));
+    std::cout<<"range(10, 0, -1): ";
+    print_arr(kblib::range(10, 0, -1));
+    std::cout<<"range(0, -10, -1): ";
+    print_arr(kblib::range(0, -10, -1));
+    std::cout<<"range(0, -10): ";
+    print_arr(kblib::range(0, -10));
+
+    std::cout<<"Range comparisons: true expected:\n"<<std::boolalpha;
+    std::cout<<"range(0, 11, 2) == range(0, 10, 2): "<<(kblib::range(0, 11, 2) == kblib::range(0, 10, 2))<<'\n';
+    std::cout<<"range(0, 0, 1) == range(0, 1, 2): "<<(kblib::range(0, 0, 1) == kblib::range(0, 1, 2))<<'\n';
+    std::cout<<"range(100, 100, 1) == range(0, 0, 2): "<<(kblib::range(100, 100, 1) == kblib::range(0, 0, 2))<<'\n';
+    std::cout<<"false expected:\n";
+    std::cout<<"range(0, 10) == range(10, 0): "<<(kblib::range(0, 10) == kblib::range(10, 0))<<'\n';
   }
+#if KBLIB_USE_CXX17
   poly_test();
+#endif
   {
     std::map<int, int> m;
     const auto& cm = m;
@@ -293,6 +317,7 @@ int main() {
   }
 }
 
+#if KBLIB_USE_CXX17
 struct good_base {
   good_base() = default;
   virtual ~good_base() noexcept { std::cout << "~good_base\n"; }
@@ -457,3 +482,4 @@ void poly_test() {
     }
   }
 }
+#endif

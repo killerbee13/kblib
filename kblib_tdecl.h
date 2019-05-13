@@ -1,6 +1,8 @@
 #ifndef KBLIB_TDECL_H
 #define KBLIB_TDECL_H
 
+#define KBLIB_USE_CXX17 __cplusplus >= 201703L
+
 namespace kblib {
 namespace detail {
 

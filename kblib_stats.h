@@ -6,6 +6,14 @@
 #include <numeric>
 #include <random>
 
+#include "kblib_tdecl.h"
+
+#if KBLIB_USE_CXX17
+#define KBLIB_UNUSED [[maybe_unused]]
+#else
+#define KBLIB_UNUSED
+#endif
+
 namespace kblib {
 
 // TODO: refactor
@@ -117,13 +125,13 @@ inline namespace nums {
  * signed destination types, there is no concise representation for a generic
  * maximum.
  */
-[[maybe_unused]] constexpr struct max_t {
+KBLIB_UNUSED constexpr struct max_t {
   template <typename T>
   constexpr /* implicit*/ operator T() const
       noexcept(noexcept(std::numeric_limits<T>::max())) {
     return std::numeric_limits<T>::max();
   }
-} max;
+} max; /**< TODO: describe */
 
 /**
  * @brief Shorthand for std::numeric_limits::min()
@@ -132,13 +140,13 @@ inline namespace nums {
  * For unsigned destination types, this is always 0. For signed destination
  * types, it depends on size.
  */
-[[maybe_unused]] constexpr struct min_t {
+KBLIB_UNUSED constexpr struct min_t {
   template <typename T>
   constexpr /* implicit*/ operator T() const
-      noexcept(noexcept(std::numeric_limits<T>::max())) {
+      noexcept(noexcept(std::numeric_limits<T>::min())) {
     return std::numeric_limits<T>::min();
   }
-} min;
+} min; /**< TODO: describe */
 
 }  // namespace nums
 

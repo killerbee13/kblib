@@ -36,6 +36,9 @@ template <typename C>
 struct is_resizable {
   constexpr static bool value = calc_resizable<C>();
 };
+/**
+ * True if and only if C is a resizable container.
+ */
 template <typename C>
 constexpr bool is_resizable_v = is_resizable<C>::value;
 
@@ -45,15 +48,23 @@ struct has_reserve {
 };
 
 template <typename C>
-struct has_reserve<C, fakestd::void_t<decltype(std::declval<C&>.reserve())>> {
+struct has_reserve<C, fakestd::void_t<decltype(std::declval<C&>.reserve(0))>> {
   constexpr static bool value = true;
 };
-
+/**
+ * @brief True if and only if C contains an accessible reserve() member.
+ */
 template <typename C>
 constexpr bool has_reserve_v = has_reserve<C>::value;
 
 }  // namespace detail
 
+/**
+ * @brief Attempt to reserve capacity in a container. No-op if unsupported.
+ *
+ * @param c The container to modify.
+ * @param s The requested capacity.
+ */
 template <typename C,
           typename std::enable_if<detail::has_reserve_v<C>, int>::type = 0>
 void try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) {
@@ -61,6 +72,12 @@ void try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) {
   return;
 }
 
+/**
+ * @brief Attempt to reserve capacity in a container. No-op if unsupported.
+ *
+ * @param c The container to modify.
+ * @param s The requested capacity.
+ */
 template <typename C,
           typename std::enable_if<!detail::has_reserve_v<C>, int>::type = 0>
 void try_reserve(C&, std::size_t) noexcept {
@@ -680,12 +697,6 @@ KBLIB_NODISCARD size_t find_last_in(const Container& c, const T& v) {
   return kblib::find_last(std::begin(c), std::end(c), v) - std::begin(c);
 }
 
-// find_in_if, find_in_if_not:
-// 1. Finds first value in c for which p returns true and returns the offset
-// from the beginning of c
-// 2. Finds first value in c for which p returns false and returns the offset
-// from the beginning of c
-
 /**
  * @brief Find the last element in c for which p returns true and return the
  * position.
@@ -793,7 +804,7 @@ template <
 KBLIB_NODISCARD Container get_max_n(It begin, It end, std::size_t count,
                                     Comp cmp = {}) {
   Container c(count);
-  std::partial_sort_copy(begin, end, c.begin(), c.end(), std::not_fn(cmp));
+  std::partial_sort_copy(begin, end, c.begin(), c.end(), fakestd::not_fn(cmp));
   return c;
 }
 
@@ -844,6 +855,15 @@ auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
   return std::move(temp.begin(), temp.end(), d_begin);
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param last
+ * @param second
+ * @param f
+ * @return BinaryFunction
+ */
 template <typename It, typename It2, typename BinaryFunction>
 KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
                                                   BinaryFunction f) {
@@ -853,6 +873,15 @@ KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
   return std::move(f);
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param n
+ * @param second
+ * @param f
+ * @return It
+ */
 template <typename It, typename It2, typename Size, typename BinaryFunction>
 KBLIB_NODISCARD constexpr It for_each_n(It first, Size n, It2 second,
                                         BinaryFunction f) {
@@ -862,6 +891,15 @@ KBLIB_NODISCARD constexpr It for_each_n(It first, Size n, It2 second,
   return first;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param count
+ * @param out
+ * @param pred
+ * @return OutputIt
+ */
 template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate>
 KBLIB_NODISCARD OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
@@ -875,6 +913,15 @@ KBLIB_NODISCARD OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param count
+ * @param out
+ * @param pred
+ * @return OutputIt
+ */
 template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate>
 KBLIB_NODISCARD OutputIt replace_copy_n_if(InputIt first, Size count,
@@ -888,6 +935,14 @@ KBLIB_NODISCARD OutputIt replace_copy_n_if(InputIt first, Size count,
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param last
+ * @param allocator
+ * @return Container
+ */
 template <typename Container, typename InputIt>
 KBLIB_NODISCARD Container
 build_copy(InputIt first, InputIt last,
@@ -898,6 +953,13 @@ build_copy(InputIt first, InputIt last,
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param r
+ * @param allocator
+ * @return Container
+ */
 template <typename Container, typename Range>
 KBLIB_NODISCARD Container
 build_copy(Range&& r, typename Container::allocator_type allocator =
@@ -907,6 +969,13 @@ build_copy(Range&& r, typename Container::allocator_type allocator =
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param last
+ * @return Container
+ */
 template <
     typename Container, typename InputIt,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
@@ -917,9 +986,15 @@ KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
   for (; first != last && pos != end; ++first, ++pos) {
     *pos = *first;
   }
-  return out;
+  return out; /**< TODO: describe */
 }
 
+/**
+ * @brief
+ *
+ * @param r
+ * @return Container
+ */
 template <
     typename Container, typename Range,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
@@ -935,6 +1010,14 @@ KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param last
+ * @param size
+ * @return Container
+ */
 template <
     typename Container, typename InputIt,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
@@ -950,6 +1033,13 @@ KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param r
+ * @param size
+ * @return Container
+ */
 template <
     typename Container, typename Range,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
@@ -966,6 +1056,15 @@ KBLIB_NODISCARD Container build_copy(Range&& r, std::size_t size) {
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param last
+ * @param f
+ * @param allocator
+ * @return Container
+ */
 template <typename Container, typename InputIt, typename Predicate>
 KBLIB_NODISCARD Container
 build_copy_if(InputIt first, InputIt last, Predicate f,
@@ -976,6 +1075,14 @@ build_copy_if(InputIt first, InputIt last, Predicate f,
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param count
+ * @param allocator
+ * @return Container
+ */
 template <typename Container, typename InputIt, typename Size>
 KBLIB_NODISCARD Container
 build_copy_n(InputIt first, Size count,
@@ -986,6 +1093,15 @@ build_copy_n(InputIt first, Size count,
   return out;
 }
 
+/**
+ * @brief
+ *
+ * @param first
+ * @param count
+ * @param f
+ * @param allocator
+ * @return Container
+ */
 template <typename Container, typename InputIt, typename Size,
           typename Predicate>
 KBLIB_NODISCARD Container
@@ -997,50 +1113,52 @@ build_copy_n_if(InputIt first, Size count, Predicate f,
   return out;
 }
 
-template <typename T, std::size_t N>
-struct vec : std::array<T, N> {
-  //  template <typename Vec,
-  //            typename std::enable_if<detail::is_resizable_v<Vec>, int>::type
-  //            = 0>
-  //  operator Vec() const {
-  //    return {this->begin(), this->end()};
-  //  }
-
-  template <typename U>
-  operator std::vector<U>() const {
-    return {this->begin(), this->end()};
-  }
-
-  template <typename U>
-  operator std::array<U, N>() const {
-    return build_copy<std::array<U, N>>(*this);
-  }
-};
-
-#if __cplusplus >= 201703L
-template <typename... Ts>
-vec(Ts...)->vec<std::common_type_t<Ts...>, sizeof...(Ts)>;
-#endif
-
 // transform_accumulate
 // transform_partial_sum
 
+/**
+ * @brief A smart pointer to an object contained inside the smart pointer object.
+ *
+ */
 template <typename T>
 struct containing_ptr {
+  /**
+   * @brief Returns the contained object.
+   */
   constexpr T& operator*() noexcept { return val; }
+  /**
+   * @brief Returns the contained object.
+   */
   constexpr const T& operator*() const noexcept { return val; }
 
+  /**
+   * @brief Return the address of the contained object.
+   */
   constexpr T* operator->() noexcept { return &val; }
+  /**
+   * @brief Return the address of the contained object.
+   */
   constexpr const T* operator->() const noexcept { return &val; }
 
+  /**
+   * @brief Returns the address of the contained object.
+   */
   constexpr T* get() noexcept { return &val; }
+  /**
+   * @brief Returns the address of the contained object.
+   */
   constexpr const T* get() const noexcept { return &val; }
 
   T val;
 };
 
-#if __cplusplus >= 201703L
+#if KBLIB_USE_CXX17
 
+/**
+ * @brief An InputIterator that applies a transformation to the elements of the range.
+ *
+ * @attention This class template depends on features introduced in C++17.
+ */
 template <typename base_iterator, typename operation>
 class transform_iterator {
  private:
@@ -1058,31 +1176,70 @@ class transform_iterator {
   using reference = value_type;
   using iterator_category = std::input_iterator_tag;
 
+  /**
+   * @brief Constructs a transform_iterator which applies _op to the values obtained from *_it.
+   *
+   * @param _it An InputIterator to a range to be transformed.
+   * @param _op The operation to apply to each element.
+   */
   transform_iterator(base_iterator _it, operation _op) : it(_it), op(_op) {}
 
-  // constructs a non-dereferenceable sentinel iterator
+  /**
+   * @brief constructs a non-dereferenceable sentinel iterator
+   *
+   * @param end_it An iterator that marks the end of the input range.
+   */
   transform_iterator(base_iterator end_it) : it(end_it), op(std::nullopt) {}
 
+  /**
+   * @brief Transforms the value obtained by dereferencing it.
+   *
+   * @return decltype(auto) The result of invoking op on *it.
+   */
   decltype(auto) operator*() { return std::invoke(*op, *it); }
+  /**
+   * @brief Transforms the value obtained by dereferencing it.
+   *
+   * @return decltype(auto) The result of invoking op on *it.
+   */
   decltype(auto) operator*() const { return std::invoke(*op, *it); }
 
+  /**
+   * @brief Returns a containing_ptr with the transformed value, because operator-> expects a pointer-like return type.
+   */
   auto operator-> () {
     return containing_ptr<result_type>{{std::invoke(*op, *it)}};
   }
+  /**
+   * @brief Returns a containing_ptr with the transformed value, because operator-> expects a pointer-like return type.
+   */
   auto operator-> () const {
     return containing_ptr<const_result_type>{{std::invoke(*op, *it)}};
   }
 
-  decltype(auto) operator++() { return ++it; }
+  /**
+   * @brief Increments the underlying iterator and returns *this.
+   */
+  transform_iterator& operator++() { ++it; return *this; }
 
-  auto operator++(int) -> decltype(it++) { return it++; }
+  /**
+   * @brief Increments the underlying iterator and returns a copy of the current value.
+   */
+  [[deprecated("Needlessly copies op. Use preincrement instead.")]]
+  transform_iterator operator++(int) { return {it++, op}; }
 
+  /**
+   * @brief Compares the base iterators of lhs and rhs.
+   */
   friend bool operator==(
       const transform_iterator<base_iterator, operation>& lhs,
       const transform_iterator<base_iterator, operation>& rhs) {
     return lhs.it == rhs.it;
   }
 
+  /**
+   * @brief Compares the base iterators of lhs and rhs.
+   */
   friend bool operator!=(
       const transform_iterator<base_iterator, operation>& lhs,
       const transform_iterator<base_iterator, operation>& rhs) {
@@ -1090,6 +1247,13 @@ class transform_iterator {
   }
 };
 
+/**
+ * @brief Factory function to make transform_iterators.
+ *
+ * @param it An InputIterator to a range to transform.
+ * @param op The transformation to apply.
+ * @return transform_iterator<base_iterator, operation>
+ */
 template <typename base_iterator, typename operation>
 transform_iterator<base_iterator, operation> make_transform_iterator(
     base_iterator it, operation op) {
@@ -1097,10 +1261,20 @@ transform_iterator<base_iterator, operation> make_transform_iterator(
 }
 #endif
 
-// from marttyfication on the C++ Help discord
+/**
+ * @brief An OutputIterator that transforms the values assigned to it before inserting them into the back of a container.
+ *
+ * @author From @marttyfication#4235 on the C++ Help discord.
+ */
 template <typename Container, typename F>
 class back_insert_iterator_F {
  public:
+  /**
+   * @brief
+   *
+   * @param c The container to be inserted into.
+   * @param f The tranformation to apply to each argument.
+   */
   explicit back_insert_iterator_F(Container& c, F f)
       : container(c), fun(std::move(f)) {}
 
@@ -1111,19 +1285,34 @@ class back_insert_iterator_F {
   using iterator_category = std::output_iterator_tag;
 
   template <typename V>
-  auto& operator=(V&& value) {
-    container.push_back(std::invoke(fun, std::forward<V>(value)));
+  /**
+   * @brief Calls container.push_back(std::invoke(fun, std::forward<V>(value)));
+   *
+   * @param value The value to transform and insert.
+   * @return back_insert_iterator& *this.
+   */
+  back_insert_iterator_F& operator=(V&& value) {
+    container.push_back(fakestd::invoke(fun, std::forward<V>(value)));
     return *this;
   }
 
-  auto& operator*() { return *this; }
-  auto& operator++() { return *this; }
+  /**
+   * @brief A no-op.
+   */
+  back_insert_iterator_F& operator*() { return *this; }
+  /**
+   * @brief A no-op.
+   */
+  back_insert_iterator_F& operator++() { return *this; }
 
  private:
   Container& container;
   F fun;
 };
 
+/**
+ * @brief An OutputIterator that simply calls a provided functor for each value assigned to it.
+ */
 template <typename F>
 class consume_iterator {
  public:
@@ -1133,21 +1322,49 @@ class consume_iterator {
   using reference = void;
   using iterator_category = std::output_iterator_tag;
 
+  /**
+   * @brief Constructs a consume_iterator with the given function object.
+   *
+   * @param f The functor to pass values to.
+   */
   explicit consume_iterator(F f) : fun(std::move(f)) {}
 
+  consume_iterator& operator=(const consume_iterator&) = default;
+  consume_iterator& operator=(consume_iterator&&) = default;
+
+  /**
+   * @brief Pass value to F.
+   *
+   * @param value The argument for the functor.
+   * @return consume_iterator& *this.
+   */
   template <typename V>
-  auto& operator=(V&& value) {
-    (void)std::invoke(fun, std::forward<V>(value));
+  consume_iterator& operator=(V&& value) noexcept(noexcept(fakestd::invoke(fun, std::forward<V>(value)))) {
+    fakestd::invoke(fun, std::forward<V>(value));
     return *this;
   }
 
-  auto& operator*() { return *this; }
-  auto& operator++() { return *this; }
+  /**
+   * @brief A no-op.
+   */
+  consume_iterator& operator*() { return *this; }
+  /**
+   * @brief A no-op.
+   */
+  consume_iterator& operator++() { return *this; }
 
  private:
-  F fun;
+  F fun; /**< TODO: describe */
 };
 
+/**
+ * @brief Creates a consume_iterator of deduced type F.
+ *
+ * This could be a deduction guide, if kblib didn't also support C++14. Thus, the old style is used for compatibility.
+ *
+ * @param f A functor to call on assignment.
+ * @return consume_iterator<F>
+ */
 template <typename F>
 consume_iterator<F> consumer(F f) {
   return consume_iterator<F>{std::move(f)};

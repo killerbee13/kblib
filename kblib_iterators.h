@@ -121,7 +121,7 @@ protected:
 
 template <typename C>
 KBLIB_NODISCARD counting_back_insert_iterator<C> counting_back_inserter(C& c, std::size_t count = 0) {
-  return counting_back_insert_iterator{c, count};
+  return counting_back_insert_iterator<C>{c, count};
 }
 
 }
