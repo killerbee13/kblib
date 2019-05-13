@@ -9,7 +9,9 @@ namespace kblib {
 
 namespace fnv {
 
-// Base template: has no value
+/**
+ * @brief The prime to use for the FNVa hash algorithm, as a type trait.
+ */
 template <typename UInt>
 struct fnv_prime {};
 
@@ -20,7 +22,9 @@ template <>
 struct fnv_prime<std::uint64_t>
     : std::integral_constant<std::uint64_t, 1099511628211ull> {};
 
-// Base template: has no value
+/**
+ * @brief The starting value for the FNVa hash algorithm, as a type trait.
+ */
 template <typename UInt>
 struct fnv_offset {};
 
@@ -33,6 +37,14 @@ struct fnv_offset<std::uint64_t>
 
 }  // namespace fnv
 
+/**
+ * @brief A templatized generic FNVa hash function.
+ *
+ * @tparam HashInt The unsigned integer type to use as the hash result. Must be either std::uint32_t or std::uint64_t.
+ * @param s The data to hash. Any range-for-iterable span of char-like objects.
+ * @param hval The initial value for the hash accumulator. Pass in another hash value to create a hash of the concatenation of the two ranges.
+ * @return HashInt The FNVa hash of the input range.
+ */
 template <typename HashInt, typename Span>
 constexpr HashInt FNVa(Span&& s,
                        HashInt hval = fnv::fnv_offset<HashInt>::value) {
@@ -46,6 +58,14 @@ constexpr HashInt FNVa(Span&& s,
   return hval;
 }
 
+/**
+ * @brief A templatized FNVa hash function, for raw character arrays, such as string literals.
+ *
+ * @tparam HashInt The unsigned integer type to use as the hash result. Must be either std::uint32_t or std::uint64_t.
+ * @param s The data to hash. A raw array of char-like objects.
+ * @param hval The initial value for the hash accumulator. Pass in another hash value to create a hash of the concatenation of the two ranges.
+ * @return HashInt The FNVa hash of the input range.
+ */
 template <typename HashInt, typename CharT, std::size_t N>
 constexpr HashInt FNVa_a(const CharT (&s)[N],
                          HashInt hval = fnv::fnv_offset<HashInt>::value) {
@@ -58,7 +78,13 @@ constexpr HashInt FNVa_a(const CharT (&s)[N],
   return hval;
 }
 
-// state passed as parameter to enable piecewise hashing
+/**
+ * @brief A standard FNV32a hash function, for string_views.
+ *
+ * @param s The data to hash.
+ * @param hval The initial value for the hash accumulator. Pass in another hash value to create a hash of the concatenation of the two ranges.
+ * @return std::uint32_t The FNV32a hash of the input range.
+ */
 constexpr std::uint32_t FNV32a(std::string_view s, uint32_t hval = 2166136261) {
   const std::uint32_t FNV_32_PRIME = 16777619;
   for (auto&& c : s) {
@@ -68,6 +94,13 @@ constexpr std::uint32_t FNV32a(std::string_view s, uint32_t hval = 2166136261) {
   return hval;
 }
 
+/**
+ * @brief A standard FNV32a hash function, for raw character arrays, such as string literals.
+ *
+ * @param s The data to hash.
+ * @param hval The initial value for the hash accumulator. Pass in another hash value to create a hash of the concatenation of the two ranges.
+ * @return HashInt The FNV32a hash of the input range.
+ */
 template <std::size_t N>
 constexpr std::uint32_t FNV32a_a(const char (&s)[N],
                                  uint32_t hval = 2166136261) {
@@ -80,10 +113,17 @@ constexpr std::uint32_t FNV32a_a(const char (&s)[N],
 }
 
 inline namespace literals {
+
+/**
+ * @brief A literal suffix that produces the FNV32a hash of a string literal.
+ */
 constexpr std::uint32_t operator""_fnv32(const char* str, std::size_t length) {
   return FNV32a({str, length});
 }
 
+/**
+ * @brief A literal suffix that produces the FNV64a hash of a string literal.
+ */
 constexpr std::uint64_t operator""_fnv64(const char* str, std::size_t length) {
   return FNVa<std::uint64_t>(std::string_view{str, length});
 }
