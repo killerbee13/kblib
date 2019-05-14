@@ -29,28 +29,6 @@ namespace fakestd {  // C++14 implementation of C++17 void_t, invoke_result,
                      // (partially) is_invocable, and is_nothrow_swappable
 using std::swap;
 
-namespace detail {
-template <class F, class... Args>
-decltype(auto) INVOKE(F&& f, Args&&... args) {
-  return std::forward<F>(f)(std::forward<Args>(args)...);
-}
-
-template <typename AlwaysVoid, typename, typename...>
-struct invoke_result {};
-template <typename F, typename... Args>
-struct invoke_result<decltype(void(detail::INVOKE(std::declval<F>(),
-                                                  std::declval<Args>()...))),
-                     F, Args...> {
-  using type =
-      decltype(detail::INVOKE(std::declval<F>(), std::declval<Args>()...));
-};
-}  // namespace detail
-template <class F, class... ArgTypes>
-struct invoke_result : detail::invoke_result<void, F, ArgTypes...> {};
-
-template <typename F, typename... ArgTypes>
-using invoke_result_t = typename invoke_result<F, ArgTypes...>::type;
-
 template <typename Fn, typename... Args,
           std::enable_if_t<std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
 constexpr decltype(auto) invoke(Fn&& f, Args&&... args) noexcept(
@@ -65,6 +43,24 @@ constexpr decltype(auto) invoke(Fn&& f, Args&&... args) noexcept(
     noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...))) {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }
+
+namespace detail {
+
+template <typename AlwaysVoid, typename, typename...>
+struct invoke_result {};
+template <typename F, typename... Args>
+struct invoke_result<decltype(void(invoke(std::declval<F>(),
+                                                  std::declval<Args>()...))),
+                     F, Args...> {
+  using type =
+      decltype(invoke(std::declval<F>(), std::declval<Args>()...));
+};
+}  // namespace detail
+template <class F, class... ArgTypes>
+struct invoke_result : detail::invoke_result<void, F, ArgTypes...> {};
+
+template <typename F, typename... ArgTypes>
+using invoke_result_t = typename invoke_result<F, ArgTypes...>::type;
 
 template <typename... Ts>
 struct make_void {
