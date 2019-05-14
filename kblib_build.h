@@ -1277,7 +1277,7 @@ transform_iterator<base_iterator, operation> make_transform_iterator(
  * @brief An OutputIterator that transforms the values assigned to it before
  * inserting them into the back of a container.
  *
- * @author From @marttyfication#4235 on the C++ Help discord.
+ * @author From marttyfication#4235 on the C++ Help discord.
  */
 template <typename Container, typename F>
 class back_insert_iterator_F {
