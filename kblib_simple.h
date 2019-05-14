@@ -23,16 +23,16 @@ namespace kblib {
  * @brief A range generator, similar to Python 3's range().
  *
  * Generates a half-open range, [min, max).
- * @tparam Int The type of elements in the range. Must support comparison
+ * @tparam Value The type of elements in the range. Must support comparison
  * (equality and relational) and subtraction, but does not strictly need to be
  * numeric. Must be copyable. Must be value-initializable. Notably,
- * RandomAccessIterators are valid Int types.
- * @tparam Delta A type used to mutate Int values.
- * std::declval<Int>() + std::declval<Delta>() must be a valid expression
- * and must return type Int. Delta must be implicitly constructible and
+ * RandomAccessIterators are valid Value types.
+ * @tparam Delta A type used to mutate Value values.
+ * std::declval<Value>() + std::declval<Delta>() must be a valid expression
+ * and must return type Value. Delta must be implicitly constructible and
  * assignable from, as well as comparable to, int.
  */
-template <typename Int, typename Delta>
+template <typename Value, typename Delta>
 class range_t {
  public:
   /**
@@ -43,7 +43,7 @@ class range_t {
    * @param max_ The end of the range.
    * @param step_ The difference between values in the range.
    */
-  range_t(Int min_, Int max_, Delta step_ = 1)
+  range_t(Value min_, Value max_, Delta step_ = 1)
       : min(min_), max(max_), step(step_) {
     normalize();
   }
@@ -53,7 +53,7 @@ class range_t {
    *
    * @param max The end of the range.
    */
-  range_t(Int max) : range_t(Int{}, max, (max >= Int{}) ? 1 : -1) {}
+  range_t(Value max) : range_t(Value{}, max, (max >= Value{}) ? 1 : -1) {}
 
   /**
    * @brief A helper struct which acts as an iterator for the range elements, as
@@ -61,14 +61,14 @@ class range_t {
    *
    */
   struct iterator {
-    Int val;
+    Value val;
     Delta step;
     /**
      * @brief Return the "pointed-to" value.
      *
-     * @return Int operator
+     * @return Value operator
      */
-    Int operator*() { return val; }
+    Value operator*() { return val; }
     /**
      * @brief Prefix increment. Advance to the next value in the range.
      *
@@ -174,7 +174,7 @@ class range_t {
   }
 
  private:
-  Int min, max;
+  Value min, max;
   Delta step;
 
   void normalize() {
@@ -182,11 +182,11 @@ class range_t {
     std::clog << "(" << min << ", " << max << ", " << step << ") -> ";
 #endif
     if (min == max) {
-      min = Int{};
-      max = Int{};
+      min = Value{};
+      max = Value{};
       step = 1;
     } else if (step == 0) {
-      if (min != std::numeric_limits<Int>::max()) {
+      if (min != std::numeric_limits<Value>::max()) {
         max = min + 1;
       } else {
         max = min - 1;
@@ -253,10 +253,10 @@ T operator+(T val, decrementer) {
  * @param min The first value in the produced range.
  * @param max The first value not in the produced range.
  * @param step The difference between values in the produced range.
- * @return range_t<Int, Delta> An iterable range [min, max).
+ * @return range_t<Value, Delta> An iterable range [min, max).
  */
-template <typename Int, typename Delta = int>
-range_t<Int, Delta> range(Int min, Int max, Delta step = 0) {
+template <typename Value, typename Delta = int>
+range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
   if (step == 0) {
     if (min <= max) {
       return {min, max, 1};
@@ -273,10 +273,10 @@ range_t<Int, Delta> range(Int min, Int max, Delta step = 0) {
  * automatically determined based on the sign of max.
  *
  * @param max The first value not in the produced range.
- * @return range_t<Int, int> An iterable range [0, max).
+ * @return range_t<Value, int> An iterable range [0, max).
  */
-template <typename Int>
-range_t<Int, int> range(Int max) {
+template <typename Value>
+range_t<Value, int> range(Value max) {
   return {max};
 }
 
