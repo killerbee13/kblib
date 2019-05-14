@@ -51,20 +51,19 @@ struct invoke_result : detail::invoke_result<void, F, ArgTypes...> {};
 template <typename F, typename... ArgTypes>
 using invoke_result_t = typename invoke_result<F, ArgTypes...>::type;
 
-template<typename Fn, typename... Args,
-        std::enable_if_t<std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0 >
-constexpr decltype(auto) invoke(Fn&& f, Args&&... args)
-    noexcept(noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
-{
-    return std::mem_fn(f)(std::forward<Args>(args)...);
+template <typename Fn, typename... Args,
+          std::enable_if_t<std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
+constexpr decltype(auto) invoke(Fn&& f, Args&&... args) noexcept(
+    noexcept(std::mem_fn(f)(std::forward<Args>(args)...))) {
+  return std::mem_fn(f)(std::forward<Args>(args)...);
 }
 
-template<typename Fn, typename... Args,
-         std::enable_if_t<!std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
-constexpr decltype(auto) invoke(Fn&& f, Args&&... args)
-    noexcept(noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
-{
-    return std::forward<Fn>(f)(std::forward<Args>(args)...);
+template <
+    typename Fn, typename... Args,
+    std::enable_if_t<!std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
+constexpr decltype(auto) invoke(Fn&& f, Args&&... args) noexcept(
+    noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...))) {
+  return std::forward<Fn>(f)(std::forward<Args>(args)...);
 }
 
 template <typename... Ts>
@@ -200,19 +199,21 @@ struct not_fn_t {
   not_fn_t(const not_fn_t&) = default;
   not_fn_t(not_fn_t&&) = default;
 
-  template<class... Args> auto operator()(Args&&... args) &
-   -> decltype(!std::declval<invoke_result_t<std::decay_t<F>&, Args...>>()) {
+  template <class... Args>
+  auto operator()(Args&&... args) & -> decltype(
+      !std::declval<invoke_result_t<std::decay_t<F>&, Args...>>()) {
     return !invoke(fd, std::forward<Args>(args)...);
   }
 
-  template<class... Args> auto operator()(Args&&... args) const&
-   -> decltype(!std::declval<invoke_result_t<std::decay_t<F> const&, Args...>>()) {
+  template <class... Args>
+  auto operator()(Args&&... args) const& -> decltype(
+      !std::declval<invoke_result_t<std::decay_t<F> const&, Args...>>()) {
     return !invoke(std::move(fd), std::forward<Args>(args)...);
   }
 
   std::decay_t<F> fd;
 };
-}
+}  // namespace detail
 
 template <typename F>
 detail::not_fn_t<F> not_fn(F&& f) {
@@ -236,6 +237,10 @@ struct metafunction_success<T, fakestd::void_t<typename T::type>>
 template <typename... T>
 struct is_callable : metafunction_success<fakestd::invoke_result<T...>> {};
 
+/**
+ * @brief Essentially just like std::enable_if, but with a different name that
+ * makes it clearer what it does in the context of return type SFINAE.
+ */
 template <bool V, typename T>
 struct return_assert {};
 
@@ -429,15 +434,6 @@ struct copy_const<C, T, true> {
 
 template <typename C, typename V>
 using copy_const_t = typename copy_const<C, V>::type;
-
-//
-// template <typename A, typename F>
-// std::enable_if_t<!(std::is_integral<F>::value && std::is_integral<A>::value),
-//                 void>
-// signed_cast(F) {
-//  static_assert(std::is_integral<F>::value && std::is_integral<A>::value,
-//                "signed_cast arguments must be integral.");
-//}
 
 template <typename T, typename = void>
 struct value_detected : std::false_type {};

@@ -986,7 +986,7 @@ KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
   for (; first != last && pos != end; ++first, ++pos) {
     *pos = *first;
   }
-  return out; /**< TODO: describe */
+  return out;
 }
 
 /**
@@ -1117,7 +1117,8 @@ build_copy_n_if(InputIt first, Size count, Predicate f,
 // transform_partial_sum
 
 /**
- * @brief A smart pointer to an object contained inside the smart pointer object.
+ * @brief A smart pointer to an object contained inside the smart pointer
+ * object.
  *
  */
 template <typename T>
@@ -1155,7 +1156,8 @@ struct containing_ptr {
 #if KBLIB_USE_CXX17
 
 /**
- * @brief An InputIterator that applies a transformation to the elements of the range.
+ * @brief An InputIterator that applies a transformation to the elements of the
+ * range.
  *
  * @attention This class template depends on features introduced in C++17.
  */
@@ -1177,7 +1179,8 @@ class transform_iterator {
   using iterator_category = std::input_iterator_tag;
 
   /**
-   * @brief Constructs a transform_iterator which applies _op to the values obtained from *_it.
+   * @brief Constructs a transform_iterator which applies _op to the values
+   * obtained from *_it.
    *
    * @param _it An InputIterator to a range to be transformed.
    * @param _op The operation to apply to each element.
@@ -1205,13 +1208,15 @@ class transform_iterator {
   decltype(auto) operator*() const { return std::invoke(*op, *it); }
 
   /**
-   * @brief Returns a containing_ptr with the transformed value, because operator-> expects a pointer-like return type.
+   * @brief Returns a containing_ptr with the transformed value, because
+   * operator-> expects a pointer-like return type.
    */
   auto operator-> () {
     return containing_ptr<result_type>{{std::invoke(*op, *it)}};
   }
   /**
-   * @brief Returns a containing_ptr with the transformed value, because operator-> expects a pointer-like return type.
+   * @brief Returns a containing_ptr with the transformed value, because
+   * operator-> expects a pointer-like return type.
    */
   auto operator-> () const {
     return containing_ptr<const_result_type>{{std::invoke(*op, *it)}};
@@ -1220,13 +1225,20 @@ class transform_iterator {
   /**
    * @brief Increments the underlying iterator and returns *this.
    */
-  transform_iterator& operator++() { ++it; return *this; }
+  transform_iterator& operator++() {
+    ++it;
+    return *this;
+  }
 
   /**
-   * @brief Increments the underlying iterator and returns a copy of the current value.
+   * @brief Increments the underlying iterator and returns a copy of the current
+   * value.
    */
-  [[deprecated("Needlessly copies op. Use preincrement instead.")]]
-  transform_iterator operator++(int) { return {it++, op}; }
+  [[deprecated(
+      "Needlessly copies op. Use preincrement instead.")]] transform_iterator
+  operator++(int) {
+    return {it++, op};
+  }
 
   /**
    * @brief Compares the base iterators of lhs and rhs.
@@ -1262,7 +1274,8 @@ transform_iterator<base_iterator, operation> make_transform_iterator(
 #endif
 
 /**
- * @brief An OutputIterator that transforms the values assigned to it before inserting them into the back of a container.
+ * @brief An OutputIterator that transforms the values assigned to it before
+ * inserting them into the back of a container.
  *
  * @author From @marttyfication#4235 on the C++ Help discord.
  */
@@ -1311,7 +1324,8 @@ class back_insert_iterator_F {
 };
 
 /**
- * @brief An OutputIterator that simply calls a provided functor for each value assigned to it.
+ * @brief An OutputIterator that simply calls a provided functor for each value
+ * assigned to it.
  */
 template <typename F>
 class consume_iterator {
@@ -1339,7 +1353,8 @@ class consume_iterator {
    * @return consume_iterator& *this.
    */
   template <typename V>
-  consume_iterator& operator=(V&& value) noexcept(noexcept(fakestd::invoke(fun, std::forward<V>(value)))) {
+  consume_iterator& operator=(V&& value) noexcept(
+      noexcept(fakestd::invoke(fun, std::forward<V>(value)))) {
     fakestd::invoke(fun, std::forward<V>(value));
     return *this;
   }
@@ -1360,7 +1375,8 @@ class consume_iterator {
 /**
  * @brief Creates a consume_iterator of deduced type F.
  *
- * This could be a deduction guide, if kblib didn't also support C++14. Thus, the old style is used for compatibility.
+ * This could be a deduction guide, if kblib didn't also support C++14. Thus,
+ * the old style is used for compatibility.
  *
  * @param f A functor to call on assignment.
  * @return consume_iterator<F>

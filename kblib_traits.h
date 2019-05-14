@@ -16,13 +16,25 @@ template <typename Tuple, typename T>
 struct contains_type;
 
 template <typename T, typename U, typename... Ts>
+/**
+ * @brief
+ *
+ */
 struct contains_type<std::tuple<T, Ts...>, U>
     : contains_type<std::tuple<Ts...>, U> {};
 
 template <typename T, typename... Ts>
+/**
+ * @brief
+ *
+ */
 struct contains_type<std::tuple<T, Ts...>, T> : std::true_type {};
 
 template <typename T>
+/**
+ * @brief
+ *
+ */
 struct contains_type<std::tuple<>, T> : std::false_type {};
 
 // -----
@@ -31,18 +43,34 @@ template <typename Lhs, typename Rhs>
 struct contains_types;
 
 template <typename Tuple, typename T, typename... Ts>
+/**
+ * @brief
+ *
+ */
 struct contains_types<Tuple, std::tuple<T, Ts...>>
     : std::integral_constant<
           bool, contains_type<Tuple, T>::value &&
                     contains_types<Tuple, std::tuple<Ts...>>::value> {};
 
 template <typename Tuple>
+/**
+ * @brief
+ *
+ */
 struct contains_types<Tuple, std::tuple<>> : std::true_type {};
 
 template <typename... Ts>
-constexpr bool contains_types_v = contains_types<Ts...>::value;
+constexpr bool contains_types_v = contains_types<Ts...>::value; /**< TODO: describe */
 
 template <typename T, int N, int... I>
+/**
+ * @brief
+ *
+ * @param (arr)[]
+ * @param std::integer_sequence<int
+ * @param Is
+ * @return std::array<T, _Tp2>
+ */
 constexpr auto trim_array(const T (&arr)[N],
                           std::integer_sequence<int, I...> Is)
     -> std::array<T, Is.size()> {
@@ -53,17 +81,35 @@ constexpr auto trim_array(const T (&arr)[N],
 
 template <int trim, typename T, int N,
           typename Indices = std::make_integer_sequence<int, N - trim>>
+/**
+ * @brief
+ *
+ * @param (arr)[]
+ * @return std::array<T, _Tp2>
+ */
 constexpr std::array<T, N - trim> trim_array(const T (&arr)[N]) {
   return detail::trim_array(arr, Indices{});
 }
 
 template <int N, typename Indices = std::make_integer_sequence<int, N - 1>>
+/**
+ * @brief
+ *
+ * @param (arr)[]
+ * @return std::array<char, _Tp2>
+ */
 constexpr std::array<char, N - 1> remove_null_terminator(const char (&arr)[N]) {
   return detail::trim_array(arr, Indices{});
 }
 
 // Will be fully replaceable by std::bit_cast in C++20.
 template <typename T, typename F>
+/**
+ * @brief
+ *
+ * @param v
+ * @return T
+ */
 T byte_cast(F v) {
   static_assert(
       sizeof(T) == sizeof(F),

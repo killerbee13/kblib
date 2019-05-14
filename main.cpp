@@ -34,8 +34,7 @@ constexpr const char type_name[] = "unknown";
 template <>
 KBLIB_UNUSED constexpr const char type_name<char>[] = "char";
 template <>
-KBLIB_UNUSED constexpr const char type_name<unsigned char>[] =
-    "unsigned char";
+KBLIB_UNUSED constexpr const char type_name<unsigned char>[] = "unsigned char";
 template <>
 KBLIB_UNUSED constexpr const char type_name<signed char>[] = "signed char";
 
@@ -114,7 +113,6 @@ int main() {
   //     << type_name_f<kblib::detail::next_larger_signed<long long>::type>() <<
   //     '\n';
 
-
   auto filestr = kblib::get_file_contents("");
   auto filevec = kblib::get_file_contents<std::vector<uint8_t>>("");
   auto filewstr = kblib::get_file_contents<std::u32string>("");
@@ -180,11 +178,9 @@ int main() {
       print_arr(i2);
     }
     assert(i3.size() == target.size() &&
-                      kblib::equal(i3.begin(), i3.end(), target.begin())
-                  );
+           kblib::equal(i3.begin(), i3.end(), target.begin()));
     assert(i4.size() == target.size() &&
-                      kblib::equal(i4.begin(), i4.end(), target.begin())
-                  );
+           kblib::equal(i4.begin(), i4.end(), target.begin()));
     if (!(i5.size() == target.size() &&
           kblib::equal(i5.begin(), i5.end(), target.begin()))) {
       std::cout
@@ -262,33 +258,46 @@ int main() {
       // kblib::get_max_n(haystack.begin(), haystack.end(), maxN.cbegin(), 1);
       // kblib::get_max_n(haystack.begin(), haystack.end(), 1, maxN.begin());
 
-      std::cout<<"Range test:\n  ";
+      std::cout << "Range test:\n  ";
       auto range = kblib::range(0, 50, 3);
       print_arr(range);
-      std::cout<<"Top 5:\n  ";
-      auto maxN_range = kblib::get_max_n<std::vector<int>>(range.begin(), range.end(), 5);
+      std::cout << "Top 5:\n  ";
+      auto maxN_range =
+          kblib::get_max_n<std::vector<int>>(range.begin(), range.end(), 5);
       print_arr(maxN_range);
     }
 
-    std::cout<<"Ranges:\nrange(10): ";
+    std::cout << "Ranges:\nrange(10): ";
     print_arr(kblib::range(10));
-    std::cout<<"range(0, 10): ";
+    std::cout << "range(0, 10): ";
     print_arr(kblib::range(0, 10));
-    std::cout<<"range(0, 10, 2): ";
+    std::cout << "range(0, 10, 2): ";
     print_arr(kblib::range(0, 10, 2));
-    std::cout<<"range(10, 0, -1): ";
+    std::cout << "range(10, 0, -1): ";
     print_arr(kblib::range(10, 0, -1));
-    std::cout<<"range(0, -10, -1): ";
+    std::cout << "range(0, -10, -1): ";
     print_arr(kblib::range(0, -10, -1));
-    std::cout<<"range(0, -10): ";
+    std::cout << "range(0, -10): ";
     print_arr(kblib::range(0, -10));
+    std::cout<<"range(0, 10, incrementer{}): ";
+    print_arr(kblib::range(0, 10, kblib::incrementer{}));
+    std::cout<<"range(10, 0, decrementer{}): ";
+    print_arr(kblib::range(10, 0, kblib::decrementer{}));
 
-    std::cout<<"Range comparisons: true expected:\n"<<std::boolalpha;
-    std::cout<<"range(0, 11, 2) == range(0, 10, 2): "<<(kblib::range(0, 11, 2) == kblib::range(0, 10, 2))<<'\n';
-    std::cout<<"range(0, 0, 1) == range(0, 1, 2): "<<(kblib::range(0, 0, 1) == kblib::range(0, 1, 2))<<'\n';
-    std::cout<<"range(100, 100, 1) == range(0, 0, 2): "<<(kblib::range(100, 100, 1) == kblib::range(0, 0, 2))<<'\n';
-    std::cout<<"false expected:\n";
-    std::cout<<"range(0, 10) == range(10, 0): "<<(kblib::range(0, 10) == kblib::range(10, 0))<<'\n';
+    std::cout << "Range comparisons: true expected:\n" << std::boolalpha;
+    std::cout << "range(0, 11, 2) == range(0, 12, 2): "
+              << (kblib::range(0, 11, 2) == kblib::range(0, 12, 2)) << '\n';
+    std::cout << "range(0, 0, 1) == range(1, 1, 2): "
+              << (kblib::range(0, 0, 1) == kblib::range(1, 1, 2)) << '\n';
+    std::cout << "range(100, 100, 1) == range(0, 0, 2): "
+              << (kblib::range(100, 100, 1) == kblib::range(0, 0, 2)) << '\n';
+    std::cout << "false expected:\n";
+    std::cout << "range(0, 10) == range(10, 0): "
+              << (kblib::range(0, 10) == kblib::range(10, 0)) << '\n';
+    std::cout << "range(0, 11, 2) == range(0, 10, 2): "
+              << (kblib::range(0, 11, 2) == kblib::range(0, 10, 2)) << '\n';
+    std::cout << "range(0, 0, 1) == range(0, 1, 2): "
+              << (kblib::range(0, 0, 1) == kblib::range(0, 1, 2)) << '\n';
   }
 #if KBLIB_USE_CXX17
   poly_test();
@@ -314,6 +323,18 @@ int main() {
 
     // Can't call for temporaries because it would return a dangling pointer
     // kblib::try_get(std::map<int, int>{{0, 1}}, 0);
+  }
+  {
+    auto smart_ptr = std::make_unique<int>(0);
+    auto* raw_pointer = kblib::to_pointer(smart_ptr);
+    const auto& smart_ptr_const_ref = smart_ptr;
+    auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
+    std::cout<<"FNV_hash(1000): "<<kblib::FNV_hash<int>{}(1000)<<'\n';
+
+    // range supports iterators and other similar types.
+    std::vector<int> v(100);
+    assert(v.begin() == *kblib::range(v.begin(), v.end()).begin());
+    assert(v.end() == *kblib::range(v.begin(), v.end()).end());
   }
 }
 

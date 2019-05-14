@@ -12,7 +12,7 @@
 #include "kblib_stats.h"
 #include "kblib_stringops.h"
 
-#if __cplusplus >= 201703L
+#if KBLIB_USE_CXX17
 #include "kblib_variant.h"
 #endif
 

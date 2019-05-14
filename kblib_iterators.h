@@ -9,7 +9,10 @@ namespace kblib {
 
 template <typename ptr>
 struct to_pointer_impl {
-  constexpr auto operator()(ptr p) const noexcept {
+  constexpr auto operator()(ptr&& p) const noexcept {
+    return to_pointer_impl<decltype(p.operator->())>{}(p.operator->());
+  }
+  constexpr auto operator()(const ptr& p) const noexcept {
     return to_pointer_impl<decltype(p.operator->())>{}(p.operator->());
   }
 };
@@ -19,9 +22,14 @@ struct to_pointer_impl<T*> {
   constexpr T* operator()(T* p) const noexcept { return p; }
 };
 
+/**
+ * @brief Gets a raw pointer out of any smart pointer or iterator you might pass in, without dereferencing it or relying on a get() method.
+ *
+ * @param p A smart pointer to extract from.
+ */
 template <typename P>
-constexpr auto to_pointer(P p) noexcept {
-  return to_pointer_impl<P>{}(p);
+constexpr auto to_pointer(P&& p) noexcept {
+  return to_pointer_impl<std::decay_t<P>>{}(p);
 }
 
 template <typename Container, typename Comp = std::less<value_type_linear_t<Container>>>
@@ -33,7 +41,9 @@ value_type_linear_t<Container>* max_element(Container& c, Comp comp) {
     return nullptr;
   }
 }
-
+/**
+ * @brief Determine if T is a valid output iterator to which values of type E may be written.
+ */
 template <typename T, typename E, typename = void>
 struct is_output_iterator : std::false_type {};
 
@@ -42,7 +52,9 @@ struct is_output_iterator<T, E, fakestd::void_t<decltype(*std::declval<T&>() = s
 
 template <typename Container>
 /**
- * @brief
+ * @brief Like a std::back_insert_iterator, but it keeps track of how many insertions it has made, allowing an end iterator to be created.
+ *
+ * @attention This iterator must be incremented and dereferenced exactly once for each assignment, in order to maintain the accuracy of the counter.
  *
  */
 class counting_back_insert_iterator {
@@ -62,6 +74,8 @@ public:
 
     proxy_iterator& operator=(const value_type& value) {
       assert(container);
+      //Multiple assignments for a single dereference are not allowed
+      assert(*dirty);
       *dirty = false;
       container->push_back(value);
       return *this;
@@ -69,6 +83,8 @@ public:
 
     proxy_iterator& operator=(value_type&& value) {
       assert(container);
+      //Multiple assignments for a single dereference are not allowed
+      assert(*dirty);
       *dirty = false;
       container->push_back(std::move(value));
       return *this;
