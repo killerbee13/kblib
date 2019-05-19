@@ -282,8 +282,6 @@ string toUpper(string str) {
   return str;
 }
 
-// TODO: defer constrution of a string with a class
-
 /**
  * @brief Construct a string consisting of count copies of val concatenated
  * together.
@@ -293,6 +291,7 @@ string toUpper(string str) {
  *
  * @param val
  * @param count
+ * @todo Defer constrution of a string with a class.
  */
 template <typename string>
 string repeat(string val, int count) {

@@ -175,9 +175,9 @@ template <>
 struct construct_conditional<construct_type::both> {};
 
 template <typename T>
-constexpr construct_type construct_traits = /**< TODO: describe */
-    construct_type::copy* std::is_copy_constructible_v<T> |
-    construct_type::move* std::is_move_constructible_v<T>;
+constexpr construct_type construct_traits =
+    construct_type::copy * std::is_copy_constructible_v<T> |
+    construct_type::move * std::is_move_constructible_v<T>;
 
 template <construct_type traits>
 struct assign_conditional;
@@ -205,9 +205,9 @@ template <>
 struct assign_conditional<construct_type::both> {};
 
 template <typename T>
-constexpr construct_type assign_traits = /**< TODO: describe */
-    construct_type::copy* std::is_copy_assignable_v<T> |
-    construct_type::move* std::is_move_assignable_v<T>;
+constexpr construct_type assign_traits =
+    construct_type::copy * std::is_copy_assignable_v<T> |
+    construct_type::move * std::is_move_assignable_v<T>;
 
 template <typename T>
 struct disable_conditional : construct_conditional<construct_traits<T>>,

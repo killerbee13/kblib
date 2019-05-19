@@ -21,8 +21,11 @@ template <>
 struct implies<true, false> : std::integral_constant<bool, false> {};
 
 #if KBLIB_USE_CXX17
+/**
+ * Equivalent to implies<A, B>::value.
+ */
 template <bool A, bool B>
-constexpr inline bool implies_v = implies<A, B>::value; /**< TODO: describe */
+constexpr inline bool implies_v = implies<A, B>::value;
 #endif
 
 }  // namespace kblib

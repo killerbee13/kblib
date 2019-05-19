@@ -16,12 +16,12 @@
 
 namespace kblib {
 
-// TODO: refactor
 /**
  * @brief Given a categorical distribution cats, selects one category
  *
  * @param cats A sequence of category weights
  * @param r A <random>-compatible RandomGenerator
+ * @todo Refactor to remove the ugly unreachable stuff.
  */
 template <typename Array, typename RandomGenerator, typename freqtype = double>
 auto chooseCategorical(Array&& cats, RandomGenerator& r) {
@@ -130,7 +130,7 @@ KBLIB_UNUSED constexpr struct max_t {
       noexcept(noexcept(std::numeric_limits<T>::max())) {
     return std::numeric_limits<T>::max();
   }
-} max; /**< TODO: describe */
+} max; /**< A shorthand for the maximum value of the destination type. */
 
 /**
  * @brief Shorthand for std::numeric_limits::min()
@@ -145,7 +145,7 @@ KBLIB_UNUSED constexpr struct min_t {
       noexcept(noexcept(std::numeric_limits<T>::min())) {
     return std::numeric_limits<T>::min();
   }
-} min; /**< TODO: describe */
+} min; /**< A shorthand for the minimum value of the destination type. */
 
 }  // namespace nums
 
