@@ -6,30 +6,88 @@
 #include "kblib_convert.h"
 #include "kblib_logic.h"
 #include "kblib_simple.h"
+#include "kblib_tdecl.h"
+
+#if KBLIB_USE_CXX17
+#include <variant>
+#endif
 
 namespace kblib {
 
+#if KBLIB_USE_CXX17
+
+/**
+ * @brief Lexically converts the value of v (no matter its type) to type To.
+ *
+ * @param v A variant to coerce.
+ * @return To The type to coerce to.
+ */
 template <typename To, typename... Ts>
-To coerce(const std::variant<Ts...>& v) {
+[[deprecated("Use new lexical_coerce instead.")]] To coerce(
+    const std::variant<Ts...>& v) {
+  return std::visit([](const auto& t) -> To { return lexical_cast<To>(t); }, v);
+}
+
+/**
+ * @brief static_casts the value of v (no matter its type) to type To.
+ *
+ * @param v A variant to coerce.
+ * @return To The type to coerce to.
+ */
+template <typename To, typename... Ts>
+To static_coerce(const std::variant<Ts...>& v) {
+  return std::visit([](const auto& t) -> To { return static_cast<To>(t); }, v);
+}
+
+/**
+ * @brief Lexically converts the value of v (no matter its type) to type To.
+ *
+ * @param v A variant to coerce.
+ * @return To The type to coerce to.
+ */
+template <typename To, typename... Ts>
+To lexical_coerce(const std::variant<Ts...>& v) {
   return std::visit([](const auto& t) { return lexical_cast<To>(t); }, v);
 }
 
 namespace detail {
 
+/**
+ * @brief Given a std::variant T, provides the member type which is a tuple of
+ * the same types.
+ */
 template <typename T>
 struct tuple_type {
+  /**
+   * @brief Non-variant inputs produce the empty tuple.
+   */
   using type = std::tuple<>;
 };
+/**
+ * @brief Given a std::variant T, provides the member type which is a tuple of
+ * the same types.
+ */
 template <typename... Ts>
 struct tuple_type<std::variant<Ts...>> {
+  /**
+   * @brief A tuple of the same types as T is a variant of.
+   */
   using type = std::tuple<Ts...>;
 };
-
+/**
+ * Equivalent to typename tuple_type<T>::type
+ */
 template <typename T>
 using tuple_type_t = typename tuple_type<T>::type;
 
 }  // namespace detail
 
+/**
+ * @brief Promotes an input variant to a super-variant. That is, one which
+ * provides at least the same set of types.
+ * @param v The variant to promote.
+ * @return To A super-variant with the same value as v.
+ */
 template <typename To, typename From>
 To variant_cast(From&& v) {
   static_assert(
@@ -40,8 +98,12 @@ To variant_cast(From&& v) {
                     std::forward<From>(v));
 }
 
-// Builder class for std::visiting a std::variant
-// from eracpp on the C++ Help discord
+/**
+ * @brief Helper class for std::visiting a std::variant.
+ *
+ * When constructed from a set of lambdas or functors, corrals all of them into
+ * a single overload set, suitable for std::visit.
+ */
 template <typename... Ts>
 struct visitor : Ts... {
   using Ts::operator()...;
@@ -49,10 +111,23 @@ struct visitor : Ts... {
 template <typename... Ts>
 visitor(Ts...)->visitor<Ts...>;
 
+/**
+ * @brief Wraps std::visit to provide an interface taking one variant and any
+ * number of functors providing an overload set.
+ *
+ * Also moves the variant to the left side of the operation, improving
+ * readability.
+ *
+ * @param v The variant to visit over.
+ * @param ts Any number of functors, which taken together as an overload set can
+ * be unambiguously called with any type in V.
+ */
 template <typename V, typename... Ts>
 auto visit(V&& v, Ts&&... ts) {
   return std::visit(visitor{std::forward<Ts>(ts)...}, std::forward<V>(v));
 }
+
+#endif  // KBLIB_USE_CXX17
 
 namespace detail {
 enum class construct_type {
@@ -62,7 +137,6 @@ enum class construct_type {
   both = 3,
 
 };
-
 constexpr construct_type operator|(construct_type l, construct_type r) {
   return static_cast<construct_type>(etoi(l) | etoi(r));
 }
@@ -101,7 +175,7 @@ template <>
 struct construct_conditional<construct_type::both> {};
 
 template <typename T>
-constexpr construct_type construct_traits =
+constexpr construct_type construct_traits = /**< TODO: describe */
     construct_type::copy* std::is_copy_constructible_v<T> |
     construct_type::move* std::is_move_constructible_v<T>;
 
@@ -131,7 +205,7 @@ template <>
 struct assign_conditional<construct_type::both> {};
 
 template <typename T>
-constexpr construct_type assign_traits =
+constexpr construct_type assign_traits = /**< TODO: describe */
     construct_type::copy* std::is_copy_assignable_v<T> |
     construct_type::move* std::is_move_assignable_v<T>;
 
@@ -198,19 +272,41 @@ erased_construct_helper<construct_traits<T>> make_ops_t() {
 
 }  // namespace detail
 
-// Inline polymorphic object. Generally mimics the interface of std::optional
+/**
+ * @brief Inline polymorphic object. Generally mimics the interface of
+ * std::optional
+ *
+ * Provides dynamic polymorphism without dynamic allocation. It is copy and move
+ * constructible if and only if Obj is. The storage capacity can be overloaded
+ * in case derived objects are larger than the base (this is expected to be
+ * commonplace).
+ */
 template <typename Obj, std::size_t Capacity = sizeof(Obj)>
 class poly_obj
     : detail::disable_conditional<Obj>,
       detail::erased_construct_helper<detail::construct_traits<Obj>> {
-  static_assert(Capacity >= sizeof(Obj),
-                "Capacity must be large enough for the object type.");
+ private:
   using disabler = detail::disable_conditional<Obj>;
   using ops_t = detail::erased_construct_helper<detail::construct_traits<Obj>>;
 
  public:
+  static_assert(Capacity >= sizeof(Obj),
+                "Capacity must be large enough for the object type.");
+  /**
+   * @brief The default constructor does not construct any contained object.
+   */
   constexpr poly_obj() = default;
+  /**
+   * @brief Explicitly do not construct an object.
+   */
   constexpr poly_obj(std::nullptr_t) : poly_obj() {}
+  /**
+   * @brief Constructs a copy of other.
+   *
+   * This function can only be called if Obj is copy-constructible.
+   *
+   * @param other A poly_obj to copy from.
+   */
   constexpr poly_obj(const poly_obj& other) noexcept(
       std::is_nothrow_copy_constructible<Obj>::value)
       : disabler(other), ops_t(other), contains_value(other.contains_value) {
@@ -218,6 +314,13 @@ class poly_obj
       this->copy(data, other.get());
     }
   }
+  /**
+   * @brief Moves the contained object of other into this.
+   *
+   * This function can only be called if Obj is move-constructible.
+   *
+   * @param other A poly_obj to move from.
+   */
   constexpr poly_obj(poly_obj&& other) noexcept(
       std::is_nothrow_move_constructible<Obj>::value)
       : disabler(std::move(other)),
@@ -228,17 +331,36 @@ class poly_obj
     }
   }
 
+  /**
+   * @brief Copy-constructs the contained object from obj.
+   *
+   * This function can only be called is Obj is copy-constructible.
+   *
+   * @param obj The object to copy.
+   */
   constexpr poly_obj(const Obj& obj) noexcept(
       std::is_nothrow_copy_constructible<Obj>::value)
       : contains_value(true) {
     new (data) Obj(obj);
   }
+  /**
+   * @brief Move-constructs the contained object from obj.
+   *
+   * This function can only be called if Obj is move-constructible.
+   *
+   * @param obj The object to move from.
+   */
   constexpr poly_obj(Obj&& obj) noexcept(
       std::is_nothrow_move_constructible<Obj>::value)
       : contains_value(true) {
     new (data) Obj(std::move(obj));
   }
 
+  /**
+   * @brief Constructs the contained object in-place without copying or moving.
+   *
+   * @param args Arguments to be passed to the constructor of Obj.
+   */
   template <
       typename... Args,
       typename std::enable_if_t<std::is_constructible_v<Obj, Args...>, int> = 0>
@@ -248,10 +370,11 @@ class poly_obj
   }
 
   /**
-   * @brief
+   * @brief Destroys the contained object, if any, and then copies other as in
+   * the copy constructor.
    *
-   * @param other
-   * @return poly_obj &&operator
+   * @param other A poly_obj to copy from.
+   * @return poly_obj& *this.
    */
   poly_obj& operator=(const poly_obj& other) & {
     if (contains_value) {
@@ -263,6 +386,13 @@ class poly_obj
     return *this;
   }
 
+  /**
+   * @brief Destroys the contained object, if any, and then moves from other as
+   * in the move constructor.
+   *
+   * @param other A poly_obj to move from.
+   * @return poly_obj& *this.
+   */
   poly_obj& operator=(poly_obj&& other) & {
     if (contains_value) {
       get()->~Obj();
@@ -273,6 +403,18 @@ class poly_obj
     return *this;
   }
 
+  /**
+   * @brief Constructs a poly_obj containing an object of derived type.
+   *
+   * This function provides the polymorphism of poly_obj.
+   *
+   * sizeof(U) must be less than or equal to Capacity, and must be
+   * copy-constructible and move-constructible if Obj is.
+   *
+   * @tparam U A type publically derived from Obj.
+   * @param args Arguments to pass to the constructor of U.
+   * @return poly_obj A poly_obj<Obj> containing an object of type U.
+   */
   template <typename U, typename... Args>
   static poly_obj make(Args&&... args) {
     static_assert(sizeof(U) <= Capacity,
@@ -290,34 +432,113 @@ class poly_obj
     return {tag<U>{}, std::forward<Args>(args)...};
   }
 
+  /**
+   * @brief Returns a reference to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness and reference
+   * qualification of *this carries over to the contained object, because it is
+   * contained inside of *this.
+   *
+   * @return Obj& A reference to the contained object.
+   */
   Obj& operator*() & noexcept {
     return *std::launder(reinterpret_cast<Obj*>(data));
   }
+  /**
+   * @brief Returns a reference to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness and reference
+   * qualification of *this carries over to the contained object, because it is
+   * contained inside of *this.
+   *
+   * @return const Obj& A reference to the contained object.
+   */
   const Obj& operator*() const& noexcept {
     return *std::launder(reinterpret_cast<const Obj*>(data));
   }
+  /**
+   * @brief Returns a reference to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness and reference
+   * qualification of *this carries over to the contained object, because it is
+   * contained inside of *this.
+   *
+   * @return Obj&& An rvalue reference to the contained object.
+   */
   Obj&& operator*() &&
       noexcept(std::is_nothrow_move_constructible<Obj>::value) {
     return std::move(*std::launder(reinterpret_cast<Obj*>(data)));
   }
+  /**
+   * @brief Returns a reference to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness and reference
+   * qualification of *this carries over to the contained object, because it is
+   * contained inside of *this. This particular overload is not expected to be
+   * very useful, but it is provided for completeness.
+   *
+   * @return const Obj&& A const rvalue reference to the contained object.
+   */
   const Obj&& operator*() const&& noexcept(
       std::is_nothrow_move_constructible<Obj>::value) {
     return std::move(*std::launder(reinterpret_cast<const Obj*>(data)));
   }
 
+  /**
+   * @brief Returns a pointer to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness of *this carries
+   * over to the contained object, because it is contained inside of *this.
+   *
+   * @return Obj* A pointer to the contained object.
+   */
   Obj* get() & noexcept { return std::launder(reinterpret_cast<Obj*>(data)); }
+  /**
+   * @brief Returns a pointer to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness of *this carries
+   * over to the contained object, because it is contained inside of *this.
+   *
+   * @return const Obj* A pointer to the contained object.
+   */
   const Obj* get() const& noexcept {
     return std::launder(reinterpret_cast<const Obj*>(data));
   }
 
+  /**
+   * @brief Returns a pointer to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness of *this carries
+   * over to the contained object, because it is contained inside of *this.
+   *
+   * @return Obj* A pointer to the contained object.
+   */
   Obj* operator->() noexcept { return get(); }
+  /**
+   * @brief Returns a pointer to the contained object.
+   *
+   * Returns a reference to the contained object, if it exists. If it does not
+   * exist, the behavior is undefined. Notably, the constness of *this carries
+   * over to the contained object, because it is contained inside of *this.
+   *
+   * @return const Obj* A pointer to the contained object.
+   */
   const Obj* operator->() const noexcept { return get(); }
 
+  /**
+   * @brief Check if the poly_obj contains a value.
+   */
   bool has_value() const { return contains_value; }
 
   /**
    * @brief Empties the poly_obj, reverting to a default-constructed state.
-   *
    */
   void clear() { *this = {}; }
 

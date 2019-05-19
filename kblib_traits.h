@@ -123,6 +123,74 @@ T byte_cast(F v) {
   return ret;
 }
 
+namespace detail {
+
+template <typename C, typename = decltype(std::declval<C&>().resize(0))>
+constexpr bool calc_resizable() noexcept {
+  return true;
+}
+
+template <typename C, int = std::tuple_size<C>::value>
+constexpr bool calc_resizable() noexcept {
+  return false;
+}
+
+constexpr bool calc_resizable(...) noexcept { return false; }
+
+// Note that when a type that is not resizable, but also doesn't have a
+// constexpr size, is passed, there is a hard error.
+template <typename C>
+struct is_resizable {
+  constexpr static bool value = calc_resizable<C>();
+};
+/**
+ * True if and only if C is a resizable container.
+ */
+template <typename C>
+constexpr bool is_resizable_v = is_resizable<C>::value;
+
+template <typename C, typename = fakestd::void_t<>>
+struct has_reserve {
+  constexpr static bool value = false;
+};
+
+template <typename C>
+struct has_reserve<C, fakestd::void_t<decltype(std::declval<C&>.reserve(0))>> {
+  constexpr static bool value = true;
+};
+/**
+ * @brief True if and only if C contains an accessible reserve() member.
+ */
+template <typename C>
+constexpr bool has_reserve_v = has_reserve<C>::value;
+
+}  // namespace detail
+
+/**
+ * @brief Attempt to reserve capacity in a container. No-op if unsupported.
+ *
+ * @param c The container to modify.
+ * @param s The requested capacity.
+ */
+template <typename C,
+          typename std::enable_if<detail::has_reserve_v<C>, int>::type = 0>
+void try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) {
+  c.reserve(s);
+  return;
+}
+
+/**
+ * @brief Attempt to reserve capacity in a container. No-op if unsupported.
+ *
+ * @param c The container to modify.
+ * @param s The requested capacity.
+ */
+template <typename C,
+          typename std::enable_if<!detail::has_reserve_v<C>, int>::type = 0>
+void try_reserve(C&, std::size_t) noexcept {
+  return;
+}
+
 }  // namespace kblib
 
 #endif  // KBLIB_TRAITS_H_INCLUDED_
