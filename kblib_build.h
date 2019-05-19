@@ -219,7 +219,6 @@ KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last, InputIt2 first2,
  *
  * @param f The functor to repeatedly invoke.
  * @param size The number of times to invoke `f`.
- * @param allocator The allocator to use for the returned container.
  * @return A Container where each element is the result of invoking `f` in
  *    sequence.
  */
