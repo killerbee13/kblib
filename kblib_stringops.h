@@ -161,6 +161,7 @@ void append(string&& out, F&& f, S&&... tail) {
   if constexpr (sizeof...(S) > 0) {
     append(out, tail...);
   }
+  return;
 }
 
 namespace detail {
