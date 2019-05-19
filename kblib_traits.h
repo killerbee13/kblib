@@ -12,65 +12,51 @@ namespace detail {
 // contains_types adapted from code by Maarten Bamelis,
 // https://stackoverflow.com/a/42581257/1924641
 
+/**
+ * @brief Determines if T is a type in Tuple, which must be a std::tuple.
+ */
 template <typename Tuple, typename T>
 struct contains_type;
 
 template <typename T, typename U, typename... Ts>
-/**
- * @brief
- *
- */
 struct contains_type<std::tuple<T, Ts...>, U>
     : contains_type<std::tuple<Ts...>, U> {};
 
 template <typename T, typename... Ts>
-/**
- * @brief
- *
- */
 struct contains_type<std::tuple<T, Ts...>, T> : std::true_type {};
 
 template <typename T>
-/**
- * @brief
- *
- */
 struct contains_type<std::tuple<>, T> : std::false_type {};
 
-// -----
+template <typename... Ts>
+constexpr bool contains_type_v = contains_type<Ts...>::value;
 
+/**
+ * @brief Determines if Lhs contains all of the types in Rhs, where both are std::tuples.
+ */
 template <typename Lhs, typename Rhs>
 struct contains_types;
 
 template <typename Tuple, typename T, typename... Ts>
-/**
- * @brief
- *
- */
 struct contains_types<Tuple, std::tuple<T, Ts...>>
     : std::integral_constant<
           bool, contains_type<Tuple, T>::value &&
                     contains_types<Tuple, std::tuple<Ts...>>::value> {};
 
 template <typename Tuple>
-/**
- * @brief
- *
- */
 struct contains_types<Tuple, std::tuple<>> : std::true_type {};
 
 template <typename... Ts>
-constexpr bool contains_types_v = contains_types<Ts...>::value; /**< TODO: describe */
+constexpr bool contains_types_v = contains_types<Ts...>::value;
 
-template <typename T, int N, int... I>
 /**
- * @brief
+ * @brief Truncates an array to its first N elements.
  *
- * @param (arr)[]
- * @param std::integer_sequence<int
- * @param Is
- * @return std::array<T, _Tp2>
+ * @param arr An array of at least N elements to truncate.
+ * @param Is An implementation detail.
+ * @return std::array<T, Is.size()> An array consisting of the first N elements of arr.
  */
+template <typename T, int N, int... I>
 constexpr auto trim_array(const T (&arr)[N],
                           std::integer_sequence<int, I...> Is)
     -> std::array<T, Is.size()> {
@@ -82,10 +68,10 @@ constexpr auto trim_array(const T (&arr)[N],
 template <int trim, typename T, int N,
           typename Indices = std::make_integer_sequence<int, N - trim>>
 /**
- * @brief
+ * @brief Truncates the last trim elements from an array.
  *
- * @param (arr)[]
- * @return std::array<T, _Tp2>
+ * @param arr The array to trim.
+ * @return std::array<T, N - trim> The trimmed array.
  */
 constexpr std::array<T, N - trim> trim_array(const T (&arr)[N]) {
   return detail::trim_array(arr, Indices{});
@@ -93,23 +79,26 @@ constexpr std::array<T, N - trim> trim_array(const T (&arr)[N]) {
 
 template <int N, typename Indices = std::make_integer_sequence<int, N - 1>>
 /**
- * @brief
+ * @brief Creates an array of only the meaningful characters in a string literal, and not the null terminator.
  *
- * @param (arr)[]
- * @return std::array<char, _Tp2>
+ * @param arr A string literal to strip the null terminator from.
+ * @return std::array<char, N - 1> A std::array of the meaningful characters of the string literal.
  */
 constexpr std::array<char, N - 1> remove_null_terminator(const char (&arr)[N]) {
   return detail::trim_array(arr, Indices{});
 }
 
-// Will be fully replaceable by std::bit_cast in C++20.
-template <typename T, typename F>
 /**
- * @brief
+ * @brief Creates a T with the same object representation as the given F.
  *
- * @param v
- * @return T
+ * T and F must be the same size and must both be trivially copyable.
+ *
+ * @note Will be fully replaceable by std::bit_cast in C++20.
+ *
+ * @param v A value to reinterpret.
+ * @return T The reinterpreted value.
  */
+template <typename T, typename F>
 T byte_cast(F v) {
   static_assert(
       sizeof(T) == sizeof(F),
