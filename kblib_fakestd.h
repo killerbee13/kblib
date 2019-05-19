@@ -49,11 +49,10 @@ namespace detail {
 template <typename AlwaysVoid, typename, typename...>
 struct invoke_result {};
 template <typename F, typename... Args>
-struct invoke_result<decltype(void(invoke(std::declval<F>(),
-                                                  std::declval<Args>()...))),
+struct invoke_result<decltype(void(
+                         invoke(std::declval<F>(), std::declval<Args>()...))),
                      F, Args...> {
-  using type =
-      decltype(invoke(std::declval<F>(), std::declval<Args>()...));
+  using type = decltype(invoke(std::declval<F>(), std::declval<Args>()...));
 };
 }  // namespace detail
 template <class F, class... ArgTypes>

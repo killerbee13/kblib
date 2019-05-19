@@ -279,9 +279,9 @@ int main() {
     print_arr(kblib::range(0, -10, -1));
     std::cout << "range(0, -10): ";
     print_arr(kblib::range(0, -10));
-    std::cout<<"range(0, 10, incrementer{}): ";
+    std::cout << "range(0, 10, incrementer{}): ";
     print_arr(kblib::range(0, 10, kblib::incrementer{}));
-    std::cout<<"range(10, 0, decrementer{}): ";
+    std::cout << "range(10, 0, decrementer{}): ";
     print_arr(kblib::range(10, 0, kblib::decrementer{}));
 
     std::cout << "Range comparisons: true expected:\n" << std::boolalpha;
@@ -329,7 +329,7 @@ int main() {
     auto* raw_pointer = kblib::to_pointer(smart_ptr);
     const auto& smart_ptr_const_ref = smart_ptr;
     auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
-    std::cout<<"FNV_hash(1000): "<<kblib::FNV_hash<int>{}(1000)<<'\n';
+    std::cout << "FNV_hash(1000): " << kblib::FNV_hash<int>{}(1000) << '\n';
 
     // range supports iterators and other similar types.
     std::vector<int> v(100);

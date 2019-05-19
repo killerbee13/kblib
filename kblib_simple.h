@@ -212,7 +212,8 @@ class range_t {
 };
 
 /**
- * @brief A struct which increments anything it is added to. Suitable for use as a Delta type for range_t.
+ * @brief A struct which increments anything it is added to. Suitable for use as
+ * a Delta type for range_t.
  */
 struct incrementer {
   incrementer() = default;
@@ -229,7 +230,8 @@ T operator+(T val, incrementer) {
 }
 
 /**
- * @brief A struct which decrements anything it is added to. Suitable for use as a Delta type for range_t.
+ * @brief A struct which decrements anything it is added to. Suitable for use as
+ * a Delta type for range_t.
  */
 struct decrementer {
   decrementer() = default;

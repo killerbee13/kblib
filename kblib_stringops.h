@@ -312,7 +312,9 @@ string repeat(string val, int count) {
  * @param val The character to be repeated.
  * @param count The number of times to repeat val.
  */
-inline std::string repeat(char val, int count) { return std::string(count, val); }
+inline std::string repeat(char val, int count) {
+  return std::string(count, val);
+}
 
 #if KBLIB_USE_STRING_VIEW
 

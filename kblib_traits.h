@@ -32,7 +32,8 @@ template <typename... Ts>
 constexpr bool contains_type_v = contains_type<Ts...>::value;
 
 /**
- * @brief Determines if Lhs contains all of the types in Rhs, where both are std::tuples.
+ * @brief Determines if Lhs contains all of the types in Rhs, where both are
+ * std::tuples.
  */
 template <typename Lhs, typename Rhs>
 struct contains_types;
@@ -54,7 +55,8 @@ constexpr bool contains_types_v = contains_types<Ts...>::value;
  *
  * @param arr An array of at least N elements to truncate.
  * @param Is An implementation detail.
- * @return std::array<T, Is.size()> An array consisting of the first N elements of arr.
+ * @return std::array<T, Is.size()> An array consisting of the first N elements
+ * of arr.
  */
 template <typename T, int N, int... I>
 constexpr auto trim_array(const T (&arr)[N],
@@ -79,10 +81,12 @@ constexpr std::array<T, N - trim> trim_array(const T (&arr)[N]) {
 
 template <int N, typename Indices = std::make_integer_sequence<int, N - 1>>
 /**
- * @brief Creates an array of only the meaningful characters in a string literal, and not the null terminator.
+ * @brief Creates an array of only the meaningful characters in a string
+ * literal, and not the null terminator.
  *
  * @param arr A string literal to strip the null terminator from.
- * @return std::array<char, N - 1> A std::array of the meaningful characters of the string literal.
+ * @return std::array<char, N - 1> A std::array of the meaningful characters of
+ * the string literal.
  */
 constexpr std::array<char, N - 1> remove_null_terminator(const char (&arr)[N]) {
   return detail::trim_array(arr, Indices{});

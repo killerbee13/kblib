@@ -15,7 +15,7 @@ struct tag {
   using type = T;
 };
 
-}
-}
+}  // namespace detail
+}  // namespace kblib
 
-#endif // KBLIB_TDECL_H
+#endif  // KBLIB_TDECL_H

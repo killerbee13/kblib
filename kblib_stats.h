@@ -84,14 +84,13 @@ constexpr auto accumulate(InputIt first, InputIt last, T init)
 /**
  * @brief A constexpr version of std::accumulate
  */
-template<class InputIt, class T, class BinaryOperation>
+template <class InputIt, class T, class BinaryOperation>
 constexpr T accumulate(InputIt first, InputIt last, T init,
-             BinaryOperation op)
-{
-    for (; first != last; ++first) {
-        init = op(std::move(init), *first);
-    }
-    return init;
+                       BinaryOperation op) {
+  for (; first != last; ++first) {
+    init = op(std::move(init), *first);
+  }
+  return init;
 }
 
 /**
