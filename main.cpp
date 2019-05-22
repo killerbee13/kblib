@@ -404,6 +404,16 @@ struct copyable_derived : not_copyable {
   copyable_derived(const copyable_derived&) : not_copyable() {}
 };
 
+struct copyable_base {
+  virtual ~copyable_base() = default;
+};
+
+struct noncopyable_derived : copyable_base {
+  noncopyable_derived() = default;
+  noncopyable_derived(const noncopyable_derived&) = delete;
+  noncopyable_derived(noncopyable_derived&&) = default;
+};
+
 void poly_test() {
   {
     kblib::poly_obj<good_base> o1, o2{std::in_place};
@@ -415,6 +425,8 @@ void poly_test() {
     o1->bark();  // good_derived
     o2 = o1;     // o2 ~good_base
     o2->bark();  // good_derived
+    o1.clear(); //~good_base
+    assert(!o1.has_value());
     // kblib::poly_obj<good_base> o3 =
     // kblib::poly_obj<good_base>::make<bad_nocopy>();
   }
@@ -456,6 +468,14 @@ void poly_test() {
     auto o3 = kblib::poly_obj<not_copyable>::make<copyable_derived>();
     // illegal (can't copy even if derived is copyable)
     // o1 = o3;
+  }
+
+  {
+    kblib::poly_obj<copyable_base, sizeof(copyable_base), kblib::move_only_t>
+        o1{std::in_place};
+    // Valid because the template parameters explicitly disable copying, so
+    // derived classes don't need to be copyable.
+    auto o2 = decltype(o1)::make<noncopyable_derived>();
   }
 
   {

@@ -176,8 +176,8 @@ struct construct_conditional<construct_type::both> {};
 
 template <typename T>
 constexpr construct_type construct_traits =
-    construct_type::copy * std::is_copy_constructible_v<T> |
-    construct_type::move * std::is_move_constructible_v<T>;
+    construct_type::copy* std::is_copy_constructible_v<T> |
+    construct_type::move* std::is_move_constructible_v<T>;
 
 template <construct_type traits>
 struct assign_conditional;
@@ -206,8 +206,8 @@ struct assign_conditional<construct_type::both> {};
 
 template <typename T>
 constexpr construct_type assign_traits =
-    construct_type::copy * std::is_copy_assignable_v<T> |
-    construct_type::move * std::is_move_assignable_v<T>;
+    construct_type::copy* std::is_copy_assignable_v<T> |
+    construct_type::move* std::is_move_assignable_v<T>;
 
 template <typename T>
 struct disable_conditional : construct_conditional<construct_traits<T>>,
@@ -254,16 +254,22 @@ void default_move(void* dest, void* from) {
   new (dest) T(std::move(*reinterpret_cast<T*>(from)));
 }
 
-template <typename T, bool noop = false>
-erased_construct_helper<construct_traits<T>> make_ops_t() {
+template <typename T, typename Traits, bool noop = false>
+erased_construct_helper<construct_traits<Traits>> make_ops_t() {
   if constexpr (noop) {
     return {};
   }
-  if constexpr (construct_traits<T> == construct_type::none) {
+  static_assert(implies_v<std::is_copy_constructible_v<Traits>,
+                          std::is_copy_constructible_v<T>>,
+                "T must be copy constructible if Traits is.");
+  static_assert(implies_v<std::is_move_constructible_v<Traits>,
+                          std::is_move_constructible_v<T>>,
+                "T must be move constructible if Traits is.");
+  if constexpr (construct_traits<Traits> == construct_type::none) {
     return {};
-  } else if constexpr (construct_traits<T> == construct_type::copy) {
+  } else if constexpr (construct_traits<Traits> == construct_type::copy) {
     return {{&default_copy<T>}};
-  } else if constexpr (construct_traits<T> == construct_type::move) {
+  } else if constexpr (construct_traits<Traits> == construct_type::move) {
     return {{&default_move<T>}};
   } else {
     return {{&default_copy<T>}, {&default_move<T>}};
@@ -273,21 +279,56 @@ erased_construct_helper<construct_traits<T>> make_ops_t() {
 }  // namespace detail
 
 /**
- * @brief Inline polymorphic object. Generally mimics the interface of
- * std::optional
+ * @brief A tag type for poly_obj, usable as a Traits type, which disables
+ * copying.
+ */
+struct move_only_t {
+  move_only_t() = default;
+
+  move_only_t(move_only_t&&) = default;
+  move_only_t(const move_only_t&) = delete;
+
+  move_only_t& operator=(move_only_t&&) = default;
+  move_only_t& operator=(const move_only_t&) = delete;
+};
+
+/**
+ * @brief A tag type for poly_obj, usable as a Traits type, which disables
+ * copying and moving.
+ */
+struct no_move_t {
+  no_move_t() = default;
+
+  no_move_t(const no_move_t&) = delete;
+
+  no_move_t& operator=(const no_move_t&) = delete;
+};
+
+/**
+ * @brief Inline polymorphic object. Generally mimics the interfaces of
+ * std::optional and std::variant.
  *
  * Provides dynamic polymorphism without dynamic allocation. It is copy and move
  * constructible if and only if Obj is. The storage capacity can be overloaded
  * in case derived objects are larger than the base (this is expected to be
  * commonplace).
+ *
+ * @tparam Obj The base class type which the poly_obj will store.
+ * @tparam Capacity The inline capacity allocated for the contained object. May
+ * be set larger than sizeof(Obj) to account for larger derived classes.
+ * @tparam Traits The type to base copy/move constructibility and assignability
+ * of the poly_obj on. poly_obj will not create objects of type Traits, this
+ * template parameter is only used in type traits.
  */
-template <typename Obj, std::size_t Capacity = sizeof(Obj)>
+template <typename Obj, std::size_t Capacity = sizeof(Obj),
+          typename Traits = Obj>
 class poly_obj
-    : detail::disable_conditional<Obj>,
-      detail::erased_construct_helper<detail::construct_traits<Obj>> {
+    : detail::disable_conditional<Traits>,
+      detail::erased_construct_helper<detail::construct_traits<Traits>> {
  private:
-  using disabler = detail::disable_conditional<Obj>;
-  using ops_t = detail::erased_construct_helper<detail::construct_traits<Obj>>;
+  using disabler = detail::disable_conditional<Traits>;
+  using ops_t =
+      detail::erased_construct_helper<detail::construct_traits<Traits>>;
 
  public:
   static_assert(Capacity >= sizeof(Obj),
@@ -303,7 +344,7 @@ class poly_obj
   /**
    * @brief Constructs a copy of other.
    *
-   * This function can only be called if Obj is copy-constructible.
+   * This function can only be called if Traits is copy-constructible.
    *
    * @param other A poly_obj to copy from.
    */
@@ -317,7 +358,7 @@ class poly_obj
   /**
    * @brief Moves the contained object of other into this.
    *
-   * This function can only be called if Obj is move-constructible.
+   * This function can only be called if Traits is move-constructible.
    *
    * @param other A poly_obj to move from.
    */
@@ -334,7 +375,7 @@ class poly_obj
   /**
    * @brief Copy-constructs the contained object from obj.
    *
-   * This function can only be called is Obj is copy-constructible.
+   * This function can only be called is Traits is copy-constructible.
    *
    * @param obj The object to copy.
    */
@@ -346,7 +387,7 @@ class poly_obj
   /**
    * @brief Move-constructs the contained object from obj.
    *
-   * This function can only be called if Obj is move-constructible.
+   * This function can only be called if Traits is move-constructible.
    *
    * @param obj The object to move from.
    */
@@ -365,7 +406,7 @@ class poly_obj
       typename... Args,
       typename std::enable_if_t<std::is_constructible_v<Obj, Args...>, int> = 0>
   constexpr explicit poly_obj(std::in_place_t, Args&&... args)
-      : ops_t(detail::make_ops_t<Obj>()), contains_value(true) {
+      : ops_t(detail::make_ops_t<Obj, Traits>()), contains_value(true) {
     new (data) Obj(std::forward<Args>(args)...);
   }
 
@@ -377,9 +418,7 @@ class poly_obj
    * @return poly_obj& *this.
    */
   poly_obj& operator=(const poly_obj& other) & {
-    if (contains_value) {
-      get()->~Obj();
-    }
+    clear();
     contains_value = other.contains_value;
     static_cast<ops_t&>(*this) = other;
     this->copy(data, reinterpret_cast<const void*>(other.get()));
@@ -394,9 +433,7 @@ class poly_obj
    * @return poly_obj& *this.
    */
   poly_obj& operator=(poly_obj&& other) & {
-    if (contains_value) {
-      get()->~Obj();
-    }
+    clear();
     contains_value = other.contains_value;
     static_cast<ops_t&>(*this) = other;
     this->move(data, reinterpret_cast<void*>(other.get()));
@@ -409,7 +446,7 @@ class poly_obj
    * This function provides the polymorphism of poly_obj.
    *
    * sizeof(U) must be less than or equal to Capacity, and must be
-   * copy-constructible and move-constructible if Obj is.
+   * copy-constructible and move-constructible if Traits is.
    *
    * @tparam U A type publically derived from Obj.
    * @param args Arguments to pass to the constructor of U.
@@ -423,12 +460,12 @@ class poly_obj
                   "Obj must be an accessible base of Obj.");
     static_assert(std::has_virtual_destructor_v<Obj>,
                   "It must be safe to delete a U through an Obj*.");
-    static_assert(implies_v<std::is_copy_constructible_v<Obj>,
+    static_assert(implies_v<std::is_copy_constructible_v<Traits>,
                             std::is_copy_constructible_v<U>>,
-                  "U must be copy constructible if Obj is.");
-    static_assert(implies_v<std::is_move_constructible_v<Obj>,
+                  "U must be copy constructible if Traits is.");
+    static_assert(implies_v<std::is_move_constructible_v<Traits>,
                             std::is_move_constructible_v<U>>,
-                  "U must be move constructible if Obj is.");
+                  "U must be move constructible if Traits is.");
     return {tag<U>{}, std::forward<Args>(args)...};
   }
 
@@ -540,7 +577,13 @@ class poly_obj
   /**
    * @brief Empties the poly_obj, reverting to a default-constructed state.
    */
-  void clear() { *this = {}; }
+  void clear() {
+    if (contains_value) {
+      get()->~Obj();
+    }
+    contains_value = false;
+    static_cast<ops_t&>(*this) = {};
+  }
 
   ~poly_obj() noexcept {
     if (contains_value) {
@@ -551,11 +594,13 @@ class poly_obj
  private:
   alignas(Obj) std::byte data[Capacity];
   bool contains_value = false;
+
   template <typename U>
   struct tag {};
+
   template <typename U, typename... Args>
   poly_obj(tag<U>, Args&&... args)
-      : ops_t(detail::make_ops_t<U>()), contains_value(true) {
+      : ops_t(detail::make_ops_t<U, Traits>()), contains_value(true) {
     new (data) U(std::forward<Args>(args)...);
   }
 };

@@ -1,6 +1,12 @@
 #ifndef KBLIB_TRAITS_H_INCLUDED_
 #define KBLIB_TRAITS_H_INCLUDED_
 
+/**
+ * @file
+ * Contains some type traits not in the standard library that are useful in the
+ * implementation of kblib.
+ */
+
 #include <array>
 #include <cstring>
 #include <tuple>
