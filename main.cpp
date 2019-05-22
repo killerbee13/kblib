@@ -303,6 +303,20 @@ int main() {
   poly_test();
 #endif
   {
+    std::istringstream is{"line1\nline2\nline3\n"};
+    std::string line;
+    while (is >> kblib::get_line(line)) {
+      std::cout << std::quoted(line) << '\n';
+    }
+  }
+  {
+    std::wistringstream is{L"line1\nline2\nline3\n"};
+    std::wstring line;
+    while (is >> kblib::get_line(line)) {
+      std::wcout << std::quoted(line) << '\n';
+    }
+  }
+  {
     std::map<int, int> m;
     const auto& cm = m;
 
@@ -507,20 +521,6 @@ void poly_test() {
       std::cout << ab[o->id()];
     }
     std::cout << "\nc: " << c[0] << ' ' << c[1] << '\n';
-  }
-  {
-    std::istringstream is{"line1\nline2\nline3\n"};
-    std::string line;
-    while (is >> kblib::get_line(line)) {
-      std::cout << std::quoted(line) << '\n';
-    }
-  }
-  {
-    std::wistringstream is{L"line1\nline2\nline3\n"};
-    std::wstring line;
-    while (is >> kblib::get_line(line)) {
-      std::wcout << std::quoted(line) << '\n';
-    }
   }
 }
 #endif
