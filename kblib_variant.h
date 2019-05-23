@@ -1,12 +1,12 @@
 #ifndef KBLIB_VARIANT_H
 #define KBLIB_VARIANT_H
 
-#include <cstddef>
-#include <new>
 #include "kblib_convert.h"
 #include "kblib_logic.h"
 #include "kblib_simple.h"
 #include "kblib_tdecl.h"
+#include <cstddef>
+#include <new>
 
 #if KBLIB_USE_CXX17
 #include <variant>
@@ -23,9 +23,10 @@ namespace kblib {
  * @return To The type to coerce to.
  */
 template <typename To, typename... Ts>
-[[deprecated("Use new lexical_coerce instead.")]] To coerce(
-    const std::variant<Ts...>& v) {
-  return std::visit([](const auto& t) -> To { return lexical_cast<To>(t); }, v);
+[[deprecated("Use new lexical_coerce instead.")]] To
+coerce(const std::variant<Ts...>& v) {
+  return std::visit([](const auto& t) -> To { return lexical_cast<To>(t); },
+                    v);
 }
 
 /**
@@ -80,7 +81,7 @@ struct tuple_type<std::variant<Ts...>> {
 template <typename T>
 using tuple_type_t = typename tuple_type<T>::type;
 
-}  // namespace detail
+} // namespace detail
 
 /**
  * @brief Promotes an input variant to a super-variant. That is, one which
@@ -94,8 +95,9 @@ To variant_cast(From&& v) {
       detail::contains_types_v<detail::tuple_type_t<std::decay_t<To>>,
                                detail::tuple_type_t<std::decay_t<From>>>,
       "To must include all types in From");
-  return std::visit([](auto&& x) -> To { return std::forward<decltype(x)>(x); },
-                    std::forward<From>(v));
+  return std::visit(
+      [](auto&& x) -> To { return std::forward<decltype(x)>(x); },
+      std::forward<From>(v));
 }
 
 /**
@@ -127,7 +129,7 @@ auto visit(V&& v, Ts&&... ts) {
   return std::visit(visitor{std::forward<Ts>(ts)...}, std::forward<V>(v));
 }
 
-#endif  // KBLIB_USE_CXX17
+#endif // KBLIB_USE_CXX17
 
 namespace detail {
 enum class construct_type {
@@ -204,10 +206,17 @@ struct assign_conditional<construct_type::move> {
 template <>
 struct assign_conditional<construct_type::both> {};
 
+// clang-format off
+
+// It gets confused and thinks these are pointers for some reason and misaligns
+// the asterisks.
+
 template <typename T>
 constexpr construct_type assign_traits =
-    construct_type::copy* std::is_copy_assignable_v<T> |
-    construct_type::move* std::is_move_assignable_v<T>;
+    construct_type::copy * std::is_copy_assignable_v<T> |
+    construct_type::move * std::is_move_assignable_v<T>;
+
+// clang-format on
 
 template <typename T>
 struct disable_conditional : construct_conditional<construct_traits<T>>,
@@ -276,7 +285,7 @@ erased_construct_helper<construct_traits<Traits>> make_ops_t() {
   }
 }
 
-}  // namespace detail
+} // namespace detail
 
 /**
  * @brief A tag type for poly_obj, usable as a Traits type, which disables
@@ -364,8 +373,7 @@ class poly_obj
    */
   constexpr poly_obj(poly_obj&& other) noexcept(
       std::is_nothrow_move_constructible<Obj>::value)
-      : disabler(std::move(other)),
-        ops_t(std::move(other)),
+      : disabler(std::move(other)), ops_t(std::move(other)),
         contains_value(other.contains_value) {
     if (contains_value) {
       this->move(data, other.get());
@@ -402,9 +410,9 @@ class poly_obj
    *
    * @param args Arguments to be passed to the constructor of Obj.
    */
-  template <
-      typename... Args,
-      typename std::enable_if_t<std::is_constructible_v<Obj, Args...>, int> = 0>
+  template <typename... Args,
+            typename std::enable_if_t<std::is_constructible_v<Obj, Args...>,
+                                      int> = 0>
   constexpr explicit poly_obj(std::in_place_t, Args&&... args)
       : ops_t(detail::make_ops_t<Obj, Traits>()), contains_value(true) {
     new (data) Obj(std::forward<Args>(args)...);
@@ -456,7 +464,8 @@ class poly_obj
   static poly_obj make(Args&&... args) {
     static_assert(sizeof(U) <= Capacity,
                   "U must fit inside of the inline capacity.");
-    static_assert(std::is_base_of_v<Obj, U> && std::is_convertible_v<U*, Obj*>,
+    static_assert(std::is_base_of_v<Obj, U> &&
+                      std::is_convertible_v<U*, Obj*>,
                   "Obj must be an accessible base of Obj.");
     static_assert(std::has_virtual_destructor_v<Obj>,
                   "It must be safe to delete a U through an Obj*.");
@@ -605,6 +614,6 @@ class poly_obj
   }
 };
 
-}  // namespace kblib
+} // namespace kblib
 
-#endif  // KBLIB_VARIANT_H
+#endif // KBLIB_VARIANT_H
