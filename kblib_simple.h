@@ -548,7 +548,7 @@ using uint_smallest =
 
 template <std::uintmax_t I>
 using int_smallest =
-    typename first_bigger_than<1 + detail::filg2(I) / CHAR_BIT, signed char,
+    typename first_bigger_than<1 + (detail::filg2(I)+1) / CHAR_BIT, signed char,
                                signed short, signed int, signed long,
                                signed long long, std::uintmax_t>::type;
 
