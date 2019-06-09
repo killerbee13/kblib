@@ -61,6 +61,7 @@ constexpr bool test() noexcept {
 static_assert(test(), "");
 
 void test(std::streamsize s) { std::cout << s << '\n'; }
+void test_trie();
 
 #if KBLIB_USE_CXX17
 void poly_test();
@@ -350,6 +351,7 @@ int main() {
     assert(v.begin() == *kblib::range(v.begin(), v.end()).begin());
     assert(v.end() == *kblib::range(v.begin(), v.end()).end());
   }
+  test_trie();
 }
 
 #if KBLIB_USE_CXX17

@@ -257,11 +257,11 @@ std::unique_ptr<T, D> to_unique(T* p, D&& d) {
 }
 
 template <typename I>
-std::make_unsigned_t<I> to_unsigned(I x) {
+constexpr std::make_unsigned_t<I> to_unsigned(I x) {
   return static_cast<std::make_unsigned_t<I>>(x);
 }
 template <typename I>
-std::make_signed_t<I> to_signed(I x) {
+constexpr std::make_signed_t<I> to_signed(I x) {
   return static_cast<std::make_signed_t<I>>(x);
 }
 
@@ -269,7 +269,7 @@ std::make_signed_t<I> to_signed(I x) {
 // template parameter
 template <typename A, typename F>
 KBLIB_NODISCARD
-    std::enable_if_t<std::is_integral<A>::value && std::is_integral<F>::value &&
+constexpr std::enable_if_t<std::is_integral<A>::value && std::is_integral<F>::value &&
                          std::is_signed<A>::value,
                      std::make_signed_t<F>>
     signed_cast(F x) {
@@ -278,7 +278,7 @@ KBLIB_NODISCARD
 
 template <typename A, typename F>
 KBLIB_NODISCARD
-    std::enable_if_t<std::is_integral<A>::value && std::is_integral<F>::value &&
+constexpr std::enable_if_t<std::is_integral<A>::value && std::is_integral<F>::value &&
                          std::is_unsigned<A>::value,
                      std::make_unsigned_t<F>>
     signed_cast(F x) {

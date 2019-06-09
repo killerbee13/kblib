@@ -43,7 +43,7 @@ class range_t {
    * @param max_ The end of the range.
    * @param step_ The difference between values in the range.
    */
-  range_t(Value min_, Value max_, Delta step_ = 1)
+  constexpr range_t(Value min_, Value max_, Delta step_ = 1)
       : min(min_), max(max_), step(step_) {
     normalize();
   }
@@ -53,7 +53,8 @@ class range_t {
    *
    * @param max The end of the range.
    */
-  range_t(Value max) : range_t(Value{}, max, (max >= Value{}) ? 1 : -1) {}
+  constexpr range_t(Value max)
+      : range_t(Value{}, max, (max >= Value{}) ? 1 : -1) {}
 
   /**
    * @brief A helper struct which acts as an iterator for the range elements, as
@@ -68,13 +69,13 @@ class range_t {
      *
      * @return Value operator
      */
-    Value operator*() { return val; }
+    constexpr Value operator*() { return val; }
     /**
      * @brief Prefix increment. Advance to the next value in the range.
      *
      * @return dummyptr& *this.
      */
-    iterator& operator++() {
+    constexpr iterator& operator++() {
       val = val + step;
       return *this;
     }
@@ -84,7 +85,7 @@ class range_t {
      *
      * @return dummyptr A copy of the pre-incrementing value of *this.
      */
-    iterator operator++(int) {
+    constexpr iterator operator++(int) {
       auto ret = *this;
       val = val + step;
       return ret;
@@ -95,7 +96,7 @@ class range_t {
      * Range iterators compare equal if they point to the same value and have
      * the same step.
      */
-    friend bool operator==(iterator l, iterator r) {
+    constexpr friend bool operator==(iterator l, iterator r) {
       return l.val == r.val && l.step == r.step;
     }
     /**
@@ -104,7 +105,7 @@ class range_t {
      * Range iterators compare equal if they point to the same value and have
      * the same step.
      */
-    friend bool operator!=(iterator l, iterator r) {
+    constexpr friend bool operator!=(iterator l, iterator r) {
       return l.val != r.val || l.step != r.step;
     }
     /**
@@ -113,7 +114,7 @@ class range_t {
      * For range iterators, (A < B) is true when A can be advanced until (*A -
      * *B) changes sign.
      */
-    friend bool operator<(iterator l, iterator r) {
+    constexpr friend bool operator<(iterator l, iterator r) {
       if (l.step > 0)
         return l.val < r.val;
       else
@@ -125,43 +126,47 @@ class range_t {
      * For range iterators, (A < B) is true when A can be advanced until (*A -
      * *B) changes sign.
      */
-    friend bool operator<=(iterator l, iterator r) { return !(r < l); }
+    constexpr friend bool operator<=(iterator l, iterator r) {
+      return !(r < l);
+    }
     /**
      * @brief Compare two range iterators.
      *
      * For range iterators, (A < B) is true when A can be advanced until (*A -
      * *B) changes sign.
      */
-    friend bool operator>(iterator l, iterator r) { return r < l; }
+    constexpr friend bool operator>(iterator l, iterator r) { return r < l; }
     /**
      * @brief Compare two range iterators.
      *
      * For range iterators, (A < B) is true when A can be advanced until (*A -
      * *B) changes sign.
      */
-    friend bool operator>=(iterator l, iterator r) { return !(l < r); }
+    constexpr friend bool operator>=(iterator l, iterator r) {
+      return !(l < r);
+    }
   };
 
   /**
    * @brief Returns an iterator to the beginning of the range.
    */
-  iterator begin() const { return {min, step}; }
+  constexpr iterator begin() const { return {min, step}; }
   /**
    * @brief Return an iterator to the end of the range.
    */
-  iterator end() const { return {max, step}; }
+  constexpr iterator end() const { return {max, step}; }
 
   /**
    * @brief Returns the distance between start() and stop().
    */
-  std::size_t size() const { return (max - min) / step; }
+  constexpr std::size_t size() const { return (max - min) / step; }
 
   /**
    * @brief Compare l and r for equality.
    *
    * Ranges are equal when they generate identical ranges.
    */
-  friend bool operator==(range_t l, range_t r) {
+  constexpr friend bool operator==(range_t l, range_t r) {
     return (l.begin() == r.begin()) && (l.end() == r.end());
   }
   /**
@@ -169,7 +174,7 @@ class range_t {
    *
    * Ranges are equal when they generate identical ranges.
    */
-  friend bool operator!=(range_t l, range_t r) {
+  constexpr friend bool operator!=(range_t l, range_t r) {
     return (l.begin() != r.begin()) || (l.end() != r.end());
   }
 
@@ -177,7 +182,7 @@ class range_t {
   Value min, max;
   Delta step;
 
-  void normalize() {
+  constexpr void normalize() {
 #if KBLIB_DEBUG_LOG_RANGES
     std::clog << "(" << min << ", " << max << ", " << step << ") -> ";
 #endif
@@ -216,16 +221,16 @@ class range_t {
  * a Delta type for range_t.
  */
 struct incrementer {
-  incrementer() = default;
-  incrementer(int) {}
-  operator int() { return 1; }
+  constexpr incrementer() = default;
+  constexpr incrementer(int) {}
+  constexpr operator int() { return 1; }
 };
 
 /**
  * @brief Increments val.
  */
 template <typename T>
-T operator+(T val, incrementer) {
+constexpr T operator+(T val, incrementer) {
   return ++val;
 }
 
@@ -234,16 +239,16 @@ T operator+(T val, incrementer) {
  * a Delta type for range_t.
  */
 struct decrementer {
-  decrementer() = default;
-  decrementer(int) {}
-  operator int() { return -1; }
+  constexpr decrementer() = default;
+  constexpr decrementer(int) {}
+  constexpr operator int() { return -1; }
 };
 
 /**
  * @brief Decrements val.
  */
 template <typename T>
-T operator+(T val, decrementer) {
+constexpr T operator+(T val, decrementer) {
   return --val;
 }
 
@@ -258,7 +263,7 @@ T operator+(T val, decrementer) {
  * @return range_t<Value, Delta> An iterable range [min, max).
  */
 template <typename Value, typename Delta = int>
-range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
+constexpr range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
   if (step == 0) {
     if (min <= max) {
       return {min, max, 1};
@@ -278,7 +283,7 @@ range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
  * @return range_t<Value, int> An iterable range [0, max).
  */
 template <typename Value>
-range_t<Value, int> range(Value max) {
+constexpr range_t<Value, int> range(Value max) {
   return {max};
 }
 
@@ -506,6 +511,52 @@ struct FNV_hash<std::basic_string_view<CharT>, void> {
   }
 };
 #endif
+
+namespace detail {
+
+/**
+ * @brief Floored integer binary logarithm. Returns floor(lb(val)).
+ *
+ * Returns the number of significant bits in the given integer.
+ *
+ * @param val
+ * @return int
+ */
+constexpr int filg2(
+    const std::bitset<std::numeric_limits<std::uintmax_t>::digits> val) {
+  for (int i : range(to_signed(val.size() - 1), std::ptrdiff_t{0}, -1)) {
+    if (val[i]) return i;
+  }
+  return 0;
+}
+
+}  // namespace detail
+
+template <std::size_t size, typename T, typename... Ts>
+struct first_bigger_than : std::conditional<sizeof(T) >= size, detail::tag<T>,
+                                            typename first_bigger_than<size, Ts...>::type> {};
+
+template <std::size_t size, typename T>
+struct first_bigger_than<size, T>
+    : std::conditional_t<sizeof(T) >= size, detail::tag<T>, void> {};
+
+template <std::uintmax_t I>
+using uint_smallest =
+    typename first_bigger_than<1 + detail::filg2(I) / CHAR_BIT, unsigned char,
+                               unsigned short, unsigned int, unsigned long,
+                               unsigned long long, std::uintmax_t>::type;
+
+template <std::uintmax_t I>
+using int_smallest =
+    typename first_bigger_than<1 + detail::filg2(I) / CHAR_BIT, signed char,
+                               signed short, signed int, signed long,
+                               signed long long, std::uintmax_t>::type;
+
+template <std::uintmax_t I>
+using uint_smallest_t = typename uint_smallest<I>::type;
+
+template <std::uintmax_t I>
+using int_smallest_t = typename int_smallest<I>::type;
 
 template <typename Container>
 /**

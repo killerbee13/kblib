@@ -1,6 +1,7 @@
 #ifndef KBLIB_H
 #define KBLIB_H
 
+#include "kblib_bits.h"
 #include "kblib_build.h"
 #include "kblib_containers.h"
 #include "kblib_convert.h"

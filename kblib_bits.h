@@ -6,8 +6,10 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "kblib_fakestd.h"
+#include "kblib_simple.h"
 #include "kblib_tdecl.h"
 
 namespace kblib {
@@ -52,7 +54,7 @@ class trie_node {
 };
 
 }  // namespace detail
-
+/*
 template <typename Key, typename Value>
 class bit_trie {
  public:
@@ -70,56 +72,20 @@ class bit_trie {
 
  private:
   std::array<detail::trie_node, bits_of<key_type>> roots;
-};
-
-namespace detail {
-
-/**
- * @brief Floored integer binary logarithm. Returns floor(lb(val)).
- *
- * Returns the number of significant bits in the given integer.
- *
- * @param val
- * @return int
- */
-constexpr int filg2(
-    std::bitset<std::numeric_limits<std::uintmax_t>::digits> val) {
-  for (int i : range(val.size(), 0, -1)) {
-    if (val.test(i)) return i;
-  }
-  return 0;
-}
-
-template <std::size_t size, typename T, typename... Ts>
-struct first_bigger_than : std::conditional<sizeof(T) >= size, detail::tag_t<T>,
-                                            first_bigger_than<size, Ts...>> {};
-
-template <std::size_t size, typename T>
-struct first_bigger_than<size, T>
-    : std::conditional_t<sizeof(T) >= size, detail::tag_t<T>, void> {};
-
-template <std::uintmax_t I>
-using uint_smallest_t =
-    typename first_bigger_than<filg2(I) / CHAR_BIT, unsigned char,
-                               unsigned short, unsigned int, unsigned long,
-                               unsigned long long, std::uintmax_t>::type;
-
-template <std::uintmax_t I>
-using int_smallest_t =
-    typename first_bigger_than<filg2(I) / CHAR_BIT, signed char, signed short,
-                               signed int, signed long, signed long long,
-                               std::uintmax_t>::type;
-
-}  // namespace detail
+};//*/
 
 template <typename Key, Key key_range, typename Value>
 class compact_bit_trie {
  public:
+  struct key_type {
+    Key prefix;
+    short bits : detail::filg2(key_range);
+  };
+
   using value_type = Value;
-  using key_type = Key;
   using mapped_type = Value;
-  using size_type = detail::uint_smallest_t<key_range>;
-  using difference_type = detail::int_smallest_t<key_range>;
+  using size_type = uint_smallest_t<key_range>;
+  using difference_type = int_smallest_t<key_range>;
   using reference = value_type&;
   using const_reference = const value_type&;
   using pointer = value_type*;
@@ -130,23 +96,26 @@ class compact_bit_trie {
   using reverse_iterator = void;
   using const_reverse_iterator = void;
 
-  static_assert(std::is_integral<key_type>::value,
-                "key_type must be an integral type.");
-  static_assert(std::is_unsigned<key_type>::value,
-                "key_type must be unsigned.");
+  static_assert(std::is_integral<Key>::value, "Key must be an integral type.");
+  static_assert(std::is_unsigned<Key>::value, "Key must be unsigned.");
   static_assert(std::is_nothrow_destructible<mapped_type>::value,
                 "mapped_type must be nothrow destructible.");
 
   value_type at(key_type key) const noexcept(false) {
-    if (empty) {throw std::out_of_range("searched in an empty compact_bit_trie");}
+    if (empty()) {
+      throw std::out_of_range("searched in an empty compact_bit_trie");
+    }
+    if (key.bits > bits_of<Key>) {
+      throw std::invalid_argument("key prefix longer than key length");
+    }
     size_type node = 1;
-    std::bitset<bits_of<key_type>> search;
+    const std::bitset<bits_of<key_type>> search = key.prefix;
     int idx = 0;
-    while (node && idx < search.size()) {
+    while (node && idx < key.bits) {
       if (auto val = storage[node].val) {
         return values[val];
       } else {
-        node = storage[node].children[search.test(idx++)];
+        node = storage[node].children[search[idx++]];
       }
     }
     throw std::out_of_range("key not found in compact_bit_trie");
@@ -154,19 +123,24 @@ class compact_bit_trie {
 
   value_type find_deep(key_type key, size_type depth = -1) const
       noexcept(false) {
-    if (empty) {throw std::out_of_range("searched in an empty compact_bit_trie");}
+    if (empty()) {
+      throw std::out_of_range("searched in an empty compact_bit_trie");
+    }
+    if (key.bits > bits_of<Key>) {
+      throw std::invalid_argument("key prefix longer than key length");
+    }
     size_type node = 1;
     size_type found = 0;
-    std::bitset<bits_of<key_type>> search;
+    const std::bitset<bits_of<key_type>> search = key.prefix;
     int idx = 0;
-    while (node && idx < search.size()) {
+    while (node && idx < key.bits) {
       if (auto val = storage[node].val) {
         found = val;
         if (depth--) {
           break;
         }
       }
-      node = storage[node].children[search.test(idx++)];
+      node = storage[node].children[search[idx++]];
     }
     if (found) {
       return values[found];
@@ -175,8 +149,15 @@ class compact_bit_trie {
     }
   }
 
-  void insert(key_type key, int length, const value_type& value);
-  void insert(key_type key, int length, value_type&& value);
+  bool empty() const noexcept;
+
+  void insert(key_type key, const value_type& value);
+  void insert(key_type key, value_type&& value) {
+    if (key.bits > bits_of<Key>) {
+      throw std::invalid_argument("key prefix longer than key length");
+    }
+  }
+
   void insert_or_assign(key_type key, const value_type& value);
   void insert_or_assign(key_type key, value_type&& value);
 
