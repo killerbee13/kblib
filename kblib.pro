@@ -22,7 +22,8 @@ HEADERS += \
     kblib_traits.h \
     kblib_tdecl.h \
     kblib_logic.h \
-    kblib_iterators.h
+    kblib_iterators.h \
+    kblib_bits.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags

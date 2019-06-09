@@ -595,6 +595,79 @@ class cond_ptr {
   bool owns_ = false;
 };
 
+namespace detail {
+template <typename D, typename T, typename = void>
+struct pointer {
+  using type = T*;
+};
+
+template <typename D, typename T>
+struct pointer<D, T, fakestd::void_t<typename D::pointer>> {
+  using type = typename D::pointer;
+};
+}
+
+template <typename T>
+class heap_value {
+public:
+  using pointer = T*;
+  using element_type = T;
+  using reference = T&;
+
+  constexpr heap_value() noexcept : p{nullptr} {}
+  constexpr heap_value(std::nullptr_t) noexcept : p{nullptr} {}
+
+  template <typename... Args, typename std::enable_if<std::is_constructible<T, Args...>::value>::type = 0>
+  heap_value(std::in_place_t, Args&&... args) : p{new T(args...)} {}
+
+  heap_value(const heap_value& u) : p{(u.p ? (new T(*u.p)) : nullptr)} {}
+  heap_value(heap_value&& u) : p{std::exchange(u.p, nullptr)} {}
+
+  heap_value& operator=(const heap_value& u) {
+    if (!u) {
+      reset();
+    } else {
+      if (p) {
+        *p = *u;
+      } else {
+        p = new T(*u.p);
+      }
+    }
+    return *this;
+  }
+
+  heap_value& operator=(heap_value&& u) {
+    reset();
+    p = std::exchange(u.p, nullptr);
+    return *this;
+  }
+
+  void reset() {
+    delete p;
+    p = nullptr;
+    return;
+  }
+
+  KBLIB_NODISCARD pointer get() const noexcept {
+    return p;
+  }
+
+  KBLIB_NODISCARD operator bool() const noexcept {
+    return p != nullptr;
+  }
+
+  reference operator*() const noexcept {
+    return *p;
+  }
+
+  ~heap_value() {
+    delete p;
+  }
+
+private:
+  pointer p;
+};
+
 }  // namespace kblib
 
 #endif  // KBLIB_FAKESTD_H
