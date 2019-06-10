@@ -64,6 +64,11 @@ class range_t {
   struct iterator {
     Value val;
     Delta step;
+
+    using difference_type = std::ptrdiff_t;
+    using value_type = Value;
+    using pointer = void;
+
     /**
      * @brief Return the "pointed-to" value.
      *
@@ -73,7 +78,7 @@ class range_t {
     /**
      * @brief Prefix increment. Advance to the next value in the range.
      *
-     * @return dummyptr& *this.
+     * @return iterator& *this.
      */
     constexpr iterator& operator++() {
       val = val + step;
@@ -83,7 +88,7 @@ class range_t {
      * @brief Postfix increment. Advance to the next value in the range, but
      * return the current value.
      *
-     * @return dummyptr A copy of the pre-incrementing value of *this.
+     * @return iterator A copy of the pre-incrementing value of *this.
      */
     constexpr iterator operator++(int) {
       auto ret = *this;
