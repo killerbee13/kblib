@@ -59,7 +59,6 @@ class range_t {
   /**
    * @brief A helper struct which acts as an iterator for the range elements, as
    * they are generated on the fly.
-   *
    */
   struct iterator {
     Value val;
@@ -67,14 +66,23 @@ class range_t {
 
     using difference_type = std::ptrdiff_t;
     using value_type = Value;
-    using pointer = void;
+    using pointer = const Value*;
+    using reference = Value;
+    using iterator_category = std::input_iterator_tag;
 
     /**
      * @brief Return the "pointed-to" value.
      *
-     * @return Value operator
+     * @return Value The value in the range this iterator corresponds to.
      */
     constexpr Value operator*() { return val; }
+    /**
+     * @brief Return a pointer to the value.
+     *
+     * @return pointer A pointer to a value equivalent to *(*this). Valid until
+     * the iterator is modified in any way or destroyed.
+     */
+    constexpr pointer operator->() { return &val; }
     /**
      * @brief Prefix increment. Advance to the next value in the range.
      *
@@ -538,8 +546,9 @@ constexpr int filg2(
 }  // namespace detail
 
 template <std::size_t size, typename T, typename... Ts>
-struct first_bigger_than : std::conditional<sizeof(T) >= size, detail::tag<T>,
-                                            typename first_bigger_than<size, Ts...>::type> {};
+struct first_bigger_than
+    : std::conditional<sizeof(T) >= size, detail::tag<T>,
+                       typename first_bigger_than<size, Ts...>::type> {};
 
 template <std::size_t size, typename T>
 struct first_bigger_than<size, T>
@@ -552,10 +561,9 @@ using uint_smallest =
                                unsigned long long, std::uintmax_t>::type;
 
 template <std::uintmax_t I>
-using int_smallest =
-    typename first_bigger_than<1 + (detail::filg2(I)+1) / CHAR_BIT, signed char,
-                               signed short, signed int, signed long,
-                               signed long long, std::uintmax_t>::type;
+using int_smallest = typename first_bigger_than<
+    1 + (detail::filg2(I) + 1) / CHAR_BIT, signed char, signed short,
+    signed int, signed long, signed long long, std::uintmax_t>::type;
 
 template <std::uintmax_t I>
 using uint_smallest_t = typename uint_smallest<I>::type;
