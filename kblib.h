@@ -12,9 +12,6 @@
 #include "kblib/simple.h"
 #include "kblib/stats.h"
 #include "kblib/stringops.h"
-
-#if KBLIB_USE_CXX17
 #include "kblib/variant.h"
-#endif
 
 #endif  // KBLIB_H
