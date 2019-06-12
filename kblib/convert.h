@@ -11,7 +11,7 @@
 #include <typeinfo>
 #include <variant>
 
-#include "kblib_traits.h"
+#include "traits.h"
 
 #if KBLIB_DEF_MACROS
 #define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)

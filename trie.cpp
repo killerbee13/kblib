@@ -1,4 +1,4 @@
-#include "kblib_bits.h"
+#include "kblib/bits.h"
 
 template <typename T>
 struct print;
@@ -26,6 +26,8 @@ static_assert(std::is_same<kblib::uint_smallest_t<65536>, unsigned int>::value,
               "uint_smallest_t");
 static_assert(std::is_same<kblib::uint_smallest_t<1u<<31>, unsigned int>::value,
               "uint_smallest_t");
+static_assert(std::is_same<kblib::uint_smallest_t<UINT_MAX>, unsigned int>::value,
+              "uint_smallest_t");
 static_assert(std::is_same<kblib::uint_smallest_t<1ul<<32>, unsigned long>::value,
               "uint_smallest_t");
 static_assert(std::is_same<kblib::uint_smallest_t<1ul<<63>, unsigned long>::value,
@@ -51,5 +53,6 @@ static_assert(std::is_same<kblib::int_smallest_t<long(INT_MAX) + 1>, signed long
 
 void test_trie() {
   kblib::compact_bit_trie<unsigned short, 1024, int> test;
-  test.insert({0b1000100010001000, 16}, 1);
+  assert(test.insert({0b1000100010000000, 10}, 1));
+  std::cout<<test.at({0b1000100010000000, 10})<<'\n';
 }

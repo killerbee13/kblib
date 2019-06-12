@@ -1,8 +1,8 @@
 #ifndef KBLIB_SIMPLE_H
 #define KBLIB_SIMPLE_H
 
-#include "kblib_tdecl.h"
-#include "kblib_traits.h"
+#include "tdecl.h"
+#include "traits.h"
 
 #include <cstdint>
 #include <initializer_list>

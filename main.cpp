@@ -1,6 +1,6 @@
 #include "kblib.h"
-#include "kblib_containers.h"
-#include "kblib_icu.h"
+#include "kblib/containers.h"
+#include "kblib/icu.h"
 
 #include <array>
 #include <iostream>

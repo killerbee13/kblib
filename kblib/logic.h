@@ -1,7 +1,7 @@
 #ifndef KBLIB_LOGIC_H
 #define KBLIB_LOGIC_H
 
-#include "kblib_tdecl.h"
+#include "tdecl.h"
 
 #include <type_traits>
 

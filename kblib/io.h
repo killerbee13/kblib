@@ -1,7 +1,7 @@
 #ifndef KBLIB_IO_H
 #define KBLIB_IO_H
 
-#include "kblib_fakestd.h"
+#include "fakestd.h"
 
 #include <fstream>
 #include <functional>

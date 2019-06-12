@@ -1,10 +1,10 @@
 #ifndef KBLIB_VARIANT_H
 #define KBLIB_VARIANT_H
 
-#include "kblib_convert.h"
-#include "kblib_logic.h"
-#include "kblib_simple.h"
-#include "kblib_tdecl.h"
+#include "convert.h"
+#include "logic.h"
+#include "simple.h"
+#include "tdecl.h"
 #include <cstddef>
 #include <new>
 

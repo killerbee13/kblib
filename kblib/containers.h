@@ -1,9 +1,9 @@
 #ifndef KBLIB_CONTAINERS_H
 #define KBLIB_CONTAINERS_H
 
-#include "kblib_fakestd.h"
-#include "kblib_iterators.h"
-#include "kblib_tdecl.h"
+#include "fakestd.h"
+#include "iterators.h"
+#include "tdecl.h"
 
 #include <cstddef>
 #include <deque>

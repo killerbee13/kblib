@@ -1,10 +1,10 @@
 #ifndef KBLIB_BUILD_H
 #define KBLIB_BUILD_H
 
-#include "kblib_fakestd.h"
-#include "kblib_iterators.h"
-#include "kblib_tdecl.h"
-#include "kblib_traits.h"
+#include "fakestd.h"
+#include "iterators.h"
+#include "tdecl.h"
+#include "traits.h"
 
 #include <algorithm>
 #include <iterator>

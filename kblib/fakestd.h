@@ -1,7 +1,7 @@
 #ifndef KBLIB_FAKESTD_H
 #define KBLIB_FAKESTD_H
 
-#include "kblib_tdecl.h"
+#include "tdecl.h"
 
 #include <array>
 #include <memory>

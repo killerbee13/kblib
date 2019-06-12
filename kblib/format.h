@@ -1,6 +1,8 @@
 #ifndef KBLIB_FORMAT_H
 #define KBLIB_FORMAT_H
 
+#include "tdecl.h"
+
 #include <algorithm>
 #include <cmath>
 

@@ -1,6 +1,8 @@
 #ifndef KBLIB_ICU_H
 #define KBLIB_ICU_H
 
+#include "tdecl.h"
+
 #include <unicode/unistr.h>
 #include <ostream>
 #include <string>

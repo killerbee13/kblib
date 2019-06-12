@@ -1,7 +1,9 @@
 #ifndef KBLIB_STRINGOPS_H
 #define KBLIB_STRINGOPS_H
 
-#include "kblib_tdecl.h"
+#include "tdecl.h"
+#include "kblib/format.h"
+#include "kblib/traits.h"
 
 #include <algorithm>
 #include <initializer_list>
@@ -12,9 +14,6 @@
 #if KBLIB_USE_CXX17
 #include <string_view>
 #endif
-
-#include "kblib_format.h"
-#include "kblib_traits.h"
 
 namespace kblib {
 

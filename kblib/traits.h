@@ -7,6 +7,8 @@
  * implementation of kblib.
  */
 
+#include "tdecl.h"
+
 #include <array>
 #include <cstring>
 #include <tuple>

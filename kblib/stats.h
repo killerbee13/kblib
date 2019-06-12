@@ -6,7 +6,7 @@
 #include <numeric>
 #include <random>
 
-#include "kblib_tdecl.h"
+#include "tdecl.h"
 
 #if KBLIB_USE_CXX17
 #define KBLIB_UNUSED [[maybe_unused]]
@@ -132,6 +132,23 @@ KBLIB_UNUSED constexpr struct max_t {
   }
 } max; /**< A shorthand for the maximum value of the destination type. */
 
+template <typename T>
+bool operator==(T t, max_t) {
+  return t == T(max);
+}
+template <typename T>
+bool operator==(max_t, T t) {
+  return t == T(max);
+}
+template <typename T>
+bool operator!=(T t, max_t) {
+  return t != T(max);
+}
+template <typename T>
+bool operator!=(max_t, T t) {
+  return t != T(max);
+}
+
 /**
  * @brief Shorthand for std::numeric_limits::min()
  *
@@ -146,6 +163,23 @@ KBLIB_UNUSED constexpr struct min_t {
     return std::numeric_limits<T>::min();
   }
 } min; /**< A shorthand for the minimum value of the destination type. */
+
+template <typename T>
+bool operator==(T t, min_t) {
+  return t == T(min);
+}
+template <typename T>
+bool operator==(min_t, T t) {
+  return t == T(min);
+}
+template <typename T>
+bool operator!=(T t, min_t) {
+  return t != T(min);
+}
+template <typename T>
+bool operator!=(min_t, T t) {
+  return t != T(min);
+}
 
 }  // namespace nums
 

@@ -9,22 +9,22 @@ SOURCES += \
 
 HEADERS += \
     kblib.h \
-    kblib_convert.h \
-    kblib_build.h \
-    kblib_stats.h \
-    kblib_simple.h \
-    kblib_fakestd.h \
-    kblib_stringops.h \
-    kblib_io.h \
-    kblib_containers.h \
-    kblib_format.h \
-    kblib_icu.h \
-    kblib_variant.h \
-    kblib_traits.h \
-    kblib_tdecl.h \
-    kblib_logic.h \
-    kblib_iterators.h \
-    kblib_bits.h
+    kblib/bits.h \
+    kblib/build.h \
+    kblib/containers.h \
+    kblib/convert.h \
+    kblib/fakestd.h \
+    kblib/format.h \
+    kblib/icu.h \
+    kblib/io.h \
+    kblib/iterators.h \
+    kblib/logic.h \
+    kblib/simple.h \
+    kblib/stats.h \
+    kblib/stringops.h \
+    kblib/tdecl.h \
+    kblib/traits.h \
+    kblib/variant.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags

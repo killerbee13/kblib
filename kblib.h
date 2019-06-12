@@ -1,20 +1,20 @@
 #ifndef KBLIB_H
 #define KBLIB_H
 
-#include "kblib_bits.h"
-#include "kblib_build.h"
-#include "kblib_containers.h"
-#include "kblib_convert.h"
-#include "kblib_fakestd.h"
-#include "kblib_format.h"
-#include "kblib_io.h"
-#include "kblib_logic.h"
-#include "kblib_simple.h"
-#include "kblib_stats.h"
-#include "kblib_stringops.h"
+#include "kblib/bits.h"
+#include "kblib/build.h"
+#include "kblib/containers.h"
+#include "kblib/convert.h"
+#include "kblib/fakestd.h"
+#include "kblib/format.h"
+#include "kblib/io.h"
+#include "kblib/logic.h"
+#include "kblib/simple.h"
+#include "kblib/stats.h"
+#include "kblib/stringops.h"
 
 #if KBLIB_USE_CXX17
-#include "kblib_variant.h"
+#include "kblib/variant.h"
 #endif
 
 #endif  // KBLIB_H
