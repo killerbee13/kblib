@@ -8,6 +8,7 @@
  */
 
 #include "tdecl.h"
+#include "fakestd.h"
 
 #include <array>
 #include <cstring>
@@ -191,6 +192,15 @@ template <typename C,
 void try_reserve(C&, std::size_t) noexcept {
   return;
 }
+
+template <typename C, typename = void>
+struct is_contiguous : std::false_type {};
+
+template <typename C>
+struct is_contiguous<C, fakestd::void_t<decltype(std::declval<C&>().data())>> : std::true_type {};
+
+template <typename C>
+constexpr bool is_contiguous_v = is_contiguous<C>::value;
 
 }  // namespace kblib
 

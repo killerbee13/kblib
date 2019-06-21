@@ -2,6 +2,7 @@
 #define KBLIB_IO_H
 
 #include "fakestd.h"
+#include "traits.h"
 
 #include <fstream>
 #include <functional>
@@ -16,20 +17,51 @@ namespace kblib {
  * std::string or std::vector<char>.
  *
  * @param filename The filename to open.
+ * @tparam D A contiguous sequence container, which will be created and filled
+ * with the contents of the file to be read.
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
-template <typename D = std::string, typename string>
+template <typename D = std::string, typename string, typename std::enable_if_t<is_contiguous_v<D>, int> = 0>
 std::optional<D> get_file_contents(const string& filename) {
   static_assert(std::is_trivially_copyable_v<typename D::value_type>,
                 "D must be a sequence of trivial types");
+  static_assert(sizeof(typename D::value_type) == 1, "D must be a sequence of char-sized objects.");
   std::ifstream in(filename, std::ios::in | std::ios::binary);
   if (in) {
     D contents;
     in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
+    auto size = in.tellg();
+    contents.resize(size);
     in.seekg(0, std::ios::beg);
-    in.read(reinterpret_cast<char*>(&contents[0]),
-            contents.size() * sizeof(typename D::value_type));
+    in.read(reinterpret_cast<char*>(contents.data()), size);
+    in.close();
+    return contents;
+  } else {
+    return std::nullopt;
+  }
+}
+
+/**
+ * @brief Read the entire contents of a file into a container, such as
+ * std::string or std::vector<char>.
+ *
+ * @param filename The filename to open.
+ * @tparam D A non-contiguous sequence container, which will be created and filled
+ * with the contents of the file to be read.
+ * @return std::optional<D> The contents of the file, if reading was successful.
+ */
+template <typename D = std::string, typename string, typename std::enable_if_t<!is_contiguous_v<D>, int> = 0>
+std::optional<D> get_file_contents(const string& filename) {
+  static_assert(std::is_trivially_copyable_v<typename D::value_type>,
+                "D must be a sequence of trivial types");
+  static_assert(sizeof(typename D::value_type) == 1, "D must be a sequence of char-sized objects.");
+  std::ifstream in(filename, std::ios::in | std::ios::binary);
+  if (in) {
+    D contents;
+    in.seekg(0, std::ios::end);
+    try_reserve(contents, in.tellg());
+    in.seekg(0, std::ios::beg);
+    std::copy((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>(), std::back_inserter(contents));
     in.close();
     return contents;
   } else {

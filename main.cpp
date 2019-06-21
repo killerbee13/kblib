@@ -114,9 +114,22 @@ int main() {
   //     << type_name_f<kblib::detail::next_larger_signed<long long>::type>() <<
   //     '\n';
 
-  auto filestr = kblib::get_file_contents("");
-  auto filevec = kblib::get_file_contents<std::vector<uint8_t>>("");
-  auto filewstr = kblib::get_file_contents<std::u32string>("");
+  auto filestr = kblib::get_file_contents("main.cpp");
+  if (filestr) {
+    std::cout<<"FNV32a(main.cpp): "<<kblib::FNV32a(*filestr)<<'\n';
+  } else {
+    std::cout<<"failed to open main.cpp\n";
+  }
+  auto filevec = kblib::get_file_contents<std::vector<uint8_t>>("main.cpp");
+  if (filevec) {
+    std::cout<<"FNV32a(main.cpp): "<<kblib::FNVa<std::uint32_t>(*filevec)<<'\n';
+  } else {
+    std::cout<<"failed to open main.cpp\n";
+  }
+  // auto filewstr = kblib::get_file_contents<std::u32string>("main.cpp");
+  // deque is not a contiguous container, and does not provide a .data() member
+  // so get_file_contents doesn't work.
+  // auto fileerror = kblib::get_file_contents<std::deque<char>>("main.cpp");
 #endif
 
   for (int b = 0; b < 62; ++b) {
@@ -351,7 +364,7 @@ int main() {
     assert(v.begin() == *kblib::range(v.begin(), v.end()).begin());
     assert(v.end() == *kblib::range(v.begin(), v.end()).end());
   }
-  test_trie();
+  //test_trie();
 }
 
 #if KBLIB_USE_CXX17

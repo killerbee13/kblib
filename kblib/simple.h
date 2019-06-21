@@ -4,6 +4,8 @@
 #include "tdecl.h"
 #include "traits.h"
 
+#include <bitset>
+#include <climits>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>

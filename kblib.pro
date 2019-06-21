@@ -5,7 +5,21 @@ CONFIG -= qt
 
 SOURCES += \
     main.cpp \
-    trie.cpp
+    trie.cpp \
+    build.cpp \
+    containers.cpp \
+    convert.cpp \
+    fakestd.cpp \
+    format.cpp \
+    icu.cpp \
+    iterators.cpp \
+    logic.cpp \
+    simple.cpp \
+    stats.cpp \
+    stringops.cpp \
+    tdecl.cpp \
+    traits.cpp \
+    variant.cpp
 
 HEADERS += \
     kblib.h \
