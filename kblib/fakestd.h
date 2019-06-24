@@ -215,10 +215,26 @@ detail::not_fn_t<F> not_fn(F&& f) {
   return detail::not_fn_t<F>(std::forward<F>(f));
 }
 
+struct in_place_t {
+  explicit in_place_t() = default;
+};
+inline constexpr in_place_t in_place{};
+
 }  // namespace fakestd
 #else
 namespace fakestd = std;
 #endif
+
+template <typename... Ts>
+struct unary_identity {};
+
+template <typename T>
+struct unary_identity<T> {
+  using type = T;
+};
+
+template <typename... Ts>
+using unary_identity_t = typename unary_identity<Ts...>::type;
 
 // metafunction_success:
 // SFINAE detector for a ::type member type
@@ -268,20 +284,20 @@ constexpr std::make_signed_t<I> to_signed(I x) {
 // Cast argument to equivalently-sized type with the same signedness as the
 // template parameter
 template <typename A, typename F>
-KBLIB_NODISCARD
-constexpr std::enable_if_t<std::is_integral<A>::value && std::is_integral<F>::value &&
-                         std::is_signed<A>::value,
-                     std::make_signed_t<F>>
-    signed_cast(F x) {
+KBLIB_NODISCARD constexpr std::enable_if_t<std::is_integral<A>::value &&
+                                               std::is_integral<F>::value &&
+                                               std::is_signed<A>::value,
+                                           std::make_signed_t<F>>
+signed_cast(F x) {
   return to_signed(x);
 }
 
 template <typename A, typename F>
-KBLIB_NODISCARD
-constexpr std::enable_if_t<std::is_integral<A>::value && std::is_integral<F>::value &&
-                         std::is_unsigned<A>::value,
-                     std::make_unsigned_t<F>>
-    signed_cast(F x) {
+KBLIB_NODISCARD constexpr std::enable_if_t<std::is_integral<A>::value &&
+                                               std::is_integral<F>::value &&
+                                               std::is_unsigned<A>::value,
+                                           std::make_unsigned_t<F>>
+signed_cast(F x) {
   return to_unsigned(x);
 }
 
@@ -605,11 +621,11 @@ template <typename D, typename T>
 struct pointer<D, T, fakestd::void_t<typename D::pointer>> {
   using type = typename D::pointer;
 };
-}
+}  // namespace detail
 
 template <typename T>
 class heap_value {
-public:
+ public:
   using pointer = T*;
   using element_type = T;
   using reference = T&;
@@ -617,8 +633,9 @@ public:
   constexpr heap_value() noexcept : p{nullptr} {}
   constexpr heap_value(std::nullptr_t) noexcept : p{nullptr} {}
 
-  template <typename... Args, typename std::enable_if<std::is_constructible<T, Args...>::value>::type = 0>
-  heap_value(std::in_place_t, Args&&... args) : p{new T(args...)} {}
+  template <typename... Args, typename std::enable_if<std::is_constructible<
+                                  T, Args...>::value>::type = 0>
+  heap_value(fakestd::in_place_t, Args&&... args) : p{new T(args...)} {}
 
   heap_value(const heap_value& u) : p{(u.p ? (new T(*u.p)) : nullptr)} {}
   heap_value(heap_value&& u) : p{std::exchange(u.p, nullptr)} {}
@@ -648,23 +665,15 @@ public:
     return;
   }
 
-  KBLIB_NODISCARD pointer get() const noexcept {
-    return p;
-  }
+  KBLIB_NODISCARD pointer get() const noexcept { return p; }
 
-  KBLIB_NODISCARD operator bool() const noexcept {
-    return p != nullptr;
-  }
+  KBLIB_NODISCARD operator bool() const noexcept { return p != nullptr; }
 
-  reference operator*() const noexcept {
-    return *p;
-  }
+  reference operator*() const noexcept { return *p; }
 
-  ~heap_value() {
-    delete p;
-  }
+  ~heap_value() { delete p; }
 
-private:
+ private:
   pointer p;
 };
 

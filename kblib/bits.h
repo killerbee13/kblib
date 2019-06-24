@@ -339,6 +339,13 @@ class compact_bit_trie {
   };
 };
 
+inline void memswap(void* A, void* B, std::size_t size) {
+  auto Ab = static_cast<unsigned char*>(A);
+  auto Bb = static_cast<unsigned char*>(B);
+  std::swap_ranges(Ab, Ab + size, Bb);
+  return;
+}
+
 }  // namespace kblib
 
 #endif  // KBLIB_BITS_H

@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
-#include <variant>
 
 #include "traits.h"
 

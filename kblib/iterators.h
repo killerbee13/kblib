@@ -4,6 +4,7 @@
 #include "fakestd.h"
 
 #include <iterator>
+#include <cassert>
 
 namespace kblib {
 

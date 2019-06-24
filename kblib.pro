@@ -22,7 +22,6 @@ SOURCES += \
     variant.cpp
 
 HEADERS += \
-    kblib.h \
     kblib/bits.h \
     kblib/build.h \
     kblib/containers.h \
@@ -38,7 +37,8 @@ HEADERS += \
     kblib/stringops.h \
     kblib/tdecl.h \
     kblib/traits.h \
-    kblib/variant.h
+    kblib/variant.h \
+    kblib/kblib.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags

@@ -194,6 +194,20 @@ class stack {
   container_type backing;
 };
 
+template <typename It, typename EndIt = It>
+struct range_adapter {
+  It begin_;
+  EndIt end_;
+
+  It begin() const {
+    return begin_;
+  }
+
+  EndIt end() const {
+    return end_;
+  }
+};
+
 }  // namespace kblib
 
 #endif  // KBLIB_CONTAINERS_H
