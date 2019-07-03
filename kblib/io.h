@@ -6,8 +6,11 @@
 
 #include <fstream>
 #include <functional>
-#include <optional>
 #include <string>
+
+#if KBLIB_USE_CXX17
+#include <optional>
+#endif
 
 namespace kblib {
 

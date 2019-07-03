@@ -218,7 +218,50 @@ detail::not_fn_t<F> not_fn(F&& f) {
 struct in_place_t {
   explicit in_place_t() = default;
 };
-inline constexpr in_place_t in_place{};
+static constexpr in_place_t in_place{};
+
+template<class ForwardIt>
+constexpr ForwardIt max_element(ForwardIt first, ForwardIt last)
+{
+    if (first == last) return last;
+
+    ForwardIt largest = first;
+    ++first;
+    for (; first != last; ++first) {
+        if (*largest < *first) {
+            largest = first;
+        }
+    }
+    return largest;
+}
+
+template<class ForwardIt, class Compare>
+constexpr ForwardIt max_element(ForwardIt first, ForwardIt last,
+                      Compare comp)
+{
+    if (first == last) return last;
+
+    ForwardIt largest = first;
+    ++first;
+    for (; first != last; ++first) {
+        if (comp(*largest, *first)) {
+            largest = first;
+        }
+    }
+    return largest;
+}
+
+template <class C>
+constexpr auto size(const C& c) -> decltype(c.size())
+{
+    return c.size();
+}
+
+template <class T, std::size_t N>
+constexpr std::size_t size(const T (&)[N]) noexcept
+{
+    return N;
+}
 
 }  // namespace fakestd
 #else

@@ -124,12 +124,32 @@ visitor(Ts...)->visitor<Ts...>;
  * @param ts Any number of functors, which taken together as an overload set can
  * be unambiguously called with any type in V.
  */
-template <typename V, typename... Ts>
-auto visit(V&& v, Ts&&... ts) {
-  return std::visit(visitor{std::forward<Ts>(ts)...}, std::forward<V>(v));
+template <typename V, typename F, typename... Fs>
+auto visit(V&& v, F&& f, Fs&&... fs) {
+  return std::visit(visitor{std::forward<F>(f), std::forward<Fs>(fs)...}, std::forward<V>(v));
 }
 
-#endif // KBLIB_USE_CXX17
+/**
+ * @brief Two-step visiting interface. Takes a variant, and returns an object
+ * which can be called with any number of callable arguments, builds an overload
+ * set from them, and visits the variant.
+ *
+ *
+ *
+ * @note The returned callable object contains a reference to v, so care must be
+ * taken to avoid dangling. However, if v is long-lived, the returned object
+ * may be stored and used to visit the same variant multiple times.
+ *
+ * @param v A variant to visit.
+ * @return auto A callable object which takes callable arguments and visits the visitor.
+ */
+template <typename V>
+KBLIB_NODISCARD auto visit(V&& v) {
+  return [v](auto... fs) -> decltype(auto) {
+    return std::visit(visitor{fs...}, v);
+  };
+}
+
 
 namespace detail {
 enum class construct_type {
@@ -613,6 +633,8 @@ class poly_obj
     new (data) U(std::forward<Args>(args)...);
   }
 };
+
+#endif // KBLIB_USE_CXX17
 
 } // namespace kblib
 

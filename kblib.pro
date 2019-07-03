@@ -5,7 +5,6 @@ CONFIG -= qt
 
 SOURCES += \
     main.cpp \
-    trie.cpp \
     build.cpp \
     containers.cpp \
     convert.cpp \
@@ -19,7 +18,8 @@ SOURCES += \
     stringops.cpp \
     tdecl.cpp \
     traits.cpp \
-    variant.cpp
+    variant.cpp \
+    bits.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -42,7 +42,8 @@ HEADERS += \
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags
-QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi
+QMAKE_CXXFLAGS += -I/mnt/Vers1/include
+QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib
 
 QMAKE_CXXFLAGS += -fsanitize=address,undefined
 QMAKE_LFLAGS += -fsanitize=address,undefined

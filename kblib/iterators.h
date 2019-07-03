@@ -37,7 +37,7 @@ constexpr auto to_pointer(P&& p) noexcept {
 template <typename Container,
           typename Comp = std::less<value_type_linear_t<Container>>>
 value_type_linear_t<Container>* max_element(Container& c, Comp comp) {
-  auto it = std::max_element(std::begin(c), std::end(c), comp);
+  auto it = fakestd::max_element(std::begin(c), std::end(c), comp);
   if (it != std::end(c)) {
     return to_pointer(it);
   } else {

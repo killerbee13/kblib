@@ -9,6 +9,9 @@
 #include <set>
 #include <string_view>
 
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
+
 template <class T>
 constexpr std::string_view type_name_f() {
   using namespace std;
@@ -67,7 +70,7 @@ void test_trie();
 void poly_test();
 #endif
 
-int main() {
+void main_() {
   std::cout << kblib::signed_cast<unsigned>(-1ll) << '\n'
             << kblib::signed_cast<signed>(static_cast<unsigned short>(78))
             << '\n';

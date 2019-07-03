@@ -43,7 +43,7 @@ namespace detail {
  * If T is an arithmetic type, provides the member type = T. Otherwise, type =
  * void. The primary template is for non-arithmetic types.
  */
-template <typename T, bool = std::is_arithmetic_v<T>>
+template <typename T, bool = std::is_arithmetic<T>::value>
 struct arithmetic_type {
   using type = void;
 };
@@ -115,6 +115,7 @@ using str_type_t = typename str_type<T>::type;
 
 }  // namespace detail
 
+#if KBLIB_USE_CXX17
 /**
  * @brief Determines the size in characters of any valid argument to concat or
  * append.
@@ -216,6 +217,7 @@ string concat(std::initializer_list<str> ins) {
   }
   return ret;
 }
+#endif
 #endif  // KBLIB_USE_CXX17
 
 /**
@@ -231,7 +233,7 @@ template <typename range, typename string = std::string>
 string join(const range& in, const string& joiner = "") {
   if (in.size() == 0) {
     return {};
-  } else if (std::size(in) == 1) {
+  } else if (fakestd::size(in) == 1) {
     return *in.begin();
   } else {
     return std::accumulate(
@@ -295,7 +297,7 @@ string toUpper(string str) {
 template <typename string>
 string repeat(string val, int count) {
   string tmp;
-  try_reserve(tmp, std::size(val) * count);
+  try_reserve(tmp, fakestd::size(val) * count);
   for (int i = 0; i < count; ++i) {
     tmp += val;
   }
