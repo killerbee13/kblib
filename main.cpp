@@ -70,7 +70,7 @@ void test_trie();
 void poly_test();
 #endif
 
-void main_() {
+TEST_CASE("main") {
   std::cout << kblib::signed_cast<unsigned>(-1ll) << '\n'
             << kblib::signed_cast<signed>(static_cast<unsigned short>(78))
             << '\n';
@@ -194,10 +194,10 @@ void main_() {
       std::cout << "buildiota2<C>(size, value, incr) failed.\n";
       print_arr(i2);
     }
-    assert(i3.size() == target.size() &&
-           kblib::equal(i3.begin(), i3.end(), target.begin()));
-    assert(i4.size() == target.size() &&
-           kblib::equal(i4.begin(), i4.end(), target.begin()));
+    REQUIRE((i3.size() == target.size() &&
+           kblib::equal(i3.begin(), i3.end(), target.begin())));
+    REQUIRE((i4.size() == target.size() &&
+           kblib::equal(i4.begin(), i4.end(), target.begin())));
     if (!(i5.size() == target.size() &&
           kblib::equal(i5.begin(), i5.end(), target.begin()))) {
       std::cout
@@ -338,16 +338,16 @@ void main_() {
     const auto& cm = m;
 
     // m[0] doesn't exist
-    assert(kblib::try_get(m, 0) == nullptr);
+    REQUIRE(kblib::try_get(m, 0) == nullptr);
     // Works for const maps
-    assert(kblib::try_get(cm, 0) == nullptr);
+    REQUIRE(kblib::try_get(cm, 0) == nullptr);
     // Make m[0]
     m[0] = 0;
 
     // Basic correctness testing
-    assert(kblib::try_get(m, 0) == &m[0]);
+    REQUIRE(kblib::try_get(m, 0) == &m[0]);
     *kblib::try_get(m, 0) = 1;
-    assert(m[0] == 1);
+    REQUIRE(m[0] == 1);
 
     // Returns pointer to const when given const map
     //*kblib::try_get(cm, 0) = 1;
@@ -364,8 +364,8 @@ void main_() {
 
     // range supports iterators and other similar types.
     std::vector<int> v(100);
-    assert(v.begin() == *kblib::range(v.begin(), v.end()).begin());
-    assert(v.end() == *kblib::range(v.begin(), v.end()).end());
+    REQUIRE(v.begin() == *kblib::range(v.begin(), v.end()).begin());
+    REQUIRE(v.end() == *kblib::range(v.begin(), v.end()).end());
   }
   //test_trie();
 }
@@ -449,16 +449,16 @@ struct noncopyable_derived : copyable_base {
 void poly_test() {
   {
     kblib::poly_obj<good_base> o1, o2{std::in_place};
-    assert(!o1.has_value());
-    assert(o2.has_value());
+    REQUIRE(!o1.has_value());
+    REQUIRE(o2.has_value());
     o2->bark();                                             // good_base
     o1 = kblib::poly_obj<good_base>::make<good_derived>();  // temporary deleted
-    assert(o1.has_value());
+    REQUIRE(o1.has_value());
     o1->bark();  // good_derived
     o2 = o1;     // o2 ~good_base
     o2->bark();  // good_derived
     o1.clear(); //~good_base
-    assert(!o1.has_value());
+    REQUIRE(!o1.has_value());
     // kblib::poly_obj<good_base> o3 =
     // kblib::poly_obj<good_base>::make<bad_nocopy>();
   }
@@ -485,7 +485,7 @@ void poly_test() {
     kblib::poly_obj<small_base, sizeof(big_derived)> o7, o8{std::in_place};
     o8->bark();
     o7 = kblib::poly_obj<small_base, sizeof(big_derived)>::make<big_derived>();
-    assert(o7.has_value());
+    REQUIRE(o7.has_value());
     o7->bark();
   }
 

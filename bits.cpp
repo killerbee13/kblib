@@ -1,4 +1,5 @@
 #include "kblib/bits.h"
+#include "catch.hpp"
 
 template <typename T>
 struct print;
@@ -51,8 +52,10 @@ static_assert(std::is_same<kblib::int_smallest_t<INT_MAX>, signed int>::value,
 static_assert(std::is_same<kblib::int_smallest_t<long(INT_MAX) + 1>, signed long>::value,
               "int_smallest_t");
 
-void test_trie() {
+TEST_CASE("test_trie") {
   kblib::compact_bit_trie<unsigned short, 1024, int> test;
-  assert(test.insert({0b1000100010000000, 10}, 1));
-  std::cout<<test.at({0b1000100010000000, 10})<<'\n';
+  REQUIRE(test.insert({0b1000100010000000, 10}, 1));
+  //has UB, so I hardcoded a test failure as a reminder
+  //std::cout<<test.at({0b1000100010000000, 10})<<'\n';
+  REQUIRE(!"test.at({0b1000100010000000, 10}) has UB");
 }
