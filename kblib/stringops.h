@@ -245,6 +245,28 @@ string join(const range& in, const string& joiner = "") {
 }
 
 /**
+ * @brief Split a string on all instances of a delimiter.
+ *
+ * @param in The string to split
+ * @param delim The character to split on. A run of delimiters is condensed.
+ * @return Container A sequence container of all substrings in the split input.
+ */
+template <typename Container = std::vector<std::string>, typename String>
+Container split(const String& in, char delim = ' ') {
+  Container ret{""};
+  bool delim_run = true;
+  for (char c : in) {
+    if (c == delim && !std::exchange(delim_run, true)) {
+      ret.emplace_back();
+    } else {
+      delim_run = false;
+      ret.back().push_back(c);
+    }
+  }
+  return ret;
+}
+
+/**
  * @brief Reverses all the elements of its input.
  *
  * @attention This function will not behave correctly with multibyte character
@@ -267,7 +289,7 @@ string reverseStr(string val) {
  */
 template <typename string>
 string toLower(string str) {
-  std::transform(str.begin(), str.end(), str.begin(), std::tolower);
+  std::transform(str.begin(), str.end(), str.begin(), [](auto c) {return std::tolower(c);});
   return str;
 }
 

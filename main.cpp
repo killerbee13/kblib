@@ -9,7 +9,6 @@
 #include <set>
 #include <string_view>
 
-#define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
 template <class T>

@@ -19,7 +19,8 @@ SOURCES += \
     tdecl.cpp \
     traits.cpp \
     variant.cpp \
-    bits.cpp
+    bits.cpp \
+    catch_main.cpp
 
 HEADERS += \
     kblib/bits.h \

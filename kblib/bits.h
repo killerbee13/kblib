@@ -346,6 +346,32 @@ inline void memswap(void* A, void* B, std::size_t size) {
   return;
 }
 
+template<int offset, int size, typename Storage, typename Parent>
+struct bitfield {
+  Storage operator()() const noexcept {
+    Storage v;
+    std::memcpy(&v, std::launder(reinterpret_cast<const Parent*>(this)), sizeof(Storage));
+    return (v >> offset) & ((1 << size) - 1);
+  }
+  Storage operator()(Storage val) noexcept {
+    Storage v;
+    Parent* p = std::launder(reinterpret_cast<Parent*>(this));
+    std::memcpy(&v, p, sizeof(Storage));
+    // Clear the bits for this field
+    v &= ~(((1 << size) - 1) << offset);
+    // Set the field
+    v |= (val & ((1 << size) - 1)) << offset;
+    std::memcpy(p, &v, sizeof(Storage));
+    return val;
+  }
+  operator Storage() const noexcept {
+    return (*this)();
+  }
+  Storage operator=(Storage val) noexcept {
+    return (*this)(val);
+  }
+};
+
 }  // namespace kblib
 
 #endif  // KBLIB_BITS_H

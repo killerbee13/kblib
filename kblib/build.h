@@ -1275,9 +1275,6 @@ class consume_iterator {
    */
   explicit consume_iterator(F f) : fun(std::move(f)) {}
 
-  consume_iterator& operator=(const consume_iterator&) = default;
-  consume_iterator& operator=(consume_iterator&&) = default;
-
   /**
    * @brief Pass value to F.
    *
