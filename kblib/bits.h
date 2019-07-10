@@ -363,6 +363,8 @@ struct bitfield {
 	Storage raw;
 };
 
+namespace detail {
+
 template <typename Parent, typename Ret, Ret (Parent::*Set)(Ret) noexcept,
           Ret (Parent::*Get)() const noexcept>
 struct bitfield_proxy {
@@ -371,7 +373,9 @@ struct bitfield_proxy {
 	constexpr operator Ret() const noexcept { return (p->*Get)(); }
 };
 
-#define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                          \
+} // namespace detail
+
+#define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
  private:                                                                      \
 	constexpr decltype(raw) name##_get_impl() const noexcept {                  \
 	   return (raw >> offset) & ((1 << size) - 1);                              \
@@ -382,12 +386,10 @@ struct bitfield_proxy {
 	                                                                            \
  private:                                                                      \
 	constexpr decltype(raw) name##_set_impl(decltype(raw) val) noexcept {       \
-	   auto v = raw;                                                            \
 	   /* Clear the bits for this field */                                      \
-	   v &= ~(((1 << size) - 1) << offset);                                     \
+	   raw &= ~(((1 << size) - 1) << offset);                                   \
 	   /* Set the field */                                                      \
-	   v |= (val & ((1 << size) - 1)) << offset;                                \
-	   raw = v;                                                                 \
+	   raw |= (val & ((1 << size) - 1)) << offset;                              \
 	   return val;                                                              \
    }                                                                           \
 	                                                                            \
@@ -398,8 +400,9 @@ struct bitfield_proxy {
 	                                                                            \
 	constexpr auto name() noexcept {                                            \
 	   using Parent = std::remove_pointer<decltype(this)>::type;                \
-	   return kblib::bitfield_proxy<Parent, decltype(raw), &Parent::name##_set_impl,   \
-	                         &Parent::name##_get_impl>{this};                   \
+	   return kblib::detail::bitfield_proxy<Parent, decltype(raw),              \
+	                                        &Parent::name##_set_impl,           \
+	                                        &Parent::name##_get_impl>{this};    \
    }
 
 #ifdef KBLIB_DEF_MACROS
