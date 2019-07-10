@@ -394,6 +394,10 @@ struct bitfield_proxy {
 
 } // namespace detail
 
+/**
+  * @def KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
+  * @sa See #BITFIELD(offset, size, name, raw) for documentation.
+  */
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
  private:                                                                      \
 	constexpr decltype(raw) name##_get_impl() const noexcept {                  \
@@ -429,16 +433,19 @@ struct bitfield_proxy {
  * Defines appropreiate member functions which operate on a bitfield. The
  * generated functions are constexpr and optimize well.
  *
+ * @sa See #KBLIB_INTERNAL_BITFIELD_MACRO for definition.
+ *
  * @param offset The number of bits less significant than this bitfield.
  * @param size The number of bits in this bitfield.
  * @param name The name of the generated member functions which operate on this
  * bitfield.
  * @param raw The name of the member variable in which the bitfield is stored.
  */
-
-#ifdef KBLIB_DEF_MACROS
 #define BITFIELD(offset, size, name, raw) \
 	KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
+
+#ifdef KBLIB_DEF_MACROS
+#undef BITFIELD
 #endif
 
 } // namespace kblib
