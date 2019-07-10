@@ -14,4 +14,4 @@
 #include "kblib/stringops.h"
 #include "kblib/variant.h"
 
-#endif  // KBLIB_H
+#endif // KBLIB_H

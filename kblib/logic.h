@@ -28,6 +28,6 @@ template <bool A, bool B>
 constexpr inline bool implies_v = implies<A, B>::value;
 #endif
 
-}  // namespace kblib
+} // namespace kblib
 
-#endif  // KBLIB_LOGIC_H
+#endif // KBLIB_LOGIC_H

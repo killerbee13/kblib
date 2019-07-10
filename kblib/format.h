@@ -17,13 +17,13 @@ namespace kblib {
  */
 template <typename Number>
 constexpr int digitsOf(Number val) {
-  if (val > 0) {
-    return std::ceil(std::log10(val + 1));
-  } else if (val < 0) {
-    return 1 + std::ceil(std::log10(-val + 1));
-  } else {
-    return 1;
-  }
+	if (val > 0) {
+		return std::ceil(std::log10(val + 1));
+	} else if (val < 0) {
+		return 1 + std::ceil(std::log10(-val + 1));
+	} else {
+		return 1;
+	}
 }
 
 /**
@@ -36,8 +36,8 @@ constexpr int digitsOf(Number val) {
  */
 template <typename Number>
 constexpr int digitsOf(Number val, int base) {
-  return std::ceil(std::log(std::abs(val) + 1) / std::log(base)) +
-         std::signbit(val);
+	return std::ceil(std::log(std::abs(val) + 1) / std::log(base)) +
+	       std::signbit(val);
 }
 
 /**
@@ -51,7 +51,7 @@ constexpr int digitsOf(Number val, int base) {
  */
 template <typename ForwardIt>
 int digitsList(ForwardIt first, ForwardIt last) {
-  return digitsOf(*std::max_element(first, last));
+	return digitsOf(*std::max_element(first, last));
 }
 
 /**
@@ -66,9 +66,9 @@ int digitsList(ForwardIt first, ForwardIt last) {
  */
 template <typename ForwardIt>
 int digitsList(ForwardIt first, ForwardIt last, int base) {
-  return digitsOf(*std::max_element(first, last), base);
+	return digitsOf(*std::max_element(first, last), base);
 }
 
-}  // namespace kblib
+} // namespace kblib
 
-#endif  // KBLIB_FORMAT_H
+#endif // KBLIB_FORMAT_H

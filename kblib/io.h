@@ -24,24 +24,26 @@ namespace kblib {
  * with the contents of the file to be read.
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
-template <typename D = std::string, typename string, typename std::enable_if_t<is_contiguous_v<D>, int> = 0>
+template <typename D = std::string, typename string,
+          typename std::enable_if_t<is_contiguous_v<D>, int> = 0>
 std::optional<D> get_file_contents(const string& filename) {
-  static_assert(std::is_trivially_copyable_v<typename D::value_type>,
-                "D must be a sequence of trivial types");
-  static_assert(sizeof(typename D::value_type) == 1, "D must be a sequence of char-sized objects.");
-  std::ifstream in(filename, std::ios::in | std::ios::binary);
-  if (in) {
-    D contents;
-    in.seekg(0, std::ios::end);
-    auto size = in.tellg();
-    contents.resize(size);
-    in.seekg(0, std::ios::beg);
-    in.read(reinterpret_cast<char*>(contents.data()), size);
-    in.close();
-    return contents;
-  } else {
-    return std::nullopt;
-  }
+	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
+	              "D must be a sequence of trivial types");
+	static_assert(sizeof(typename D::value_type) == 1,
+	              "D must be a sequence of char-sized objects.");
+	std::ifstream in(filename, std::ios::in | std::ios::binary);
+	if (in) {
+		D contents;
+		in.seekg(0, std::ios::end);
+		auto size = in.tellg();
+		contents.resize(size);
+		in.seekg(0, std::ios::beg);
+		in.read(reinterpret_cast<char*>(contents.data()), size);
+		in.close();
+		return contents;
+	} else {
+		return std::nullopt;
+	}
 }
 
 /**
@@ -49,27 +51,30 @@ std::optional<D> get_file_contents(const string& filename) {
  * std::string or std::vector<char>.
  *
  * @param filename The filename to open.
- * @tparam D A non-contiguous sequence container, which will be created and filled
- * with the contents of the file to be read.
+ * @tparam D A non-contiguous sequence container, which will be created and
+ * filled with the contents of the file to be read.
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
-template <typename D = std::string, typename string, typename std::enable_if_t<!is_contiguous_v<D>, int> = 0>
+template <typename D = std::string, typename string,
+          typename std::enable_if_t<!is_contiguous_v<D>, int> = 0>
 std::optional<D> get_file_contents(const string& filename) {
-  static_assert(std::is_trivially_copyable_v<typename D::value_type>,
-                "D must be a sequence of trivial types");
-  static_assert(sizeof(typename D::value_type) == 1, "D must be a sequence of char-sized objects.");
-  std::ifstream in(filename, std::ios::in | std::ios::binary);
-  if (in) {
-    D contents;
-    in.seekg(0, std::ios::end);
-    try_reserve(contents, in.tellg());
-    in.seekg(0, std::ios::beg);
-    std::copy((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>(), std::back_inserter(contents));
-    in.close();
-    return contents;
-  } else {
-    return std::nullopt;
-  }
+	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
+	              "D must be a sequence of trivial types");
+	static_assert(sizeof(typename D::value_type) == 1,
+	              "D must be a sequence of char-sized objects.");
+	std::ifstream in(filename, std::ios::in | std::ios::binary);
+	if (in) {
+		D contents;
+		in.seekg(0, std::ios::end);
+		try_reserve(contents, in.tellg());
+		in.seekg(0, std::ios::beg);
+		std::copy((std::istreambuf_iterator<char>(in)),
+		          std::istreambuf_iterator<char>(), std::back_inserter(contents));
+		in.close();
+		return contents;
+	} else {
+		return std::nullopt;
+	}
 }
 #endif
 
@@ -80,9 +85,9 @@ std::optional<D> get_file_contents(const string& filename) {
  * @return std::string A single line of text from the stream.
  */
 inline std::string getline(std::istream& is) {
-  std::string ret;
-  std::getline(is, ret);
-  return ret;
+	std::string ret;
+	std::getline(is, ret);
+	return ret;
 }
 
 /**
@@ -92,10 +97,10 @@ inline std::string getline(std::istream& is) {
  * @return std::istream
  */
 inline std::istream& eatWord(std::istream& is) {
-  do {
-    is.get();
-  } while (is && !isspace(is.peek()));
-  return is;
+	do {
+		is.get();
+	} while (is && !isspace(is.peek()));
+	return is;
 }
 
 /**
@@ -105,10 +110,10 @@ inline std::istream& eatWord(std::istream& is) {
  * @return std::istream
  */
 inline std::istream& eatSpace(std::istream& is) {
-  while (is && isspace(is.peek())) {
-    is.get();
-  }
-  return is;
+	while (is && isspace(is.peek())) {
+		is.get();
+	}
+	return is;
 }
 
 /**
@@ -116,7 +121,7 @@ inline std::istream& eatSpace(std::istream& is) {
  */
 template <typename F>
 struct get_manip {
-  F _f;
+	F _f;
 };
 
 /**
@@ -132,11 +137,11 @@ struct get_manip {
 template <typename CharT, typename... O,
           template <typename, typename...> class string>
 inline auto get_line(string<CharT, O...>& str) {
-  auto _f = [&](auto& istream) -> decltype(istream) {
-    std::getline(istream, str);
-    return istream;
-  };
-  return get_manip<decltype(_f)>{_f};
+	auto _f = [&](auto& istream) -> decltype(istream) {
+		std::getline(istream, str);
+		return istream;
+	};
+	return get_manip<decltype(_f)>{_f};
 }
 
 /**
@@ -153,11 +158,11 @@ inline auto get_line(string<CharT, O...>& str) {
 template <typename CharT, typename... O,
           template <typename, typename...> class string>
 inline auto get_line(string<CharT, O...>& str, CharT delim) {
-  auto _f = [&](auto& istream) -> decltype(istream) {
-    std::getline(istream, str, delim);
-    return istream;
-  };
-  return get_manip<decltype(_f)>{_f};
+	auto _f = [&](auto& istream) -> decltype(istream) {
+		std::getline(istream, str, delim);
+		return istream;
+	};
+	return get_manip<decltype(_f)>{_f};
 }
 
 /**
@@ -166,7 +171,7 @@ inline auto get_line(string<CharT, O...>& str, CharT delim) {
 template <typename F, typename CharT, typename Tr>
 std::basic_istream<CharT, Tr>& operator>>(std::basic_istream<CharT, Tr>& is,
                                           get_manip<F> func) {
-  return func._f(is);
+	return func._f(is);
 }
 
 /**
@@ -175,9 +180,9 @@ std::basic_istream<CharT, Tr>& operator>>(std::basic_istream<CharT, Tr>& is,
 template <typename F, typename CharT, typename Tr>
 std::basic_ostream<CharT, Tr>& operator<<(std::basic_ostream<CharT, Tr>& is,
                                           get_manip<F> func) {
-  return func._f(is);
+	return func._f(is);
 }
 
-}  // namespace kblib
+} // namespace kblib
 
-#endif  // KBLIB_IO_H
+#endif // KBLIB_IO_H

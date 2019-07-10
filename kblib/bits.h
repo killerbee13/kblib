@@ -22,39 +22,39 @@ constexpr int bits_of = std::numeric_limits<Int>::digits;
 
 namespace detail {
 
-template <typename Key, typename Value>
-class trie_node {
-	std::unique_ptr<std::array<trie_node, 4>> children;
-	unsigned char storage[sizeof(Value)]{};
-	bool exists = false;
+   template <typename Key, typename Value>
+   class trie_node {
+		std::unique_ptr<std::array<trie_node, 4>> children;
+		unsigned char storage[sizeof(Value)]{};
+		bool exists = false;
 
-	template <typename... Args>
-	Value& create(Args&&... args) noexcept(
-	    std::is_nothrow_constructible<Value, Args...>::value) {
-		clear();
-		// This variable must exist for exception safety. exists should not be set
-		// to true if an exception is thrown.
-		auto v = *new (storage) Value(args...);
-		exists = true;
-		return *v;
-	}
-
-	void clear() noexcept {
-		if (exists) {
-			get()->~Value();
+		template <typename... Args>
+		Value& create(Args&&... args) noexcept(
+		    std::is_nothrow_constructible<Value, Args...>::value) {
+			clear();
+			// This variable must exist for exception safety. exists should not be
+			// set to true if an exception is thrown.
+			auto v = *new (storage) Value(args...);
+			exists = true;
+			return *v;
 		}
-		return;
-	}
 
-	Value& get() noexcept {
-		assert(exists);
-		return *reinterpret_cast<Value*>(storage);
-	}
-	const Value& get() const noexcept {
-		assert(exists);
-		return *reinterpret_cast<Value*>(storage);
-	}
-};
+		void clear() noexcept {
+			if (exists) {
+				get()->~Value();
+			}
+			return;
+		}
+
+		Value& get() noexcept {
+			assert(exists);
+			return *reinterpret_cast<Value*>(storage);
+		}
+		const Value& get() const noexcept {
+			assert(exists);
+			return *reinterpret_cast<Value*>(storage);
+		}
+	};
 
 } // namespace detail
 /*
@@ -384,20 +384,20 @@ struct bitfield {
 
 namespace detail {
 
-template <typename Parent, typename Ret, Ret (Parent::*Set)(Ret) noexcept,
-          Ret (Parent::*Get)() const noexcept>
-struct bitfield_proxy {
-	Parent* p;
-	constexpr Ret operator=(Ret val) noexcept { return (p->*Set)(val); }
-	constexpr operator Ret() const noexcept { return (p->*Get)(); }
-};
+   template <typename Parent, typename Ret, Ret (Parent::*Set)(Ret) noexcept,
+             Ret (Parent::*Get)() const noexcept>
+   struct bitfield_proxy {
+		Parent* p;
+		constexpr Ret operator=(Ret val) noexcept { return (p->*Set)(val); }
+		constexpr operator Ret() const noexcept { return (p->*Get)(); }
+	};
 
 } // namespace detail
 
 /**
-  * @def KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
-  * @sa See #BITFIELD(offset, size, name, raw) for documentation.
-  */
+ * @def KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
+ * @sa See #BITFIELD(offset, size, name, raw) for documentation.
+ */
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
  private:                                                                      \
 	constexpr decltype(raw) name##_get_impl() const noexcept {                  \

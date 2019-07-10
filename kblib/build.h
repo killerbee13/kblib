@@ -34,9 +34,9 @@ template <typename Container, typename InputIt, typename UnaryFunction>
 KBLIB_NODISCARD Container build(InputIt first, InputIt last, UnaryFunction f,
                                 typename Container::allocator_type allocator =
                                     typename Container::allocator_type{}) {
-  Container out(allocator);
-  std::transform(first, last, std::back_inserter(out), f);
-  return static_cast<void>(out.resize(out.size())), out;
+	Container out(allocator);
+	std::transform(first, last, std::back_inserter(out), f);
+	return static_cast<void>(out.resize(out.size())), out;
 }
 /**
  * @brief Constructs a container by applying a BinaryFunction to every pair of
@@ -60,9 +60,9 @@ KBLIB_NODISCARD Container build(InputIt first, InputIt last, InputIt2 first2,
                                 BinaryFunction f,
                                 typename Container::allocator_type allocator =
                                     typename Container::allocator_type{}) {
-  Container out(allocator);
-  std::transform(first, last, first2, std::back_inserter(out), f);
-  return out;
+	Container out(allocator);
+	std::transform(first, last, first2, std::back_inserter(out), f);
+	return out;
 }
 
 /**
@@ -86,9 +86,9 @@ template <
     typename Array, typename InputIt, typename UnaryFunction,
     typename std::enable_if<!detail::is_resizable_v<Array>, int>::type = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
-  Array out;
-  std::transform(first, last, out.begin(), f);
-  return out;
+	Array out;
+	std::transform(first, last, out.begin(), f);
+	return out;
 }
 /**
  * @brief Constructs an array-like container by applying a BinaryFunction to
@@ -114,9 +114,9 @@ template <
     typename std::enable_if<!detail::is_resizable_v<Array>, int>::type = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, InputIt2 first2,
                             BinaryFunction f) {
-  Array out;
-  std::transform(first, last, first2, out.begin(), f);
-  return out;
+	Array out;
+	std::transform(first, last, first2, out.begin(), f);
+	return out;
 }
 
 /**
@@ -135,10 +135,10 @@ template <typename Container, typename Functor>
 KBLIB_NODISCARD Container build(Functor f, size_t size,
                                 typename Container::allocator_type allocator =
                                     typename Container::allocator_type{}) {
-  Container out(allocator);
-  try_reserve(out, size);
-  std::generate_n(std::back_inserter(out), size, f);
-  return out;
+	Container out(allocator);
+	try_reserve(out, size);
+	std::generate_n(std::back_inserter(out), size, f);
+	return out;
 }
 
 /**
@@ -161,9 +161,9 @@ template <
     typename std::enable_if<!detail::is_resizable_v<Array>, int>::type = 0>
 KBLIB_NODISCARD Array build(Functor f,
                             size_t size = std::tuple_size<Array>::value) {
-  Array out;
-  std::generate_n(out.begin(), size, f);
-  return out;
+	Array out;
+	std::generate_n(out.begin(), size, f);
+	return out;
 }
 
 // build_dy: workaround for non-allocator-aware dynamic containers
@@ -183,9 +183,9 @@ KBLIB_NODISCARD Array build(Functor f,
 template <typename Container, typename InputIt, typename UnaryFunction>
 KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last,
                                    UnaryFunction f) {
-  Container out;
-  std::transform(first, last, std::back_inserter(out), f);
-  return out;
+	Container out;
+	std::transform(first, last, std::back_inserter(out), f);
+	return out;
 }
 /**
  * @brief Constructs a container by applying a BinaryFunction to every pair of
@@ -207,9 +207,9 @@ template <typename Container, typename InputIt, typename InputIt2,
           typename BinaryFunction>
 KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last, InputIt2 first2,
                                    BinaryFunction f) {
-  Container out;
-  std::transform(first, last, first2, std::back_inserter(out), f);
-  return out;
+	Container out;
+	std::transform(first, last, first2, std::back_inserter(out), f);
+	return out;
 }
 
 /**
@@ -224,10 +224,10 @@ KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last, InputIt2 first2,
  */
 template <typename Container, typename Functor>
 KBLIB_NODISCARD Container build_dy(Functor f, size_t size) {
-  Container out;
-  try_reserve(out, size);
-  std::generate_n(std::back_inserter(out), size, f);
-  return out;
+	Container out;
+	try_reserve(out, size);
+	std::generate_n(std::back_inserter(out), size, f);
+	return out;
 }
 
 #if 0
@@ -291,53 +291,53 @@ inline Array build(ExecutionPolicy&& policy, Functor f, size_t size = std::tuple
 
 namespace detail {
 
-template <typename Container>
-struct buildiota_impl<Container, true> {
-  template <typename T>
-  constexpr static Container impl(std::size_t count, T value) {
-    Container out;
-    try_reserve(out, count);
-    while (count-- > 0) {
-      out.push_back(value);
-      ++value;
-    }
-    return out;
-  }
-  template <typename T, typename I>
-  constexpr static Container impl(std::size_t count, T value, I incr) {
-    Container out;
-    try_reserve(out, count);
-    while (count-- > 0) {
-      out.push_back(value);
-      value += incr;
-    }
-    return out;
-  }
-};
+   template <typename Container>
+   struct buildiota_impl<Container, true> {
+		template <typename T>
+		constexpr static Container impl(std::size_t count, T value) {
+			Container out;
+			try_reserve(out, count);
+			while (count-- > 0) {
+				out.push_back(value);
+				++value;
+			}
+			return out;
+		}
+		template <typename T, typename I>
+		constexpr static Container impl(std::size_t count, T value, I incr) {
+			Container out;
+			try_reserve(out, count);
+			while (count-- > 0) {
+				out.push_back(value);
+				value += incr;
+			}
+			return out;
+		}
+	};
 
-template <typename Array>
-struct buildiota_impl<Array, false> {
-  template <typename T>
-  constexpr static Array impl(T value) {
-    Array out{};
-    for (auto& v : out) {
-      v = value;
-      ++value;
-    }
-    return out;
-  }
-  template <typename T, typename I>
-  constexpr static Array impl(T value, I incr) {
-    Array out{};
-    for (auto& v : out) {
-      v = value;
-      value += incr;
-    }
-    return out;
-  }
-};
+	template <typename Array>
+	struct buildiota_impl<Array, false> {
+		template <typename T>
+		constexpr static Array impl(T value) {
+			Array out{};
+			for (auto& v : out) {
+				v = value;
+				++value;
+			}
+			return out;
+		}
+		template <typename T, typename I>
+		constexpr static Array impl(T value, I incr) {
+			Array out{};
+			for (auto& v : out) {
+				v = value;
+				value += incr;
+			}
+			return out;
+		}
+	};
 
-}  // namespace detail
+} // namespace detail
 
 /**
  * @brief Builds a container of increasing values.
@@ -354,8 +354,8 @@ struct buildiota_impl<Array, false> {
  */
 template <typename Container, typename... Args>
 KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) {
-  return detail::buildiota_impl<Container, detail::is_resizable_v<Container>>::
-      impl(std::forward<Args>(args)...);
+	return detail::buildiota_impl<Container, detail::is_resizable_v<Container>>::
+	    impl(std::forward<Args>(args)...);
 }
 
 /**
@@ -366,8 +366,8 @@ KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) {
  */
 template <typename C, typename T>
 void erase(C& c, const T& val) {
-  c.erase(std::remove(c.begin(), c.end(), val), c.end());
-  return;
+	c.erase(std::remove(c.begin(), c.end(), val), c.end());
+	return;
 }
 
 /**
@@ -378,8 +378,8 @@ void erase(C& c, const T& val) {
  */
 template <typename C, typename UnaryPredicate>
 void erase_if(C& c, UnaryPredicate p) {
-  c.erase(std::remove_if(c.begin(), c.end(), p), c.end());
-  return;
+	c.erase(std::remove_if(c.begin(), c.end(), p), c.end());
+	return;
 }
 
 /**
@@ -394,21 +394,21 @@ void erase_if(C& c, UnaryPredicate p) {
  */
 template <typename It, typename T>
 KBLIB_NODISCARD It find_last(It begin, It end, const T& v) {
-  if (begin == end) {
-    return end;
-  }
-  It result = end;
-  while (true) {
-    It new_result = std::find(begin, end, v);
-    if (new_result == end) {
-      break;
-    } else {
-      result = new_result;
-      begin = result;
-      ++begin;
-    }
-  }
-  return result;
+	if (begin == end) {
+		return end;
+	}
+	It result = end;
+	while (true) {
+		It new_result = std::find(begin, end, v);
+		if (new_result == end) {
+			break;
+		} else {
+			result = new_result;
+			begin = result;
+			++begin;
+		}
+	}
+	return result;
 }
 
 /**
@@ -423,21 +423,21 @@ KBLIB_NODISCARD It find_last(It begin, It end, const T& v) {
  */
 template <typename It, typename Pred>
 KBLIB_NODISCARD It find_last_if(It begin, It end, Pred p) {
-  if (begin == end) {
-    return end;
-  }
-  It result = end;
-  while (true) {
-    It new_result = std::find_if(begin, end, p);
-    if (new_result == end) {
-      break;
-    } else {
-      result = new_result;
-      begin = result;
-      ++begin;
-    }
-  }
-  return result;
+	if (begin == end) {
+		return end;
+	}
+	It result = end;
+	while (true) {
+		It new_result = std::find_if(begin, end, p);
+		if (new_result == end) {
+			break;
+		} else {
+			result = new_result;
+			begin = result;
+			++begin;
+		}
+	}
+	return result;
 }
 
 /**
@@ -452,21 +452,21 @@ KBLIB_NODISCARD It find_last_if(It begin, It end, Pred p) {
  */
 template <typename It, typename Pred>
 KBLIB_NODISCARD It find_last_if_not(It begin, It end, Pred p) {
-  if (begin == end) {
-    return end;
-  }
-  It result = end;
-  while (true) {
-    It new_result = std::find_if_not(begin, end, p);
-    if (new_result == end) {
-      break;
-    } else {
-      result = new_result;
-      begin = result;
-      ++begin;
-    }
-  }
-  return result;
+	if (begin == end) {
+		return end;
+	}
+	It result = end;
+	while (true) {
+		It new_result = std::find_if_not(begin, end, p);
+		if (new_result == end) {
+			break;
+		} else {
+			result = new_result;
+			begin = result;
+			++begin;
+		}
+	}
+	return result;
 }
 
 /**
@@ -481,7 +481,7 @@ KBLIB_NODISCARD It find_last_if_not(It begin, It end, Pred p) {
  */
 template <typename It, typename T>
 KBLIB_NODISCARD size_t find_in(It begin, It end, const T& v) {
-  return std::find(begin, end, v) - begin;
+	return std::find(begin, end, v) - begin;
 }
 
 /**
@@ -495,7 +495,7 @@ KBLIB_NODISCARD size_t find_in(It begin, It end, const T& v) {
  */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_in_if(It begin, It end, UnaryPredicate p) {
-  return std::find_if(begin, end, p) - begin;
+	return std::find_if(begin, end, p) - begin;
 }
 /**
  * @brief Find the offset of the first element for which p returns false.
@@ -508,7 +508,7 @@ KBLIB_NODISCARD size_t find_in_if(It begin, It end, UnaryPredicate p) {
  */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_in_if_not(It begin, It end, UnaryPredicate p) {
-  return std::find_if_not(begin, end, p) - begin;
+	return std::find_if_not(begin, end, p) - begin;
 }
 
 // find_last_in:
@@ -526,7 +526,7 @@ KBLIB_NODISCARD size_t find_in_if_not(It begin, It end, UnaryPredicate p) {
  */
 template <typename It, typename T>
 KBLIB_NODISCARD size_t find_last_in(It begin, It end, const T& v) {
-  return kblib::find_last(begin, end, v) - begin;
+	return kblib::find_last(begin, end, v) - begin;
 }
 
 /**
@@ -540,7 +540,7 @@ KBLIB_NODISCARD size_t find_last_in(It begin, It end, const T& v) {
  */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if(It begin, It end, UnaryPredicate p) {
-  return kblib::find_last_if(begin, end, p) - begin;
+	return kblib::find_last_if(begin, end, p) - begin;
 }
 /**
  * @brief Find the offset of the last element for which p returns false.
@@ -553,7 +553,7 @@ KBLIB_NODISCARD size_t find_last_in_if(It begin, It end, UnaryPredicate p) {
  */
 template <typename It, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if_not(It begin, It end, UnaryPredicate p) {
-  return kblib::find_last_if_not(begin, end, p) - begin;
+	return kblib::find_last_if_not(begin, end, p) - begin;
 }
 
 /**
@@ -567,7 +567,7 @@ KBLIB_NODISCARD size_t find_last_in_if_not(It begin, It end, UnaryPredicate p) {
  */
 template <typename Container, typename T>
 KBLIB_NODISCARD size_t find_in(const Container& c, const T& v) {
-  return std::find(std::begin(c), std::end(c), v) - std::begin(c);
+	return std::find(std::begin(c), std::end(c), v) - std::begin(c);
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename T>
@@ -588,7 +588,7 @@ template <typename Container, typename UnaryPredicate>
  * @return size_t The position of the element found, or c.size() if not.
  */
 KBLIB_NODISCARD size_t find_in_if(const Container& c, UnaryPredicate p) {
-  return std::find_if(std::begin(c), std::end(c), p) - std::begin(c);
+	return std::find_if(std::begin(c), std::end(c), p) - std::begin(c);
 }
 /**
  * @brief Find the first element in c for which p returns false and return the
@@ -602,7 +602,7 @@ KBLIB_NODISCARD size_t find_in_if(const Container& c, UnaryPredicate p) {
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_in_if_not(const Container& c, UnaryPredicate p) {
-  return std::find_if_not(std::begin(c), std::end(c), p) - std::begin(c);
+	return std::find_if_not(std::begin(c), std::end(c), p) - std::begin(c);
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename UnaryPredicate>
@@ -626,7 +626,7 @@ template <typename Container, typename T>
  * @return size_t The position of the element found, or c.size() if not.
  */
 KBLIB_NODISCARD size_t find_last_in(const Container& c, const T& v) {
-  return kblib::find_last(std::begin(c), std::end(c), v) - std::begin(c);
+	return kblib::find_last(std::begin(c), std::end(c), v) - std::begin(c);
 }
 
 /**
@@ -641,7 +641,7 @@ KBLIB_NODISCARD size_t find_last_in(const Container& c, const T& v) {
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if(const Container& c, UnaryPredicate p) {
-  return kblib::find_last_if(std::begin(c), std::end(c), p) - std::begin(c);
+	return kblib::find_last_if(std::begin(c), std::end(c), p) - std::begin(c);
 }
 /**
  * @brief Find the last element in c for which p returns true and return the
@@ -656,7 +656,8 @@ KBLIB_NODISCARD size_t find_last_in_if(const Container& c, UnaryPredicate p) {
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD size_t find_last_in_if_not(const Container& c,
                                            UnaryPredicate p) {
-  return kblib::find_last_if_not(std::begin(c), std::end(c), p) - std::begin(c);
+	return kblib::find_last_if_not(std::begin(c), std::end(c), p) -
+	       std::begin(c);
 }
 
 /**
@@ -683,15 +684,15 @@ template <
     typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
 KBLIB_NODISCARD Container get_max_n_old(It begin, It end, std::size_t count,
                                         Comp cmp = {}) {
-  assert(begin + count <= end);
-  Container c{begin, begin + count};
-  std::for_each(begin + count, end, [&](const auto& v) {
-    auto& min = *std::min_element(c.begin(), c.end(), cmp);
-    if (cmp(min, v)) {
-      min = v;
-    }
-  });
-  return c;
+	assert(begin + count <= end);
+	Container c{begin, begin + count};
+	std::for_each(begin + count, end, [&](const auto& v) {
+		auto& min = *std::min_element(c.begin(), c.end(), cmp);
+		if (cmp(min, v)) {
+			min = v;
+		}
+	});
+	return c;
 }
 
 /**
@@ -713,9 +714,9 @@ template <typename Container, typename Comp = std::less<>, typename It,
           typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
 KBLIB_NODISCARD Container get_max_n_old(It begin, It end, std::size_t count,
                                         Comp cmp = {}) {
-  auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
-      begin, end, count, cmp);
-  return Container{temp.begin(), temp.end()};
+	auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
+	    begin, end, count, cmp);
+	return Container{temp.begin(), temp.end()};
 }
 
 /**
@@ -735,9 +736,9 @@ template <
     typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
 KBLIB_NODISCARD Container get_max_n(It begin, It end, std::size_t count,
                                     Comp cmp = {}) {
-  Container c(count);
-  std::partial_sort_copy(begin, end, c.begin(), c.end(), fakestd::not_fn(cmp));
-  return c;
+	Container c(count);
+	std::partial_sort_copy(begin, end, c.begin(), c.end(), fakestd::not_fn(cmp));
+	return c;
 }
 
 /**
@@ -755,9 +756,9 @@ template <typename Container, typename Comp = std::less<>, typename It,
           typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
 KBLIB_NODISCARD Container get_max_n(It begin, It end, std::size_t count,
                                     Comp cmp = {}) {
-  auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(begin, end,
-                                                                    count, cmp);
-  return Container{temp.begin(), temp.end()};
+	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
+	    begin, end, count, cmp);
+	return Container{temp.begin(), temp.end()};
 }
 
 /**
@@ -783,8 +784,8 @@ template <typename Comp = std::less<>, typename IIt, typename OIt,
 auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
                Comp cmp = {})
     -> return_assert_t<is_output_iterator<OIt, ElementT>::value, OIt> {
-  auto temp = get_max_n<std::vector<ElementT>>(begin, end, count, cmp);
-  return std::move(temp.begin(), temp.end(), d_begin);
+	auto temp = get_max_n<std::vector<ElementT>>(begin, end, count, cmp);
+	return std::move(temp.begin(), temp.end(), d_begin);
 }
 
 /**
@@ -799,10 +800,10 @@ auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
 template <typename It, typename It2, typename BinaryFunction>
 KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
                                                   BinaryFunction f) {
-  for (; first != last; (void)++first, (void)++second) {
-    f(*first, *second);
-  }
-  return std::move(f);
+	for (; first != last; (void)++first, (void)++second) {
+		f(*first, *second);
+	}
+	return std::move(f);
 }
 
 /**
@@ -817,10 +818,10 @@ KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
 template <typename It, typename It2, typename Size, typename BinaryFunction>
 KBLIB_NODISCARD constexpr It for_each_n(It first, Size n, It2 second,
                                         BinaryFunction f) {
-  for (Size i = 0; i < n; (void)++first, (void)++second, (void)++i) {
-    f(*first, *second);
-  }
-  return first;
+	for (Size i = 0; i < n; (void)++first, (void)++second, (void)++i) {
+		f(*first, *second);
+	}
+	return first;
 }
 
 /**
@@ -836,13 +837,13 @@ template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate>
 KBLIB_NODISCARD OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
                                    UnaryPredicate pred) {
-  for (Size i = 0; i < count; ++i) {
-    if (pred(*first)) {
-      *out++ = *first;
-    }
-    ++first;
-  }
-  return out;
+	for (Size i = 0; i < count; ++i) {
+		if (pred(*first)) {
+			*out++ = *first;
+		}
+		++first;
+	}
+	return out;
 }
 
 /**
@@ -858,13 +859,13 @@ template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate>
 KBLIB_NODISCARD OutputIt replace_copy_n_if(InputIt first, Size count,
                                            OutputIt out, UnaryPredicate pred) {
-  for (Size i = 0; i < count; ++i) {
-    if (pred(*first)) {
-      *out++ = *first;
-    }
-    ++first;
-  }
-  return out;
+	for (Size i = 0; i < count; ++i) {
+		if (pred(*first)) {
+			*out++ = *first;
+		}
+		++first;
+	}
+	return out;
 }
 
 /**
@@ -880,9 +881,9 @@ KBLIB_NODISCARD Container
 build_copy(InputIt first, InputIt last,
            typename Container::allocator_type allocator =
                typename Container::allocator_type{}) {
-  Container out(allocator);
-  std::copy(first, last, std::back_inserter(out));
-  return out;
+	Container out(allocator);
+	std::copy(first, last, std::back_inserter(out));
+	return out;
 }
 
 /**
@@ -896,9 +897,9 @@ template <typename Container, typename Range>
 KBLIB_NODISCARD Container
 build_copy(Range&& r, typename Container::allocator_type allocator =
                           typename Container::allocator_type{}) {
-  Container out(allocator);
-  std::copy(std::begin(r), std::end(r), std::back_inserter(out));
-  return out;
+	Container out(allocator);
+	std::copy(std::begin(r), std::end(r), std::back_inserter(out));
+	return out;
 }
 
 /**
@@ -912,13 +913,13 @@ template <
     typename Container, typename InputIt,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
 KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
-  Container out{};
-  auto pos = std::begin(out);
-  auto end = std::end(out);
-  for (; first != last && pos != end; ++first, ++pos) {
-    *pos = *first;
-  }
-  return out;
+	Container out{};
+	auto pos = std::begin(out);
+	auto end = std::end(out);
+	for (; first != last && pos != end; ++first, ++pos) {
+		*pos = *first;
+	}
+	return out;
 }
 
 /**
@@ -931,15 +932,15 @@ template <
     typename Container, typename Range,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
 KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
-  Container out{};
-  auto first = std::begin(r);
-  auto last = std::end(r);
-  auto pos = std::begin(out);
-  auto end = std::end(out);
-  for (; first != last && pos != end; ++first, ++pos) {
-    *pos = *first;
-  }
-  return out;
+	Container out{};
+	auto first = std::begin(r);
+	auto last = std::end(r);
+	auto pos = std::begin(out);
+	auto end = std::end(out);
+	for (; first != last && pos != end; ++first, ++pos) {
+		*pos = *first;
+	}
+	return out;
 }
 
 /**
@@ -955,14 +956,14 @@ template <
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
 KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
                                      std::size_t size) {
-  Container out;
-  auto pos = std::begin(out);
-  auto end = std::end(out);
-  for (std::size_t count = 0; count != size && first != last && pos != end;
-       ++first, ++pos, ++count) {
-    *pos = *first;
-  }
-  return out;
+	Container out;
+	auto pos = std::begin(out);
+	auto end = std::end(out);
+	for (std::size_t count = 0; count != size && first != last && pos != end;
+	     ++first, ++pos, ++count) {
+		*pos = *first;
+	}
+	return out;
 }
 
 /**
@@ -976,16 +977,16 @@ template <
     typename Container, typename Range,
     typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
 KBLIB_NODISCARD Container build_copy(Range&& r, std::size_t size) {
-  Container out;
-  auto first = std::begin(r);
-  auto last = std::end(r);
-  auto pos = std::begin(out);
-  auto end = std::end(out);
-  for (std::size_t count = 0; count != size && first != last && pos != end;
-       ++first, ++pos, ++count) {
-    *pos = *first;
-  }
-  return out;
+	Container out;
+	auto first = std::begin(r);
+	auto last = std::end(r);
+	auto pos = std::begin(out);
+	auto end = std::end(out);
+	for (std::size_t count = 0; count != size && first != last && pos != end;
+	     ++first, ++pos, ++count) {
+		*pos = *first;
+	}
+	return out;
 }
 
 /**
@@ -1002,9 +1003,9 @@ KBLIB_NODISCARD Container
 build_copy_if(InputIt first, InputIt last, Predicate f,
               typename Container::allocator_type allocator =
                   typename Container::allocator_type{}) {
-  Container out(allocator);
-  std::copy_if(first, last, std::back_inserter(out), f);
-  return out;
+	Container out(allocator);
+	std::copy_if(first, last, std::back_inserter(out), f);
+	return out;
 }
 
 /**
@@ -1020,9 +1021,9 @@ KBLIB_NODISCARD Container
 build_copy_n(InputIt first, Size count,
              typename Container::allocator_type allocator =
                  typename Container::allocator_type{}) {
-  Container out(allocator);
-  std::copy_n(first, count, std::back_inserter(out));
-  return out;
+	Container out(allocator);
+	std::copy_n(first, count, std::back_inserter(out));
+	return out;
 }
 
 /**
@@ -1040,9 +1041,9 @@ KBLIB_NODISCARD Container
 build_copy_n_if(InputIt first, Size count, Predicate f,
                 typename Container::allocator_type allocator =
                     typename Container::allocator_type{}) {
-  Container out(allocator);
-  kblib::copy_n_if(first, count, std::back_inserter(out), f);
-  return out;
+	Container out(allocator);
+	kblib::copy_n_if(first, count, std::back_inserter(out), f);
+	return out;
 }
 
 // transform_accumulate
@@ -1055,34 +1056,34 @@ build_copy_n_if(InputIt first, Size count, Predicate f,
  */
 template <typename T>
 struct containing_ptr {
-  /**
-   * @brief Returns the contained object.
-   */
-  constexpr T& operator*() noexcept { return val; }
-  /**
-   * @brief Returns the contained object.
-   */
-  constexpr const T& operator*() const noexcept { return val; }
+	/**
+	 * @brief Returns the contained object.
+	 */
+	constexpr T& operator*() noexcept { return val; }
+	/**
+	 * @brief Returns the contained object.
+	 */
+	constexpr const T& operator*() const noexcept { return val; }
 
-  /**
-   * @brief Return the address of the contained object.
-   */
-  constexpr T* operator->() noexcept { return &val; }
-  /**
-   * @brief Return the address of the contained object.
-   */
-  constexpr const T* operator->() const noexcept { return &val; }
+	/**
+	 * @brief Return the address of the contained object.
+	 */
+	constexpr T* operator->() noexcept { return &val; }
+	/**
+	 * @brief Return the address of the contained object.
+	 */
+	constexpr const T* operator->() const noexcept { return &val; }
 
-  /**
-   * @brief Returns the address of the contained object.
-   */
-  constexpr T* get() noexcept { return &val; }
-  /**
-   * @brief Returns the address of the contained object.
-   */
-  constexpr const T* get() const noexcept { return &val; }
+	/**
+	 * @brief Returns the address of the contained object.
+	 */
+	constexpr T* get() noexcept { return &val; }
+	/**
+	 * @brief Returns the address of the contained object.
+	 */
+	constexpr const T* get() const noexcept { return &val; }
 
-  T val;
+	T val;
 };
 
 #if KBLIB_USE_CXX17
@@ -1096,99 +1097,99 @@ struct containing_ptr {
 template <typename base_iterator, typename operation>
 class transform_iterator {
  private:
-  base_iterator it;
-  std::optional<operation> op;
+	base_iterator it;
+	std::optional<operation> op;
 
  public:
-  using difference_type = std::ptrdiff_t;
-  using result_type = decltype(std::invoke(*op, *it));
-  using const_result_type =
-      decltype(std::invoke(const_cast<const operation&>(*op),
-                           const_cast<const base_iterator&>(*it)));
-  using value_type = result_type;
-  using pointer = void;
-  using reference = value_type;
-  using iterator_category = std::input_iterator_tag;
+	using difference_type = std::ptrdiff_t;
+	using result_type = decltype(std::invoke(*op, *it));
+	using const_result_type =
+	    decltype(std::invoke(const_cast<const operation&>(*op),
+	                         const_cast<const base_iterator&>(*it)));
+	using value_type = result_type;
+	using pointer = void;
+	using reference = value_type;
+	using iterator_category = std::input_iterator_tag;
 
-  /**
-   * @brief Constructs a transform_iterator which applies _op to the values
-   * obtained from *_it.
-   *
-   * @param _it An InputIterator to a range to be transformed.
-   * @param _op The operation to apply to each element.
-   */
-  transform_iterator(base_iterator _it, operation _op) : it(_it), op(_op) {}
+	/**
+	 * @brief Constructs a transform_iterator which applies _op to the values
+	 * obtained from *_it.
+	 *
+	 * @param _it An InputIterator to a range to be transformed.
+	 * @param _op The operation to apply to each element.
+	 */
+	transform_iterator(base_iterator _it, operation _op) : it(_it), op(_op) {}
 
-  /**
-   * @brief constructs a non-dereferenceable sentinel iterator
-   *
-   * @param end_it An iterator that marks the end of the input range.
-   */
-  transform_iterator(base_iterator end_it) : it(end_it), op(std::nullopt) {}
+	/**
+	 * @brief constructs a non-dereferenceable sentinel iterator
+	 *
+	 * @param end_it An iterator that marks the end of the input range.
+	 */
+	transform_iterator(base_iterator end_it) : it(end_it), op(std::nullopt) {}
 
-  /**
-   * @brief Transforms the value obtained by dereferencing it.
-   *
-   * @return decltype(auto) The result of invoking op on *it.
-   */
-  decltype(auto) operator*() { return std::invoke(*op, *it); }
-  /**
-   * @brief Transforms the value obtained by dereferencing it.
-   *
-   * @return decltype(auto) The result of invoking op on *it.
-   */
-  decltype(auto) operator*() const { return std::invoke(*op, *it); }
+	/**
+	 * @brief Transforms the value obtained by dereferencing it.
+	 *
+	 * @return decltype(auto) The result of invoking op on *it.
+	 */
+	decltype(auto) operator*() { return std::invoke(*op, *it); }
+	/**
+	 * @brief Transforms the value obtained by dereferencing it.
+	 *
+	 * @return decltype(auto) The result of invoking op on *it.
+	 */
+	decltype(auto) operator*() const { return std::invoke(*op, *it); }
 
-  /**
-   * @brief Returns a containing_ptr with the transformed value, because
-   * operator-> expects a pointer-like return type.
-   */
-  auto operator-> () {
-    return containing_ptr<result_type>{{std::invoke(*op, *it)}};
-  }
-  /**
-   * @brief Returns a containing_ptr with the transformed value, because
-   * operator-> expects a pointer-like return type.
-   */
-  auto operator-> () const {
-    return containing_ptr<const_result_type>{{std::invoke(*op, *it)}};
-  }
+	/**
+	 * @brief Returns a containing_ptr with the transformed value, because
+	 * operator-> expects a pointer-like return type.
+	 */
+	auto operator-> () {
+		return containing_ptr<result_type>{{std::invoke(*op, *it)}};
+	}
+	/**
+	 * @brief Returns a containing_ptr with the transformed value, because
+	 * operator-> expects a pointer-like return type.
+	 */
+	auto operator-> () const {
+		return containing_ptr<const_result_type>{{std::invoke(*op, *it)}};
+	}
 
-  /**
-   * @brief Increments the underlying iterator and returns *this.
-   */
-  transform_iterator& operator++() {
-    ++it;
-    return *this;
-  }
+	/**
+	 * @brief Increments the underlying iterator and returns *this.
+	 */
+	transform_iterator& operator++() {
+		++it;
+		return *this;
+	}
 
-  /**
-   * @brief Increments the underlying iterator and returns a copy of the current
-   * value.
-   */
-  [[deprecated(
-      "Needlessly copies op. Use preincrement instead.")]] transform_iterator
-  operator++(int) {
-    return {it++, op};
-  }
+	/**
+	 * @brief Increments the underlying iterator and returns a copy of the
+	 * current value.
+	 */
+	[[deprecated(
+	    "Needlessly copies op. Use preincrement instead.")]] transform_iterator
+	operator++(int) {
+		return {it++, op};
+	}
 
-  /**
-   * @brief Compares the base iterators of lhs and rhs.
-   */
-  friend bool operator==(
-      const transform_iterator<base_iterator, operation>& lhs,
-      const transform_iterator<base_iterator, operation>& rhs) {
-    return lhs.it == rhs.it;
-  }
+	/**
+	 * @brief Compares the base iterators of lhs and rhs.
+	 */
+	friend bool
+	operator==(const transform_iterator<base_iterator, operation>& lhs,
+	           const transform_iterator<base_iterator, operation>& rhs) {
+		return lhs.it == rhs.it;
+	}
 
-  /**
-   * @brief Compares the base iterators of lhs and rhs.
-   */
-  friend bool operator!=(
-      const transform_iterator<base_iterator, operation>& lhs,
-      const transform_iterator<base_iterator, operation>& rhs) {
-    return lhs.it != rhs.it;
-  }
+	/**
+	 * @brief Compares the base iterators of lhs and rhs.
+	 */
+	friend bool
+	operator!=(const transform_iterator<base_iterator, operation>& lhs,
+	           const transform_iterator<base_iterator, operation>& rhs) {
+		return lhs.it != rhs.it;
+	}
 };
 
 /**
@@ -1199,9 +1200,9 @@ class transform_iterator {
  * @return transform_iterator<base_iterator, operation>
  */
 template <typename base_iterator, typename operation>
-transform_iterator<base_iterator, operation> make_transform_iterator(
-    base_iterator it, operation op) {
-  return {it, op};
+transform_iterator<base_iterator, operation>
+make_transform_iterator(base_iterator it, operation op) {
+	return {it, op};
 }
 #endif
 
@@ -1214,45 +1215,46 @@ transform_iterator<base_iterator, operation> make_transform_iterator(
 template <typename Container, typename F>
 class back_insert_iterator_F {
  public:
-  /**
-   * @brief
-   *
-   * @param c The container to be inserted into.
-   * @param f The tranformation to apply to each argument.
-   */
-  explicit back_insert_iterator_F(Container& c, F f)
-      : container(c), fun(std::move(f)) {}
+	/**
+	 * @brief
+	 *
+	 * @param c The container to be inserted into.
+	 * @param f The tranformation to apply to each argument.
+	 */
+	explicit back_insert_iterator_F(Container& c, F f)
+	    : container(c), fun(std::move(f)) {}
 
-  using value_type = void;
-  using difference_type = void;
-  using pointer = void;
-  using reference = void;
-  using iterator_category = std::output_iterator_tag;
+	using value_type = void;
+	using difference_type = void;
+	using pointer = void;
+	using reference = void;
+	using iterator_category = std::output_iterator_tag;
 
-  template <typename V>
-  /**
-   * @brief Calls container.push_back(std::invoke(fun, std::forward<V>(value)));
-   *
-   * @param value The value to transform and insert.
-   * @return back_insert_iterator& *this.
-   */
-  back_insert_iterator_F& operator=(V&& value) {
-    container.push_back(fakestd::invoke(fun, std::forward<V>(value)));
-    return *this;
-  }
+	template <typename V>
+	/**
+	 * @brief Calls container.push_back(std::invoke(fun,
+	 * std::forward<V>(value)));
+	 *
+	 * @param value The value to transform and insert.
+	 * @return back_insert_iterator& *this.
+	 */
+	back_insert_iterator_F& operator=(V&& value) {
+		container.push_back(fakestd::invoke(fun, std::forward<V>(value)));
+		return *this;
+	}
 
-  /**
-   * @brief A no-op.
-   */
-  back_insert_iterator_F& operator*() { return *this; }
-  /**
-   * @brief A no-op.
-   */
-  back_insert_iterator_F& operator++() { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	back_insert_iterator_F& operator*() { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	back_insert_iterator_F& operator++() { return *this; }
 
  private:
-  Container& container;
-  F fun;
+	Container& container;
+	F fun;
 };
 
 /**
@@ -1262,43 +1264,43 @@ class back_insert_iterator_F {
 template <typename F>
 class consume_iterator {
  public:
-  using value_type = void;
-  using difference_type = void;
-  using pointer = void;
-  using reference = void;
-  using iterator_category = std::output_iterator_tag;
+	using value_type = void;
+	using difference_type = void;
+	using pointer = void;
+	using reference = void;
+	using iterator_category = std::output_iterator_tag;
 
-  /**
-   * @brief Constructs a consume_iterator with the given function object.
-   *
-   * @param f The functor to pass values to.
-   */
-  explicit consume_iterator(F f) : fun(std::move(f)) {}
+	/**
+	 * @brief Constructs a consume_iterator with the given function object.
+	 *
+	 * @param f The functor to pass values to.
+	 */
+	explicit consume_iterator(F f) : fun(std::move(f)) {}
 
-  /**
-   * @brief Pass value to F.
-   *
-   * @param value The argument for the functor.
-   * @return consume_iterator& *this.
-   */
-  template <typename V>
-  consume_iterator& operator=(V&& value) noexcept(
-      noexcept(fakestd::invoke(fun, std::forward<V>(value)))) {
-    fakestd::invoke(fun, std::forward<V>(value));
-    return *this;
-  }
+	/**
+	 * @brief Pass value to F.
+	 *
+	 * @param value The argument for the functor.
+	 * @return consume_iterator& *this.
+	 */
+	template <typename V>
+	consume_iterator& operator=(V&& value) noexcept(
+	    noexcept(fakestd::invoke(fun, std::forward<V>(value)))) {
+		fakestd::invoke(fun, std::forward<V>(value));
+		return *this;
+	}
 
-  /**
-   * @brief A no-op.
-   */
-  consume_iterator& operator*() { return *this; }
-  /**
-   * @brief A no-op.
-   */
-  consume_iterator& operator++() { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	consume_iterator& operator*() { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	consume_iterator& operator++() { return *this; }
 
  private:
-  F fun;
+	F fun;
 };
 
 /**
@@ -1312,9 +1314,9 @@ class consume_iterator {
  */
 template <typename F>
 consume_iterator<F> consumer(F f) {
-  return consume_iterator<F>{std::move(f)};
+	return consume_iterator<F>{std::move(f)};
 }
 
-}  // namespace kblib
+} // namespace kblib
 
-#endif  // KBLIB_BUILD_H
+#endif // KBLIB_BUILD_H
