@@ -339,6 +339,16 @@ class compact_bit_trie {
 	};
 };
 
+/**
+ * @brief Swaps memory ranges.
+ *
+ * @pre A and B must not be null.
+ * @pre *A and *B must not overlap.
+ *
+ * @param A A pointer to memory to swap with *B.
+ * @param B A pointer to memory to swap with *A.
+ * @param size The number of bytes to swap between *A and *B.
+ */
 inline void memswap(void* A, void* B, std::size_t size) {
 	auto Ab = static_cast<unsigned char*>(A);
 	auto Bb = static_cast<unsigned char*>(B);
@@ -346,6 +356,15 @@ inline void memswap(void* A, void* B, std::size_t size) {
 	return;
 }
 
+/**
+ * @brief Implements a bitfield abstraction. May be used in a union with other
+ * bitfields, or in C++20 in a struct with [[no_unique_address]] with other
+ * bitfields.
+ *
+ * @tparam offset The number of bits less significant than the bitfield.
+ * @tparam size The number of bits constituting this bitfield.
+ * @tparam Storage The underlying type which stores the bits.
+ */
 template <int offset, int size, typename Storage>
 struct bitfield {
 	Storage operator()() const noexcept {
@@ -404,6 +423,18 @@ struct bitfield_proxy {
 	                                        &Parent::name##_set_impl,           \
 	                                        &Parent::name##_get_impl>{this};    \
    }
+
+/**
+ * @def BITFIELD(offset, size, name, raw)
+ * Defines appropreiate member functions which operate on a bitfield. The
+ * generated functions are constexpr and optimize well.
+ *
+ * @param offset The number of bits less significant than this bitfield.
+ * @param size The number of bits in this bitfield.
+ * @param name The name of the generated member functions which operate on this
+ * bitfield.
+ * @param raw The name of the member variable in which the bitfield is stored.
+ */
 
 #ifdef KBLIB_DEF_MACROS
 #define BITFIELD(offset, size, name, raw) \
