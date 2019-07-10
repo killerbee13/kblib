@@ -444,7 +444,7 @@ namespace detail {
 #define BITFIELD(offset, size, name, raw) \
 	KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
 
-#ifdef KBLIB_DEF_MACROS
+#ifndef KBLIB_DEF_MACROS
 #undef BITFIELD
 #endif
 
