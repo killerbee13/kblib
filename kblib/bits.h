@@ -20,6 +20,8 @@ namespace kblib {
 template <typename Int>
 constexpr int bits_of = std::numeric_limits<Int>::digits;
 
+#if KBLIB_USE_CXX17
+
 namespace detail {
 
    template <typename Key, typename Value>
@@ -356,10 +358,14 @@ inline void memswap(void* A, void* B, std::size_t size) {
 	return;
 }
 
+#endif
+
 /**
  * @brief Implements a bitfield abstraction. May be used in a union with other
- * bitfields, or in C++20 in a struct with [[no_unique_address]] with other
  * bitfields.
+ *
+ * In C++20, [[no_unique_address]] will enable a better implementation which
+ * will work in non-union structs.
  *
  * @tparam offset The number of bits less significant than the bitfield.
  * @tparam size The number of bits constituting this bitfield.
@@ -384,6 +390,14 @@ struct bitfield {
 
 namespace detail {
 
+   /**
+	 * @brief A proxy reference type for BITFIELD-declared bitfields.
+	 *
+	 * It may be assigned to, or it may be used as a prvalue of type Ret. Unlike
+	 * most proxy references, this is actually not that dissimilar to a language
+	 * bitfield, which has only those capabilities. Like all other proxy
+	 * references, it should not generally be bound to an auto variable.
+	 */
    template <typename Parent, typename Ret, Ret (Parent::*Set)(Ret) noexcept,
              Ret (Parent::*Get)() const noexcept>
    struct bitfield_proxy {
@@ -397,6 +411,7 @@ namespace detail {
 /**
  * @def KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
  * @sa See #BITFIELD(offset, size, name, raw) for documentation.
+ * @note This macro is defined unconditionally.
  */
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
  private:                                                                      \
@@ -428,10 +443,25 @@ namespace detail {
 	                                        &Parent::name##_get_impl>{this};    \
    }
 
+#ifdef KBLIB_DEF_MACROS
 /**
  * @def BITFIELD(offset, size, name, raw)
  * Defines appropreiate member functions which operate on a bitfield. The
  * generated functions are constexpr and optimize well.
+ *
+ * Declare inside a struct to add a simulated bitfield to it. In total, 5 member
+ * functions will be defined, three of which are public. (The private two are
+ * required only to get around overload resolution problems with the proxy
+ * reference type.)
+ *
+ * One is a const accessor, which returns the value of the field. One is a
+ * setter, which takes a new value for the field and assigns it, then returns
+ * the new value (after truncating it to the field width). The last function is
+ * the non-const accessor, which takes no argument and returns a proxy reference
+ * to the bitfield, which may be assigned to or implicitly converted to the
+ * value type.
+ *
+ * @note This macro is only defined if KBLIB_DEF_MACROS is defined.
  *
  * @sa See #KBLIB_INTERNAL_BITFIELD_MACRO for definition.
  *
@@ -443,9 +473,6 @@ namespace detail {
  */
 #define BITFIELD(offset, size, name, raw) \
 	KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
-
-#ifndef KBLIB_DEF_MACROS
-#undef BITFIELD
 #endif
 
 } // namespace kblib

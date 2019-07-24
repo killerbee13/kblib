@@ -59,6 +59,7 @@ static_assert(
     std::is_same<kblib::int_smallest_t<long(INT_MAX) + 1>, signed long>::value,
     "int_smallest_t");
 
+#if KBLIB_USE_CXX17
 TEST_CASE("test_trie") {
 	kblib::compact_bit_trie<unsigned short, 1024, int> test;
 	REQUIRE(test.insert({0b1000100010000000, 10}, 1));
@@ -66,12 +67,13 @@ TEST_CASE("test_trie") {
 	// std::cout<<test.at({0b1000100010000000, 10})<<'\n';
 	REQUIRE(!"test.at({0b1000100010000000, 10}) has UB");
 }
+#endif
 
 struct buffer {
 	struct ret_proxy {
 		const char* buf;
-		template <typename T, typename std::enable_if_t<
-		                          std::is_trivially_copyable_v<T>, int> = 0>
+		template <typename T, typename std::enable_if<
+		                          std::is_trivially_copyable<T>::value, int>::type = 0>
 		operator T() const {
 			T t;
 			std::memcpy(&t, buf, sizeof(T));

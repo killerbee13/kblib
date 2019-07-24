@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console c++17
+CONFIG += console c++14
 CONFIG -= app_bundle
 CONFIG -= qt
 
@@ -20,7 +20,8 @@ SOURCES += \
     traits.cpp \
     variant.cpp \
     bits.cpp \
-    catch_main.cpp
+    catch_main.cpp \
+    algorithm.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -39,9 +40,10 @@ HEADERS += \
     kblib/tdecl.h \
     kblib/traits.h \
     kblib/variant.h \
-    kblib/kblib.h
+    kblib/kblib.h \
+    kblib/algorithm.h
 
-QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
+QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++14
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags
 QMAKE_CXXFLAGS += -I/mnt/Vers1/include
 QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib

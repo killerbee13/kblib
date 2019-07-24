@@ -217,8 +217,6 @@ string concat(std::initializer_list<str> ins) {
 	}
 	return ret;
 }
-#endif
-#endif // KBLIB_USE_CXX17
 
 /**
  * @brief Concatenates all elements of a range together with an optional joiner.
@@ -243,6 +241,8 @@ string join(const range& in, const string& joiner = "") {
 		    });
 	}
 }
+#endif
+#endif // KBLIB_USE_CXX17
 
 /**
  * @brief Split a string on all instances of a delimiter.

@@ -302,6 +302,155 @@ constexpr range_t<Value, int> range(Value max) {
 	return {max};
 }
 
+// enumerate partially based on code by Tobias Widlund. License reproduced
+// below. Original source available at https://github.com/therocode/enumerate
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018 Tobias Widlund
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+namespace detail {
+
+   template <typename T>
+   struct no_dangle {
+		using type = T&;
+	};
+
+	template <typename T>
+	struct no_dangle<T&&> {
+		using type = T;
+	};
+
+	template <typename T>
+	using no_dangle_t = typename no_dangle<T>::type;
+} // namespace detail
+
+template <typename It>
+struct enumerate_iterator {
+	It it;
+	std::size_t idx;
+
+	using nested_reference = typename std::iterator_traits<It>::reference;
+
+	using difference_type = std::ptrdiff_t;
+	using value_type = std::pair<nested_reference, std::size_t>;
+	using pointer = void;
+	using reference = value_type;
+	using iterator_category = std::input_iterator_tag;
+
+	value_type operator*() { return {*it, idx}; }
+
+	enumerate_iterator& operator++() {
+		++it;
+		++idx;
+		return *this;
+	}
+	enumerate_iterator operator++(int) {
+		auto tmp = *this;
+		++(*this);
+		return tmp;
+	}
+
+	template <typename OIt>
+	auto operator==(OIt rhs)
+	    -> decltype(std::declval<It&>() == std::declval<OIt&>()) {
+		return it == rhs;
+	}
+	template <typename OIt>
+	auto operator!=(OIt rhs)
+	    -> decltype(std::declval<It&>() != std::declval<OIt&>()) {
+		return it != rhs;
+	}
+
+	friend bool operator==(enumerate_iterator lhs, enumerate_iterator rhs) {
+		return lhs.it == rhs.it;
+	}
+	friend bool operator!=(enumerate_iterator lhs, enumerate_iterator rhs) {
+		return lhs.it != rhs.it;
+	}
+};
+
+template <typename Range, typename = void>
+struct enumerate_t;
+
+template <typename Range>
+struct enumerate_t<Range, void> {
+	detail::no_dangle_t<Range> r;
+
+	using range_t = typename std::remove_reference_t<Range>;
+	using nested_iterator = decltype(r.begin());
+	using nested_end_iterator = decltype(r.end());
+	using iterator = enumerate_iterator<nested_iterator>;
+	using end_iterator = enumerate_iterator<nested_end_iterator>;
+
+	using nested_const_iterator = typename range_t::const_iterator;
+	using const_iterator = enumerate_iterator<nested_const_iterator>;
+
+	const_iterator begin() const noexcept(noexcept(r.cbegin())) {
+		return {r.cbegin(), 0};
+	}
+	iterator begin() noexcept(noexcept(r.begin())) { return {r.begin(), 0}; }
+
+	const_iterator end() const noexcept(noexcept(r.cend())) { return {r.cend(), -std::size_t{1}}; }
+	end_iterator end() noexcept(noexcept(r.end())) { return {r.end(), -std::size_t{1}}; }
+};
+
+template <typename It, typename EndIt>
+struct enumerate_t {
+	using nested_iterator = It;
+	using iterator = enumerate_iterator<nested_iterator>;
+	using end_iterator = enumerate_iterator<EndIt>;
+
+	iterator begin() const noexcept { return {r_begin, 0}; }
+
+	end_iterator end() const noexcept { return {r_end, -std::size_t{1}}; }
+
+	It r_begin;
+	EndIt r_end;
+};
+
+/**
+ * @brief Allow access to indexes while using range-based for loops. Safe to use
+ * with rvalues.
+ *
+ * @param r A range to iterate over.
+ */
+template <typename Range>
+enumerate_t<Range&&> enumerate(Range&& r) {
+	return {std::forward<Range>(r)};
+}
+
+/**
+ * @brief Allow access to indexes while using range-based for loops.
+ *
+ * @param begin The beginning of the input range.
+ * @param end The end of the input range.
+ */
+template <typename It, typename EIt>
+enumerate_t<It, EIt> enumerate(It begin, EIt end) {
+	return {begin, end};
+}
+
 namespace fnv {
 
    /**
