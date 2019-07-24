@@ -628,6 +628,10 @@ class cond_ptr {
 		}
 	}
 
+	KBLIB_NODISCARD cond_ptr weak() const noexcept {
+		return cond_ptr{ptr_, false};
+	}
+
 	bool owns() const noexcept { return owns_; }
 	KBLIB_NODISCARD T* release() noexcept {
 		owns_ = false;
