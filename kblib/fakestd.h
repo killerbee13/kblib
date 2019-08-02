@@ -14,14 +14,6 @@
 #define KBLIB_FAKESTD (__cplusplus < 201703L)
 #endif
 
-// Note that has_cpp_attribute(nodiscard) does not work with at least certain
-// versions of Clang
-#if __cplusplus > 201402L
-#define KBLIB_NODISCARD [[nodiscard]]
-#else
-#define KBLIB_NODISCARD
-#endif
-
 namespace kblib {
 
 #if KBLIB_FAKESTD

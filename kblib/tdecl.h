@@ -19,6 +19,14 @@
  */
 #define KBLIB_USE_STRING_VIEW KBLIB_USE_CXX17
 
+// Note that has_cpp_attribute(nodiscard) does not work with at least certain
+// versions of Clang
+#if __cplusplus > 201402L
+#define KBLIB_NODISCARD [[nodiscard]]
+#else
+#define KBLIB_NODISCARD
+#endif
+
 #if defined(_DOXYGEN_) && !defined(KBLIB_DEF_MACROS)
 /**
  * @def KBLIB_DEF_MACROS

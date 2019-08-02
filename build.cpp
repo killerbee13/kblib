@@ -59,29 +59,6 @@ TEST_CASE("build family", "[build]") {
 		auto built = kblib::buildiota<arr>(0);
 		REQUIRE(equal(iota, built));
 	}
-	SECTION("erase and erase_if") {
-		const std::vector<int> erase_test{2, 2, 3, 4, 5, 7, 8, 11};
-		const std::vector<int> no_2s = {3, 4, 5, 7, 8, 11};
-		auto erase_copy = erase_test;
-		kblib::erase(erase_copy, 2);
-		REQUIRE(equal(no_2s, erase_copy));
-		erase_copy = erase_test;
-		const std::vector<int> no_evens = {3, 5, 7, 11};
-		kblib::erase_if(erase_copy, [](int x) { return (~x) & 1; });
-		REQUIRE(equal(no_evens, erase_copy));
-	}
-}
-
-TEST_CASE("find family") {
-	// TODO
-}
-
-TEST_CASE("get_max family") {
-	// TODO
-}
-
-TEST_CASE("build.h general algorithms") {
-	// TODO
 }
 
 TEST_CASE("build_copy family") {
