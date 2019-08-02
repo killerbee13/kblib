@@ -11,7 +11,6 @@
 
 namespace kblib {
 
-
 /**
  * @brief Abbreviation of the erase-remove idiom as a free function.
  *
@@ -443,13 +442,17 @@ auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
 }
 
 /**
- * @brief
+ * @brief Applies a binary operation to each pair of corresponding elements in
+ * two input ranges.
  *
- * @param first
- * @param last
- * @param second
- * @param f
- * @return BinaryFunction
+ * In the style of <algorithm> algorithms, the second range is simply assumed to
+ * be at least as large as the first.
+ *
+ * @param first The beginning of the first input range.
+ * @param last The end of the first input range.
+ * @param second The beginning of the second input range.
+ * @param f The operation to apply.
+ * @return BinaryFunction f
  */
 template <typename It, typename It2, typename BinaryFunction>
 KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
@@ -461,31 +464,34 @@ KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
 }
 
 /**
- * @brief
+ * @brief Applies a binary operation to each pair of corresponding elements in
+ * two input ranges.
  *
- * @param first
- * @param n
- * @param second
- * @param f
- * @return It
+ * @param first The beginning of the first input range.
+ * @param n The number of elements to operate on in each input range.
+ * @param second The beginning of the second input range.
+ * @param f The operation to apply.
+ * @return std::pair<It, It2> Equivalent to `{std::advance(first, n),
+ * std::advance(second, n)}`
  */
 template <typename It, typename It2, typename Size, typename BinaryFunction>
-KBLIB_NODISCARD constexpr It for_each_n(It first, Size n, It2 second,
-                                        BinaryFunction f) {
+KBLIB_NODISCARD constexpr std::pair<It, It2>
+for_each_n(It first, Size n, It2 second, BinaryFunction f) {
 	for (Size i = 0; i < n; (void)++first, (void)++second, (void)++i) {
 		f(*first, *second);
 	}
-	return first;
+	return {first, second};
 }
 
 /**
- * @brief
+ * @brief Copies those elements of [`first`, `std::advance(first, n)`) which
+ * satisfy pred to out.
  *
- * @param first
- * @param count
- * @param out
- * @param pred
- * @return OutputIt
+ * @param first The beginning of the input range.
+ * @param count The number of elements in the input range.
+ * @param out The output range.
+ * @param pred The predicate to apply.
+ * @return OutputIt `std::advance(first, n)`
  */
 template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate>
@@ -501,21 +507,27 @@ KBLIB_NODISCARD OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
 }
 
 /**
- * @brief
+ * @brief Copies an input range, but every element for which pred is true is
+ * replaced by
  *
- * @param first
- * @param count
- * @param out
- * @param pred
- * @return OutputIt
+ * @param first The beginning of the input range.
+ * @param count The number of elements to copy.
+ * @param out The beginning of the output range.
+ * @param pred The predicate to apply.
+ * @param new_value The value to replace those elements for which pred is true
+ * with.
+ * @return OutputIt out after being incremented count times.
  */
 template <typename InputIt, typename Size, typename OutputIt,
-          typename UnaryPredicate>
+          typename UnaryPredicate, typename T>
 KBLIB_NODISCARD OutputIt replace_copy_n_if(InputIt first, Size count,
-                                           OutputIt out, UnaryPredicate pred) {
+                                           OutputIt out, UnaryPredicate pred,
+                                           const T& new_value) {
 	for (Size i = 0; i < count; ++i) {
 		if (pred(*first)) {
 			*out++ = *first;
+		} else {
+			*out++ = new_value;
 		}
 		++first;
 	}
@@ -540,12 +552,10 @@ struct zip_iterator {
 		return tmp;
 	}
 
-	auto operator*() {
-		return std::forward_as_tuple(*pos1, *pos2);
-	}
+	auto operator*() { return std::forward_as_tuple(*pos1, *pos2); }
 
-	zip_iterator begin() {return *this;}
-	zip_iterator<EIt, EIt, IIt2> end() const {return {end1, end1};}
+	zip_iterator begin() { return *this; }
+	zip_iterator<EIt, EIt, IIt2> end() const { return {end1, end1}; }
 
 	friend bool operator==(const zip_iterator& z1, const zip_iterator& z2) {
 		return z1.pos1 == z2.pos1;
@@ -553,10 +563,12 @@ struct zip_iterator {
 	friend bool operator!=(const zip_iterator& z1, const zip_iterator& z2) {
 		return z1.pos1 != z2.pos1;
 	}
-	friend bool operator==(const zip_iterator& z1, zip_iterator<EIt, EIt, IIt2> end) {
+	friend bool operator==(const zip_iterator& z1,
+	                       zip_iterator<EIt, EIt, IIt2> end) {
 		return z1.end1 == end.val;
 	}
-	friend bool operator!=(const zip_iterator& z1, zip_iterator<EIt, EIt, IIt2> end) {
+	friend bool operator!=(const zip_iterator& z1,
+	                       zip_iterator<EIt, EIt, IIt2> end) {
 		return z1.end1 != end.val;
 	}
 };
@@ -579,12 +591,10 @@ struct zip_iterator<It1, It1, It2> {
 		return tmp;
 	}
 
-	auto operator*() {
-		return std::forward_as_tuple(*pos1, *pos2);
-	}
+	auto operator*() { return std::forward_as_tuple(*pos1, *pos2); }
 
-	zip_iterator begin() const {return *this;}
-	zip_iterator end() const {return {end1, end1};}
+	zip_iterator begin() const { return *this; }
+	zip_iterator end() const { return {end1, end1}; }
 
 	friend bool operator==(const zip_iterator& z1, const zip_iterator& z2) {
 		return z1.pos1 == z2.pos1;
@@ -594,11 +604,22 @@ struct zip_iterator<It1, It1, It2> {
 	}
 };
 
+/**
+ * @brief Iterate over two ranges in lockstep, like Python's zip.
+ *
+ * IIt1 and EIt may be different types, however that breaks range-for in C++14.
+ *
+ * @param begin1 The beginning of the first range to iterate over.
+ * @param end1 The end of the first range.
+ * @param begin2 The beginning of the second range to iterate over.
+ * @return zip_iterator<IIt1, EIt, IIt2> A range (and also an iterator) which
+ * represents the two ranges taken in pairs.
+ */
 template <typename IIt1, typename EIt, typename IIt2>
 zip_iterator<IIt1, EIt, IIt2> zip(IIt1 begin1, EIt end1, IIt2 begin2) {
 	return {begin1, end1, begin2};
 }
 
-}
+} // namespace kblib
 
 #endif // ALGORITHM_H
