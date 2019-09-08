@@ -31,7 +31,7 @@ void erase(C& c, const T& val) {
  */
 template <typename C, typename UnaryPredicate>
 void erase_if(C& c, UnaryPredicate p) {
-	c.erase(std::remove_if(c.begin(), c.end(), p), c.end());
+	c.erase(std::remove_if(c.begin(), c.end(), std::ref(p)), c.end());
 	return;
 }
 

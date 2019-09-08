@@ -24,7 +24,7 @@ namespace kblib {
  * @todo Refactor to remove the ugly unreachable stuff.
  */
 template <typename Array, typename RandomGenerator, typename freqtype = double>
-auto chooseCategorical(Array&& cats, RandomGenerator& r) {
+[[deprecated("Use std::discrete_distribution instead")]] auto chooseCategorical(Array&& cats, RandomGenerator& r) {
 	std::uniform_real_distribution<freqtype> uniform(
 	    0.0, std::accumulate(cats.begin(), cats.end(), 0.0));
 	freqtype choose = uniform(r);
