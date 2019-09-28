@@ -244,20 +244,20 @@ constexpr construct_type assign_traits =
    struct disable_conditional : construct_conditional<construct_traits<T>>,
 	                             assign_conditional<assign_traits<T>> {};
 
-	inline void noop(void*, void*) {}
-	inline void noop(void*, const void*) {}
+	inline void* noop(void*, void*) { return nullptr; }
+	inline void* noop(void*, const void*) { return nullptr; }
 
 	template <construct_type traits>
 	struct erased_construct_helper {};
 
 	template <>
 	struct erased_construct_helper<construct_type::copy> {
-		alias<void (*)(void*, const void*)> copy = &noop;
+		alias<void* (*)(void*, const void*)> copy = &noop;
 	};
 
 	template <>
 	struct erased_construct_helper<construct_type::move> {
-		alias<void (*)(void*, void*)> move = &noop;
+		alias<void* (*)(void*, void*)> move = &noop;
 	};
 
 	template <>
@@ -277,12 +277,13 @@ constexpr construct_type assign_traits =
 		alias<std::size_t (*)(void*)> hash = &default_hash;
 	};
 	template <typename T>
-	void default_copy(void* dest, const void* from) {
-		new (dest) T(*reinterpret_cast<const T*>(from));
+	void* default_copy(void* dest, const void* from) {
+		return static_cast<void*>(new (dest) T(*static_cast<const T*>(from)));
 	}
 	template <typename T>
-	void default_move(void* dest, void* from) {
-		new (dest) T(std::move(*reinterpret_cast<T*>(from)));
+	void* default_move(void* dest, void* from) {
+		return static_cast<void*>(new (dest)
+		                              T(std::move(*static_cast<T*>(from))));
 	}
 
 	template <typename T, typename Traits, bool noop = false>
@@ -381,9 +382,9 @@ class poly_obj
 	 */
 	constexpr poly_obj(const poly_obj& other) noexcept(
 	    std::is_nothrow_copy_constructible<Obj>::value)
-	    : disabler(other), ops_t(other), contains_value(other.contains_value) {
-		if (contains_value) {
-			this->copy(data, other.get());
+	    : disabler(other), ops_t(other) {
+		if (other.value) {
+			value = static_cast<Obj*>(this->copy(data, other.get()));
 		}
 	}
 	/**
@@ -395,10 +396,9 @@ class poly_obj
 	 */
 	constexpr poly_obj(poly_obj&& other) noexcept(
 	    std::is_nothrow_move_constructible<Obj>::value)
-	    : disabler(std::move(other)), ops_t(std::move(other)),
-	      contains_value(other.contains_value) {
-		if (contains_value) {
-			this->move(data, other.get());
+	    : disabler(std::move(other)), ops_t(std::move(other)) {
+		if (other.value) {
+			value = static_cast<Obj*>(this->move(data, other.get()));
 		}
 	}
 
@@ -411,9 +411,7 @@ class poly_obj
 	 */
 	constexpr poly_obj(const Obj& obj) noexcept(
 	    std::is_nothrow_copy_constructible<Obj>::value)
-	    : contains_value(true) {
-		new (data) Obj(obj);
-	}
+	    : value(new (data) Obj(obj)) {}
 	/**
 	 * @brief Move-constructs the contained object from obj.
 	 *
@@ -423,9 +421,7 @@ class poly_obj
 	 */
 	constexpr poly_obj(Obj&& obj) noexcept(
 	    std::is_nothrow_move_constructible<Obj>::value)
-	    : contains_value(true) {
-		new (data) Obj(std::move(obj));
-	}
+	    : value(new (data) Obj(std::move(obj))) {}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
@@ -436,9 +432,8 @@ class poly_obj
 	          typename std::enable_if_t<std::is_constructible_v<Obj, Args...>,
 	                                    int> = 0>
 	constexpr explicit poly_obj(std::in_place_t, Args&&... args)
-	    : ops_t(detail::make_ops_t<Obj, Traits>()), contains_value(true) {
-		new (data) Obj(std::forward<Args>(args)...);
-	}
+	    : ops_t(detail::make_ops_t<Obj, Traits>()),
+	      value(new (data) Obj(std::forward<Args>(args)...)) {}
 
 	/**
 	 * @brief Destroys the contained object, if any, and then copies other as in
@@ -449,9 +444,9 @@ class poly_obj
 	 */
 	poly_obj& operator=(const poly_obj& other) & {
 		clear();
-		contains_value = other.contains_value;
 		static_cast<ops_t&>(*this) = other;
-		this->copy(data, reinterpret_cast<const void*>(other.get()));
+		value = static_cast<Obj*>(
+		    this->copy(data, reinterpret_cast<const void*>(other.value)));
 		return *this;
 	}
 
@@ -464,9 +459,9 @@ class poly_obj
 	 */
 	poly_obj& operator=(poly_obj&& other) & {
 		clear();
-		contains_value = other.contains_value;
 		static_cast<ops_t&>(*this) = other;
-		this->move(data, reinterpret_cast<void*>(other.get()));
+		value = static_cast<Obj*>(
+		    this->move(data, reinterpret_cast<void*>(other.value)));
 		return *this;
 	}
 
@@ -510,9 +505,7 @@ class poly_obj
 	 *
 	 * @return Obj& A reference to the contained object.
 	 */
-	Obj& operator*() & noexcept {
-		return *std::launder(reinterpret_cast<Obj*>(data));
-	}
+	Obj& operator*() & noexcept { return *value; }
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -523,9 +516,7 @@ class poly_obj
 	 *
 	 * @return const Obj& A reference to the contained object.
 	 */
-	const Obj& operator*() const& noexcept {
-		return *std::launder(reinterpret_cast<const Obj*>(data));
-	}
+	const Obj& operator*() const& noexcept { return *value; }
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -538,7 +529,7 @@ class poly_obj
 	 */
 	Obj&& operator*() &&
 	    noexcept(std::is_nothrow_move_constructible<Obj>::value) {
-		return std::move(*std::launder(reinterpret_cast<Obj*>(data)));
+		return std::move(*value);
 	}
 	/**
 	 * @brief Returns a reference to the contained object.
@@ -553,7 +544,7 @@ class poly_obj
 	 */
 	const Obj&& operator*() const&& noexcept(
 	    std::is_nothrow_move_constructible<Obj>::value) {
-		return std::move(*std::launder(reinterpret_cast<const Obj*>(data)));
+		return std::move(*value);
 	}
 
 	/**
@@ -565,7 +556,7 @@ class poly_obj
 	 *
 	 * @return Obj* A pointer to the contained object.
 	 */
-	Obj* get() & noexcept { return std::launder(reinterpret_cast<Obj*>(data)); }
+	Obj* get() & noexcept { return value; }
 	/**
 	 * @brief Returns a pointer to the contained object.
 	 *
@@ -575,9 +566,7 @@ class poly_obj
 	 *
 	 * @return const Obj* A pointer to the contained object.
 	 */
-	const Obj* get() const& noexcept {
-		return std::launder(reinterpret_cast<const Obj*>(data));
-	}
+	const Obj* get() const& noexcept { return value; }
 
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -588,7 +577,7 @@ class poly_obj
 	 *
 	 * @return Obj* A pointer to the contained object.
 	 */
-	Obj* operator->() noexcept { return get(); }
+	Obj* operator->() noexcept { return value; }
 	/**
 	 * @brief Returns a pointer to the contained object.
 	 *
@@ -598,42 +587,41 @@ class poly_obj
 	 *
 	 * @return const Obj* A pointer to the contained object.
 	 */
-	const Obj* operator->() const noexcept { return get(); }
+	const Obj* operator->() const noexcept { return value; }
 
 	/**
 	 * @brief Check if the poly_obj contains a value.
 	 */
-	bool has_value() const { return contains_value; }
+	bool has_value() const { return value; }
 
 	/**
 	 * @brief Empties the poly_obj, reverting to a default-constructed state.
 	 */
 	void clear() {
-		if (contains_value) {
-			get()->~Obj();
+		if (value) {
+			value->~Obj();
+			value = nullptr;
 		}
-		contains_value = false;
 		static_cast<ops_t&>(*this) = {};
 	}
 
 	~poly_obj() noexcept {
-		if (contains_value) {
-			get()->~Obj();
+		if (value) {
+			value->~Obj();
 		}
 	}
 
  private:
 	alignas(Obj) std::byte data[Capacity];
-	bool contains_value = false;
+	Obj* value = nullptr;
 
 	template <typename U>
 	struct tag {};
 
 	template <typename U, typename... Args>
 	poly_obj(tag<U>, Args&&... args)
-	    : ops_t(detail::make_ops_t<U, Traits>()), contains_value(true) {
-		new (data) U(std::forward<Args>(args)...);
-	}
+	    : ops_t(detail::make_ops_t<U, Traits>()),
+	      value(new (data) U(std::forward<Args>(args)...)) {}
 };
 
 #endif // KBLIB_USE_CXX17
