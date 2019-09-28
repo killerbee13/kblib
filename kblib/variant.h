@@ -271,7 +271,7 @@ constexpr construct_type assign_traits =
 	template <typename T>
 	struct erased_hash_t<T, std::void_t<std::invoke_result_t<std::hash<T>, T>>> {
 		static std::size_t default_hash(void* obj) {
-			return std::hash<T>()(*reinterpret_cast<const T*>(obj));
+			return std::hash<T>()(*static_cast<const T*>(obj));
 		}
 
 		alias<std::size_t (*)(void*)> hash = &default_hash;
@@ -446,7 +446,7 @@ class poly_obj
 		clear();
 		static_cast<ops_t&>(*this) = other;
 		value = static_cast<Obj*>(
-		    this->copy(data, reinterpret_cast<const void*>(other.value)));
+		    this->copy(data, static_cast<const void*>(other.value)));
 		return *this;
 	}
 
@@ -461,7 +461,7 @@ class poly_obj
 		clear();
 		static_cast<ops_t&>(*this) = other;
 		value = static_cast<Obj*>(
-		    this->move(data, reinterpret_cast<void*>(other.value)));
+		    this->move(data, static_cast<void*>(other.value)));
 		return *this;
 	}
 
