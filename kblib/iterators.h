@@ -319,16 +319,15 @@ class range_t {
 	 * Ranges are equal when they generate identical ranges.
 	 */
 	constexpr friend bool operator==(range_t l, range_t r) {
-		return (l.begin() == r.begin()) && (l.end() == r.end()) && (l.step == r.step);
+		return (l.begin() == r.begin()) && (l.end() == r.end()) &&
+		       (l.step == r.step);
 	}
 	/**
 	 * @brief Compare l and r for inequality.
 	 *
 	 * Ranges are equal when they generate identical ranges.
 	 */
-	constexpr friend bool operator!=(range_t l, range_t r) {
-		return !(l == r);
-	}
+	constexpr friend bool operator!=(range_t l, range_t r) { return !(l == r); }
 
  private:
 	Value min, max;
@@ -548,8 +547,12 @@ struct enumerate_t<Range, void> {
 	}
 	iterator begin() noexcept(noexcept(r.begin())) { return {r.begin(), 0}; }
 
-	const_iterator end() const noexcept(noexcept(r.cend())) { return {r.cend(), -std::size_t{1}}; }
-	end_iterator end() noexcept(noexcept(r.end())) { return {r.end(), -std::size_t{1}}; }
+	const_iterator end() const noexcept(noexcept(r.cend())) {
+		return {r.cend(), -std::size_t{1}};
+	}
+	end_iterator end() noexcept(noexcept(r.end())) {
+		return {r.end(), -std::size_t{1}};
+	}
 };
 
 template <typename It, typename EndIt>
@@ -589,7 +592,7 @@ enumerate_t<It, EIt> enumerate(It begin, EIt end) {
 }
 
 /**
- * @todo Write indirect_range
+ * @brief Allow range-for iteration of an iterator pair.
  */
 template <typename Iter1, typename Iter2>
 struct indirect_range {
@@ -598,6 +601,8 @@ struct indirect_range {
 
 	Iter1 begin() const noexcept { return begin_; }
 	Iter2 end() const noexcept { return end_; }
+	auto rbegin() const noexcept { return std::make_reverse_iterator(begin_); }
+	auto rend() const noexcept { return std::make_reverse_iterator(end_); }
 };
 
 } // namespace kblib
