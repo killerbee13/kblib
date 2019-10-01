@@ -150,28 +150,23 @@ TEST_CASE("main") {
 			}
 		}
 	}
-
-	auto p = kblib::to_unique(new auto([] {}), [](auto* p) {
-		std::cout << p << '\n';
-		delete p;
-	});
-	test(kblib::max);
-	test(kblib::min);
-
-	std::cout << "base 62 test:"
-	          << "\n0 -> " << kblib::to_string<62>(0) << "\n1 -> "
-	          << kblib::to_string<62>(1) << "\n-1 -> "
-	          << kblib::to_string<62>(-1) << "\n10 -> "
-	          << kblib::to_string<62>(10) << "\n26 -> "
-	          << kblib::to_string<62>(26) << "\n36 -> "
-	          << kblib::to_string<62>(36) << "\n61 -> "
-	          << kblib::to_string<62>(61) << "\n62 -> "
-	          << kblib::to_string<62>(62) << "\n63 -> "
-	          << kblib::to_string<62>(63) << "\n630 -> "
-	          << kblib::to_string<62>(630) << '\n';
-	std::cout << kblib::to_string(65536, 2) << '\n';
+	{
+		// to_unique can make unique_ptrs to anonymous types
+		auto p = kblib::to_unique(new auto([] {}), [](auto* p) {
+			delete p;
+		});
+	}
 
 	{
+		auto equal = [](auto r1, auto r2) {
+			auto r1b = r1.begin();
+			auto r1e = r1.end();
+			auto r2b = r2.begin();
+			auto r2e = r2.end();
+			return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) &&
+			       kblib::equal(r1b, r1e, r2b);
+		};
+
 		constexpr auto target =
 		    std::array<int, 10>{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
 		auto i1 = kblib::buildiota<std::vector<int>>(10, 0);
@@ -180,98 +175,34 @@ TEST_CASE("main") {
 		auto i4 = kblib::buildiota<std::array<int, 10>>(0, 1);
 		auto i5 =
 		    kblib::buildiota<kblib::construct_with_size<std::vector<int>, 10>>(0);
-		auto print_arr = [&](auto c) {
-			for (const auto& v : c) {
-				std::cout << v << ", ";
-			}
-			std::cout << '\n';
-		};
 
-		if (!(i1.size() == target.size() &&
-		      kblib::equal(i1.begin(), i1.end(), target.begin()))) {
-			std::cout << "buildiota2<C>(size, value) failed.\n";
-			print_arr(i1);
-		}
-		if (!(i2.size() == target.size() &&
-		      kblib::equal(i2.begin(), i2.end(), target.begin()))) {
-			std::cout << "buildiota2<C>(size, value, incr) failed.\n";
-			print_arr(i2);
-		}
-		REQUIRE((i3.size() == target.size() &&
-		         kblib::equal(i3.begin(), i3.end(), target.begin())));
-		REQUIRE((i4.size() == target.size() &&
-		         kblib::equal(i4.begin(), i4.end(), target.begin())));
-		if (!(i5.size() == target.size() &&
-		      kblib::equal(i5.begin(), i5.end(), target.begin()))) {
-			std::cout << "buildiota2<construct_with_size<C, size>>(value, incr) "
-			             "failed.\n";
-			print_arr(i5);
-		}
-
-		auto range = kblib::range(0, 9);
-		if (!kblib::equal(range.begin(), range.end(), target.begin())) {
-			std::cout << "range(0, 9) failed.\n";
-			print_arr(range);
-		}
-
-		auto l = kblib::buildiota<std::list<int>>(10, 9, -1);
-		auto li = kblib::buildiota<std::vector<std::list<int>::iterator>>(
-		    l.size(), l.begin());
-		{
-			decltype(li) its;
-			const auto end = l.end();
-			for (auto it = l.begin(); it != end; ++it) {
-				its.push_back(it);
-			}
-			if (its != li) {
-				std::cout
-				    << "buildiota<C>(size, value) failed for iterator case.\n";
-				auto print_itarr = [&](auto c) {
-					for (const auto& v : c) {
-						std::cout << kblib::to_pointer(v) << ", ";
-					}
-					std::cout << '\n';
-				};
-				print_itarr(its);
-				print_itarr(li);
-			}
-		}
-		print_arr(l);
-		auto range1 = kblib::range(9, 0, -1);
-		if (!kblib::equal(range1.begin(), range1.end(), l.begin())) {
-			std::cout << "range(9, 0, -1) failed.\n";
-			print_arr(range1);
-		}
+		REQUIRE((i1.size() == target.size() && equal(i1, target)));
+		REQUIRE((i2.size() == target.size() && equal(i2, target)));
+		REQUIRE((i3.size() == target.size() && equal(i3, target)));
+		REQUIRE((i4.size() == target.size() && equal(i4, target)));
+		REQUIRE((i5.size() == target.size() && equal(i5, target)));
 
 		{
 			std::array<int, 10> haystack{1, 1, 2, 5, 6, 2, 4, 7, 0, 6};
 			const int N = 5;
+			std::array<int, N> maxN_target{7, 6, 6, 5, 4};
 
-			std::cout << "get_max_n: max " << N << " of\n  ";
-			print_arr(haystack);
-
-			auto maxN = kblib::get_max_n<std::vector<int>>(haystack.begin(),
-			                                               haystack.end(), N);
-			std::cout << "Basic:\n  ";
-			print_arr(maxN);
-
+			REQUIRE(equal(maxN_target, kblib::get_max_n<std::vector<int>>(
+			                               haystack.begin(), haystack.end(), N)));
 			std::vector<int> maxN_copy;
-			std::cout << "Copied:\n  ";
 			kblib::get_max_n(haystack.begin(), haystack.end(),
 			                 std::back_inserter(maxN_copy), 5);
-			print_arr(maxN_copy);
+			REQUIRE(equal(maxN_target, maxN_copy));
 
-			std::cout << "Sorted by multiset:\n  ";
-			auto maxN_sorted = kblib::get_max_n<std::multiset<int>>(
-			    haystack.begin(), haystack.end(), N);
-			print_arr(maxN_sorted);
+			REQUIRE(equal(maxN_target,
+			              kblib::get_max_n<std::multiset<int, std::greater<>>>(
+			                  haystack.begin(), haystack.end(), N)));
 
-			std::cout << "Raw partial_sort_copy:\n  ";
 			std::vector<int> maxN_psc(N);
 			std::partial_sort_copy(haystack.begin(), haystack.end(),
 			                       maxN_psc.begin(), maxN_psc.end(),
 			                       std::greater<>{});
-			print_arr(maxN_psc);
+			REQUIRE(equal(maxN_target, maxN_psc));
 
 			// SFINAE prevents get_max_n from being called with invalid arguments,
 			// even though count has moved from third to fourth on this overload.
@@ -281,46 +212,14 @@ TEST_CASE("main") {
 			// 1); kblib::get_max_n(haystack.begin(), haystack.end(), 1,
 			// maxN.begin());
 
-			std::cout << "Range test:\n  ";
 			auto range = kblib::range(0, 50, 3);
-			print_arr(range);
-			std::cout << "Top 5:\n  ";
+			REQUIRE(
+			    equal(range, std::vector<int>{0, 3, 6, 9, 12, 15, 18, 21, 24, 27,
+			                                  30, 33, 36, 39, 42, 45, 48}));
 			auto maxN_range =
 			    kblib::get_max_n<std::vector<int>>(range.begin(), range.end(), 5);
-			print_arr(maxN_range);
+			REQUIRE(maxN_range == std::vector<int>{48, 45, 42, 39, 36});
 		}
-
-		std::cout << "Ranges:\nrange(10): ";
-		print_arr(kblib::range(10));
-		std::cout << "range(0, 10): ";
-		print_arr(kblib::range(0, 10));
-		std::cout << "range(0, 10, 2): ";
-		print_arr(kblib::range(0, 10, 2));
-		std::cout << "range(10, 0, -1): ";
-		print_arr(kblib::range(10, 0, -1));
-		std::cout << "range(0, -10, -1): ";
-		print_arr(kblib::range(0, -10, -1));
-		std::cout << "range(0, -10): ";
-		print_arr(kblib::range(0, -10));
-		std::cout << "range(0, 10, incrementer{}): ";
-		print_arr(kblib::range(0, 10, kblib::incrementer{}));
-		std::cout << "range(10, 0, decrementer{}): ";
-		print_arr(kblib::range(10, 0, kblib::decrementer{}));
-
-		std::cout << "Range comparisons: true expected:\n" << std::boolalpha;
-		std::cout << "range(0, 11, 2) == range(0, 12, 2): "
-		          << (kblib::range(0, 11, 2) == kblib::range(0, 12, 2)) << '\n';
-		std::cout << "range(0, 0, 1) == range(1, 1, 2): "
-		          << (kblib::range(0, 0, 1) == kblib::range(1, 1, 2)) << '\n';
-		std::cout << "range(100, 100, 1) == range(0, 0, 2): "
-		          << (kblib::range(100, 100, 1) == kblib::range(0, 0, 2)) << '\n';
-		std::cout << "false expected:\n";
-		std::cout << "range(0, 10) == range(10, 0): "
-		          << (kblib::range(0, 10) == kblib::range(10, 0)) << '\n';
-		std::cout << "range(0, 11, 2) == range(0, 10, 2): "
-		          << (kblib::range(0, 11, 2) == kblib::range(0, 10, 2)) << '\n';
-		std::cout << "range(0, 0, 1) == range(0, 1, 2): "
-		          << (kblib::range(0, 0, 1) == kblib::range(0, 1, 2)) << '\n';
 	}
 #if KBLIB_USE_CXX17
 	poly_test();
