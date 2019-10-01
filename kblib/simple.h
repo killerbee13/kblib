@@ -182,7 +182,7 @@ class range_t {
 	 * Ranges are equal when they generate identical ranges.
 	 */
 	constexpr friend bool operator==(range_t l, range_t r) {
-		return (l.begin() == r.begin()) && (l.end() == r.end());
+		return (l.begin() == r.begin()) && (l.end() == r.end()) && (l.step == r.step);
 	}
 	/**
 	 * @brief Compare l and r for inequality.
@@ -190,7 +190,7 @@ class range_t {
 	 * Ranges are equal when they generate identical ranges.
 	 */
 	constexpr friend bool operator!=(range_t l, range_t r) {
-		return (l.begin() != r.begin()) || (l.end() != r.end());
+		return !(l == r);
 	}
 
  private:
@@ -450,6 +450,18 @@ template <typename It, typename EIt>
 enumerate_t<It, EIt> enumerate(It begin, EIt end) {
 	return {begin, end};
 }
+
+/**
+ * @todo Write indirect_range
+ */
+template <typename Iter1, typename Iter2>
+struct indirect_range {
+	Iter1 begin_;
+	Iter2 end_;
+
+	Iter1 begin() const noexcept { return begin_; }
+	Iter2 end() const noexcept { return end_; }
+};
 
 namespace fnv {
 

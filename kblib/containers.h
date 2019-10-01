@@ -61,6 +61,35 @@ auto get_check(M&& m, const K& key) noexcept(noexcept(m.find(key)) &&
 	return {it, it != m.end()};
 }
 
+
+/**
+ * @brief std::vector::shrink_to_fit is non-binding, which means that there is
+ * no guaranteed way to shrink a vector via its API. This function is a
+ * roundabout way of doing that without relying on the sanity of the
+ * implementation.
+ *
+ * This function explicitly constructs a new vector and moves into it, before
+ * overwriting the old vector with the new one, meaning that the vector is
+ * forced to forget its capacity.
+ *
+ * This function provides the strong exception guarantee.
+ *
+ * @param vec The vector to force-shrink.
+ */
+template <typename V>
+void force_shrink_to_fit(V& vec) {
+	 if constexpr (std::is_nothrow_move_constructible<typename V::value_type>::value) {
+		 V tmp;
+		 tmp.reserve(vec.size());
+		 std::move(vec.begin(), vec.end(), std::back_inserter(tmp));
+		 vec = std::move(tmp);
+	 } else {
+		 V tmp = vec;
+		 vec = std::move(tmp);
+	 }
+	 return;
+}
+
 template <typename C, std::size_t size>
 struct construct_with_size {
 	constexpr static C make() { return C(size); }
