@@ -19,12 +19,16 @@ namespace kblib {
 /**
  * @brief Given a categorical distribution cats, selects one category
  *
+ * @deprecated std::discrete_distribution provides the same functionality, with
+ * a worse name. Because it exists, there is no reason to use this function.
+ *
  * @param cats A sequence of category weights
  * @param r A <random>-compatible RandomGenerator
  * @todo Refactor to remove the ugly unreachable stuff.
  */
 template <typename Array, typename RandomGenerator, typename freqtype = double>
-[[deprecated("Use std::discrete_distribution instead")]] auto chooseCategorical(Array&& cats, RandomGenerator& r) {
+[[deprecated("Use std::discrete_distribution instead")]] auto
+chooseCategorical(Array&& cats, RandomGenerator& r) {
 	std::uniform_real_distribution<freqtype> uniform(
 	    0.0, std::accumulate(cats.begin(), cats.end(), 0.0));
 	freqtype choose = uniform(r);
@@ -42,32 +46,23 @@ template <typename Array, typename RandomGenerator, typename freqtype = double>
 }
 
 /**
- * @brief Semi-efficient fibonacci implementation (constant for small n)
+ * @brief Memoized fibonacci sequence function (O(n - max_prev_n))
  *
- * @param n
- * @return Returns the nth fibonacci number.
+ * @return The nth fibonacci number.
  */
-inline unsigned fibonacci(unsigned n) {
-	constexpr std::array<unsigned, 39> fibs{
-		 {0,       1,        1,        2,       3,       5,       8,
-			13,      21,       34,       55,      89,      144,     233,
-			377,     610,      987,      1597,    2584,    4181,    6765,
-			10946,   17711,    28657,    46368,   75025,   121393,  196418,
-			317811,  514229,   832040,   1346269, 2178309, 3524578, 5702887,
-			9227465, 14930352, 24157817, 39088169}};
-	if (n < fibs.size()) {
-		return fibs[n];
-		// Iterative fallback
-	} else {
-		unsigned b1 = fibs[fibs.size() - 2], b2 = fibs[fibs.size() - 1],
-		         t = b1 + b2;
-		for (unsigned i = fibs.size(); i != n; ++i) {
-			t = b2 + b1;
-			b2 = b1;
-			b1 = t;
-		}
-		return t;
+inline long long fibonacci(int n) {
+	if (n > 92) {
+		throw std::out_of_range("fibonacci(92) is the largest that fits within long long");
 	}
+	if (n < 0) {
+		throw std::domain_error("fibonacci not defined for negative numbers");
+	}
+	static std::vector<long long> mem{0, 1, 1, 2, 3, 5, 8, 13};
+	  while (n >= mem.size()) {
+		 auto end = std::prev(mem.end());
+		 mem.push_back(*end + *std::prev(end));
+	  }
+	  return mem[n];
 }
 
 /**
