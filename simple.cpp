@@ -4,6 +4,8 @@
 #include "kblib/stats.h"
 #include <iostream>
 #include <list>
+#include <iterator>
+#include <sstream>
 
 TEST_CASE("range comparison") {
 	auto equal = [](auto r1, auto r2) {
@@ -146,3 +148,80 @@ TEST_CASE("enumerate") {
 		}
 	}
 }
+
+#if KBLIB_USE_CXX17
+
+TEST_CASE("magic_enumerate") {
+	std::vector<int> persistent{0, 1, 1, 2, 3, 5, 8};
+	SECTION("lvalue") {
+		for (auto&& [i, v] : kblib::magic_enumerate(persistent)) {
+			REQUIRE(v == kblib::fibonacci(i));
+			REQUIRE(&v == &persistent[i]);
+		}
+	}
+	SECTION("copy") {
+		for (auto [i, v] : kblib::magic_enumerate(persistent)) {
+			REQUIRE(v == kblib::fibonacci(i));
+			REQUIRE(&v != &persistent[i]);
+		}
+	}
+
+	SECTION("const lvalue") {
+		const auto& cp = persistent;
+		for (auto&& [i, v] : kblib::magic_enumerate(cp)) {
+			REQUIRE(v == kblib::fibonacci(i));
+			//print<decltype(v)>{};
+			static_assert(
+			    std::is_const<
+			        typename std::remove_reference<decltype(v)>::type>::value,
+			    "v must refer to const when the range is const");
+		}
+	}
+
+	SECTION("iterators") {
+		for (auto&& [i, v] : kblib::magic_enumerate(persistent.cbegin(), persistent.cend())) {
+			REQUIRE(v == kblib::fibonacci(i));
+		}
+	}
+	SECTION("mutable iterators") {
+		std::vector<int> range{0, 1, 2, 3, 4, 5, 6, 7};
+		for (auto&& [i, v] : kblib::magic_enumerate(range.begin(), range.end())) {
+			v = 0;
+		}
+		REQUIRE(std::all_of(range.begin(), range.end(),
+		                    [](int v) { return v == 0; }));
+	}
+	SECTION("reverse iterators") {
+		std::vector<int> reversed{7, 6, 5, 4, 3, 2, 1, 0};
+		for (auto&& [i, v] : kblib::magic_enumerate(reversed.rbegin(), reversed.rend())) {
+			REQUIRE(v == i);
+		}
+	}
+
+	SECTION("temporary") {
+		for (auto&& [i, v] : kblib::magic_enumerate(std::vector<int>{0, 1, 1, 2, 3, 5, 8})) {
+			REQUIRE(v == kblib::fibonacci(i));
+		}
+	}
+	SECTION("input iterators") {
+		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
+		for (auto&& [i, v] : kblib::magic_enumerate(std::istream_iterator<int>(is), std::istream_iterator<int>())) {
+			REQUIRE(v == i / 2);
+		}
+	}
+	SECTION("copied input iterators") {
+		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
+		for (auto [i, v] : kblib::magic_enumerate(std::istream_iterator<int>(is), std::istream_iterator<int>())) {
+			REQUIRE(v == i / 2);
+		}
+	}
+
+	SECTION("move-only") {
+		std::vector<std::unique_ptr<int>> ptr_vec(10);
+		for (auto&& [i, ptr] : kblib::magic_enumerate(ptr_vec)) {
+
+		}
+	}
+}
+
+#endif

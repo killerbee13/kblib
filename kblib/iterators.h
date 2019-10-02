@@ -6,6 +6,10 @@
 #include <cassert>
 #include <iterator>
 
+#if KBLIB_USE_CXX17
+#include <optional>
+#endif
+
 namespace kblib {
 
 template <typename ptr>
@@ -590,6 +594,272 @@ template <typename It, typename EIt>
 enumerate_t<It, EIt> enumerate(It begin, EIt end) {
 	return {begin, end};
 }
+
+#if KBLIB_USE_CXX17
+
+template <typename T>
+class enumerator_iterator;
+
+namespace detail {
+
+   template <typename T1, typename T2>
+   decltype(auto) get_or(T1&& t1, T2&& t2) {
+		return t1 ? *t1 : *t2;
+	}
+
+	struct force_copy_tag {};
+	template <typename T>
+	T* get_magic_ptr() {
+		static const char enumeration_magic_pointer = '\0';
+		return reinterpret_cast<T*>(const_cast<char*>(&enumeration_magic_pointer));
+	}
+
+} // namespace detail
+
+template <typename T>
+class enumeration {
+ public:
+	enumeration() = default;
+
+	enumeration(const enumeration& other) : idx(other.idx), local([&]{
+		assert(other.source || other.local);
+		assert(other.source != detail::get_magic_ptr<T>());
+		return *other;
+	}()), source(nullptr) {}
+ private:
+	enumeration(detail::force_copy_tag, std::size_t i) : idx(i) {}
+ public:
+	std::size_t index() const noexcept { return idx; }
+
+	T& operator*() & noexcept {
+		assert(source != detail::get_magic_ptr<T>());
+		return detail::get_or(local, source);
+	}
+	const T& operator*() const& noexcept {
+		assert(source != detail::get_magic_ptr<T>());
+		return detail::get_or(local, source);
+	}
+	T&& operator*() && noexcept {
+		assert(source != detail::get_magic_ptr<T>());
+		return std::move(detail::get_or(local, source));
+	}
+	const T&& operator*() const&& noexcept {
+		assert(source != detail::get_magic_ptr<T>());
+		return std::move(detail::get_or(local, source));
+	}
+
+ private:
+	void set(T* t) { source = t; }
+
+	void advance() noexcept {
+		++idx;
+		source = detail::get_magic_ptr<T>();
+		local = std::nullopt;
+	}
+
+	std::size_t idx = 0;
+	std::optional<T> local = std::nullopt;
+	T* source = detail::get_magic_ptr<T>();
+
+	template <typename>
+	friend class enumerator_iterator;
+};
+} // namespace kblib
+
+namespace std {
+
+template <typename T>
+class tuple_size<::kblib::enumeration<T>>
+    : public std::integral_constant<std::size_t, 2> {};
+
+template <typename T>
+class tuple_element<0, ::kblib::enumeration<T>> {
+ public:
+	using type = std::size_t;
+};
+
+template <typename T>
+class tuple_element<1, ::kblib::enumeration<T>> {
+ public:
+	using type = T;
+};
+
+} // namespace std
+
+namespace kblib {
+
+template <std::size_t I, typename T>
+decltype(auto) get(const enumeration<T>& e) {
+	static_assert(I <= 1, "enumeration only has two elements");
+	if constexpr (I == 0) {
+		return e.index();
+	} else {
+		return *e;
+	}
+}
+
+template <std::size_t I, typename T>
+decltype(auto) get(enumeration<T>& e) {
+	static_assert(I <= 1, "enumeration only has two elements");
+	if constexpr (I == 0) {
+		return e.index();
+	} else {
+		return *e;
+	}
+}
+
+template <std::size_t I, typename T>
+decltype(auto) get(enumeration<T>&& e) {
+	static_assert(I <= 1, "enumeration only has two elements");
+	if constexpr (I == 0) {
+		return e.index();
+	} else {
+		return *e;
+	}
+}
+
+template <typename It>
+class enumerator_iterator {
+ public:
+	using nested_value = copy_const_t<decltype(*std::declval<It&>()), typename It::value_type>;
+
+	using value_type = enumeration<nested_value>;
+	using difference_type = std::ptrdiff_t;
+	using pointer = const value_type*;
+	using reference = const value_type&;
+	using iterator_category = std::input_iterator_tag;
+
+	enumerator_iterator() = default;
+	//enumerator_iterator(const enumerator_iterator& other) = delete;
+	enumerator_iterator(const enumerator_iterator& other) : enumerator_iterator(detail::force_copy_tag{}, other.curr_.idx, other.it_) {}
+	enumerator_iterator(It it) : it_(it) {}
+
+	value_type& operator*() & {
+		if (!captured) {
+			curr_.set(to_pointer(it_));
+			captured = true;
+		}
+		return curr_;
+	}
+	enumerator_iterator& operator++() {
+		curr_.advance();
+		captured = false;
+		++it_;
+		return *this;
+	}
+	enumerator_iterator operator++(int) {
+		curr_.advance();
+		captured = false;
+		return {detail::force_copy_tag{}, curr_.idx, it_++};
+	}
+
+	friend bool operator==(const enumerator_iterator& lhs, const enumerator_iterator& rhs) {
+		return lhs.it_ == rhs.it_;
+	}
+	friend bool operator!=(const enumerator_iterator& lhs, const enumerator_iterator& rhs) {
+		return lhs.it_ != rhs.it_;
+	}
+
+ private:
+	enumerator_iterator(detail::force_copy_tag t, std::size_t idx, It it) : it_(it), curr_(t, idx) {}
+
+	It it_;
+	bool captured = false;
+	value_type curr_;
+};
+
+template <typename Range, typename = void>
+class enumerator_t;
+
+template <typename Range>
+class enumerator_t<Range, void> {
+ public:
+	detail::no_dangle_t<Range> r;
+
+	using range_t = typename std::remove_reference_t<Range>;
+	using nested_iterator = decltype(r.begin());
+	using nested_end_iterator = decltype(r.end());
+	using iterator = enumerator_iterator<nested_iterator>;
+	using end_iterator = enumerator_iterator<nested_end_iterator>;
+
+	using nested_const_iterator = typename range_t::const_iterator;
+	using const_iterator = enumerator_iterator<nested_const_iterator>;
+
+	const_iterator begin() const noexcept(noexcept(r.cbegin())) {
+		return r.cbegin();
+	}
+	iterator begin() noexcept(noexcept(r.begin())) { return r.begin(); }
+
+	const_iterator end() const noexcept(noexcept(r.cend())) { return r.cend(); }
+	end_iterator end() noexcept(noexcept(r.end())) { return r.end(); }
+};
+
+template <typename It, typename EndIt>
+class enumerator_t {
+ public:
+	using nested_iterator = It;
+	using iterator = enumerator_iterator<nested_iterator>;
+	using end_iterator = enumerator_iterator<EndIt>;
+
+	iterator begin() const noexcept { return {r_begin}; }
+
+	end_iterator end() const noexcept { return {r_end}; }
+
+	It r_begin;
+	EndIt r_end;
+};
+
+/**
+ * @brief Allow access to indexes while using range-based for loops. Safe to use
+ * with rvalues.
+ *
+ * The "magic" part is that
+ * \code
+ * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
+ * \endcode
+ * captures 'val' by reference, while
+ * \code
+ * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
+ * \endcode
+ * captures 'val' by value, so that the effect is similar to if you had written
+ * \code
+ * for (auto val : range) {
+ * \endcode
+ * and kept track of the index manually.
+ *
+ * @param r A range to iterate over.
+ */
+template <typename Range>
+enumerator_t<Range&&> magic_enumerate(Range&& r) {
+	return {std::forward<Range>(r)};
+}
+
+/**
+ * @brief Allow access to indexes while using range-based for loops.
+ *
+ * The "magic" part is that
+ * \code
+ * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
+ * \endcode
+ * captures 'val' by reference, while
+ * \code
+ * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
+ * \endcode
+ * captures 'val' by value, so that the effect is similar to if you had written
+ * \code
+ * for (auto val : range) {
+ * \endcode
+ * and kept track of the index manually.
+ *
+ * @param begin The beginning of the input range.
+ * @param end The end of the input range.
+ */
+template <typename It, typename EIt>
+enumerator_t<It, EIt> magic_enumerate(It begin, EIt end) {
+	return {begin, end};
+}
+
+#endif
 
 /**
  * @brief Allow range-for iteration of an iterator pair.
