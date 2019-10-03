@@ -608,10 +608,12 @@ namespace detail {
 	}
 
 	struct force_copy_tag {};
+	// Get a pointer which is guaranteed to be invalid to use
 	template <typename T>
 	T* get_magic_ptr() {
 		static const char enumeration_magic_pointer = '\0';
-		return reinterpret_cast<T*>(const_cast<char*>(&enumeration_magic_pointer));
+		return reinterpret_cast<T*>(
+		    const_cast<char*>(&enumeration_magic_pointer));
 	}
 
 } // namespace detail
@@ -621,31 +623,41 @@ class enumeration {
  public:
 	enumeration() = default;
 
-	enumeration(const enumeration& other) : idx(other.idx), local([&]{
-		assert(other.source || other.local);
-		assert(other.source != detail::get_magic_ptr<T>());
-		return *other;
-	}()), source(nullptr) {}
+	enumeration(const enumeration& other)
+	    : idx(other.idx), local([&] {
+		      assert(other.source || other.local);
+				assert(other.source != detail::get_magic_ptr<T>());
+				return *other;
+	      }()),
+	      source(nullptr) {}
+	enumeration(volatile enumeration& other)
+	    : enumeration(const_cast<const enumeration&>(other)) {}
+
  private:
 	enumeration(detail::force_copy_tag, std::size_t i) : idx(i) {}
+
  public:
 	std::size_t index() const noexcept { return idx; }
 
-	T& operator*() & noexcept {
+	std::remove_const_t<T>& operator*() & noexcept {
 		assert(source != detail::get_magic_ptr<T>());
-		return detail::get_or(local, source);
+		assert(local);
+		return *local;
 	}
 	const T& operator*() const& noexcept {
 		assert(source != detail::get_magic_ptr<T>());
 		return detail::get_or(local, source);
 	}
-	T&& operator*() && noexcept {
-		assert(source != detail::get_magic_ptr<T>());
-		return std::move(detail::get_or(local, source));
+
+	T& operator*() volatile& noexcept {
+		auto& self = *const_cast<enumeration*>(this);
+		assert(self.source != detail::get_magic_ptr<T>());
+		return detail::get_or(self.local, self.source);
 	}
-	const T&& operator*() const&& noexcept {
-		assert(source != detail::get_magic_ptr<T>());
-		return std::move(detail::get_or(local, source));
+	const T& operator*() const volatile& noexcept {
+		auto& self = *const_cast<const enumeration*>(this);
+		assert(self.source != detail::get_magic_ptr<T>());
+		return detail::get_or(self.local, self.source);
 	}
 
  private:
@@ -658,7 +670,7 @@ class enumeration {
 	}
 
 	std::size_t idx = 0;
-	std::optional<T> local = std::nullopt;
+	mutable std::optional<std::remove_const_t<T>> local = std::nullopt;
 	T* source = detail::get_magic_ptr<T>();
 
 	template <typename>
@@ -681,7 +693,25 @@ class tuple_element<0, ::kblib::enumeration<T>> {
 template <typename T>
 class tuple_element<1, ::kblib::enumeration<T>> {
  public:
+	using type = std::remove_const_t<T>;
+};
+
+template <typename T>
+class tuple_element<1, const ::kblib::enumeration<T>> {
+ public:
+	using type = const T;
+};
+
+template <typename T>
+class tuple_element<1, volatile ::kblib::enumeration<T>> {
+ public:
 	using type = T;
+};
+
+template <typename T>
+class tuple_element<1, const volatile ::kblib::enumeration<T>> {
+ public:
+	using type = const T;
 };
 
 } // namespace std
@@ -709,6 +739,26 @@ decltype(auto) get(enumeration<T>& e) {
 }
 
 template <std::size_t I, typename T>
+decltype(auto) get(volatile enumeration<T>& e) {
+	static_assert(I <= 1, "enumeration only has two elements");
+	if constexpr (I == 0) {
+		return const_cast<enumeration<T>&>(e).index();
+	} else {
+		return *e;
+	}
+}
+
+template <std::size_t I, typename T>
+decltype(auto) get(const volatile enumeration<T>& e) {
+	static_assert(I <= 1, "enumeration only has two elements");
+	if constexpr (I == 0) {
+		return const_cast<enumeration<T>&>(e).index();
+	} else {
+		return *e;
+	}
+}
+
+template <std::size_t I, typename T>
 decltype(auto) get(enumeration<T>&& e) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
@@ -721,7 +771,8 @@ decltype(auto) get(enumeration<T>&& e) {
 template <typename It>
 class enumerator_iterator {
  public:
-	using nested_value = copy_const_t<decltype(*std::declval<It&>()), typename It::value_type>;
+	using nested_value =
+	    copy_const_t<decltype(*std::declval<It&>()), typename It::value_type>;
 
 	using value_type = enumeration<nested_value>;
 	using difference_type = std::ptrdiff_t;
@@ -730,11 +781,13 @@ class enumerator_iterator {
 	using iterator_category = std::input_iterator_tag;
 
 	enumerator_iterator() = default;
-	//enumerator_iterator(const enumerator_iterator& other) = delete;
-	enumerator_iterator(const enumerator_iterator& other) : enumerator_iterator(detail::force_copy_tag{}, other.curr_.idx, other.it_) {}
+	// enumerator_iterator(const enumerator_iterator& other) = delete;
+	enumerator_iterator(const enumerator_iterator& other)
+	    : enumerator_iterator(detail::force_copy_tag{}, other.curr_.idx,
+	                          other.it_) {}
 	enumerator_iterator(It it) : it_(it) {}
 
-	value_type& operator*() & {
+	volatile value_type& operator*() & {
 		if (!captured) {
 			curr_.set(to_pointer(it_));
 			captured = true;
@@ -753,15 +806,18 @@ class enumerator_iterator {
 		return {detail::force_copy_tag{}, curr_.idx, it_++};
 	}
 
-	friend bool operator==(const enumerator_iterator& lhs, const enumerator_iterator& rhs) {
+	friend bool operator==(const enumerator_iterator& lhs,
+	                       const enumerator_iterator& rhs) {
 		return lhs.it_ == rhs.it_;
 	}
-	friend bool operator!=(const enumerator_iterator& lhs, const enumerator_iterator& rhs) {
+	friend bool operator!=(const enumerator_iterator& lhs,
+	                       const enumerator_iterator& rhs) {
 		return lhs.it_ != rhs.it_;
 	}
 
  private:
-	enumerator_iterator(detail::force_copy_tag t, std::size_t idx, It it) : it_(it), curr_(t, idx) {}
+	enumerator_iterator(detail::force_copy_tag t, std::size_t idx, It it)
+	    : it_(it), curr_(t, idx) {}
 
 	It it_;
 	bool captured = false;

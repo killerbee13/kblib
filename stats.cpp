@@ -18,7 +18,7 @@ TEST_CASE("fibonacci") {
 	for (int i{}; i != fibs.size(); ++i) {
 		REQUIRE(fibs[i] == kblib::fibonacci(i));
 	}
-	for (int i{fibs.size()}; i < 93; ++i) {
+	/*for (int i{fibs.size()}; i < 93; ++i) {
 		std::cout<<(kblib::fibonacci(i) - std::llroundl(std::powl(phi, i)/r5))<<'\n';
-	}
+	}//*/
 }

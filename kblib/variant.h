@@ -19,6 +19,8 @@ namespace kblib {
 /**
  * @brief Lexically converts the value of v (no matter its type) to type To.
  *
+ * @deprecated Use lexical_coerce instead, as it more clearly expresses intent.
+ *
  * @param v A variant to coerce.
  * @return To The type to coerce to.
  */
