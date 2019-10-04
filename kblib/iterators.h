@@ -690,26 +690,35 @@ class tuple_element<0, ::kblib::enumeration<T>> {
 	using type = std::size_t;
 };
 
-template <typename T>
-class tuple_element<1, ::kblib::enumeration<T>> {
- public:
-	using type = std::remove_const_t<T>;
-};
-
-template <typename T>
-class tuple_element<1, const ::kblib::enumeration<T>> {
- public:
-	using type = const T;
-};
-
+/**
+ * @brief references keep the same qualifications as the original
+ */
 template <typename T>
 class tuple_element<1, volatile ::kblib::enumeration<T>> {
  public:
 	using type = T;
 };
-
+/**
+ * @brief but you can also add const to a reference
+ */
 template <typename T>
 class tuple_element<1, const volatile ::kblib::enumeration<T>> {
+ public:
+	using type = const T;
+};
+/**
+ * @brief copies decay away the const
+ */
+template <typename T>
+class tuple_element<1, ::kblib::enumeration<T>> {
+ public:
+	using type = std::remove_const_t<T>;
+};
+/**
+ * @brief unless const is explicitly added
+ */
+template <typename T>
+class tuple_element<1, const ::kblib::enumeration<T>> {
  public:
 	using type = const T;
 };

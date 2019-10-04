@@ -13,6 +13,11 @@ TEST_CASE("magic_enumerate") {
 			REQUIRE(&v == &persistent[i]);
 		}
 	}
+	SECTION("non-forwarding lvalue") {
+		for (auto& [i, v] : kblib::magic_enumerate(persistent)) {
+			REQUIRE(&v == &persistent[i]);
+		}
+	}
 	SECTION("copy") {
 		for (auto [i, v] : kblib::magic_enumerate(persistent)) {
 			REQUIRE(v == persistent[i]);
@@ -31,9 +36,8 @@ TEST_CASE("magic_enumerate") {
 		}
 	}
 	SECTION("const reference") {
-		auto& cp = persistent;
-		for (const auto& [i, v] : kblib::magic_enumerate(cp)) {
-			REQUIRE(&v == &cp[i]);
+		for (const auto& [i, v] : kblib::magic_enumerate(persistent)) {
+			REQUIRE(&v == &persistent[i]);
 			static_assert(
 			    std::is_const<
 			        typename std::remove_reference<decltype(v)>::type>::value,
