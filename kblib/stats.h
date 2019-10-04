@@ -6,6 +6,7 @@
 #include <numeric>
 #include <random>
 
+#include "logic.h"
 #include "tdecl.h"
 
 #if KBLIB_USE_CXX17
@@ -46,23 +47,100 @@ chooseCategorical(Array&& cats, RandomGenerator& r) {
 }
 
 /**
- * @brief Memoized fibonacci sequence function (O(n - max_prev_n))
+ * @brief std::pair isn't constexpr enough, so I'm stuck with this. All I use it
+ * for is removing a temporary variable from calc_fib_size().
+ */
+template <typename T>
+struct trivial_pair {
+	T first;
+	T second;
+};
+
+#if KBLIB_USE_CXX17
+
+/**
+ * @brief In C++17, std::array has all the functionality I need.
+ *
+ */
+template <typename T, std::size_t N>
+using trivial_array = std::array<T, N>;
+
+#else
+
+/**
+ * @brief std::array isn't constexpr enough in C++14, so I'm stuck with this.
+ */
+template <typename T, std::size_t N>
+struct trivial_array {
+	T arr[N];
+	constexpr T& operator[](std::size_t n) { return arr[n]; }
+	constexpr const T& operator[](std::size_t n) const { return arr[n]; }
+	constexpr std::size_t size() const { return N; }
+};
+#endif
+
+/**
+ * @brief Calculate the index of the largest fibonacci number that can be
+ * represented by a given unsigned integral type.
+ *
+ * @remark Here is a table of the results for common bit-widths:
+ * bits  N    fibonacci(N)
+ * --------------------------------------------------
+ * 8     13   144
+ * 16    24   28657
+ * 32    47   1836311903
+ * 64    93   7540113804746346429
+ * 128   186  205697230343233228174223751303346572685
+ *
+ * @return std::size_t
+ */
+template <typename U>
+constexpr std::size_t calc_fib_size() {
+	static_assert(std::is_unsigned<U>::value, "U must be unsigned");
+	std::size_t n{};
+	trivial_pair<U> state{0, 1};
+	U& a = state.first;
+	U& b = state.second;
+	while (b >= a) {
+		state = {b, static_cast<U>(a + b)};
+		++n;
+	}
+	return n;
+}
+
+/**
+ * @brief Generates the first N values of the fibonacci sequence.
+ *
+ * @pre If N > calc_fib_size<U>(), then U must be an unsigned type, and the
+ * resulting sequence is modulo 2^bits_of_U.
+ *
+ * @return trivial_array<U, N> An array containing the first N fibonacci
+ * numbers.
+ */
+template <typename U, std::size_t N = calc_fib_size<U>() + 1>
+constexpr trivial_array<U, N> make_fib_arr() {
+	static_assert(
+	    implies<(N > calc_fib_size<U>()), std::is_unsigned<U>::value>::value,
+	    "signed U with large N would trigger signed overflow");
+	trivial_array<U, N> ret{{0, 1}};
+	for (std::size_t i = 2; i < N; ++i) {
+		ret[i] = ret[i - 1] + ret[i - 2];
+	}
+	return ret;
+}
+
+/**
+ * @brief Compile-time table fibonacci function.
+ *
+ * @pre n <= calc_fib_size<U>()
  *
  * @return The nth fibonacci number.
  */
-inline long long fibonacci(int n) {
-	if (n > 92) {
-		throw std::out_of_range("fibonacci(92) is the largest that fits within long long");
-	}
-	if (n < 0) {
-		throw std::domain_error("fibonacci not defined for negative numbers");
-	}
-	static std::vector<long long> mem{0, 1, 1, 2, 3, 5, 8, 13};
-	  while (n >= mem.size()) {
-		 auto end = std::prev(mem.end());
-		 mem.push_back(*end + *std::prev(end));
-	  }
-	  return mem[n];
+template <typename U = unsigned long long>
+constexpr U fibonacci(int n) {
+	constexpr auto arr = make_fib_arr<U>();
+	assert(n >= 0 && static_cast<std::size_t>(n) < arr.size());
+	return arr[n];
 }
 
 /**
