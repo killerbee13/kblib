@@ -12,7 +12,7 @@ struct Ref {
 // static decltype(&Ref<int, int>::operator->) f2;
 
 static Ref<int> r;
-static Ref<int, int> r2;
+[[maybe_unused]] static Ref<int, int> r2;
 
 void blah() {
 	r.operator->();

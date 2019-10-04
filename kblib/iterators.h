@@ -679,6 +679,11 @@ class enumeration {
 } // namespace kblib
 
 namespace std {
+#if defined(__clang__)
+    // Fix: https://github.com/nlohmann/json/issues/1401
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmismatched-tags"
+#endif
 
 template <typename T>
 class tuple_size<::kblib::enumeration<T>>
@@ -722,6 +727,10 @@ class tuple_element<1, const ::kblib::enumeration<T>> {
  public:
 	using type = const T;
 };
+
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
 
 } // namespace std
 

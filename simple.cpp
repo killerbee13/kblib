@@ -48,26 +48,15 @@ TEST_CASE("range comparison") {
 	}
 
 	SECTION("buildiota equivalency") {
-		auto range = kblib::range(0, 9);
-
 		auto l = kblib::buildiota<std::list<int>>(10, 10, -1);
-		auto li = kblib::buildiota<std::vector<std::list<int>::iterator>>(l.size(),
-		                                                                  l.begin());
-		{
-			decltype(li) its;
-			const auto end = l.end();
-			for (auto it = l.begin(); it != end; ++it) {
-				its.push_back(it);
-			}
-			REQUIRE(its == li);
-		}
 		REQUIRE(equal(kblib::range(10, 0, -1), l));
 	}
 }
 
 TEST_CASE("range from iterators") {
 	std::string str = "abcdefghijklmnopqrstuvwxyz";
-	for (std::string::iterator c : kblib::range(str.begin(), str.end())) {
+	// Just asserting that this loop compiles.
+	for ([[maybe_unused]] std::string::iterator c : kblib::range(str.begin(), str.end())) {
 
 	}
 }
@@ -87,16 +76,16 @@ TEST_CASE("enumerate") {
 	std::vector<int> persistent{0, 1, 1, 2, 3, 5, 8};
 	SECTION("lvalue") {
 		for (auto t : kblib::enumerate(persistent)) {
-			auto& v = std::get<0>(t);
-			auto& i = std::get<1>(t);
+			[[maybe_unused]] auto& v = std::get<0>(t);
+			[[maybe_unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("const lvalue") {
 		const auto& cp = persistent;
 		for (auto t : kblib::enumerate(cp)) {
-			auto& v = std::get<0>(t);
-			auto& i = std::get<1>(t);
+			[[maybe_unused]] auto& v = std::get<0>(t);
+			[[maybe_unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 			static_assert(
 			    std::is_const<
@@ -107,16 +96,16 @@ TEST_CASE("enumerate") {
 
 	SECTION("iterators") {
 		for (auto t : kblib::enumerate(persistent.cbegin(), persistent.cend())) {
-			auto& v = std::get<0>(t);
-			auto& i = std::get<1>(t);
+			[[maybe_unused]] auto& v = std::get<0>(t);
+			[[maybe_unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("mutable iterators") {
 		std::vector<int> range{0, 1, 2, 3, 4, 5, 6, 7};
 		for (auto t : kblib::enumerate(range.begin(), range.end())) {
-			auto& v = std::get<0>(t);
-			auto& i = std::get<1>(t);
+			[[maybe_unused]] auto& v = std::get<0>(t);
+			[[maybe_unused]] auto& i = std::get<1>(t);
 			v = 0;
 		}
 		REQUIRE(std::all_of(range.begin(), range.end(),
@@ -125,24 +114,24 @@ TEST_CASE("enumerate") {
 	SECTION("reverse iterators") {
 		std::vector<int> reversed{7, 6, 5, 4, 3, 2, 1, 0};
 		for (auto t : kblib::enumerate(reversed.rbegin(), reversed.rend())) {
-			auto& v = std::get<0>(t);
-			auto& i = std::get<1>(t);
+			[[maybe_unused]] auto& v = std::get<0>(t);
+			[[maybe_unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == i);
 		}
 	}
 
 	SECTION("temporary") {
 		for (auto t : kblib::enumerate(std::vector<int>{0, 1, 1, 2, 3, 5, 8})) {
-			auto& v = std::get<0>(t);
-			auto& i = std::get<1>(t);
+			[[maybe_unused]] auto& v = std::get<0>(t);
+			[[maybe_unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("vector<bool>") {
 		for (auto t : kblib::enumerate(
 		         std::vector<bool>{false, true, false, true, false})) {
-			auto& v = std::get<0>(t);
-			auto& i = std::get<1>(t);
+			[[maybe_unused]] auto& v = std::get<0>(t);
+			[[maybe_unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == i % 2);
 			// print<decltype(v)>{};
 		}

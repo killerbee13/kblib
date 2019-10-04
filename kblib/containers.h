@@ -98,11 +98,19 @@ struct construct_with_size {
 } // namespace kblib
 
 namespace std {
+#if defined(__clang__)
+    // Because apparently -Wno-mismatched-tags doesn't work
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wmismatched-tags"
+#endif
 
 template <typename C, std::size_t size>
 struct tuple_size<::kblib::construct_with_size<C, size>>
     : public integral_constant<size_t, size> {};
 
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
 } // namespace std
 
 namespace kblib {
