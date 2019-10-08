@@ -626,6 +626,11 @@ class poly_obj
 	      value(new (data) U(std::forward<Args>(args)...)) {}
 };
 
+template <typename T, typename D = T, std::size_t Capacity = sizeof(D), typename Traits = T, typename... Args>
+poly_obj<T, Capacity, Traits> make_poly_obj(Args&&... args) {
+	return poly_obj<T, Capacity, Traits>::template make<D>(std::forward<Args>(args)...);
+}
+
 #endif // KBLIB_USE_CXX17
 
 } // namespace kblib
