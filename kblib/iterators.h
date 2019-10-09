@@ -893,7 +893,7 @@ class enumerator_t {
  * \endcode
  * captures 'val' by reference, while
  * \code
- * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
+ * for (auto [idx, val] : kblib::magic_enumerate(range)) {
  * \endcode
  * captures 'val' by value, so that the effect is similar to if you had written
  * \code
@@ -917,7 +917,7 @@ enumerator_t<Range&&> magic_enumerate(Range&& r) {
  * \endcode
  * captures 'val' by reference, while
  * \code
- * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
+ * for (auto [idx, val] : kblib::magic_enumerate(range)) {
  * \endcode
  * captures 'val' by value, so that the effect is similar to if you had written
  * \code
