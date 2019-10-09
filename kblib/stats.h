@@ -59,7 +59,9 @@ struct trivial_pair {
 #if KBLIB_USE_CXX17
 
 /**
- * @brief In C++17, std::array has all the functionality I need.
+ * @brief std::array isn't constexpr enough in C++14, so this is a separate
+ * class in that version. In C++17, std::array has all the functionality needed,
+ * so this defines an alias instead.
  *
  */
 template <typename T, std::size_t N>
@@ -68,7 +70,8 @@ using trivial_array = std::array<T, N>;
 #else
 
 /**
- * @brief std::array isn't constexpr enough in C++14, so I'm stuck with this.
+ * @brief std::array isn't constexpr enough in C++14, so a dedicated array class
+ * is needed for constexpr functions.
  */
 template <typename T, std::size_t N>
 struct trivial_array {
@@ -84,13 +87,15 @@ struct trivial_array {
  * represented by a given unsigned integral type.
  *
  * @remark Here is a table of the results for common bit-widths:
- * bits  N    fibonacci(N)
- * --------------------------------------------------
- * 8     13   144
- * 16    24   28657
- * 32    47   1836311903
- * 64    93   7540113804746346429
- * 128   186  205697230343233228174223751303346572685
+ * @verbatim
+ bits  N    fibonacci(N)
+ --------------------------------------------------
+ 8     13   144
+ 16    24   28657
+ 32    47   1836311903
+ 64    93   7540113804746346429
+ 128   186  205697230343233228174223751303346572685
+ @endverbatim
  *
  * @return std::size_t
  */
@@ -113,6 +118,7 @@ constexpr std::size_t calc_fib_size() {
  *
  * @pre If N > calc_fib_size<U>(), then U must be an unsigned type, and the
  * resulting sequence is modulo 2^bits_of_U.
+ * @pre N >= 2
  *
  * @return trivial_array<U, N> An array containing the first N fibonacci
  * numbers.
@@ -122,7 +128,9 @@ constexpr trivial_array<U, N> make_fib_arr() {
 	static_assert(
 	    implies<(N > calc_fib_size<U>()), std::is_unsigned<U>::value>::value,
 	    "signed U with large N would trigger signed overflow");
+	// Initialize the first two elements of the array
 	trivial_array<U, N> ret{{0, 1}};
+	// A loop initializes the rest
 	for (std::size_t i = 2; i < N; ++i) {
 		ret[i] = ret[i - 1] + ret[i - 2];
 	}
