@@ -129,7 +129,7 @@ struct get_manip {
  *
  * When used like
  *  os >> get_line(str);
- * for a std::istream& os and std::string str, reads a full line into str
+ * for a std::ostream& os and std::string str, reads a full line into str
  * instead of just a single word.
  *
  * @param str The string to read a line into.
@@ -149,7 +149,7 @@ inline auto get_line(string<CharT, O...>& str) {
  *
  * When used like
  *  os >> get_line(str, '\n');
- * for a std::istream& os and std::string str, reads a full line into str
+ * for a std::ostream& os and std::string str, reads a full line into str
  * instead of just a single word.
  *
  * @param str The string to read into.

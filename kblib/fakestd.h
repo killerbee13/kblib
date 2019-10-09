@@ -340,6 +340,79 @@ signed_cast(F x) {
 	return to_unsigned(x);
 }
 
+template <typename T>
+struct has_member_swap {
+	typedef char (&yes)[1];
+	typedef char (&no)[2];
+
+	template <typename C>
+	static yes check(decltype(&C::swap));
+	template <typename>
+	static no check(...);
+
+	constexpr static bool value = sizeof(check<T>(0)) == sizeof(yes);
+};
+
+template <typename T, typename = void>
+struct is_tuple_like {
+	constexpr static bool value = false;
+};
+
+template <typename T>
+struct is_tuple_like<T,
+                     fakestd::void_t<typename std::tuple_element<0, T>::type>> {
+	constexpr static bool value = true;
+};
+
+template <typename T, typename std::enable_if<!has_member_swap<T>::value &&
+                                                  !is_tuple_like<T>::value,
+                                              int>::type = 0>
+constexpr void
+swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value&&
+                              std::is_nothrow_move_assignable<T>::value) {
+	auto tmp = std::move(a);
+	a = std::move(b);
+	b = std::move(tmp);
+	return;
+}
+
+template <typename T, typename std::enable_if<has_member_swap<T>::value &&
+                                                  !is_tuple_like<T>::value,
+                                              int>::type = 0>
+constexpr void swap(T& a, T& b) noexcept(noexcept(a.swap(b))) {
+	a.swap(b);
+	return;
+}
+
+template <typename T, std::size_t N>
+constexpr void
+swap(T (&a)[N],
+     T (&b)[N]) noexcept(std::is_nothrow_move_constructible<T>::value&&
+                             std::is_nothrow_move_assignable<T>::value) {
+	for (std::size_t i = 0; i < N; ++i) {
+		swap(a[i], b[i]);
+	}
+}
+namespace detail {
+
+   template <typename... Ts>
+   void ignore(Ts&&...) noexcept {}
+
+	template <typename T, std::size_t... Is>
+	constexpr void
+	swap_tuple_impl(T& a, T& b, std::index_sequence<Is...>) noexcept(
+	    noexcept(ignore((void(swap(std::get<Is>(a), std::get<Is>(b))), 0)...))) {
+		ignore((void(swap(std::get<Is>(a), std::get<Is>(b))), 0)...);
+	}
+
+} // namespace detail
+
+template <typename T, std::size_t N = std::tuple_size<T>::value>
+constexpr void swap(T& a, T& b) noexcept(
+    noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) {
+	detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
+}
+
 #if KBLIB_USE_CXX17
 
 namespace detail {

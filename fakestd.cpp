@@ -17,4 +17,6 @@ static Ref<int> r;
 void blah() {
 	r.operator->();
 	// r2.operator->();
+	std::tuple<int, int> a{0, 0}, b{0, 1};
+	kblib::swap(a, b);
 }
