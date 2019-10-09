@@ -37,9 +37,8 @@ TEST_CASE("general algorithms") {
 template <typename T, std::size_t N>
 constexpr bool sort_test(std::array<T, N> val) noexcept {
 	std::array<T, N> out{};
-	kblib::detail::insertion_sort_copy(val.begin(), val.end(), out.begin(),
-	                                   out.end(), std::less<>{});
-	kblib::detail::insertion_sort(val.begin(), val.end(), std::less<>{});
+	kblib::insertion_sort_copy(val.begin(), val.end(), out.begin(), out.end());
+	kblib::insertion_sort(val.begin(), val.end());
 	return true;
 }
 
@@ -62,29 +61,26 @@ TEST_CASE("sort") {
 
 	SECTION("insertion_sort") {
 		auto input_copy = input;
-		kblib::detail::insertion_sort(input_copy.begin(), input_copy.end(),
-		                              std::less<>{});
+		kblib::insertion_sort(input_copy.begin(), input_copy.end());
 		REQUIRE(input_copy == goal);
-		static_assert(noexcept(kblib::detail::insertion_sort(
-		                  input_copy.begin(), input_copy.end(), std::less<>{})),
+		static_assert(noexcept(kblib::insertion_sort(
+		                  input_copy.begin(), input_copy.end())),
 		              "insertion_sort for array<int> should be noexcept");
 	}
 	SECTION("insertion_sort_copy") {
 		std::remove_const<decltype(input)>::type output;
-		kblib::detail::insertion_sort_copy(input.begin(), input.end(),
-		                                   output.begin(), output.end(),
-		                                   std::less<>{});
+		kblib::insertion_sort_copy(input.begin(), input.end(), output.begin(),
+		                           output.end());
 		REQUIRE(output == goal);
-		static_assert(noexcept(kblib::detail::insertion_sort_copy(
+		static_assert(noexcept(kblib::insertion_sort_copy(
 		                  input.begin(), input.end(), output.begin(),
-		                  output.end(), std::less<>{})),
+		                  output.end())),
 		              "insertion_sort_copy for array<int> should be noexcept");
 	}
 	SECTION("adaptive_insertion_sort_copy") {
 		std::remove_const<decltype(input)>::type output;
-		kblib::detail::adaptive_insertion_sort_copy(input.begin(), input.end(),
-		                                            output.begin(), output.end(),
-		                                            std::less<>{});
+		kblib::adaptive_insertion_sort_copy(input.begin(), input.end(),
+		                                    output.begin(), output.end());
 		REQUIRE(output == goal);
 	}
 }

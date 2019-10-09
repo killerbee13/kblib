@@ -62,7 +62,8 @@ KBLIB_NODISCARD constexpr It find(It begin, It end, const T& value) {
  * @return It Either the position of the found value, or end if not found
  */
 template <typename It, typename T, typename Comp>
-KBLIB_NODISCARD constexpr It find(It begin, It end, const T& value, Comp&& comp) {
+KBLIB_NODISCARD constexpr It find(It begin, It end, const T& value,
+                                  Comp&& comp) {
 	auto equal = [&comp](const T& a, const T& b) {
 		return !comp(a, b) && !comp(b, a);
 	};
@@ -201,7 +202,8 @@ KBLIB_NODISCARD constexpr size_t find_in(It begin, It end, const T& v) {
  * end) if not.
  */
 template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if(It begin, It end, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_in_if(It begin, It end,
+                                            UnaryPredicate p) {
 	return std::find_if(begin, end, p) - begin;
 }
 /**
@@ -214,7 +216,8 @@ KBLIB_NODISCARD constexpr size_t find_in_if(It begin, It end, UnaryPredicate p) 
  * end) if not.
  */
 template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if_not(It begin, It end, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_in_if_not(It begin, It end,
+                                                UnaryPredicate p) {
 	return std::find_if_not(begin, end, p) - begin;
 }
 
@@ -246,7 +249,8 @@ KBLIB_NODISCARD constexpr size_t find_last_in(It begin, It end, const T& v) {
  * end) if not.
  */
 template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if(It begin, It end, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_last_in_if(It begin, It end,
+                                                 UnaryPredicate p) {
 	return kblib::find_last_if(begin, end, p) - begin;
 }
 /**
@@ -259,7 +263,8 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(It begin, It end, UnaryPredicat
  * end) if not.
  */
 template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if_not(It begin, It end, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_last_in_if_not(It begin, It end,
+                                                     UnaryPredicate p) {
 	return kblib::find_last_if_not(begin, end, p) - begin;
 }
 
@@ -294,7 +299,8 @@ KBLIB_NODISCARD constexpr size_t find_in(ExecutionPolicy&& policy, const Contain
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c,
+                                            UnaryPredicate p) {
 	return std::find_if(std::begin(c), std::end(c), p) - std::begin(c);
 }
 /**
@@ -308,7 +314,8 @@ KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c, UnaryPredicate p
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if_not(const Container& c, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_in_if_not(const Container& c,
+                                                UnaryPredicate p) {
 	return std::find_if_not(std::begin(c), std::end(c), p) - std::begin(c);
 }
 #if 0
@@ -347,7 +354,8 @@ KBLIB_NODISCARD constexpr size_t find_last_in(const Container& c, const T& v) {
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c,
+                                                 UnaryPredicate p) {
 	return kblib::find_last_if(std::begin(c), std::end(c), p) - std::begin(c);
 }
 /**
@@ -362,7 +370,7 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c, UnaryPredic
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
-                                           UnaryPredicate p) {
+                                                     UnaryPredicate p) {
 	return kblib::find_last_if_not(std::begin(c), std::end(c), p) -
 	       std::begin(c);
 }
@@ -389,8 +397,8 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
 template <
     typename Container, typename Comp = std::less<>, typename It,
     typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
-KBLIB_NODISCARD constexpr Container get_max_n_old(It begin, It end, std::size_t count,
-                                        Comp cmp = {}) {
+KBLIB_NODISCARD constexpr Container
+get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
 	assert(begin + count <= end);
 	Container c{begin, begin + count};
 	std::for_each(begin + count, end, [&](const auto& v) {
@@ -419,8 +427,8 @@ KBLIB_NODISCARD constexpr Container get_max_n_old(It begin, It end, std::size_t 
  */
 template <typename Container, typename Comp = std::less<>, typename It,
           typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
-KBLIB_NODISCARD constexpr Container get_max_n_old(It begin, It end, std::size_t count,
-                                        Comp cmp = {}) {
+KBLIB_NODISCARD constexpr Container
+get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
 	    begin, end, count, cmp);
 	return Container{temp.begin(), temp.end()};
@@ -441,8 +449,8 @@ KBLIB_NODISCARD constexpr Container get_max_n_old(It begin, It end, std::size_t 
 template <
     typename Container, typename Comp = std::less<>, typename It,
     typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
-KBLIB_NODISCARD constexpr Container get_max_n(It begin, It end, std::size_t count,
-                                    Comp cmp = {}) {
+KBLIB_NODISCARD constexpr Container
+get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
 	Container c(count);
 	std::partial_sort_copy(begin, end, c.begin(), c.end(), fakestd::not_fn(cmp));
 	return c;
@@ -461,8 +469,8 @@ KBLIB_NODISCARD constexpr Container get_max_n(It begin, It end, std::size_t coun
  */
 template <typename Container, typename Comp = std::less<>, typename It,
           typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
-KBLIB_NODISCARD constexpr Container get_max_n(It begin, It end, std::size_t count,
-                                    Comp cmp = {}) {
+KBLIB_NODISCARD constexpr Container
+get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
 	    begin, end, count, cmp);
 	return Container{temp.begin(), temp.end()};
@@ -489,7 +497,7 @@ KBLIB_NODISCARD constexpr Container get_max_n(It begin, It end, std::size_t coun
 template <typename Comp = std::less<>, typename IIt, typename OIt,
           typename ElementT = typename std::iterator_traits<IIt>::value_type>
 constexpr auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
-               Comp cmp = {})
+                         Comp cmp = {})
     -> return_assert_t<is_output_iterator<OIt, ElementT>::value, OIt> {
 	auto temp = get_max_n<std::vector<ElementT>>(begin, end, count, cmp);
 	return std::move(temp.begin(), temp.end(), d_begin);
@@ -549,8 +557,8 @@ for_each_n(It first, Size n, It2 second, BinaryFunction f) {
  */
 template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate>
-KBLIB_NODISCARD constexpr OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
-                                   UnaryPredicate pred) {
+KBLIB_NODISCARD constexpr OutputIt
+copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred) {
 	for (Size i = 0; i < count; ++i) {
 		if (pred(*first)) {
 			*out++ = *first;
@@ -574,9 +582,9 @@ KBLIB_NODISCARD constexpr OutputIt copy_n_if(InputIt first, Size count, OutputIt
  */
 template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate, typename T>
-KBLIB_NODISCARD constexpr OutputIt replace_copy_n_if(InputIt first, Size count,
-                                           OutputIt out, UnaryPredicate pred,
-                                           const T& new_value) {
+KBLIB_NODISCARD constexpr OutputIt
+replace_copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred,
+                  const T& new_value) {
 	for (Size i = 0; i < count; ++i) {
 		if (pred(*first)) {
 			*out++ = *first;
@@ -646,193 +654,197 @@ namespace detail {
 		return;
 	}
 
-	/**
-	 * @brief In-place insertion sort. As is usual, it is stable.
-	 * Provides as a guarantee that it will perform no moves on sorted input.
-	 *
-	 * @remark Complexity:
-	 * @remark Average case O(n^2)
-	 * @remark Best-case Θ(n) (for sorted input)
-	 * @remark worst-case O(n^2) (for reverse-sorted input)
-	 *
-	 * @param begin Beginning of range to sort
-	 * @param end End of range
-	 * @param compare The comparison predicate
-	 */
-	template <typename RandomAccessIt, typename Compare>
-	constexpr void insertion_sort(
-	    const RandomAccessIt begin, const RandomAccessIt end,
-	    Compare&& compare) noexcept(noexcept(swap(*begin, *begin)) &&
-	                                noexcept(compare(*begin, *begin))) {
-		// Trivial inputs are trivially already sorted.
-		if (end - begin <= 1) {
-			return;
-		}
-		for (auto pos = begin + 1; pos != end; ++pos) {
-			// This search is linear, not binary, because insertion_sort is meant
-			// to never be used for arrays large enough for binary search.
-			auto index =
-			    kblib::find_last_if(begin, pos, [&compare, pos](const auto& a) {
-				    return compare(*pos, a);
-			    });
-			kblib::rotate(index, pos, pos + 1);
-		}
+} // namespace detail
+
+/**
+ * @brief In-place insertion sort. As is usual, it is stable.
+ * Provides as a guarantee that it will perform no moves on sorted input.
+ *
+ * @remark Complexity:
+ * @remark Average case O(n^2)
+ * @remark Best-case Θ(n) (for sorted input)
+ * @remark worst-case O(n^2) (for reverse-sorted input)
+ *
+ * @param begin Beginning of range to sort
+ * @param end End of range
+ * @param compare The comparison predicate
+ */
+template <typename RandomAccessIt, typename Compare = std::less<>>
+constexpr void insertion_sort(
+    const RandomAccessIt begin, const RandomAccessIt end,
+    Compare&& compare = {}) noexcept(noexcept(swap(*begin, *begin)) &&
+                                     noexcept(compare(*begin, *begin))) {
+	// Trivial inputs are trivially already sorted.
+	if (end - begin <= 1) {
 		return;
 	}
+	for (auto pos = begin + 1; pos != end; ++pos) {
+		// This search is linear, not binary, because insertion_sort is meant
+		// to never be used for arrays large enough for binary search.
+		auto index =
+		    kblib::find_last_if(begin, pos, [&compare, pos](const auto& a) {
+			    return compare(*pos, a);
+		    });
+		kblib::rotate(index, pos, pos + 1);
+	}
+	return;
+}
 
-	/**
-	 * @brief Out-of-place insertion sort, which does not modify the input.
-	 * Provides as a guarantee that it will perform no moves on sorted input.
-	 *
-	 * @remark Complexity:
-	 * @remark Average case O(n^2)
-	 * @remark Best-case Θ(n) (for sorted input)
-	 * @remark worst-case O(n^2) (for reverse-sorted input)
-	 *
-	 * @param begin Beginning of input range
-	 * @param end End of input range
-	 * @param d_begin Beginning of output range
-	 * @param d_end End of output range
-	 * @param compare The comparison predicate
-	 */
-	template <typename RandomAccessIt, typename RandomAccessIt2,
-	          typename Compare>
-	constexpr void insertion_sort_copy(
-	    const RandomAccessIt begin, const RandomAccessIt end,
-	    const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
-	    Compare&& compare) noexcept(noexcept(*d_begin = *begin) &&
-	                                noexcept(shift_backward(d_begin, d_begin,
-	                                                        d_end))) {
-		const auto dist = end - begin;
-		assert(end - begin == d_end - d_begin);
-		if (dist == 0) {
-			return;
-		} else if (dist == 1) {
-			// ranges of 1 are trivial to sort
+/**
+ * @brief Out-of-place insertion sort, which does not modify the input.
+ * Provides as a guarantee that it will perform no moves on sorted input.
+ *
+ * @remark Complexity:
+ * @remark Average case O(n^2)
+ * @remark Best-case Θ(n) (for sorted input)
+ * @remark worst-case O(n^2) (for reverse-sorted input)
+ *
+ * @param begin Beginning of input range
+ * @param end End of input range
+ * @param d_begin Beginning of output range
+ * @param d_end End of output range
+ * @param compare The comparison predicate
+ */
+template <typename RandomAccessIt, typename RandomAccessIt2,
+          typename Compare = std::less<>>
+constexpr void insertion_sort_copy(
+    const RandomAccessIt begin, const RandomAccessIt end,
+    const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
+    Compare&& compare = {}) noexcept(noexcept(*d_begin = *begin) &&
+                                     noexcept(detail::shift_backward(d_begin,
+                                                                     d_begin,
+                                                                     d_end))) {
+	const auto dist = end - begin;
+	assert(end - begin == d_end - d_begin);
+	if (dist == 0) {
+		return;
+	} else if (dist == 1) {
+		// ranges of 1 are trivial to sort
+		*d_begin = *begin;
+		return;
+	} else if (dist == 2) {
+		// Special case distance=2 to perform no swaps, and because the loop
+		// for the general case assumes 3 or more elements.
+		if (compare(*begin, *(begin + 1))) {
 			*d_begin = *begin;
+			*(d_begin + 1) = *(begin + 1);
 			return;
-		} else if (dist == 2) {
-			// Special case distance=2 to perform no swaps, and because the loop
-			// for the general case assumes 3 or more elements.
-			if (compare(*begin, *(begin + 1))) {
-				*d_begin = *begin;
-				*(d_begin + 1) = *(begin + 1);
-				return;
-			} else {
-				*d_begin = *(begin + 1);
-				*(d_begin + 1) = *begin;
-			}
 		} else {
-			// This loop writes in reverse because shifting backwards can be done
-			// in a forward pass, making it simpler than a forward shift, and is
-			// sufficient for the algorithm, and reads in reverse to avoid worst-
-			// case complexity for sorted inputs, given that it writes in reverse.
-			auto read = std::prev(end);
-			auto write = std::prev(d_end);
-			// push first element to get the loop invariant
-			*write = *read;
-			do {
-				--read, --write;
-				// This search is linear, not binary, because insertion_sort_copy
-				// is meant to never be used for arrays large enough for binary
-				// search.
+			*d_begin = *(begin + 1);
+			*(d_begin + 1) = *begin;
+		}
+	} else {
+		// This loop writes in reverse because shifting backwards can be done
+		// in a forward pass, making it simpler than a forward shift, and is
+		// sufficient for the algorithm, and reads in reverse to avoid worst-
+		// case complexity for sorted inputs, given that it writes in reverse.
+		auto read = std::prev(end);
+		auto write = std::prev(d_end);
+		// push first element to get the loop invariant
+		*write = *read;
+		do {
+			--read, --write;
+			// This search is linear, not binary, because insertion_sort_copy
+			// is meant to never be used for arrays large enough for binary
+			// search.
 #if 1
-
-				auto index = kblib::find_if(
-				    write + 1, d_end,
-				    [&compare, read](const auto& a) { return !compare(a, *read); });
+			auto index =
+			    kblib::find_if(write + 1, d_end, [&compare, read](const auto& a) {
+				    return !compare(a, *read);
+			    });
 #else
-				auto index = kblib::find_if(write + 1, d_end,
-				                            [&compare, read](const auto& a) {
-					                            if (stable) {
-															 // find first element greater than
-															 // *read
-															 return compare(*read, a);
-														 } else {
-															 // find first element greater than
-															 // or equal to *read
-															 return !compare(a, *read);
-														 }
-				                            });
+			auto index =
+			    kblib::find_if(write + 1, d_end, [&compare, read](const auto& a) {
+				    if (stable) {
+						 // find first element greater than
+						 // *read
+						 return compare(*read, a);
+					 } else {
+						 // find first element greater than
+						 // or equal to *read
+						 return !compare(a, *read);
+					 }
+			    });
 #endif
-				shift_backward(write, write + 1, index);
-				*(index - 1) = *read;
-			} while (write != d_begin);
-			return;
+			detail::shift_backward(write, write + 1, index);
+			*(index - 1) = *read;
+		} while (write != d_begin);
+		return;
+	}
+}
+
+/**
+ * @brief An adaptive sort which, at the cost of some additional work (time
+ * complexity Θ(sqrt(n))), avoids quadratic behavior for reverse-sorted
+ * inputs (and, in fact, handles them in optimal time). It's still possible
+ * to fool it, but it requires a staggered input, which is a highly unlikely
+ * shape for random data.
+ *
+ * @remark Complexity:
+ * @remark Average case O(n^2)
+ * @remark Best-case Θ(n + sqrt(n)) (for sorted input)
+ * @remark worst-case O(n^2) (for reverse-sorted input)
+ *
+ * @param begin Beginning of input range
+ * @param end End of input range
+ * @param d_begin Beginning of output range
+ * @param d_end End of output range
+ * @param compare The comparison predicate
+ */
+template <typename RandomAccessIt, typename RandomAccessIt2,
+          typename Compare = std::less<>>
+constexpr void adaptive_insertion_sort_copy(
+    const RandomAccessIt begin, const RandomAccessIt end,
+    const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
+    Compare&& compare =
+        {}) noexcept(noexcept(insertion_sort_copy(begin, end, d_begin, d_end,
+                                                  std::forward<Compare>(
+                                                      compare))) &&
+                     noexcept(insertion_sort_copy(
+                         std::make_reverse_iterator(begin),
+                         std::make_reverse_iterator(end), d_begin, d_end,
+                         std::forward<Compare>(compare)))) {
+	const auto dist = end - begin;
+	const auto scan_end = begin + static_cast<std::size_t>(std::sqrt(dist));
+	// For trivial inputs, don't bother doing anything
+	if (dist < 3) {
+		insertion_sort_copy(begin, end, d_begin, d_end,
+		                    std::forward<Compare>(compare));
+	}
+	// A very rudimentary way of estimating the sortedness of the input, by
+	// counting the relative number of sorted and unsorted adjacent pairs.
+	std::make_signed<std::size_t>::type dir{};
+	for (auto pos = begin; pos != scan_end - 1; ++pos) {
+		if (compare(*pos, *(pos + 1))) {
+			++dir;
+		} else if (compare(*(pos + 1), *pos)) {
+			--dir;
 		}
 	}
-
-	/**
-	 * @brief An adaptive sort which, at the cost of some additional work (time
-	 * complexity Θ(sqrt(n))), avoids quadratic behavior for reverse-sorted
-	 * inputs (and, in fact, handles them in optimal time). It's still possible
-	 * to fool it, but it requires a staggered input, which is a highly unlikely
-	 * shape for random data.
-	 *
-	 * @remark Complexity:
-	 * @remark Average case O(n^2)
-	 * @remark Best-case Θ(n + sqrt(n)) (for sorted input)
-	 * @remark worst-case O(n^2) (for reverse-sorted input)
-	 *
-	 * @param begin Beginning of input range
-	 * @param end End of input range
-	 * @param d_begin Beginning of output range
-	 * @param d_end End of output range
-	 * @param compare The comparison predicate
-	 */
-	template <typename RandomAccessIt, typename RandomAccessIt2,
-	          typename Compare>
-	constexpr void adaptive_insertion_sort_copy(
-	    const RandomAccessIt begin, const RandomAccessIt end,
-	    const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
-	    Compare&&
-	        compare) noexcept(noexcept(insertion_sort_copy(begin, end, d_begin,
-	                                                       d_end,
-	                                                       std::forward<Compare>(
-	                                                           compare))) &&
-	                          noexcept(insertion_sort_copy(
-	                              std::make_reverse_iterator(begin),
-	                              std::make_reverse_iterator(end), d_begin,
-	                              d_end, std::forward<Compare>(compare)))) {
-		const auto dist = end - begin;
-		const auto scan_end = begin + static_cast<std::size_t>(std::sqrt(dist));
-		// For trivial inputs, don't bother doing anything
-		if (dist < 3) {
-			insertion_sort_copy(begin, end, d_begin, d_end,
-			                    std::forward<Compare>(compare));
-		}
-		// A very rudimentary way of estimating the sortedness of the input, by
-		// counting the relative number of sorted and unsorted adjacent pairs.
-		std::make_signed<std::size_t>::type dir{};
-		for (auto pos = begin; pos != scan_end - 1; ++pos) {
-			if (compare(*pos, *(pos + 1))) {
-				++dir;
-			} else if (compare(*(pos + 1), *pos)) {
-				--dir;
-			}
-		}
-		if (dir >= 0) {
-			insertion_sort_copy(begin, end, d_begin, d_end,
-			                    std::forward<Compare>(compare));
-		} else {
-			// If the input is predominantly in reverse order, sort it in reverse
-			insertion_sort_copy(std::make_reverse_iterator(begin),
-			                    std::make_reverse_iterator(end), d_begin, d_end,
-			                    std::forward<Compare>(compare));
-		}
+	if (dir >= 0) {
+		insertion_sort_copy(begin, end, d_begin, d_end,
+		                    std::forward<Compare>(compare));
+	} else {
+		// If the input is predominantly in reverse order, sort it in reverse
+		insertion_sort_copy(std::make_reverse_iterator(begin),
+		                    std::make_reverse_iterator(end), d_begin, d_end,
+		                    std::forward<Compare>(compare));
 	}
+}
 
-	/**
+namespace detail {
+
+   /**
 	 * @brief Sort data after applying an arbitrary transformation to it. The
 	 * primary template handles the general case of arbitrary transformation and
 	 * arbitrary compare predicate.
 	 */
-	template <typename RandomAccessIt, typename UnaryOp, typename BinaryPred,
-	          typename SortKey,
-	          bool = std::is_member_object_pointer<UnaryOp>::value,
-	          bool = std::is_fundamental<SortKey>::value,
-	          bool = std::is_integral<SortKey>::value>
-	struct sort_transform_impl {
+   template <typename RandomAccessIt, typename UnaryOp, typename BinaryPred,
+             typename SortKey,
+             bool = std::is_member_object_pointer<UnaryOp>::value,
+             bool = std::is_fundamental<SortKey>::value,
+             bool = std::is_integral<SortKey>::value>
+   struct sort_transform_impl {
 		static constexpr void inplace(RandomAccessIt begin,
 		                              const RandomAccessIt end,
 		                              UnaryOp&& transform, BinaryPred&& compare) {
@@ -845,7 +857,7 @@ namespace detail {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
-				//TODO
+				// TODO
 			}
 		}
 
@@ -861,7 +873,7 @@ namespace detail {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
-				//TODO
+				// TODO
 			}
 		}
 
@@ -878,7 +890,7 @@ namespace detail {
 				insertion_sort_copy(begin, end, comp);
 				return;
 			} else {
-				//TODO
+				// TODO
 			}
 		}
 	};
@@ -914,7 +926,7 @@ namespace detail {
 		                              const RandomAccessIt end,
 		                              UnaryOp&& transform,
 		                              std::less<LessT>&& compare) {
-			//TODO
+			// TODO
 		}
 	};
 	/**
@@ -930,7 +942,7 @@ namespace detail {
 		                              const RandomAccessIt end,
 		                              UnaryOp&& transform,
 		                              std::greater<LessT>&& compare) {
-			//TODO
+			// TODO
 		}
 	};
 
@@ -946,7 +958,7 @@ namespace detail {
 		                              const RandomAccessIt end,
 		                              UnaryOp&& transform,
 		                              std::less<LessT>&& compare) {
-			//TODO
+			// TODO
 		}
 	};
 	/**
@@ -961,7 +973,7 @@ namespace detail {
 		                              const RandomAccessIt end,
 		                              UnaryOp&& transform,
 		                              std::greater<LessT>&& compare) {
-			//TODO
+			// TODO
 		}
 	};
 #if 0 // Do string radix sorting
