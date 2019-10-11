@@ -365,7 +365,11 @@ inline void memswap(void* A, void* B, std::size_t size) {
  * bitfields.
  *
  * In C++20, [[no_unique_address]] will enable a better implementation which
- * will work in non-union structs.
+ * will work in non-union structs, as long as no two bitfields name the same
+ * exact bits. ([[no_unique_address]] allows empty objects of different types to
+ * be allocated at the same location, but distinct objects of the same type must
+ * have distinct addresses, [[no_unique_address]] notwithstanding. This does
+ * not apply to unions, though.)
  *
  * @tparam offset The number of bits less significant than the bitfield.
  * @tparam size The number of bits constituting this bitfield.
@@ -386,6 +390,8 @@ struct bitfield {
 	operator Storage() const noexcept { return (*this)(); }
 	Storage operator=(Storage val) noexcept { return (*this)(val); }
 	Storage raw;
+	// Is this a good idea?
+	// void operator&() = delete;
 };
 
 namespace detail {
@@ -393,17 +399,20 @@ namespace detail {
    /**
 	 * @brief A proxy reference type for BITFIELD-declared bitfields.
 	 *
-	 * It may be assigned to, or it may be used as a prvalue of type Ret. Unlike
-	 * most proxy references, this is actually not that dissimilar to a language
-	 * bitfield, which has only those capabilities. Like all other proxy
+	 * It may be assigned to, or it may be used as a prvalue of type ReturnT.
+	 * Unlike most proxy references, this is actually not that dissimilar to a
+	 * language bitfield, which has only those capabilities. Like all other proxy
 	 * references, it should not generally be bound to an auto variable.
 	 */
-   template <typename Parent, typename Ret, Ret (Parent::*Set)(Ret) noexcept,
-             Ret (Parent::*Get)() const noexcept>
+   template <typename Parent, typename ReturnT,
+             ReturnT (Parent::*Set)(ReturnT) noexcept,
+             ReturnT (Parent::*Get)() const noexcept>
    struct bitfield_proxy {
 		Parent* p;
-		constexpr Ret operator=(Ret val) noexcept { return (p->*Set)(val); }
-		constexpr operator Ret() const noexcept { return (p->*Get)(); }
+		constexpr ReturnT operator=(ReturnT val) noexcept {
+			return (p->*Set)(val);
+		}
+		constexpr operator ReturnT() const noexcept { return (p->*Get)(); }
 	};
 
 } // namespace detail

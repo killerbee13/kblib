@@ -264,6 +264,16 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 namespace fakestd = std;
 #endif
 
+template <bool>
+struct void_if {};
+
+template <>
+struct void_if<true> {
+	using type = void;
+};
+template <bool b>
+using void_if_t = typename void_if<b>::type;
+
 template <typename... Ts>
 struct unary_identity {};
 

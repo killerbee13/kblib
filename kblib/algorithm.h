@@ -18,8 +18,8 @@ namespace kblib {
  * @param c The container to erase from.
  * @param val The value to remove.
  */
-template <typename C, typename T>
-constexpr void erase(C& c, const T& val) {
+template <typename Container, typename Elem>
+constexpr void erase(Container& c, const Elem& val) {
 	c.erase(std::remove(c.begin(), c.end(), val), c.end());
 	return;
 }
@@ -30,8 +30,8 @@ constexpr void erase(C& c, const T& val) {
  * @param c The container to erase from.
  * @param p Erase all elements on which p returns true.
  */
-template <typename C, typename UnaryPredicate>
-constexpr void erase_if(C& c, UnaryPredicate p) {
+template <typename Container, typename UnaryPredicate>
+constexpr void erase_if(Container& c, UnaryPredicate p) {
 	c.erase(std::remove_if(c.begin(), c.end(), std::ref(p)), c.end());
 	return;
 }
@@ -43,9 +43,12 @@ constexpr void erase_if(C& c, UnaryPredicate p) {
  * @param value The value to search for
  * @return It Either the position of the found value, or end if not found
  */
-template <typename It, typename T, typename Comp>
-KBLIB_NODISCARD constexpr It find(It begin, It end, const T& value) {
-	auto equal = [](const T& a, const T& b) { return !(a < b) && !(b < a); };
+template <typename ForwardIt, typename Elem, typename Comp>
+KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
+                                         const Elem& value) {
+	auto equal = [](const Elem& a, const Elem& b) {
+		return !(a < b) && !(b < a);
+	};
 	while (begin != end && !equal(*begin, value)) {
 		++begin;
 	}
@@ -61,10 +64,10 @@ KBLIB_NODISCARD constexpr It find(It begin, It end, const T& value) {
  * @param comp The comparison function
  * @return It Either the position of the found value, or end if not found
  */
-template <typename It, typename T, typename Comp>
-KBLIB_NODISCARD constexpr It find(It begin, It end, const T& value,
-                                  Comp&& comp) {
-	auto equal = [&comp](const T& a, const T& b) {
+template <typename ForwardIt, typename Elem, typename Comp>
+KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
+                                         const Elem& value, Comp&& comp) {
+	auto equal = [&comp](const Elem& a, const Elem& b) {
 		return !comp(a, b) && !comp(b, a);
 	};
 	while (begin != end && !equal(*begin, value)) {
@@ -82,8 +85,9 @@ KBLIB_NODISCARD constexpr It find(It begin, It end, const T& value,
  * @param pred The predicate to scan with
  * @return It Either the position of the found value, or end if not found
  */
-template <typename It, typename Pred>
-KBLIB_NODISCARD constexpr It find_if(It begin, It end, Pred&& pred) {
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt find_if(ForwardIt begin, ForwardIt end,
+                                            UnaryPredicate&& pred) {
 	while (begin != end && !pred(*begin)) {
 		++begin;
 	}
@@ -100,14 +104,15 @@ KBLIB_NODISCARD constexpr It find_if(It begin, It end, Pred&& pred) {
  * @return It Iterator to the last element equal to v, or end if no such
  * element.
  */
-template <typename It, typename T>
-KBLIB_NODISCARD constexpr It find_last(It begin, It end, const T& v) {
+template <typename ForwardIt, typename Elem>
+KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, ForwardIt end,
+                                              const Elem& v) {
 	if (begin == end) {
 		return end;
 	}
-	It result = end;
+	auto result = end;
 	while (true) {
-		It new_result = std::find(begin, end, v);
+		auto new_result = std::find(begin, end, v);
 		if (new_result == end) {
 			break;
 		} else {
@@ -129,14 +134,15 @@ KBLIB_NODISCARD constexpr It find_last(It begin, It end, const T& v) {
  * @return It Iterator to the last element for which p returned true, or end if
  * no such element.
  */
-template <typename It, typename Pred>
-KBLIB_NODISCARD constexpr It find_last_if(It begin, It end, Pred p) {
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, ForwardIt end,
+                                                 UnaryPredicate p) {
 	if (begin == end) {
 		return end;
 	}
-	It result = end;
+	auto result = end;
 	while (true) {
-		It new_result = find_if(begin, end, p);
+		auto new_result = kblib::find_if(begin, end, p);
 		if (new_result == end) {
 			break;
 		} else {
@@ -158,14 +164,15 @@ KBLIB_NODISCARD constexpr It find_last_if(It begin, It end, Pred p) {
  * @return It Iterator to the last element for which p returned false, or end if
  * no such element.
  */
-template <typename It, typename Pred>
-KBLIB_NODISCARD constexpr It find_last_if_not(It begin, It end, Pred p) {
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt
+find_last_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate p) {
 	if (begin == end) {
 		return end;
 	}
-	It result = end;
+	auto result = end;
 	while (true) {
-		It new_result = std::find_if_not(begin, end, p);
+		auto new_result = std::find_if_not(begin, end, p);
 		if (new_result == end) {
 			break;
 		} else {
@@ -187,8 +194,9 @@ KBLIB_NODISCARD constexpr It find_last_if_not(It begin, It end, Pred p) {
  * @return size_t The offset from begin of the first element equal to v, or
  * distance(begin, end) if not found.
  */
-template <typename It, typename T>
-KBLIB_NODISCARD constexpr size_t find_in(It begin, It end, const T& v) {
+template <typename ForwardIt, typename Elem>
+KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, ForwardIt end,
+                                         const Elem& v) {
 	return std::find(begin, end, v) - begin;
 }
 
@@ -201,8 +209,8 @@ KBLIB_NODISCARD constexpr size_t find_in(It begin, It end, const T& v) {
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if(It begin, It end,
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t find_in_if(ForwardIt begin, ForwardIt end,
                                             UnaryPredicate p) {
 	return std::find_if(begin, end, p) - begin;
 }
@@ -215,8 +223,8 @@ KBLIB_NODISCARD constexpr size_t find_in_if(It begin, It end,
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if_not(It begin, It end,
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t find_in_if_not(ForwardIt begin, ForwardIt end,
                                                 UnaryPredicate p) {
 	return std::find_if_not(begin, end, p) - begin;
 }
@@ -234,8 +242,9 @@ KBLIB_NODISCARD constexpr size_t find_in_if_not(It begin, It end,
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename It, typename T>
-KBLIB_NODISCARD constexpr size_t find_last_in(It begin, It end, const T& v) {
+template <typename ForwardIt, typename Elem>
+KBLIB_NODISCARD constexpr size_t find_last_in(ForwardIt begin, ForwardIt end,
+                                              const Elem& v) {
 	return kblib::find_last(begin, end, v) - begin;
 }
 
@@ -248,8 +257,8 @@ KBLIB_NODISCARD constexpr size_t find_last_in(It begin, It end, const T& v) {
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if(It begin, It end,
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t find_last_in_if(ForwardIt begin, ForwardIt end,
                                                  UnaryPredicate p) {
 	return kblib::find_last_if(begin, end, p) - begin;
 }
@@ -262,9 +271,9 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(It begin, It end,
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename It, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if_not(It begin, It end,
-                                                     UnaryPredicate p) {
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t
+find_last_in_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate p) {
 	return kblib::find_last_if_not(begin, end, p) - begin;
 }
 
@@ -491,15 +500,16 @@ get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
  * @param d_begin The beginning of the output range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
- * @return return_assert_t<is_output_iterator<OIt, ElementT>::value, OIt> An
- * iterator derived by assigning to and advancing d_begin count times.
+ * @return return_assert_t<is_output_iterator<OutputIt, ElementT>::value,
+ * OutputIt> An iterator derived by assigning to and advancing d_begin count
+ * times.
  */
-template <typename Comp = std::less<>, typename IIt, typename OIt,
-          typename ElementT = typename std::iterator_traits<IIt>::value_type>
-constexpr auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
-                         Comp cmp = {})
-    -> return_assert_t<is_output_iterator<OIt, ElementT>::value, OIt> {
-	auto temp = get_max_n<std::vector<ElementT>>(begin, end, count, cmp);
+template <typename Comp = std::less<>, typename InputIt, typename OutputIt,
+          typename Elem = typename std::iterator_traits<InputIt>::value_type>
+constexpr auto get_max_n(InputIt begin, InputIt end, OutputIt d_begin,
+                         std::size_t count, Comp cmp = {})
+    -> return_assert_t<is_output_iterator<OutputIt, Elem>::value, OutputIt> {
+	auto temp = get_max_n<std::vector<Elem>>(begin, end, count, cmp);
 	return std::move(temp.begin(), temp.end(), d_begin);
 }
 
@@ -516,9 +526,9 @@ constexpr auto get_max_n(IIt begin, IIt end, OIt d_begin, std::size_t count,
  * @param f The operation to apply.
  * @return BinaryFunction f
  */
-template <typename It, typename It2, typename BinaryFunction>
-KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
-                                                  BinaryFunction f) {
+template <typename ForwardIt, typename ForwardIt2, typename BinaryFunction>
+KBLIB_NODISCARD constexpr BinaryFunction
+for_each(ForwardIt first, ForwardIt last, ForwardIt2 second, BinaryFunction f) {
 	for (; first != last; (void)++first, (void)++second) {
 		f(*first, *second);
 	}
@@ -533,12 +543,13 @@ KBLIB_NODISCARD constexpr BinaryFunction for_each(It first, It last, It2 second,
  * @param n The number of elements to operate on in each input range.
  * @param second The beginning of the second input range.
  * @param f The operation to apply.
- * @return std::pair<It, It2> Equivalent to `{std::advance(first, n),
- * std::advance(second, n)}`
+ * @return std::pair<ForwardIt, ForwardIt2> Equivalent to `{std::advance(first,
+ * n), std::advance(second, n)}`
  */
-template <typename It, typename It2, typename Size, typename BinaryFunction>
-KBLIB_NODISCARD constexpr std::pair<It, It2>
-for_each_n(It first, Size n, It2 second, BinaryFunction f) {
+template <typename ForwardIt, typename ForwardIt2, typename Size,
+          typename BinaryFunction>
+KBLIB_NODISCARD constexpr std::pair<ForwardIt, ForwardIt2>
+for_each_n(ForwardIt first, Size n, ForwardIt2 second, BinaryFunction f) {
 	for (Size i = 0; i < n; (void)++first, (void)++second, (void)++i) {
 		f(*first, *second);
 	}
@@ -622,7 +633,7 @@ rotate(ForwardIt first, ForwardIt n_first,
 	}
 
 	// rotate the remaining sequence into place
-	rotate(write, next_read, last);
+	kblib::rotate(write, next_read, last);
 	return write;
 }
 
@@ -826,8 +837,9 @@ constexpr void adaptive_insertion_sort_copy(
 		                    std::forward<Compare>(compare));
 	} else {
 		// If the input is predominantly in reverse order, sort it in reverse
-		insertion_sort_copy(std::make_reverse_iterator(begin),
-		                    std::make_reverse_iterator(end), d_begin, d_end,
+		// IMPORTANT: the reverse iterators go end, begin
+		insertion_sort_copy(std::make_reverse_iterator(end),
+		                    std::make_reverse_iterator(begin), d_begin, d_end,
 		                    std::forward<Compare>(compare));
 	}
 }
@@ -839,15 +851,16 @@ namespace detail {
 	 * primary template handles the general case of arbitrary transformation and
 	 * arbitrary compare predicate.
 	 */
-   template <typename RandomAccessIt, typename UnaryOp, typename BinaryPred,
-             typename SortKey,
-             bool = std::is_member_object_pointer<UnaryOp>::value,
+   template <typename RandomAccessIt, typename UnaryOperation,
+             typename BinaryPredicate, typename SortKey,
+             bool = std::is_member_object_pointer<UnaryOperation>::value,
              bool = std::is_fundamental<SortKey>::value,
              bool = std::is_integral<SortKey>::value>
    struct sort_transform_impl {
 		static constexpr void inplace(RandomAccessIt begin,
 		                              const RandomAccessIt end,
-		                              UnaryOp&& transform, BinaryPred&& compare) {
+		                              UnaryOperation&& transform,
+		                              BinaryPredicate&& compare) {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
 				return invoke(compare, invoke(transform, *a),
@@ -863,7 +876,8 @@ namespace detail {
 
 		static constexpr void scratch(RandomAccessIt begin,
 		                              const RandomAccessIt end,
-		                              UnaryOp&& transform, BinaryPred&& compare) {
+		                              UnaryOperation&& transform,
+		                              BinaryPredicate&& compare) {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
 				return invoke(compare, invoke(transform, *a),
@@ -880,7 +894,8 @@ namespace detail {
 		template <typename RandomAccessIt2>
 		static constexpr void copy(RandomAccessIt begin, const RandomAccessIt end,
 		                           RandomAccessIt2 d_begin, RandomAccessIt2 d_end,
-		                           UnaryOp&& transform, BinaryPred&& compare) {
+		                           UnaryOperation&& transform,
+		                           BinaryPredicate&& compare) {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
 				return invoke(compare, invoke(transform, *a),
@@ -895,36 +910,38 @@ namespace detail {
 		}
 	};
 
+#if 0
 	/**
 	 * @brief Sort implementation for pointer to member object of non-fundamental
 	 * type, so sort keys are constant time to extract (this is most similar to
 	 * a general sort())
 	 */
-	/*template <typename RandomAccessIt, typename UnaryOp,
-				 typename BinaryPred, typename SortKey>
-	struct sort_transform_impl<RandomAccessIt, UnaryOp, BinaryPred, SortKey,
-										true, false, false> {
+	template <typename RandomAccessIt, typename UnaryOperation,
+	          typename BinaryPredicate, typename SortKey>
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation, BinaryPredicate, SortKey,
+	                           true, false, false> {
 		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt
-	end, UnaryOp&& transform, BinaryPred&& compare) { auto comp = [&compare,
+	end, UnaryOperation&& transform, BinaryPredicate&& compare) { auto comp = [&compare,
 	&transform](RandomAccessIt a, RandomAccessIt b) { return invoke(compare,
 	(*a).*transform, (*b).*transform);
 			};
 
 		}
-	};*/
+	};
+#endif
 
 	/**
 	 * @brief Sort implementation for pointer to member object of fundamental
 	 * non-integral type with default sorting, so sort keys are constant time to
 	 * extract and compare
 	 */
-	template <typename RandomAccessIt, typename UnaryOp, typename LessT,
+	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename SortKey>
-	struct sort_transform_impl<RandomAccessIt, UnaryOp, std::less<LessT>,
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
 	                           SortKey, true, true, false> {
 		static constexpr void inplace(RandomAccessIt begin,
 		                              const RandomAccessIt end,
-		                              UnaryOp&& transform,
+		                              UnaryOperation&& transform,
 		                              std::less<LessT>&& compare) {
 			// TODO
 		}
@@ -934,13 +951,13 @@ namespace detail {
 	 * non-integral type with reverse sorting, so sort keys are constant time to
 	 * extract and compare
 	 */
-	template <typename RandomAccessIt, typename UnaryOp, typename LessT,
+	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename SortKey>
-	struct sort_transform_impl<RandomAccessIt, UnaryOp, std::greater<LessT>,
-	                           SortKey, true, true, false> {
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
+	                           std::greater<LessT>, SortKey, true, true, false> {
 		static constexpr void inplace(RandomAccessIt begin,
 		                              const RandomAccessIt end,
-		                              UnaryOp&& transform,
+		                              UnaryOperation&& transform,
 		                              std::greater<LessT>&& compare) {
 			// TODO
 		}
@@ -950,13 +967,13 @@ namespace detail {
 	 * @brief Sort implementation for pointer to member object of integral
 	 * type with default sorting, so we can do radix sort
 	 */
-	template <typename RandomAccessIt, typename UnaryOp, typename LessT,
+	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename SortKey>
-	struct sort_transform_impl<RandomAccessIt, UnaryOp, std::less<LessT>,
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
 	                           SortKey, true, true, true> {
 		static constexpr void inplace(RandomAccessIt begin,
 		                              const RandomAccessIt end,
-		                              UnaryOp&& transform,
+		                              UnaryOperation&& transform,
 		                              std::less<LessT>&& compare) {
 			// TODO
 		}
@@ -965,28 +982,29 @@ namespace detail {
 	 * @brief Sort implementation for pointer to member object of integral
 	 * type with reverse sorting, so we can do radix sort
 	 */
-	template <typename RandomAccessIt, typename UnaryOp, typename LessT,
+	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename SortKey>
-	struct sort_transform_impl<RandomAccessIt, UnaryOp, std::greater<LessT>,
-	                           SortKey, true, true, true> {
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
+	                           std::greater<LessT>, SortKey, true, true, true> {
 		static constexpr void inplace(RandomAccessIt begin,
 		                              const RandomAccessIt end,
-		                              UnaryOp&& transform,
+		                              UnaryOperation&& transform,
 		                              std::greater<LessT>&& compare) {
 			// TODO
 		}
 	};
+
 #if 0 // Do string radix sorting
 	/**
 	 * @brief Sort implementation for pointer to member object of string
 	 * type with default sorting, so we can do radix sort
 	 */
-	template <typename RandomAccessIt, typename UnaryOp, typename LessT,
+	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename CharT>
-	struct sort_transform_impl<RandomAccessIt, UnaryOp, std::less<LessT>,
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
 	                           std::basic_string<CharT>, true, false, false> {
-		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt end, UnaryOp&& transform,
-		           BinaryPred&& compare) {
+		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt end, UnaryOperation&& transform,
+		           BinaryPredicate&& compare) {
 			//TODO
 		}
 	};
@@ -994,12 +1012,12 @@ namespace detail {
 	 * @brief Sort implementation for pointer to member object of string
 	 * type with reverse sorting, so we can do radix sort
 	 */
-	template <typename RandomAccessIt, typename UnaryOp, typename LessT,
+	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename CharT>
-	struct sort_transform_impl<RandomAccessIt, UnaryOp, std::greater<LessT>,
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::greater<LessT>,
 	                           std::basic_string<CharT>, true, false, false> {
-		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt end, UnaryOp&& transform,
-		           BinaryPred&& compare) {
+		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt end, UnaryOperation&& transform,
+		           BinaryPredicate&& compare) {
 			//TODO
 		}
 	};
@@ -1019,16 +1037,18 @@ namespace detail {
  * transformer may not modify the object it is called with.
  *
  * @param compare A comparison predicate which returns true if the first
- * argument shall be ordered before the second. BinaryPred must meet the
+ * argument shall be ordered before the second. BinaryPredicate must meet the
  * requirements of the Compare named requirement.
  */
-template <typename RandomAccessIt, typename UnaryOp, typename BinaryPred>
+template <typename RandomAccessIt, typename UnaryOperation,
+          typename BinaryPredicate>
 constexpr void sort_transform(RandomAccessIt begin, RandomAccessIt end,
-                              UnaryOp&& transform, BinaryPred&& compare) {
-	detail::sort_transform_impl<RandomAccessIt, UnaryOp, BinaryPred,
+                              UnaryOperation&& transform,
+                              BinaryPredicate&& compare) {
+	detail::sort_transform_impl<RandomAccessIt, UnaryOperation, BinaryPredicate,
 	                            decltype(invoke(transform, *begin))>::
-	    inplace(begin, end, std::forward<UnaryOp>(transform),
-	            std::forward<BinaryPred>(compare));
+	    inplace(begin, end, std::forward<UnaryOperation>(transform),
+	            std::forward<BinaryPredicate>(compare));
 }
 
 /**
@@ -1038,19 +1058,20 @@ constexpr void sort_transform(RandomAccessIt begin, RandomAccessIt end,
  * @param end
  * @param transform
  */
-template <typename RandomAccessIt, typename UnaryOp>
+template <typename RandomAccessIt, typename UnaryOperation>
 constexpr void sort_transform(RandomAccessIt begin, RandomAccessIt end,
-                              UnaryOp&& transform) {
-	detail::sort_transform_impl<RandomAccessIt, UnaryOp, std::less<>,
+                              UnaryOperation&& transform) {
+	detail::sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<>,
 	                            decltype(invoke(transform, *begin))>::
-	    inplace(begin, end, std::forward<UnaryOp>(transform), std::less<>{});
-} // namespace kblib
+	    inplace(begin, end, std::forward<UnaryOperation>(transform),
+	            std::less<>{});
+}
 
-template <typename IIt1, typename EIt, typename IIt2>
+template <typename InputIt1, typename EndIt, typename InputIt2>
 struct zip_iterator {
-	IIt1 pos1{};
-	EIt end1{};
-	IIt2 pos2{};
+	InputIt1 pos1{};
+	EndIt end1{};
+	InputIt2 pos2{};
 
 	zip_iterator& operator++() {
 		++pos1;
@@ -1067,7 +1088,7 @@ struct zip_iterator {
 	auto operator*() { return std::forward_as_tuple(*pos1, *pos2); }
 
 	zip_iterator begin() { return *this; }
-	zip_iterator<EIt, EIt, IIt2> end() const { return {end1, end1}; }
+	zip_iterator<EndIt, EndIt, InputIt2> end() const { return {end1, end1}; }
 
 	friend bool operator==(const zip_iterator& z1, const zip_iterator& z2) {
 		return z1.pos1 == z2.pos1;
@@ -1076,11 +1097,11 @@ struct zip_iterator {
 		return z1.pos1 != z2.pos1;
 	}
 	friend bool operator==(const zip_iterator& z1,
-	                       zip_iterator<EIt, EIt, IIt2> end) {
+	                       zip_iterator<EndIt, EndIt, InputIt2> end) {
 		return z1.end1 == end.val;
 	}
 	friend bool operator!=(const zip_iterator& z1,
-	                       zip_iterator<EIt, EIt, IIt2> end) {
+	                       zip_iterator<EndIt, EndIt, InputIt2> end) {
 		return z1.end1 != end.val;
 	}
 };
@@ -1119,16 +1140,18 @@ struct zip_iterator<It1, It1, It2> {
 /**
  * @brief Iterate over two ranges in lockstep, like Python's zip.
  *
- * IIt1 and EIt may be different types, however that breaks range-for in C++14.
+ * InputIt1 and EndIt may be different types, however that breaks range-for in
+ * C++14.
  *
  * @param begin1 The beginning of the first range to iterate over.
  * @param end1 The end of the first range.
  * @param begin2 The beginning of the second range to iterate over.
- * @return zip_iterator<IIt1, EIt, IIt2> A range (and also an iterator) which
- * represents the two ranges taken in pairs.
+ * @return zip_iterator<InputIt1, EndIt, InputIt2> A range (and also an
+ * iterator) which represents the two ranges taken in pairs.
  */
-template <typename IIt1, typename EIt, typename IIt2>
-zip_iterator<IIt1, EIt, IIt2> zip(IIt1 begin1, EIt end1, IIt2 begin2) {
+template <typename InputIt1, typename EndIt, typename InputIt2>
+zip_iterator<InputIt1, EndIt, InputIt2> zip(InputIt1 begin1, EndIt end1,
+                                            InputIt2 begin2) {
 	return {begin1, end1, begin2};
 }
 

@@ -1,15 +1,16 @@
 #ifndef KBLIB_SIMPLE_H
 #define KBLIB_SIMPLE_H
 
+#include "iterators.h"
 #include "tdecl.h"
 #include "traits.h"
-#include "iterators.h"
 
 #include <bitset>
 #include <climits>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
+#include <numeric>
 
 #define KBLIB_DEBUG_LOG_RANGES 0
 #if KBLIB_DEBUG_LOG_RANGES
@@ -22,7 +23,37 @@
 
 namespace kblib {
 
+/**
+ * @brief Transforms a stateless binary operation into one which takes reversed
+ * arguments.
+ *
+ * For example, kblib::flip<std::minus<>>() returns a function object which
+ * subtracts its first argument from its second.
+ *
+ * @tparam BinaryOperation The operation to reverse.
+ */
+template <typename BinaryOperation>
+constexpr auto flip() {
+	return [](auto&& a, auto&& b) {
+		return BinaryOperation{}(static_cast<decltype(b)>(b),
+		                         static_cast<decltype(a)>(a));
+	};
+}
 
+/**
+ * @brief Transforms a binary operation into one which takes reversed arguments.
+ *
+ * For example, kblib::flip(std::minus<>{}) returns a function object which
+ * subtracts its first argument from its second.
+ *
+ * @param op The operation to reverse.
+ */
+template <typename BinaryOperation>
+constexpr auto flip(BinaryOperation op) {
+	return [op = std::move(op)](auto&& a, auto&& b) {
+		return op(static_cast<decltype(b)>(b), static_cast<decltype(a)>(a));
+	};
+}
 
 namespace fnv {
 
@@ -65,8 +96,8 @@ namespace fnv {
  * @return HashInt The FNVa hash of the input range.
  */
 template <typename HashInt, typename Span>
-constexpr HashInt FNVa(Span&& s,
-                       HashInt hval = fnv::fnv_offset<HashInt>::value) {
+constexpr HashInt
+FNVa(Span&& s, HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept {
 	static_assert(sizeof(*std::begin(s)) == 1,
 	              "Can only hash char-like objects.");
 	const HashInt prime = fnv::fnv_prime<HashInt>::value;
@@ -89,8 +120,9 @@ constexpr HashInt FNVa(Span&& s,
  * @return HashInt The FNVa hash of the input range.
  */
 template <typename HashInt, typename CharT, std::size_t N>
-constexpr HashInt FNVa_a(const CharT (&s)[N],
-                         HashInt hval = fnv::fnv_offset<HashInt>::value) {
+constexpr HashInt
+FNVa_a(const CharT (&s)[N],
+       HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept {
 	static_assert(sizeof(s[0]) == 1, "Can only hash char-like objects.");
 	const HashInt prime = fnv::fnv_prime<HashInt>::value;
 	for (auto&& c : s) {
@@ -109,20 +141,22 @@ constexpr HashInt FNVa_a(const CharT (&s)[N],
  * value to create a hash of the concatenation of the two ranges.
  * @return std::uint32_t The FNV32a hash of the input range.
  */
-constexpr inline std::uint32_t FNV32a(std::string_view s,
-                                      uint32_t hval = 2166136261) {
-	const std::uint32_t FNV_32_PRIME = 16777619;
+constexpr inline std::uint32_t
+FNV32a(std::string_view s,
+       uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept {
+	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (auto&& c : s) {
 		hval ^= static_cast<std::uint32_t>(static_cast<unsigned char>(c));
-		hval *= FNV_32_PRIME;
+		hval *= prime;
 	}
 	return hval;
 }
 #endif
 
 template <typename HashInt>
-constexpr HashInt FNVa_s(const char* begin, std::size_t length,
-                         HashInt hval = fnv::fnv_offset<HashInt>::value) {
+constexpr HashInt
+FNVa_s(const char* begin, std::size_t length,
+       HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept {
 	const HashInt prime = fnv::fnv_prime<HashInt>::value;
 	//  for (const char* pos = begin; pos != begin + length; ++pos) {
 	//    hval ^= static_cast<HashInt>(static_cast<unsigned char>(*pos));
@@ -145,22 +179,24 @@ constexpr HashInt FNVa_s(const char* begin, std::size_t length,
  * @return HashInt The FNV32a hash of the input range.
  */
 template <std::size_t N>
-constexpr std::uint32_t FNV32a_a(const char (&s)[N],
-                                 uint32_t hval = 2166136261) {
-	const std::uint32_t FNV_32_PRIME = 16777619;
+constexpr std::uint32_t
+FNV32a_a(const char (&s)[N],
+         uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept {
+	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (auto&& c : s) {
 		hval ^= static_cast<std::uint32_t>(static_cast<unsigned char>(c));
-		hval *= FNV_32_PRIME;
+		hval *= prime;
 	}
 	return hval;
 }
 
-constexpr inline std::uint32_t FNV32a_s(const char* begin, std::size_t length,
-                                        uint32_t hval = 2166136261) {
-	const std::uint32_t FNV_32_PRIME = 16777619;
+constexpr inline std::uint32_t
+FNV32a_s(const char* begin, std::size_t length,
+         uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept {
+	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (const char* pos = begin; pos != begin + length; ++pos) {
 		hval ^= static_cast<std::uint32_t>(static_cast<unsigned char>(*pos));
-		hval *= FNV_32_PRIME;
+		hval *= prime;
 	}
 	return hval;
 }
@@ -170,7 +206,7 @@ inline namespace literals {
 	 * @brief A literal suffix that produces the FNV32a hash of a string literal.
 	 */
 	constexpr std::uint32_t operator""_fnv32(const char* str,
-	                                         std::size_t length) {
+	                                         std::size_t length) noexcept {
 		return FNV32a_s(str, length);
 	}
 
@@ -178,12 +214,16 @@ inline namespace literals {
 	 * @brief A literal suffix that produces the FNV64a hash of a string literal.
 	 */
 	constexpr std::uint64_t operator""_fnv64(const char* str,
-	                                         std::size_t length) {
+	                                         std::size_t length) noexcept {
 		return FNVa_s<std::uint64_t>(str, length);
 	}
 
 } // namespace literals
 
+/**
+ * @brief Get the number of padding bits in an integral type.
+ *
+ */
 template <typename T>
 struct padding_bits
     : std::integral_constant<int, CHAR_BIT * sizeof(T) -
@@ -193,6 +233,11 @@ struct padding_bits
 template <typename T>
 constexpr int padding_bits_v = padding_bits<T>::value;
 
+/**
+ * @brief The primary template has to exist, but not be constructible, in order
+ * to meet the requirements of Hash.
+ *
+ */
 template <typename Key, typename = void>
 struct FNV_hash {
 	FNV_hash() = delete;
@@ -200,56 +245,161 @@ struct FNV_hash {
 	FNV_hash& operator=(FNV_hash&&) = delete;
 };
 
+/**
+ * @brief Hasher for bool. Note that because bool has only two states, this
+ * specialization does not actually use FNV to hash the bool, and it uses a more
+ * trivial algorithm instead.
+ *
+ */
 template <>
 struct FNV_hash<bool, void> {
-	std::size_t operator()(bool key) {
-		char tmp[1] = {key};
-		return FNVa_a<std::size_t>(tmp);
+	constexpr std::size_t operator()(
+	    bool key,
+	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+		return key ? offset : ~offset;
 	}
 };
 
+/**
+ * @brief Hasher for char
+ *
+ */
 template <>
 struct FNV_hash<char, void> {
-	std::size_t operator()(char key) {
+	constexpr std::size_t operator()(
+	    char key,
+	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
 		char tmp[1] = {key};
-		return FNVa_a<std::size_t>(tmp);
+		return FNVa_a<std::size_t>(tmp, offset);
 	}
 };
 
+/**
+ * @brief Hasher for signed char
+ *
+ */
 template <>
 struct FNV_hash<signed char, void> {
-	std::size_t operator()(signed char key) {
+	constexpr std::size_t operator()(
+	    signed char key,
+	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
 		signed char tmp[1] = {key};
-		return FNVa_a<std::size_t>(tmp);
+		return FNVa_a<std::size_t>(tmp, offset);
 	}
 };
 
+/**
+ * @brief Hasher for unsigned char
+ *
+ */
 template <>
 struct FNV_hash<unsigned char, void> {
-	std::size_t operator()(unsigned char key) {
+	constexpr std::size_t operator()(
+	    unsigned char key,
+	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
 		unsigned char tmp[1] = {key};
-		return FNVa_a<std::size_t>(tmp);
+		return FNVa_a<std::size_t>(tmp, offset);
 	}
 };
 
+/**
+ * @brief Hasher for any trivial type
+ *
+ */
 template <typename T>
-struct FNV_hash<T, fakestd::void_t<typename std::enable_if<
-                       std::is_integral<T>::value, T>::type>> {
-	std::size_t operator()(T key) {
+struct FNV_hash<T, void_if_t<std::is_trivial<T>::value>> {
+	constexpr std::size_t operator()(
+	    T key,
+	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
 		char tmp[sizeof(T)];
 		std::memcpy(tmp, &key, sizeof(T));
-		return FNVa_a<std::size_t>(tmp);
+		return FNVa_a<std::size_t>(tmp, offset);
 	}
 };
 
-#if KBLIB_USE_CXX17
-template <typename CharT>
-struct FNV_hash<std::basic_string_view<CharT>, void> {
-	std::size_t operator()(std::basic_string_view<CharT> key) {
-		return FNVa(key);
+/**
+ * @brief Container hasher
+ *
+ */
+template <typename Container>
+struct FNV_hash<Container, fakestd::void_t<typename Container::value_type>> {
+	constexpr std::size_t operator()(
+	    const Container& key,
+	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+		using Elem = typename Container::value_type;
+		return std::accumulate(key.cbegin(), key.cend(), offset,
+		                       [](std::size_t offset, const Elem& elem) {
+			                       return FNV_hash<Elem>{}(elem, offset);
+		                       });
 	}
 };
-#endif
+
+namespace detail {
+
+   /**
+	 * @brief Hash each element of a tuple. This overload is for tuples of a
+	 * single type, or as the base case for the other overload.
+	 *
+	 * @param tuple
+	 * @param offset
+	 * @return std::size_t
+	 */
+   template <typename Tuple, std::size_t I>
+   constexpr std::size_t hash_tuple_impl(const Tuple& tuple, std::size_t offset,
+	                                      std::index_sequence<I>) noexcept {
+		return FNV_hash<typename std::tuple_element<I, Tuple>::type>{}(
+		    std::get<I>(tuple));
+	}
+
+	/**
+	 * @brief Hash each element of a tuple. This overload is for tuples of at
+	 * least 2 elements.
+	 *
+	 * @param tuple
+	 * @param offset
+	 * @return std::size_t
+	 */
+	template <typename Tuple, std::size_t I, std::size_t I2, std::size_t... Is>
+	constexpr std::size_t
+	hash_tuple_impl(const Tuple& tuple, std::size_t offset,
+	                std::index_sequence<I, I2, Is...>) noexcept {
+		std::size_t first_hash =
+		    FNV_hash<typename std::tuple_element<I, Tuple>::type>{}(
+		        std::get<I>(tuple));
+		return hash_tuple_impl(tuple, first_hash,
+		                       std::index_sequence<I2, Is...>{});
+	}
+
+} // namespace detail
+
+/**
+ * @brief Tuple-like (but not array-like) type hasher
+ *
+ */
+template <typename Tuple>
+struct FNV_hash<Tuple, void_if_t<(std::tuple_size<Tuple>::value > 0u) &&
+                                 !is_linear_container_v<Tuple>>> {
+   constexpr std::size_t operator()(
+       const Tuple& key,
+       std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+      return detail::hash_tuple_impl(
+          key, offset,
+          std::make_index_sequence<std::tuple_size<Tuple>::value>{});
+   }
+};
+
+/**
+ * @brief The hash of an empty tuple is trivial.
+ */
+template <typename Tuple>
+struct FNV_hash<Tuple, void_if_t<std::tuple_size<Tuple>::value == 0u &&
+                                 !is_linear_container_v<Tuple>>> {
+	constexpr std::size_t operator()(
+	    const Tuple&,
+	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+		return offset;
+	}
+};
 
 namespace detail {
 
@@ -298,28 +448,28 @@ using uint_smallest_t = typename uint_smallest<I>::type;
 template <std::uintmax_t I>
 using int_smallest_t = typename int_smallest<I>::type;
 
-template <typename Container>
 /**
- * @brief
+ * @brief Concatenate two dynamic containers together.
  *
- * @param A
- * @param B
- * @return Container
+ * @param A,B The containers to concatenate together.
+ * @return Container A container consisting of the elements of A and B in that
+ * order.
  */
+template <typename Container>
 Container arraycat(Container A, Container&& B) {
 	A.insert(A.end(), B.begin(), B.end());
 	return A;
 }
 
-// Index an array literal without naming its type
-// Caveat: the return value must not be stored unless the argument is also
-// stored. This is indexable because temporaries live until the end of their
-// full-expression, rather than sub-expression
 template <typename T>
 /**
- * @brief
+ * @brief Index an array literal without naming its type
  *
- * @param a
+ * @attention The return value must not be stored unless the argument is also
+ * stored. This is indexable because temporaries live until the end of their
+ * full-expression, rather than sub-expression
+ *
+ * @param a The array literal to index into.
  */
 constexpr auto a(const std::initializer_list<T>& a) {
 	return a.begin();
@@ -329,31 +479,27 @@ constexpr auto a(const std::initializer_list<T>& a) {
 
 template <typename T>
 /**
- * @brief
- *
+ * @brief A simple identity alias for simplifying some compound type
+ * declarations, such as function pointers.
  */
 using alias = T;
 
-template <typename, typename T>
 /**
- * @brief
- *
+ * @brief Ignores its first template argument entirely, and returns its second
  */
+template <typename, typename T>
 struct ignore {
-	/**
-	 * @brief
-	 *
-	 */
 	using type = T;
 };
-template <typename U, typename T>
 /**
- * @brief
+ * @brief An alias for ignore<U, T>::type
  *
  */
+template <typename U, typename T>
 using ignore_t = typename ignore<U, T>::type;
 
 #if KBLIB_USE_CXX17
+
 template <bool... args>
 constexpr bool conjunction = (args && ...);
 #endif

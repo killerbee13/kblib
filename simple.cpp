@@ -2,10 +2,26 @@
 #include "catch.hpp"
 #include "kblib/build.h"
 #include "kblib/stats.h"
+
+#include <array>
 #include <iostream>
-#include <list>
 #include <iterator>
+#include <list>
 #include <sstream>
+#include <unordered_map>
+
+TEST_CASE("FNV_hash") {
+	kblib::FNV_hash<
+	    std::unordered_map<std::tuple<std::wstring, int*>, std::vector<std::basic_string<bool>>,
+	                       kblib::FNV_hash<std::tuple<std::wstring, int*>>>>
+	    test_hash1;
+	kblib::FNV_hash<std::array<std::basic_string<bool>, 4>> test_hash2;
+	auto call = &decltype(test_hash1)::operator();
+//	std::hash<
+//	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,
+//	                       std::hash<std::wstring>>>
+//	    std_hash;
+}
 
 TEST_CASE("range comparison") {
 	auto equal = [](auto r1, auto r2) {
@@ -19,7 +35,7 @@ TEST_CASE("range comparison") {
 
 	SECTION("equivalency") {
 
-		auto target10  = std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+		auto target10 = std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 		auto target10m = std::vector<int>{0, -1, -2, -3, -4, -5, -6, -7, -8, -9};
 		auto target10r = std::vector<int>{10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 
@@ -29,8 +45,7 @@ TEST_CASE("range comparison") {
 
 		REQUIRE(equal(kblib::range(0, 10, 2), std::vector<int>{0, 2, 4, 6, 8}));
 
-		REQUIRE(equal(kblib::range(10, 0, -1),
-		              target10r));
+		REQUIRE(equal(kblib::range(10, 0, -1), target10r));
 		REQUIRE(equal(kblib::range(10, 0, kblib::decrementer{}), target10r));
 
 		REQUIRE(equal(kblib::range(0, -10, -1), target10m));
@@ -56,8 +71,8 @@ TEST_CASE("range comparison") {
 TEST_CASE("range from iterators") {
 	std::string str = "abcdefghijklmnopqrstuvwxyz";
 	// Just asserting that this loop compiles.
-	for ([[maybe_unused]] std::string::iterator c : kblib::range(str.begin(), str.end())) {
-
+	for ([[maybe_unused]] std::string::iterator c :
+	     kblib::range(str.begin(), str.end())) {
 	}
 }
 

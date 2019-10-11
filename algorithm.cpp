@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 
 TEST_CASE("erase") {
 	const auto equal = [](auto a, auto b) {
@@ -82,6 +83,155 @@ TEST_CASE("sort") {
 		kblib::adaptive_insertion_sort_copy(input.begin(), input.end(),
 		                                    output.begin(), output.end());
 		REQUIRE(output == goal);
+	}
+	SECTION("insertion_sort is stable") {
+		std::minstd_rand rng;
+		std::uniform_int_distribution<int> dist(0, 8);
+		for ([[maybe_unused]] auto _i : kblib::range(100)) {
+			// sort based on first key, second is used to distinguish between equal elements
+			std::vector<std::pair<int, int>> inputs;
+			auto pcomp = [](auto a, auto b){return a.first < b.first;};
+
+			{
+				std::map<int, int> counts;
+				for ([[maybe_unused]] auto _j : kblib::range(100)) {
+					auto r = dist(rng);
+					inputs.push_back({r, counts[r]++});
+				}
+			}
+
+			kblib::insertion_sort(inputs.begin(), inputs.end(), pcomp);
+
+			{
+				std::map<int, int> counts;
+				for (auto p : inputs) {
+					REQUIRE(p.second == counts[p.first]++);
+				}
+			}
+		}
+	}
+	SECTION("insertion_sort on random data") {
+		std::minstd_rand rng;
+		std::uniform_int_distribution<int> dist(0, 65535);
+		for ([[maybe_unused]] auto _i : kblib::range(100)) {
+			std::vector<int> input;
+			std::generate_n(std::back_inserter(input), 100, [&]{return dist(rng);});
+
+			auto output_std = input;
+			std::sort(output_std.begin(), output_std.end());
+			decltype(input) output_kblib(input.size());
+			kblib::insertion_sort_copy(input.cbegin(), input.cend(), output_kblib.begin(), output_kblib.end());
+			REQUIRE(output_std == output_kblib);
+		}
+	}
+}
+TEST_CASE("insertion sort performance") {
+	SECTION("insertion_sort_copy on sorted data is fast") {
+		auto time_per = [](std::size_t size) {
+			std::vector<int> input(size);
+			decltype(input) output(size);
+			std::iota(input.begin(), input.end(), 0);
+
+			auto start = std::chrono::high_resolution_clock::now();
+			kblib::insertion_sort_copy(input.cbegin(), input.cend(), output.begin(), output.end());
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = end - start;
+			return static_cast<double>(duration.count());
+		};
+
+		auto time_fast = time_per(30)/30;
+		double time_slow = time_per(10000)/10000;
+		double error = time_slow / time_fast;
+		std::cout<<time_fast<<'\t'<<time_slow<<'\t'<<error<<"\n";
+		// Can't overshoot the bound by more than 5%:
+		REQUIRE(error < 1.05);
+	}
+	SECTION("insertion_sort_copy on reverse sorted data is slow") {
+		auto time_per = [](std::size_t size) {
+			std::vector<int> input(size);
+			decltype(input) output(size);
+			std::iota(input.rbegin(), input.rend(), 0);
+
+			auto start = std::chrono::high_resolution_clock::now();
+			kblib::insertion_sort_copy(input.cbegin(), input.cend(), output.begin(), output.end());
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = end - start;
+			return static_cast<double>(duration.count());
+		};
+
+		auto time_fast = time_per(30)/(30*30);
+		auto time_slow = time_per(1000)/(1000*1000);
+		auto error = time_slow / time_fast;
+		std::cout<<time_fast<<'\t'<<time_slow<<'\t'<<error<<"\n";
+		// Can't overshoot the bound by more than 5%:
+		REQUIRE(error < 1.05);
+	}
+	SECTION("adaptive_insertion_sort_copy on sorted data is fast") {
+		auto time_per = [](std::size_t size) {
+			std::vector<int> input(size);
+			decltype(input) output(size);
+			std::iota(input.begin(), input.end(), 0);
+
+			auto start = std::chrono::high_resolution_clock::now();
+			kblib::adaptive_insertion_sort_copy(input.cbegin(), input.cend(), output.begin(), output.end());
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = end - start;
+			return static_cast<double>(duration.count());
+		};
+
+		auto time_fast = time_per(30)/(30);
+		auto time_slow = time_per(10'000)/(10'000);
+		double error = time_slow / time_fast;
+		std::cout<<time_fast<<'\t'<<time_slow<<'\t'<<error<<"\n";
+		// Can't overshoot the bound by more than 5%:
+		REQUIRE(error < 1.05);
+	}
+	SECTION("adaptive_insertion_sort_copy on reverse sorted data is fast") {
+		auto time_per = [](std::size_t size) {
+			std::vector<int> input(size);
+			decltype(input) output(size);
+			std::iota(input.rbegin(), input.rend(), 0);
+
+			auto start = std::chrono::high_resolution_clock::now();
+			kblib::adaptive_insertion_sort_copy(input.cbegin(), input.cend(), output.begin(), output.end());
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = end - start;
+			return static_cast<double>(duration.count());
+		};
+
+		auto time_fast = time_per(30)/(30);
+		auto time_slow = time_per(10'000)/(10'000);
+		double error = time_slow / time_fast;
+		std::cout<<time_fast<<'\t'<<time_slow<<'\t'<<error<<"\n";
+		// Can't overshoot the bound by more than 5%:
+		REQUIRE(error < 1.05);
+	}
+	SECTION("insertion_sort_copy on mostly sorted data is fast") {
+		std::minstd_rand rng;
+		auto time_per = [&](std::size_t size, int noise) {
+			std::uniform_int_distribution<int> dist(-noise, noise);
+			std::vector<int> input(size);
+			decltype(input) output(size);
+			for (auto i : kblib::range(size)) {
+				input[i] = i + dist(rng);
+			}
+
+			auto start = std::chrono::high_resolution_clock::now();
+			kblib::insertion_sort_copy(input.cbegin(), input.cend(), output.begin(), output.end());
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration = end - start;
+			return static_cast<double>(duration.count());
+		};
+
+		auto n = 10000;
+		auto v = 250;
+		auto time_fast = time_per(n, 0)/(n);
+		auto time_slow = time_per(n, v)/(n);
+		auto ratio = time_slow / time_fast;
+		auto error = ratio/(n/v);
+		std::cout<<time_fast<<'\t'<<time_slow<<'\t'<<error<<"\n";
+		// Can't overshoot the bound by more than 5%:
+		REQUIRE(error < 1.05);
 	}
 }
 
