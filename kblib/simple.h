@@ -253,9 +253,10 @@ struct FNV_hash {
  */
 template <>
 struct FNV_hash<bool, void> {
-	constexpr std::size_t operator()(
-	    bool key,
-	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+	constexpr std::size_t
+	operator()(bool key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
 		return key ? offset : ~offset;
 	}
 };
@@ -266,9 +267,10 @@ struct FNV_hash<bool, void> {
  */
 template <>
 struct FNV_hash<char, void> {
-	constexpr std::size_t operator()(
-	    char key,
-	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+	constexpr std::size_t
+	operator()(char key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
 		char tmp[1] = {key};
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
@@ -280,9 +282,10 @@ struct FNV_hash<char, void> {
  */
 template <>
 struct FNV_hash<signed char, void> {
-	constexpr std::size_t operator()(
-	    signed char key,
-	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+	constexpr std::size_t
+	operator()(signed char key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
 		signed char tmp[1] = {key};
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
@@ -294,23 +297,62 @@ struct FNV_hash<signed char, void> {
  */
 template <>
 struct FNV_hash<unsigned char, void> {
-	constexpr std::size_t operator()(
-	    unsigned char key,
-	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+	constexpr std::size_t
+	operator()(unsigned char key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
 		unsigned char tmp[1] = {key};
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
 };
 
 /**
- * @brief Hasher for any trivial type
+ * @brief Hasher for short
+ *
+ */
+template <>
+struct FNV_hash<short, void> {
+	constexpr std::size_t
+	operator()(short key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
+		static_assert(sizeof(short) == 2);
+		unsigned char tmp[2] = {static_cast<unsigned char>(key & 255u),
+		                        static_cast<unsigned char>(key >> 8)};
+		return FNVa_a<std::size_t>(tmp, offset);
+	}
+};
+
+/**
+ * @brief Hasher for unsigned short
+ *
+ */
+template <>
+struct FNV_hash<unsigned short, void> {
+	constexpr std::size_t
+	operator()(unsigned short key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
+		static_assert(sizeof(unsigned short) == 2);
+		unsigned char tmp[2] = {static_cast<unsigned char>(key & 255u),
+		                        static_cast<unsigned char>(key >> 8)};
+		return FNVa_a<std::size_t>(tmp, offset);
+	}
+};
+
+/**
+ * @brief Hasher for any trivial type.
+ *
+ * @note Unfortunately, this specialization cannot be constexpr until C++20
+ * brings std::bit_cast.
  *
  */
 template <typename T>
 struct FNV_hash<T, void_if_t<std::is_trivial<T>::value>> {
-	constexpr std::size_t operator()(
-	    T key,
-	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+	constexpr std::size_t
+	operator()(T key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
 		char tmp[sizeof(T)];
 		std::memcpy(tmp, &key, sizeof(T));
 		return FNVa_a<std::size_t>(tmp, offset);
@@ -323,9 +365,10 @@ struct FNV_hash<T, void_if_t<std::is_trivial<T>::value>> {
  */
 template <typename Container>
 struct FNV_hash<Container, fakestd::void_t<typename Container::value_type>> {
-	constexpr std::size_t operator()(
-	    const Container& key,
-	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+	constexpr std::size_t
+	operator()(const Container& key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
 		using Elem = typename Container::value_type;
 		return std::accumulate(key.cbegin(), key.cend(), offset,
 		                       [](std::size_t offset, const Elem& elem) {
@@ -379,9 +422,10 @@ namespace detail {
 template <typename Tuple>
 struct FNV_hash<Tuple, void_if_t<(std::tuple_size<Tuple>::value > 0u) &&
                                  !is_linear_container_v<Tuple>>> {
-   constexpr std::size_t operator()(
-       const Tuple& key,
-       std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+   constexpr std::size_t
+   operator()(const Tuple& key,
+              std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+       noexcept {
       return detail::hash_tuple_impl(
           key, offset,
           std::make_index_sequence<std::tuple_size<Tuple>::value>{});
@@ -394,9 +438,10 @@ struct FNV_hash<Tuple, void_if_t<(std::tuple_size<Tuple>::value > 0u) &&
 template <typename Tuple>
 struct FNV_hash<Tuple, void_if_t<std::tuple_size<Tuple>::value == 0u &&
                                  !is_linear_container_v<Tuple>>> {
-	constexpr std::size_t operator()(
-	    const Tuple&,
-	    std::size_t offset = fnv::fnv_offset<std::size_t>::value) noexcept {
+	constexpr std::size_t
+	operator()(const Tuple&,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
 		return offset;
 	}
 };
