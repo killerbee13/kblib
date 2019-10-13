@@ -58,7 +58,7 @@ struct is_output_iterator : std::false_type {};
 template <typename T, typename E>
 struct is_output_iterator<
     T, E,
-    fakestd::void_t<decltype(*std::declval<T&>() = std::declval<const E&>())>>
+    void_t<decltype(*std::declval<T&>() = std::declval<const E&>())>>
     : std::true_type {};
 
 template <typename Container>
@@ -86,7 +86,7 @@ class counting_back_insert_iterator {
 	struct proxy_iterator {
 		using value_type = typename Container::value_type;
 
-		proxy_iterator& operator=(const value_type& value) {
+		proxy_iterator& operator=(const value_type& value) & {
 			assert(container);
 			// Multiple assignments for a single dereference are not allowed
 			assert(*dirty);
@@ -95,7 +95,7 @@ class counting_back_insert_iterator {
 			return *this;
 		}
 
-		proxy_iterator& operator=(value_type&& value) {
+		proxy_iterator& operator=(value_type&& value) & {
 			assert(container);
 			// Multiple assignments for a single dereference are not allowed
 			assert(*dirty);
@@ -113,7 +113,7 @@ class counting_back_insert_iterator {
 		return {container, &dirty};
 	}
 
-	counting_back_insert_iterator& operator++() noexcept {
+	counting_back_insert_iterator& operator++() & noexcept {
 		assert(!dirty);
 		++count;
 		dirty = true;
@@ -231,7 +231,7 @@ class range_t {
 		 *
 		 * @return iterator& *this.
 		 */
-		constexpr iterator& operator++() {
+		constexpr iterator& operator++() & {
 			val = val + step;
 			return *this;
 		}
@@ -378,7 +378,7 @@ class range_t {
 struct incrementer {
 	constexpr incrementer() = default;
 	constexpr incrementer(int) {}
-	constexpr operator int() { return 1; }
+	constexpr operator int() const noexcept { return 1; }
 };
 
 /**
@@ -396,7 +396,7 @@ constexpr T operator+(T val, incrementer) {
 struct decrementer {
 	constexpr decrementer() = default;
 	constexpr decrementer(int) {}
-	constexpr operator int() { return -1; }
+	constexpr operator int() const noexcept { return -1; }
 };
 
 /**
@@ -500,7 +500,7 @@ struct enumerate_iterator {
 
 	value_type operator*() { return {*it, idx}; }
 
-	enumerate_iterator& operator++() {
+	enumerate_iterator& operator++() & {
 		++it;
 		++idx;
 		return *this;
@@ -546,15 +546,15 @@ struct enumerate_t<Range, void> {
 	using nested_const_iterator = typename range_t::const_iterator;
 	using const_iterator = enumerate_iterator<nested_const_iterator>;
 
-	const_iterator begin() const noexcept(noexcept(r.cbegin())) {
+	const_iterator begin() const& noexcept(noexcept(r.cbegin())) {
 		return {r.cbegin(), 0};
 	}
-	iterator begin() noexcept(noexcept(r.begin())) { return {r.begin(), 0}; }
+	iterator begin() & noexcept(noexcept(r.begin())) { return {r.begin(), 0}; }
 
-	const_iterator end() const noexcept(noexcept(r.cend())) {
+	const_iterator end() const& noexcept(noexcept(r.cend())) {
 		return {r.cend(), -std::size_t{1}};
 	}
-	end_iterator end() noexcept(noexcept(r.end())) {
+	end_iterator end() & noexcept(noexcept(r.end())) {
 		return {r.end(), -std::size_t{1}};
 	}
 };
@@ -565,9 +565,9 @@ struct enumerate_t {
 	using iterator = enumerate_iterator<nested_iterator>;
 	using end_iterator = enumerate_iterator<EndIt>;
 
-	iterator begin() const noexcept { return {r_begin, 0}; }
+	iterator begin() const& noexcept { return {r_begin, 0}; }
 
-	end_iterator end() const noexcept { return {r_end, -std::size_t{1}}; }
+	end_iterator end() const& noexcept { return {r_end, -std::size_t{1}}; }
 
 	It r_begin;
 	EndIt r_end;
@@ -661,9 +661,9 @@ class enumeration {
 	}
 
  private:
-	void set(T* t) { source = t; }
+	void set(T* t) & { source = t; }
 
-	void advance() noexcept {
+	void advance() & noexcept {
 		++idx;
 		source = detail::get_magic_ptr<T>();
 		local = std::nullopt;
@@ -680,7 +680,7 @@ class enumeration {
 
 namespace std {
 #if defined(__clang__)
-    // Fix: https://github.com/nlohmann/json/issues/1401
+    // Fix from: https://github.com/nlohmann/json/issues/1401
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wmismatched-tags"
 #endif
@@ -812,13 +812,13 @@ class enumerator_iterator {
 		}
 		return curr_;
 	}
-	enumerator_iterator& operator++() {
+	enumerator_iterator& operator++() & {
 		curr_.advance();
 		captured = false;
 		++it_;
 		return *this;
 	}
-	enumerator_iterator operator++(int) {
+	enumerator_iterator operator++(int) & {
 		curr_.advance();
 		captured = false;
 		return {detail::force_copy_tag{}, curr_.idx, it_++};
@@ -859,13 +859,13 @@ class enumerator_t<Range, void> {
 	using nested_const_iterator = typename range_t::const_iterator;
 	using const_iterator = enumerator_iterator<nested_const_iterator>;
 
-	const_iterator begin() const noexcept(noexcept(r.cbegin())) {
+	const_iterator begin() const& noexcept(noexcept(r.cbegin())) {
 		return r.cbegin();
 	}
-	iterator begin() noexcept(noexcept(r.begin())) { return r.begin(); }
+	iterator begin() & noexcept(noexcept(r.begin())) { return r.begin(); }
 
-	const_iterator end() const noexcept(noexcept(r.cend())) { return r.cend(); }
-	end_iterator end() noexcept(noexcept(r.end())) { return r.end(); }
+	const_iterator end() const & noexcept(noexcept(r.cend())) { return r.cend(); }
+	end_iterator end() & noexcept(noexcept(r.end())) { return r.end(); }
 };
 
 template <typename It, typename EndIt>
@@ -875,9 +875,9 @@ class enumerator_t {
 	using iterator = enumerator_iterator<nested_iterator>;
 	using end_iterator = enumerator_iterator<EndIt>;
 
-	iterator begin() const noexcept { return {r_begin}; }
+	iterator begin() const& noexcept { return {r_begin}; }
 
-	end_iterator end() const noexcept { return {r_end}; }
+	end_iterator end() const& noexcept { return {r_end}; }
 
 	It r_begin;
 	EndIt r_end;

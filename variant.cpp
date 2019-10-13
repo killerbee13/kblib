@@ -1,4 +1,5 @@
 #include "catch.hpp"
+#include <chrono>
 #include <iostream>
 
 #include "kblib/variant.h"
@@ -20,10 +21,28 @@ TEST_CASE("visit") {
 	             [](const std::string&) { REQUIRE(false); });
 
 	// Pattern-matching-like syntax:
-	kblib::visit(var)
-	      ([](std::monostate) { REQUIRE(false); },
-	       [](int) { REQUIRE(true); },
-	       [](const std::string&) { REQUIRE(false); });
+	kblib::visit(var)([](std::monostate) { REQUIRE(false); },
+	                  [](int) { REQUIRE(true); },
+	                  [](const std::string&) { REQUIRE(false); });
+}
+
+TEST_CASE("visit_indexed") {
+	std::variant<std::monostate, int, std::string> var(std::in_place_type<int>,
+	                                                   10);
+	kblib::visit_indexed(var, [](auto constant, auto val) {
+		REQUIRE(constant == 1);
+		static_assert(
+		    std::is_same_v<decltype(val),
+		                   std::variant_alternative_t<constant, decltype(var)>>);
+	});
+}
+
+TEST_CASE("variant_cast") {
+	std::variant<int, std::string> from(std::in_place_type<int>, 10);
+	auto to =
+	    kblib::variant_cast<std::variant<std::monostate, int, std::string>>(
+	        from);
+	REQUIRE(to.index() == 1);
 }
 
 struct good_base {
@@ -120,9 +139,8 @@ TEST_CASE("poly_obj") {
 	}
 
 	SECTION("non-virtual destructor") {
-		// Warning issued because of non-virtual destructor call
-		kblib::poly_obj<bad_base1> o3, o4{std::in_place};
-		// unsafe - no virtual destructor
+		// static_assertion fails because of non-virtual destructor
+		// kblib::poly_obj<bad_base1> o3, o4{std::in_place};
 		// o3 = kblib::poly_obj<bad_base1>::make<bad_derived1>();
 	}
 
@@ -203,6 +221,262 @@ TEST_CASE("poly_obj") {
 		// pointer
 		auto o = kblib::make_poly_obj<small_base, big_derived>();
 	}
+}
+
+struct Base {
+	virtual unsigned operator()() const noexcept = 0;
+	Base() = default;
+	Base(const Base&) {}
+	virtual ~Base() = default;
+};
+
+struct Derived1 final : Base {
+	unsigned operator()() const noexcept override { return member; }
+	unsigned member;
+	Derived1(unsigned i) : member(i) {}
+};
+
+struct Derived2 final : Base {
+	unsigned operator()() const noexcept override { return member * 2; }
+	unsigned member;
+	Derived2(unsigned i) : member(i) {}
+};
+
+struct Derived3 final : Base {
+	unsigned operator()() const noexcept override { return member / 2; }
+	unsigned member;
+	Derived3(unsigned i) : member(i) {}
+};
+
+struct Derived4 final : Base {
+	unsigned operator()() const noexcept override { return ~member; }
+	unsigned member;
+	Derived4(unsigned i) : member(i) {}
+};
+
+TEST_CASE("poly_obj performance") {
+	const unsigned count = 1000000;
+
+	/*
+	 * Averages of 5 runes (Release / Debug):
+	 *
+	 * baseline (non-virtual):	  4 /  35 ns
+	 * std::unique_ptr:       	 12 /  77 ns
+	 * std::function:         	 12 / 102 ns
+	 * std::variant (visit):  	 32 / 246 ns
+	 * std::variant (get_if): 	  9 / 169 ns
+	 * std::variant (switch): 	  9 / 158 ns
+	 * kblib::poly_obj:       	  8 /  91 ns
+	 *
+	 * Conclusions:
+	 *
+	 * std::visit is extremely slow for some reason. std::variant is slow in
+	 * general in debug. std::unique_ptr is faster in debug than kblib::poly_obj,
+	 * but kblib::poly_obj optimizes better than it, most likely due to the
+	 * data locality.
+	 *
+	 */
+
+	SECTION("baseline") {
+		std::vector<Derived1> d1;
+		std::vector<Derived2> d2;
+		std::vector<Derived3> d3;
+		std::vector<Derived4> d4;
+		kblib::FNV_hash<unsigned> h;
+		for (auto i : kblib::range(count)) {
+			auto v = h(i);
+			switch (v % 4) {
+			case 0:
+				d1.push_back(v);
+				break;
+			case 1:
+				d2.push_back(v);
+				break;
+			case 2:
+				d3.push_back(v);
+				break;
+			case 3:
+				d4.push_back(v);
+			}
+		}
+
+		const auto start = std::chrono::steady_clock::now();
+		unsigned accum{};
+		for (const auto& x : d1) {
+			accum += x();
+		}
+		for (const auto& x : d2) {
+			accum += x();
+		}
+		for (const auto& x : d3) {
+			accum += x();
+		}
+		for (const auto& x : d4) {
+			accum += x();
+		}
+		const auto end = std::chrono::steady_clock::now();
+		auto time = (end - start) / count;
+		std::cout << "baseline (non-virtual):\t" << time.count() << " ns\n";
+	}
+	SECTION("unique pointer") {
+		std::vector<std::unique_ptr<Base>> d;
+		kblib::FNV_hash<unsigned> h;
+		for (auto i : kblib::range(count)) {
+			auto v = h(i);
+			switch (v % 4) {
+			case 0:
+				d.push_back(std::make_unique<Derived1>(v));
+				break;
+			case 1:
+				d.push_back(std::make_unique<Derived2>(v));
+				break;
+			case 2:
+				d.push_back(std::make_unique<Derived3>(v));
+				break;
+			case 3:
+				d.push_back(std::make_unique<Derived4>(v));
+			}
+		}
+
+		const auto start = std::chrono::steady_clock::now();
+		unsigned accum{};
+		for (const auto& x : d) {
+			accum += (*x)();
+		}
+		const auto end = std::chrono::steady_clock::now();
+		auto time = (end - start) / count;
+		std::cout << "unique pointer:        \t" << time.count() << " ns\n";
+	}
+	SECTION("std::function") {
+		std::vector<std::function<unsigned()>> d;
+		kblib::FNV_hash<unsigned> h;
+		for (auto i : kblib::range(count)) {
+			auto v = h(i);
+			switch (v % 4) {
+			case 0:
+				d.push_back(Derived1(v));
+				break;
+			case 1:
+				d.push_back(Derived2(v));
+				break;
+			case 2:
+				d.push_back(Derived3(v));
+				break;
+			case 3:
+				d.push_back(Derived4(v));
+			}
+		}
+
+		const auto start = std::chrono::steady_clock::now();
+		unsigned accum{};
+		for (const auto& x : d) {
+			accum += x();
+		}
+		const auto end = std::chrono::steady_clock::now();
+		auto time = (end - start) / count;
+		std::cout << "std::function:         \t" << time.count() << " ns\n";
+	}
+	SECTION("std::variant") {
+		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4>> d;
+		kblib::FNV_hash<unsigned> h;
+		for (auto i : kblib::range(count)) {
+			auto v = h(i);
+			switch (v % 4) {
+			case 0:
+				d.push_back(Derived1(v));
+				break;
+			case 1:
+				d.push_back(Derived2(v));
+				break;
+			case 2:
+				d.push_back(Derived3(v));
+				break;
+			case 3:
+				d.push_back(Derived4(v));
+			}
+		}
+		{
+			const auto start = std::chrono::steady_clock::now();
+			unsigned accum{};
+			for (const auto& x : d) {
+				accum += std::visit([](const auto& v) { return v(); }, x);
+			}
+			const auto end = std::chrono::steady_clock::now();
+			auto time = (end - start) / count;
+			std::cout << "std::variant (visit):  \t" << time.count() << " ns\n";
+		}
+		{
+			const auto start = std::chrono::steady_clock::now();
+			unsigned accum{};
+			for (const auto& x : d) {
+				if (auto* p = std::get_if<0>(&x)) {
+					accum += (*p)();
+				} else if (auto* p = std::get_if<1>(&x)) {
+					accum += (*p)();
+				} else if (auto* p = std::get_if<2>(&x)) {
+					accum += (*p)();
+				} else if (auto* p = std::get_if<3>(&x)) {
+					accum += (*p)();
+				}
+			}
+			const auto end = std::chrono::steady_clock::now();
+			auto time = (end - start) / count;
+			std::cout << "std::variant (get_if): \t" << time.count() << " ns\n";
+		}
+		{
+			const auto start = std::chrono::steady_clock::now();
+			unsigned accum{};
+			for (const auto& x : d) {
+				switch (x.index()) {
+				case 0:
+					accum += std::get<0>(x)();
+					break;
+				case 1:
+					accum += std::get<1>(x)();
+					break;
+				case 2:
+					accum += std::get<2>(x)();
+					break;
+				case 3:
+					accum += std::get<3>(x)();
+				}
+			}
+			const auto end = std::chrono::steady_clock::now();
+			auto time = (end - start) / count;
+			std::cout << "std::variant (switch): \t" << time.count() << " ns\n";
+		}
+	}
+	SECTION("poly_obj") {
+		using poly_t = kblib::poly_obj<Base, sizeof(Derived1), int>;
+		std::vector<poly_t> d;
+		kblib::FNV_hash<unsigned> h;
+		for (auto i : kblib::range(count)) {
+			auto v = h(i);
+			switch (v % 4) {
+			case 0:
+				d.push_back(poly_t::make<Derived1>(v));
+				break;
+			case 1:
+				d.push_back(poly_t::make<Derived2>(v));
+				break;
+			case 2:
+				d.push_back(poly_t::make<Derived3>(v));
+				break;
+			case 3:
+				d.push_back(poly_t::make<Derived4>(v));
+			}
+		}
+
+		const auto start = std::chrono::steady_clock::now();
+		unsigned accum{};
+		for (const auto& x : d) {
+			accum += x();
+		}
+		const auto end = std::chrono::steady_clock::now();
+		auto time = (end - start) / count;
+		std::cout << "kblib::poly_obj:       \t" << time.count() << " ns\n";
+	}
+	// std::cout<<denom_of<std::chrono::steady_clock::period><<'\n';
 }
 
 #endif

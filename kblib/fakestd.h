@@ -274,6 +274,8 @@ struct void_if<true> {
 template <bool b>
 using void_if_t = typename void_if<b>::type;
 
+using fakestd::void_t;
+
 template <typename... Ts>
 struct unary_identity {};
 
@@ -291,7 +293,7 @@ template <typename T, typename = void>
 struct metafunction_success : std::false_type {};
 
 template <typename T>
-struct metafunction_success<T, fakestd::void_t<typename T::type>>
+struct metafunction_success<T, void_t<typename T::type>>
     : std::true_type {};
 
 template <typename... T>
@@ -370,7 +372,7 @@ struct is_tuple_like {
 
 template <typename T>
 struct is_tuple_like<T,
-                     fakestd::void_t<typename std::tuple_element<0, T>::type>> {
+                     void_t<typename std::tuple_element<0, T>::type>> {
 	constexpr static bool value = true;
 };
 
@@ -406,7 +408,7 @@ swap(T (&a)[N],
 namespace detail {
 
    template <typename... Ts>
-   void ignore(Ts&&...) noexcept {}
+   constexpr void ignore(Ts&&...) noexcept {}
 
 	template <typename T, std::size_t... Is>
 	constexpr void
@@ -573,7 +575,7 @@ template <typename T, typename = void>
 struct value_detected : std::false_type {};
 
 template <typename T>
-struct value_detected<T, fakestd::void_t<typename T::value_type>>
+struct value_detected<T, void_t<typename T::value_type>>
     : std::true_type {};
 
 template <typename T>
@@ -583,7 +585,7 @@ template <typename T, typename = void>
 struct key_detected : std::false_type {};
 
 template <typename T>
-struct key_detected<T, fakestd::void_t<typename T::key_type>> : std::true_type {
+struct key_detected<T, void_t<typename T::key_type>> : std::true_type {
 };
 
 template <typename T>
@@ -593,7 +595,7 @@ template <typename T, typename = void>
 struct mapped_detected : std::false_type {};
 
 template <typename T>
-struct mapped_detected<T, fakestd::void_t<typename T::mapped_type>>
+struct mapped_detected<T, void_t<typename T::mapped_type>>
     : std::true_type {};
 
 template <typename T>
@@ -688,8 +690,8 @@ class cond_ptr {
 	cond_ptr(const cond_ptr&) noexcept = delete;
 	cond_ptr(cond_ptr&&) noexcept = default;
 
-	cond_ptr& operator=(const cond_ptr&) noexcept = delete;
-	cond_ptr& operator=(cond_ptr&& rhs) noexcept {
+	cond_ptr& operator=(const cond_ptr&) & noexcept = delete;
+	cond_ptr& operator=(cond_ptr&& rhs) & noexcept {
 		if (owns_) {
 			delete ptr_;
 		}
@@ -703,17 +705,17 @@ class cond_ptr {
 		}
 	}
 
-	KBLIB_NODISCARD cond_ptr weak() const noexcept {
+	KBLIB_NODISCARD cond_ptr weak() const& noexcept {
 		return cond_ptr{ptr_, false};
 	}
 
 	bool owns() const noexcept { return owns_; }
-	KBLIB_NODISCARD T* release() noexcept {
+	KBLIB_NODISCARD T* release() & noexcept {
 		owns_ = false;
 		return std::exchange(ptr_, nullptr);
 	}
 
-	void reset(T* p = nullptr, bool owner = false) noexcept {
+	void reset(T* p = nullptr, bool owner = false) & noexcept {
 		if (owns_) {
 			delete ptr_;
 		}
@@ -726,13 +728,13 @@ class cond_ptr {
 		std::swap(owns_, other.owns_);
 	}
 
-	KBLIB_NODISCARD T* get() const noexcept { return ptr_; }
+	KBLIB_NODISCARD T* get() const& noexcept { return ptr_; }
 
 	explicit operator bool() const noexcept { return ptr_; }
 
-	KBLIB_NODISCARD T& operator*() const noexcept { return *ptr_; }
+	KBLIB_NODISCARD T& operator*() const& noexcept { return *ptr_; }
 
-	KBLIB_NODISCARD T* operator->() const noexcept { return ptr_; }
+	KBLIB_NODISCARD T* operator->() const& noexcept { return ptr_; }
 
  private:
 	T* ptr_ = nullptr;
@@ -746,7 +748,7 @@ namespace detail {
 	};
 
 	template <typename D, typename T>
-	struct pointer<D, T, fakestd::void_t<typename D::pointer>> {
+	struct pointer<D, T, void_t<typename D::pointer>> {
 		using type = typename D::pointer;
 	};
 } // namespace detail
@@ -768,7 +770,7 @@ class heap_value {
 	heap_value(const heap_value& u) : p{(u.p ? (new T(*u.p)) : nullptr)} {}
 	heap_value(heap_value&& u) : p{std::exchange(u.p, nullptr)} {}
 
-	heap_value& operator=(const heap_value& u) {
+	heap_value& operator=(const heap_value& u) & {
 		if (!u) {
 			reset();
 		} else {
@@ -781,23 +783,23 @@ class heap_value {
 		return *this;
 	}
 
-	heap_value& operator=(heap_value&& u) {
+	heap_value& operator=(heap_value&& u) & {
 		reset();
 		p = std::exchange(u.p, nullptr);
 		return *this;
 	}
 
-	void reset() {
+	void reset() & {
 		delete p;
 		p = nullptr;
 		return;
 	}
 
-	KBLIB_NODISCARD pointer get() const noexcept { return p; }
+	KBLIB_NODISCARD pointer get() const& noexcept { return p; }
 
-	KBLIB_NODISCARD operator bool() const noexcept { return p != nullptr; }
+	KBLIB_NODISCARD operator bool() const& noexcept { return p != nullptr; }
 
-	reference operator*() const noexcept { return *p; }
+	reference operator*() const& noexcept { return *p; }
 
 	~heap_value() { delete p; }
 

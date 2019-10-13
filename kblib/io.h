@@ -50,6 +50,10 @@ std::optional<D> get_file_contents(const string& filename) {
  * @brief Read the entire contents of a file into a container, such as
  * std::string or std::vector<char>.
  *
+ * This overload implements support for non-contiguous containers, such as
+ * std::deque<char>. Note that it will be less efficient than for contiguous
+ * containers.
+ *
  * @param filename The filename to open.
  * @tparam D A non-contiguous sequence container, which will be created and
  * filled with the contents of the file to be read.

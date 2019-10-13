@@ -55,6 +55,53 @@ constexpr auto flip(BinaryOperation op) {
 	};
 }
 
+template <typename Integral, typename CharT>
+constexpr void to_bytes_le(Integral ival,
+                           CharT (&dest)[sizeof(Integral)]) noexcept {
+	static_assert(std::is_integral<CharT>::value && sizeof(CharT) == 1 &&
+	                  !std::is_same<CharT, bool>::value,
+	              "CharT must be a char-like type.");
+	typename std::make_signed<Integral>::type val = ival;
+	for (int byte = 0; byte != sizeof(Integral); ++byte) {
+		dest[byte] = (CharT)(val >> (CHAR_BIT * byte));
+	}
+}
+
+template <typename Integral, typename CharT>
+constexpr void to_bytes_be(Integral ival,
+                           CharT (&dest)[sizeof(Integral)]) noexcept {
+	static_assert(std::is_integral<CharT>::value && sizeof(CharT) == 1 &&
+	                  !std::is_same<CharT, bool>::value,
+	              "CharT must be a char-like type.");
+	typename std::make_signed<Integral>::type val = ival;
+	for (int byte = 0; byte != sizeof(Integral); ++byte) {
+		dest[(sizeof(Integral) - 1) - byte] = (CharT)(val >> (CHAR_BIT * byte));
+	}
+}
+
+template <typename Integral, typename CharT>
+constexpr void to_bytes(Integral val,
+                        CharT (&dest)[sizeof(Integral)]) noexcept {
+	static_assert(std::is_integral<CharT>::value && sizeof(CharT) == 1 &&
+	                  !std::is_same<CharT, bool>::value,
+	              "CharT must be a char-like type.");
+#ifndef _MSC_VER
+	static_assert(BYTE_ORDER == LITTLE_ENDIAN || BYTE_ORDER == BIG_ENDIAN,
+	              "Unknown byte order.");
+	if (BYTE_ORDER == LITTLE_ENDIAN) {
+		to_bytes_le(val, dest);
+	} else if (BYTE_ORDER == BIG_ENDIAN) {
+		to_bytes_be(val, dest);
+	}
+#else
+	// Assume Windows is little-endian, because there's no easy way to detect its
+	// byte order. And while this may change the results of integral hashes, it
+	// will not lead to any significant problems and only a minor runtime
+	// overhead.
+	to_bytes_le(val, dest);
+#endif
+}
+
 namespace fnv {
 
    /**
@@ -207,7 +254,7 @@ inline namespace literals {
 	 */
 	constexpr std::uint32_t operator""_fnv32(const char* str,
 	                                         std::size_t length) noexcept {
-		return FNV32a_s(str, length);
+		return FNVa_s<std::uint32_t>(str, length);
 	}
 
 	/**
@@ -216,6 +263,18 @@ inline namespace literals {
 	constexpr std::uint64_t operator""_fnv64(const char* str,
 	                                         std::size_t length) noexcept {
 		return FNVa_s<std::uint64_t>(str, length);
+	}
+
+	constexpr std::uint32_t operator""_fnv32(unsigned long long val) {
+		unsigned char bytes[sizeof(unsigned long long)]{};
+		to_bytes(val, bytes);
+		return FNVa_a<std::uint32_t>(bytes);
+	}
+
+	constexpr std::uint64_t operator""_fnv64(unsigned long long val) {
+		unsigned char bytes[sizeof(unsigned long long)]{};
+		to_bytes(val, bytes);
+		return FNVa_a<std::uint64_t>(bytes);
 	}
 
 } // namespace literals
@@ -307,48 +366,31 @@ struct FNV_hash<unsigned char, void> {
 };
 
 /**
- * @brief Hasher for short
+ * @brief Hasher for any integral type not explicitly mentioned above.
  *
  */
-template <>
-struct FNV_hash<short, void> {
+template <typename T>
+struct FNV_hash<T, void_if_t<std::is_integral<T>::value>> {
 	constexpr std::size_t
-	operator()(short key,
+	operator()(T key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
 	    noexcept {
-		static_assert(sizeof(short) == 2);
-		unsigned char tmp[2] = {static_cast<unsigned char>(key & 255u),
-		                        static_cast<unsigned char>(key >> 8)};
+		unsigned char tmp[sizeof(T)]{};
+		to_bytes(key, tmp);
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
 };
 
 /**
- * @brief Hasher for unsigned short
- *
- */
-template <>
-struct FNV_hash<unsigned short, void> {
-	constexpr std::size_t
-	operator()(unsigned short key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
-		static_assert(sizeof(unsigned short) == 2);
-		unsigned char tmp[2] = {static_cast<unsigned char>(key & 255u),
-		                        static_cast<unsigned char>(key >> 8)};
-		return FNVa_a<std::size_t>(tmp, offset);
-	}
-};
-
-/**
- * @brief Hasher for any trivial type.
+ * @brief Hasher for any non-integral trivial type.
  *
  * @note Unfortunately, this specialization cannot be constexpr until C++20
  * brings std::bit_cast.
  *
  */
 template <typename T>
-struct FNV_hash<T, void_if_t<std::is_trivial<T>::value>> {
+struct FNV_hash<
+    T, void_if_t<std::is_trivial<T>::value && !std::is_integral<T>::value>> {
 	constexpr std::size_t
 	operator()(T key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
@@ -364,7 +406,7 @@ struct FNV_hash<T, void_if_t<std::is_trivial<T>::value>> {
  *
  */
 template <typename Container>
-struct FNV_hash<Container, fakestd::void_t<typename Container::value_type>> {
+struct FNV_hash<Container, void_t<typename Container::value_type>> {
 	constexpr std::size_t
 	operator()(const Container& key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
@@ -457,7 +499,8 @@ namespace detail {
 	 * @return int
 	 */
    constexpr int
-	filg2(const std::bitset<std::numeric_limits<std::uintmax_t>::digits> val) {
+	filg2(const std::bitset<std::numeric_limits<std::uintmax_t>::digits>
+	          val) noexcept {
 		for (int i : range(to_signed(val.size() - 1), std::ptrdiff_t{0}, -1)) {
 			if (val[i])
 				return i;
@@ -501,12 +544,13 @@ using int_smallest_t = typename int_smallest<I>::type;
  * order.
  */
 template <typename Container>
-Container arraycat(Container A, Container&& B) {
+Container arraycat(Container A,
+                   Container&& B) noexcept(noexcept(A.insert(A.end(), B.begin(),
+                                                             B.end()))) {
 	A.insert(A.end(), B.begin(), B.end());
 	return A;
 }
 
-template <typename T>
 /**
  * @brief Index an array literal without naming its type
  *
@@ -516,6 +560,7 @@ template <typename T>
  *
  * @param a The array literal to index into.
  */
+template <typename T>
 constexpr auto a(const std::initializer_list<T>& a) {
 	return a.begin();
 }

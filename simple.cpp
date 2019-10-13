@@ -21,6 +21,9 @@ TEST_CASE("FNV_hash") {
 //	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,
 //	                       std::hash<std::wstring>>>
 //	    std_hash;
+	using namespace kblib::literals;
+	kblib::FNV_hash<unsigned long long> h_i;
+	static_assert(3452452_fnv64 == h_i(3452452ull));
 }
 
 TEST_CASE("range comparison") {

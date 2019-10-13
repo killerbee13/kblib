@@ -151,14 +151,14 @@ namespace detail {
 	template <typename C>
 	constexpr bool is_resizable_v = is_resizable<C>::value;
 
-	template <typename C, typename = fakestd::void_t<>>
+	template <typename C, typename = void>
 	struct has_reserve {
 		constexpr static bool value = false;
 	};
 
 	template <typename C>
 	struct has_reserve<C,
-	                   fakestd::void_t<decltype(std::declval<C&>.reserve(0))>> {
+	                   void_t<decltype(std::declval<C&>.reserve(0))>> {
 	   constexpr static bool value = true;
    };
 	/**
@@ -198,7 +198,7 @@ template <typename C, typename = void>
 struct is_contiguous : std::false_type {};
 
 template <typename C>
-struct is_contiguous<C, fakestd::void_t<decltype(std::declval<C&>().data())>>
+struct is_contiguous<C, void_t<decltype(std::declval<C&>().data())>>
     : std::true_type {};
 
 template <typename C>

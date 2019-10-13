@@ -54,13 +54,11 @@ struct exists_t {
 };
 
 template <typename M, typename K>
-auto get_check(M&& m, const K& key) noexcept(noexcept(m.find(key)) &&
-                                             noexcept(m.find(key) != m.end()))
+auto get_check(M&& m, const K& key) noexcept(noexcept(m.find(key) != m.end()))
     -> exists_t<decltype(m.find(key))> {
 	auto it = m.find(key);
 	return {it, it != m.end()};
 }
-
 
 /**
  * @brief std::vector::shrink_to_fit is non-binding, which means that there is
@@ -78,16 +76,17 @@ auto get_check(M&& m, const K& key) noexcept(noexcept(m.find(key)) &&
  */
 template <typename V>
 void force_shrink_to_fit(V& vec) {
-	 if constexpr (std::is_nothrow_move_constructible<typename V::value_type>::value) {
-		 V tmp;
-		 tmp.reserve(vec.size());
-		 std::move(vec.begin(), vec.end(), std::back_inserter(tmp));
-		 vec = std::move(tmp);
-	 } else {
-		 V tmp = vec;
-		 vec = std::move(tmp);
-	 }
-	 return;
+	if constexpr (std::is_nothrow_move_constructible<
+	                  typename V::value_type>::value) {
+		V tmp;
+		tmp.reserve(vec.size());
+		std::move(vec.begin(), vec.end(), std::back_inserter(tmp));
+		vec = std::move(tmp);
+	} else {
+		V tmp = vec;
+		vec = std::move(tmp);
+	}
+	return;
 }
 
 template <typename C, std::size_t size>
@@ -99,9 +98,9 @@ struct construct_with_size {
 
 namespace std {
 #if defined(__clang__)
-    // Because apparently -Wno-mismatched-tags doesn't work
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wmismatched-tags"
+// Because apparently -Wno-mismatched-tags doesn't work
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmismatched-tags"
 #endif
 
 template <typename C, std::size_t size>
@@ -109,7 +108,7 @@ struct tuple_size<::kblib::construct_with_size<C, size>>
     : public integral_constant<size_t, size> {};
 
 #if defined(__clang__)
-    #pragma clang diagnostic pop
+#pragma clang diagnostic pop
 #endif
 } // namespace std
 
@@ -194,8 +193,10 @@ class stack {
 
 	// Element access
 
-	reference top() noexcept(noexcept(backing.back())) { return backing.back(); }
-	const_reference top() const noexcept(noexcept(backing.back())) {
+	reference top() & noexcept(noexcept(backing.back())) {
+		return backing.back();
+	}
+	const_reference top() const& noexcept(noexcept(backing.back())) {
 		return backing.back();
 	}
 
@@ -210,11 +211,12 @@ class stack {
 	void push(value_type&& value) { backing.push_back(std::move(value)); }
 
 	template <typename... Args>
-	decltype(auto) emplace(Args&&... args) {
+	decltype(auto) emplace(Args&&... args) & {
 		return backing.emplace_back(std::forward<Args>(args)...);
 	}
 
 	void pop() { backing.pop_back(); }
+	void clear() { backing.clear(); }
 
 	void swap(stack& other) noexcept(
 	    fakestd::is_nothrow_swappable<Container>::value) {
@@ -224,8 +226,10 @@ class stack {
 
 	// Container access
 
-	const container_type& container() const { return backing; }
-	container_type& container() { return backing; }
+	const container_type& container() const& { return backing; }
+	container_type& container() & { return backing; }
+
+	container_type container() && { return std::move(backing); }
 
  private:
 	container_type backing;

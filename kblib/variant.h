@@ -53,6 +53,19 @@ To lexical_coerce(const std::variant<Ts...>& v) {
 	return std::visit([](const auto& t) { return lexical_cast<To>(t); }, v);
 }
 
+/**
+ * @brief Helper class for std::visiting a std::variant.
+ *
+ * When constructed from a set of lambdas or functors, corrals all of them into
+ * a single overload set, suitable for std::visit.
+ */
+template <typename... Ts>
+struct visitor : Ts... {
+	using Ts::operator()...;
+};
+template <typename... Ts>
+visitor(Ts...)->visitor<Ts...>;
+
 namespace detail {
 
    /**
@@ -83,7 +96,40 @@ namespace detail {
 	template <typename T>
 	using tuple_type_t = typename tuple_type<T>::type;
 
+	/**
+	 * @brief Generates an array of function pointers which will unwrap the
+	 * variant and pass the index to the function.
+	 */
+	template <typename Variant, typename F, std::size_t... Is>
+	auto indexed_visitor_impl(std::index_sequence<Is...>) {
+		return std::array{+[](Variant&& variant, F&& f) {
+			return std::forward<F>(f)(
+			    std::integral_constant<std::size_t, Is>{},
+			    std::get<Is>(std::forward<Variant>(variant)));
+		}...};
+	}
+
 } // namespace detail
+
+/**
+ * @brief Visit a variant, but pass the index (as an integral_constant) to the
+ * visitor. This allows for a visitor of a variant with duplicated types to
+ * maintain index information.
+ *
+ * @param variant The variant to visit.
+ * @param fs Any number of functors, which taken together as an overload set can
+ * be unambiguously called with (I, A),
+ * for I = std::integral_constant<std::size_t, variant.index()>
+ * and A = std::get<variant.index()>(variant).
+ */
+template <typename Variant, typename... Fs>
+decltype(auto) visit_indexed(Variant&& variant, Fs&&... fs) {
+	using visitor_t = decltype(visitor{std::forward<Fs>(fs)...});
+	return detail::indexed_visitor_impl<Variant, visitor_t>(
+	    std::make_index_sequence<
+	        std::variant_size_v<std::decay_t<Variant>>>())[variant.index()](
+	    std::forward<Variant>(variant), visitor{std::forward<Fs>(fs)...});
+}
 
 /**
  * @brief Promotes an input variant to a super-variant. That is, one which
@@ -97,23 +143,16 @@ To variant_cast(From&& v) {
 	    detail::contains_types_v<detail::tuple_type_t<std::decay_t<To>>,
 	                             detail::tuple_type_t<std::decay_t<From>>>,
 	    "To must include all types in From");
-	return std::visit(
-	    [](auto&& x) -> To { return std::forward<decltype(x)>(x); },
-	    std::forward<From>(v));
-}
 
-/**
- * @brief Helper class for std::visiting a std::variant.
- *
- * When constructed from a set of lambdas or functors, corrals all of them into
- * a single overload set, suitable for std::visit.
- */
-template <typename... Ts>
-struct visitor : Ts... {
-	using Ts::operator()...;
-};
-template <typename... Ts>
-visitor(Ts...)->visitor<Ts...>;
+	return visit_indexed(std::forward<From>(v), [](auto constant, auto&& x) {
+		return To(std::in_place_type<
+		              std::variant_alternative_t<constant, std::decay_t<From>>>,
+		          std::forward<decltype(x)>(x));
+	});
+
+	//	return std::visit([](auto&& x) { return std::forward<decltype(x)>(x); },
+	//	                  std::forward<From>(v));
+}
 
 /**
  * @brief Wraps std::visit to provide an interface taking one variant and any
@@ -123,7 +162,7 @@ visitor(Ts...)->visitor<Ts...>;
  * readability.
  *
  * @param v The variant to visit over.
- * @param ts Any number of functors, which taken together as an overload set can
+ * @param fs Any number of functors, which taken together as an overload set can
  * be unambiguously called with any type in V.
  */
 template <typename V, typename F, typename... Fs>
@@ -367,6 +406,11 @@ class poly_obj
  public:
 	static_assert(Capacity >= sizeof(Obj),
 	              "Capacity must be large enough for the object type.");
+	static_assert(
+	    std::has_virtual_destructor_v<Obj>,
+	    "Obj must have a virtual destructor to be used as a base class object.");
+	static_assert(!std::is_array_v<Obj>,
+	              "poly_obj of array type is disallowed.");
 	/**
 	 * @brief The default constructor does not construct any contained object.
 	 */
@@ -462,8 +506,8 @@ class poly_obj
 	poly_obj& operator=(poly_obj&& other) & {
 		clear();
 		static_cast<ops_t&>(*this) = other;
-		value = static_cast<Obj*>(
-		    this->move(data, static_cast<void*>(other.value)));
+		value =
+		    static_cast<Obj*>(this->move(data, static_cast<void*>(other.value)));
 		return *this;
 	}
 
@@ -507,7 +551,12 @@ class poly_obj
 	 *
 	 * @return Obj& A reference to the contained object.
 	 */
-	Obj& operator*() & noexcept { return *value; }
+	Obj& operator*() & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return *value;
+	}
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -518,7 +567,12 @@ class poly_obj
 	 *
 	 * @return const Obj& A reference to the contained object.
 	 */
-	const Obj& operator*() const& noexcept { return *value; }
+	const Obj& operator*() const& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return *value;
+	}
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -531,6 +585,9 @@ class poly_obj
 	 */
 	Obj&& operator*() &&
 	    noexcept(std::is_nothrow_move_constructible<Obj>::value) {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
 		return std::move(*value);
 	}
 	/**
@@ -539,13 +596,18 @@ class poly_obj
 	 * Returns a reference to the contained object, if it exists. If it does not
 	 * exist, the behavior is undefined. Notably, the constness and reference
 	 * qualification of *this carries over to the contained object, because it is
-	 * contained inside of *this. This particular overload is not expected to be
-	 * very useful, but it is provided for completeness.
+	 * contained inside of *this.
+	 *
+	 * This particular overload is not expected to be very useful, but it is
+	 * provided for completeness.
 	 *
 	 * @return const Obj&& A const rvalue reference to the contained object.
 	 */
 	const Obj&& operator*() const&& noexcept(
 	    std::is_nothrow_move_constructible<Obj>::value) {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
 		return std::move(*value);
 	}
 
@@ -558,7 +620,12 @@ class poly_obj
 	 *
 	 * @return Obj* A pointer to the contained object.
 	 */
-	Obj* get() & noexcept { return value; }
+	Obj* get() & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return value;
+	}
 	/**
 	 * @brief Returns a pointer to the contained object.
 	 *
@@ -568,7 +635,12 @@ class poly_obj
 	 *
 	 * @return const Obj* A pointer to the contained object.
 	 */
-	const Obj* get() const& noexcept { return value; }
+	const Obj* get() const& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return value;
+	}
 
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -579,7 +651,12 @@ class poly_obj
 	 *
 	 * @return Obj* A pointer to the contained object.
 	 */
-	Obj* operator->() noexcept { return value; }
+	Obj* operator->() & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return value;
+	}
 	/**
 	 * @brief Returns a pointer to the contained object.
 	 *
@@ -589,7 +666,45 @@ class poly_obj
 	 *
 	 * @return const Obj* A pointer to the contained object.
 	 */
-	const Obj* operator->() const noexcept { return value; }
+	const Obj* operator->() const& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return value;
+	}
+
+	/**
+	 * @brief Invokes the container function object, if Obj is a callable type.
+	 *
+	 * Invokes the contained object, if it exists. If it does not exist, the
+	 * behavior is undefined.
+	 *
+	 * @param args The arguments to forward to the function.
+	 * @return std::invoke_result_t<const Obj&, Args&&...> The return value of
+	 * the function.
+	 */
+	template <typename... Args>
+	auto operator()(Args&&... args) noexcept(
+	    std::is_nothrow_invocable_v<Obj&, Args&&...>)
+	    -> std::invoke_result_t<Obj&, Args&&...> {
+		return std::invoke(**this, std::forward<Args>(args)...);
+	}
+	/**
+	 * @brief Invokes the container function object, if Obj is a callable type.
+	 *
+	 * Invokes the contained object, if it exists. If it does not exist, the
+	 * behavior is undefined.
+	 *
+	 * @param args The arguments to forward to the function.
+	 * @return std::invoke_result_t<const Obj&, Args&&...> The return value of
+	 * the function.
+	 */
+	template <typename... Args>
+	auto operator()(Args&&... args) const
+	    noexcept(std::is_nothrow_invocable_v<const Obj&, Args&&...>)
+	        -> std::invoke_result_t<const Obj&, Args&&...> {
+		return std::invoke(**this, std::forward<Args>(args)...);
+	}
 
 	/**
 	 * @brief Check if the poly_obj contains a value.
@@ -626,9 +741,11 @@ class poly_obj
 	      value(new (data) U(std::forward<Args>(args)...)) {}
 };
 
-template <typename T, typename D = T, std::size_t Capacity = sizeof(D), typename Traits = T, typename... Args>
+template <typename T, typename D = T, std::size_t Capacity = sizeof(D),
+          typename Traits = T, typename... Args>
 poly_obj<T, Capacity, Traits> make_poly_obj(Args&&... args) {
-	return poly_obj<T, Capacity, Traits>::template make<D>(std::forward<Args>(args)...);
+	return poly_obj<T, Capacity, Traits>::template make<D>(
+	    std::forward<Args>(args)...);
 }
 
 #endif // KBLIB_USE_CXX17

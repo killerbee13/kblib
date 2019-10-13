@@ -48,7 +48,7 @@ template <typename string = std::u32string>
 string toUTF32(const icu::UnicodeString& s) {
 	string res(s.countChar32(), '\0');
 	UErrorCode ec{U_ZERO_ERROR};
-	s.toUTF32(reinterpret_cast<UChar32*>(&res[0]), res.size(), ec);
+	s.toUTF32(&res[0], res.size(), ec);
 	if (U_FAILURE(ec)) {
 		throw ec;
 	}
