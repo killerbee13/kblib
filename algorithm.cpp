@@ -1,4 +1,5 @@
 #include "kblib/algorithm.h"
+#include "kblib/stats.h"
 #include "catch.hpp"
 
 #include <iostream>
@@ -36,29 +37,31 @@ TEST_CASE("general algorithms") {
 }
 
 template <typename T, std::size_t N>
-constexpr bool sort_test(std::array<T, N> val) noexcept {
-	std::array<T, N> out{};
+constexpr bool sort_test(kblib::trivial_array<T, N> val) noexcept {
+	kblib::trivial_array<T, N> out{};
 	kblib::insertion_sort_copy(val.begin(), val.end(), out.begin(), out.end());
 	kblib::insertion_sort(val.begin(), val.end());
 	return true;
 }
 
 TEST_CASE("sort") {
-	constexpr std::array<int, 7> input{{3, 7, 4, 3, 1, 9, 5}};
+	constexpr kblib::trivial_array<int, 7> input{{3, 7, 4, 3, 1, 9, 5}};
 	const auto goal = [&] {
 		auto copy = input;
 		std::sort(copy.begin(), copy.end());
 		return copy;
 	}();
 
-	[[maybe_unused]] auto print_arr = [&](auto c) {
+	[[gnu::unused]] auto print_arr = [&](auto c) {
 		for (const auto& v : c) {
 			std::cout << v << ", ";
 		}
 		std::cout << '\n';
 	};
 
+#if KBLIB_USE_CXX17
 	static_assert(sort_test(input), "insertion_sort should be constexpr");
+#endif
 
 	SECTION("insertion_sort") {
 		auto input_copy = input;
@@ -87,14 +90,14 @@ TEST_CASE("sort") {
 	SECTION("insertion_sort is stable") {
 		std::minstd_rand rng;
 		std::uniform_int_distribution<int> dist(0, 8);
-		for ([[maybe_unused]] auto _i : kblib::range(100)) {
+		for ([[gnu::unused]] auto _i : kblib::range(100)) {
 			// sort based on first key, second is used to distinguish between equal elements
 			std::vector<std::pair<int, int>> inputs;
 			auto pcomp = [](auto a, auto b){return a.first < b.first;};
 
 			{
 				std::map<int, int> counts;
-				for ([[maybe_unused]] auto _j : kblib::range(100)) {
+				for ([[gnu::unused]] auto _j : kblib::range(100)) {
 					auto r = dist(rng);
 					inputs.push_back({r, counts[r]++});
 				}
@@ -113,7 +116,7 @@ TEST_CASE("sort") {
 	SECTION("insertion_sort on random data") {
 		std::minstd_rand rng;
 		std::uniform_int_distribution<int> dist(0, 65535);
-		for ([[maybe_unused]] auto _i : kblib::range(100)) {
+		for ([[gnu::unused]] auto _i : kblib::range(100)) {
 			std::vector<int> input;
 			std::generate_n(std::back_inserter(input), 100, [&]{return dist(rng);});
 

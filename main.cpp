@@ -256,9 +256,9 @@ TEST_CASE("main") {
 	}
 	SECTION("to_pointer") {
 		auto smart_ptr = std::make_unique<int>(0);
-		[[maybe_unused]] auto* raw_pointer = kblib::to_pointer(smart_ptr);
+		[[gnu::unused]] auto* raw_pointer = kblib::to_pointer(smart_ptr);
 		const auto& smart_ptr_const_ref = smart_ptr;
-		[[maybe_unused]] auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
+		[[gnu::unused]] auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
 		std::cout << "FNV_hash(1000): " << kblib::FNV_hash<int>{}(1000) << '\n';
 	}
 	SECTION("range") {

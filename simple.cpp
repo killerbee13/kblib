@@ -23,7 +23,7 @@ TEST_CASE("FNV_hash") {
 //	    std_hash;
 	using namespace kblib::literals;
 	kblib::FNV_hash<unsigned long long> h_i;
-	static_assert(3452452_fnv64 == h_i(3452452ull));
+	static_assert(3452452_fnv64 == h_i(3452452ull), "hash literal and FNH_hash don't agree");
 }
 
 TEST_CASE("range comparison") {
@@ -74,7 +74,7 @@ TEST_CASE("range comparison") {
 TEST_CASE("range from iterators") {
 	std::string str = "abcdefghijklmnopqrstuvwxyz";
 	// Just asserting that this loop compiles.
-	for ([[maybe_unused]] std::string::iterator c :
+	for ([[gnu::unused]] std::string::iterator c :
 	     kblib::range(str.begin(), str.end())) {
 	}
 }
@@ -94,16 +94,16 @@ TEST_CASE("enumerate") {
 	std::vector<int> persistent{0, 1, 1, 2, 3, 5, 8};
 	SECTION("lvalue") {
 		for (auto t : kblib::enumerate(persistent)) {
-			[[maybe_unused]] auto& v = std::get<0>(t);
-			[[maybe_unused]] auto& i = std::get<1>(t);
+			[[gnu::unused]] auto& v = std::get<0>(t);
+			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("const lvalue") {
 		const auto& cp = persistent;
 		for (auto t : kblib::enumerate(cp)) {
-			[[maybe_unused]] auto& v = std::get<0>(t);
-			[[maybe_unused]] auto& i = std::get<1>(t);
+			[[gnu::unused]] auto& v = std::get<0>(t);
+			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 			static_assert(
 			    std::is_const<
@@ -114,16 +114,16 @@ TEST_CASE("enumerate") {
 
 	SECTION("iterators") {
 		for (auto t : kblib::enumerate(persistent.cbegin(), persistent.cend())) {
-			[[maybe_unused]] auto& v = std::get<0>(t);
-			[[maybe_unused]] auto& i = std::get<1>(t);
+			[[gnu::unused]] auto& v = std::get<0>(t);
+			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("mutable iterators") {
 		std::vector<int> range{0, 1, 2, 3, 4, 5, 6, 7};
 		for (auto t : kblib::enumerate(range.begin(), range.end())) {
-			[[maybe_unused]] auto& v = std::get<0>(t);
-			[[maybe_unused]] auto& i = std::get<1>(t);
+			[[gnu::unused]] auto& v = std::get<0>(t);
+			[[gnu::unused]] auto& i = std::get<1>(t);
 			v = 0;
 		}
 		REQUIRE(std::all_of(range.begin(), range.end(),
@@ -132,24 +132,24 @@ TEST_CASE("enumerate") {
 	SECTION("reverse iterators") {
 		std::vector<int> reversed{7, 6, 5, 4, 3, 2, 1, 0};
 		for (auto t : kblib::enumerate(reversed.rbegin(), reversed.rend())) {
-			[[maybe_unused]] auto& v = std::get<0>(t);
-			[[maybe_unused]] auto& i = std::get<1>(t);
+			[[gnu::unused]] auto& v = std::get<0>(t);
+			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == i);
 		}
 	}
 
 	SECTION("temporary") {
 		for (auto t : kblib::enumerate(std::vector<int>{0, 1, 1, 2, 3, 5, 8})) {
-			[[maybe_unused]] auto& v = std::get<0>(t);
-			[[maybe_unused]] auto& i = std::get<1>(t);
+			[[gnu::unused]] auto& v = std::get<0>(t);
+			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("vector<bool>") {
 		for (auto t : kblib::enumerate(
 		         std::vector<bool>{false, true, false, true, false})) {
-			[[maybe_unused]] auto& v = std::get<0>(t);
-			[[maybe_unused]] auto& i = std::get<1>(t);
+			[[gnu::unused]] auto& v = std::get<0>(t);
+			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == i % 2);
 			// print<decltype(v)>{};
 		}

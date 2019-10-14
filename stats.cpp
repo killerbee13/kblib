@@ -4,8 +4,8 @@
 #include <iostream>
 #include <cmath>
 
-[[maybe_unused]] static long double phi = 1.6180339887498948482L;
-[[maybe_unused]] static long double r5 = std::sqrtl(5);
+[[gnu::unused]] static long double phi = 1.6180339887498948482L;
+[[gnu::unused]] static long double r5 = std::sqrtl(5);
 
 TEST_CASE("fibonacci") {
 	std::array<unsigned long long, 41> fibs{

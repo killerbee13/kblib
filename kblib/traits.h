@@ -157,8 +157,7 @@ namespace detail {
 	};
 
 	template <typename C>
-	struct has_reserve<C,
-	                   void_t<decltype(std::declval<C&>.reserve(0))>> {
+	struct has_reserve<C, void_t<decltype(std::declval<C&>.reserve(0))>> {
 	   constexpr static bool value = true;
    };
 	/**

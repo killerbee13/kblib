@@ -86,7 +86,7 @@ KBLIB_NODISCARD Container build(InputIt first, InputIt last, InputIt2 first2,
  */
 template <
     typename Array, typename InputIt, typename UnaryFunction,
-    typename std::enable_if<!detail::is_resizable_v<Array>, int>::type = 0>
+    enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
 	Array out;
 	std::transform(first, last, out.begin(), f);
@@ -113,7 +113,7 @@ KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
 template <
     typename Array, typename InputIt, typename InputIt2,
     typename BinaryFunction,
-    typename std::enable_if<!detail::is_resizable_v<Array>, int>::type = 0>
+    enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, InputIt2 first2,
                             BinaryFunction f) {
 	Array out;
@@ -160,7 +160,7 @@ KBLIB_NODISCARD Container build(Functor f, size_t size,
  */
 template <
     typename Array, typename Functor,
-    typename std::enable_if<!detail::is_resizable_v<Array>, int>::type = 0>
+    enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(Functor f,
                             size_t size = std::tuple_size<Array>::value) {
 	Array out;
@@ -240,7 +240,7 @@ template<typename Container, typename ExecutionPolicy,
       typename InputIt, typename UnaryFunction>
 Container build(ExecutionPolicy&& policy, InputIt first,
       InputIt last, UnaryFunction f,
-      [[maybe_unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
+      [[gnu::unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
   Container out;
   std::transform(policy, first, last, std::back_inserter(out), f);
   return static_cast<void>(out.resize(out.size())), out;
@@ -249,7 +249,7 @@ template<typename Container, typename ExecutionPolicy,
       typename InputIt, typename InputIt2, typename BinaryFunction>
 Container build(ExecutionPolicy&& policy, InputIt first,
       InputIt last, InputIt2 first2, BinaryFunction f,
-      [[maybe_unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
+      [[gnu::unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
   Container out;
   std::transform(policy, first, last, first2,
      std::back_inserter(out), f);
@@ -276,7 +276,7 @@ Array build(ExecutionPolicy&& policy, InputIt first,
 template<typename Container, typename ExecutionPolicy,
       typename Functor>
 inline Container build(ExecutionPolicy&& policy, Functor f, size_t size,
-      [[maybe_unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
+      [[gnu::unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
   Container out(size);
   std::generate_n(policy, out.begin(), size, f);
   return out;
@@ -403,7 +403,7 @@ build_copy(Range&& r, typename Container::allocator_type allocator =
  */
 template <
     typename Container, typename InputIt,
-    typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
+    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
 	Container out{};
 	auto pos = std::begin(out);
@@ -422,7 +422,7 @@ KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
  */
 template <
     typename Container, typename Range,
-    typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
+    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
 	Container out{};
 	auto first = std::begin(r);
@@ -445,7 +445,7 @@ KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
  */
 template <
     typename Container, typename InputIt,
-    typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
+    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
                                      std::size_t size) {
 	Container out;
@@ -467,7 +467,7 @@ KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
  */
 template <
     typename Container, typename Range,
-    typename std::enable_if<!detail::is_resizable_v<Container>, int>::type = 0>
+    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD Container build_copy(Range&& r, std::size_t size) {
 	Container out;
 	auto first = std::begin(r);

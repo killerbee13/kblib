@@ -10,7 +10,7 @@
 #include "tdecl.h"
 
 #if KBLIB_USE_CXX17
-#define KBLIB_UNUSED [[maybe_unused]]
+#define KBLIB_UNUSED [[gnu::unused]]
 #else
 #define KBLIB_UNUSED
 #endif
@@ -79,7 +79,32 @@ struct trivial_array {
 	constexpr T& operator[](std::size_t n) { return arr[n]; }
 	constexpr const T& operator[](std::size_t n) const { return arr[n]; }
 	constexpr std::size_t size() const { return N; }
+	constexpr T* begin() & noexcept {
+		return arr;
+	}
+	constexpr const T* begin() const& noexcept {
+		return arr;
+	}
+	constexpr T* end() & noexcept {
+		return arr+N;
+	}
+	constexpr const T* end() const& noexcept {
+		return arr+N;
+	}
+
+	constexpr friend bool operator==(const trivial_array& a, const trivial_array& b) {
+		for (std::size_t idx = 0; idx != N; ++idx) {
+			if (a[idx] != b[idx]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	constexpr friend bool operator!=(const trivial_array& a, const trivial_array& b) {
+		return !(a == b);
+	}
 };
+
 #endif
 
 /**

@@ -1,6 +1,8 @@
 #ifndef KBLIB_TDECL_H
 #define KBLIB_TDECL_H
 
+#include <ciso646>
+
 /**
  * @file
  * Contains basic declarations needed by other files.
@@ -48,6 +50,48 @@ namespace detail {
 	};
 
 } // namespace detail
+
+enum class endian {
+	unknown,
+	little,
+	big,
+	weird
+};
+
+namespace detail {
+constexpr endian get_system_endian() {
+	if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
+		return endian::big;
+	} else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
+		return endian::little;
+	} else {
+		return endian::weird;
+	}
+}
+}
+
+#ifdef __BYTE_ORDER__
+constexpr endian system_endian = detail::get_system_endian();
+#else
+constexpr endian system_endian = endian::unknown;
+#endif
+
+namespace detail {
+constexpr endian get_hash_order() {
+	if (system_endian == endian::little || system_endian == endian::big) {
+		return system_endian;
+	} else {
+		return endian::little;
+	}
+}
+}
+
+#ifdef KBLIB_CONSISTENT_HASHES
+constexpr endian hash_order = little;
+#else
+constexpr endian hash_order = detail::get_hash_order();
+#endif
+
 } // namespace kblib
 
 #endif // KBLIB_TDECL_H

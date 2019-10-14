@@ -21,9 +21,15 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
                     // (partially) is_invocable, and is_nothrow_swappable
    using std::swap;
 
+   template <bool B, typename T = void>
+   using enable_if_t = typename std::enable_if<B, T>::type;
+
+   template <typename T>
+   using decay_t = typename std::decay<T>::type;
+
    template <
        typename Fn, typename... Args,
-       std::enable_if_t<std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
+       enable_if_t<std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
    constexpr decltype(auto) invoke(Fn&& f, Args&&... args) noexcept(
 	    noexcept(std::mem_fn(f)(std::forward<Args>(args)...))) {
 		return std::mem_fn(f)(std::forward<Args>(args)...);
@@ -31,7 +37,7 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 
 	template <
 	    typename Fn, typename... Args,
-	    std::enable_if_t<!std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
+	    enable_if_t<!std::is_member_pointer<std::decay_t<Fn>>{}, int> = 0>
 	constexpr decltype(auto) invoke(Fn&& f, Args&&... args) noexcept(
 	    noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...))) {
 		return std::forward<Fn>(f)(std::forward<Args>(args)...);
@@ -116,12 +122,8 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 		          bool Swappable = swappable_with<Tp, Up>::value>
 		struct nothrow_swappable_with {
 			static const bool value =
-#ifndef LIBCPP_HAS_NO_NOEXCEPT
 			    noexcept(swap(std::declval<Tp>(), std::declval<Up>())) &&
 			    noexcept(swap(std::declval<Up>(), std::declval<Tp>()));
-#else
-			    false;
-#endif
 		};
 
 		template <class Tp, class Up>
@@ -275,6 +277,8 @@ template <bool b>
 using void_if_t = typename void_if<b>::type;
 
 using fakestd::void_t;
+using fakestd::enable_if_t;
+using fakestd::decay_t;
 
 template <typename... Ts>
 struct unary_identity {};
@@ -335,7 +339,7 @@ constexpr std::make_signed_t<I> to_signed(I x) {
 // Cast argument to equivalently-sized type with the same signedness as the
 // template parameter
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr std::enable_if_t<std::is_integral<A>::value &&
+KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value &&
                                                std::is_integral<F>::value &&
                                                std::is_signed<A>::value,
                                            std::make_signed_t<F>>
@@ -344,7 +348,7 @@ signed_cast(F x) {
 }
 
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr std::enable_if_t<std::is_integral<A>::value &&
+KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value &&
                                                std::is_integral<F>::value &&
                                                std::is_unsigned<A>::value,
                                            std::make_unsigned_t<F>>
@@ -376,9 +380,9 @@ struct is_tuple_like<T,
 	constexpr static bool value = true;
 };
 
-template <typename T, typename std::enable_if<!has_member_swap<T>::value &&
+template <typename T, enable_if_t<!has_member_swap<T>::value &&
                                                   !is_tuple_like<T>::value,
-                                              int>::type = 0>
+                                              int> = 0>
 constexpr void
 swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value&&
                               std::is_nothrow_move_assignable<T>::value) {
@@ -388,9 +392,9 @@ swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value&&
 	return;
 }
 
-template <typename T, typename std::enable_if<has_member_swap<T>::value &&
+template <typename T, enable_if_t<has_member_swap<T>::value &&
                                                   !is_tuple_like<T>::value,
-                                              int>::type = 0>
+                                              int> = 0>
 constexpr void swap(T& a, T& b) noexcept(noexcept(a.swap(b))) {
 	a.swap(b);
 	return;
@@ -763,8 +767,8 @@ class heap_value {
 	constexpr heap_value() noexcept : p{nullptr} {}
 	constexpr heap_value(std::nullptr_t) noexcept : p{nullptr} {}
 
-	template <typename... Args, typename std::enable_if<std::is_constructible<
-	                                T, Args...>::value>::type = 0>
+	template <typename... Args, enable_if_t<std::is_constructible<
+	                                T, Args...>::value> = 0>
 	heap_value(fakestd::in_place_t, Args&&... args) : p{new T(args...)} {}
 
 	heap_value(const heap_value& u) : p{(u.p ? (new T(*u.p)) : nullptr)} {}

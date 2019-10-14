@@ -15,7 +15,7 @@ TEST_CASE("build family", "[build]") {
 	const auto equal = [](auto a, auto b) {
 		return std::equal(std::begin(a), std::end(a), std::begin(b), std::end(b));
 	};
-	[[maybe_unused]] auto print_arr = [&](auto c) {
+	[[gnu::unused]] auto print_arr = [&](auto c) {
 		for (const auto& v : c) {
 			std::cout << v << ", ";
 		}

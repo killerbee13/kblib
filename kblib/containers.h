@@ -76,14 +76,14 @@ auto get_check(M&& m, const K& key) noexcept(noexcept(m.find(key) != m.end()))
  */
 template <typename V>
 void force_shrink_to_fit(V& vec) {
-	if constexpr (std::is_nothrow_move_constructible<
+	if (std::is_nothrow_move_constructible<
 	                  typename V::value_type>::value) {
 		V tmp;
-		tmp.reserve(vec.size());
+		try_reserve(tmp, vec.size());
 		std::move(vec.begin(), vec.end(), std::back_inserter(tmp));
 		vec = std::move(tmp);
 	} else {
-		V tmp = vec;
+		V tmp(vec.begin(), vec.end());
 		vec = std::move(tmp);
 	}
 	return;

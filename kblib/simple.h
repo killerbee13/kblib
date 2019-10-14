@@ -21,6 +21,8 @@
 #include <string_view>
 #endif
 
+
+
 namespace kblib {
 
 /**
@@ -85,21 +87,11 @@ constexpr void to_bytes(Integral val,
 	static_assert(std::is_integral<CharT>::value && sizeof(CharT) == 1 &&
 	                  !std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
-#ifndef _MSC_VER
-	static_assert(BYTE_ORDER == LITTLE_ENDIAN || BYTE_ORDER == BIG_ENDIAN,
-	              "Unknown byte order.");
-	if (BYTE_ORDER == LITTLE_ENDIAN) {
+	if (hash_order == endian::little) {
 		to_bytes_le(val, dest);
-	} else if (BYTE_ORDER == BIG_ENDIAN) {
+	} else {
 		to_bytes_be(val, dest);
 	}
-#else
-	// Assume Windows is little-endian, because there's no easy way to detect its
-	// byte order. And while this may change the results of integral hashes, it
-	// will not lead to any significant problems and only a minor runtime
-	// overhead.
-	to_bytes_le(val, dest);
-#endif
 }
 
 namespace fnv {

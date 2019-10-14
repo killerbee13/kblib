@@ -403,9 +403,8 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
  * @return Container The greatest count elements of the range, in arbitrary
  * order.
  */
-template <
-    typename Container, typename Comp = std::less<>, typename It,
-    typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
+template <typename Container, typename Comp = std::less<>, typename It,
+          enable_if_t<is_linear_container_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
 get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
 	assert(begin + count <= end);
@@ -435,7 +434,7 @@ get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
  * order.
  */
 template <typename Container, typename Comp = std::less<>, typename It,
-          typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
+          enable_if_t<is_setlike_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
 get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
@@ -455,9 +454,8 @@ get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
  * @return Container The greatest count elements of the range, in arbitrary
  * order.
  */
-template <
-    typename Container, typename Comp = std::less<>, typename It,
-    typename std::enable_if<is_linear_container_v<Container>, int>::type = 0>
+template <typename Container, typename Comp = std::less<>, typename It,
+          enable_if_t<is_linear_container_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
 get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
 	Container c(count);
@@ -477,7 +475,7 @@ get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
  * order.
  */
 template <typename Container, typename Comp = std::less<>, typename It,
-          typename std::enable_if<is_setlike_v<Container>, int>::type = 0>
+          enable_if_t<is_setlike_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
 get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
@@ -607,10 +605,55 @@ replace_copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred,
 	return out;
 }
 
+namespace detail {
+
+   template <typename F, typename... Args,
+             enable_if_t<
+                 !std::is_member_pointer<fakestd::decay_t<F>>::value, int> = 0>
+   constexpr decltype(auto) do_invoke(F&& f, Args&&... args) {
+		return std::forward<F>(f)(std::forward<Args>(args)...);
+	}
+	template <
+	    typename F, typename Object, typename... Args,
+	    enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
+	                             std::is_member_function_pointer<F>::value,
+	                         int> = 0>
+	constexpr decltype(auto) do_invoke(F f, Object&& obj, Args&&... args) {
+		return (obj.*f)(std::forward<Args>(args)...);
+	}
+	template <typename F, typename Pointer, typename... Args,
+	          enable_if_t<std::is_pointer<Pointer>::value &&
+	                                   std::is_member_function_pointer<F>::value,
+	                               int> = 0>
+	constexpr decltype(auto) do_invoke(F f, Pointer ptr, Args&&... args) {
+		return (ptr->*f)(std::forward<Args>(args)...);
+	}
+	template <
+	    typename Member, typename Object,
+	    enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
+	                             std::is_member_object_pointer<Member>::value,
+	                         int> = 0>
+	constexpr decltype(auto) do_invoke(Member mem, Object&& obj) {
+		return std::forward<Object>(obj).*mem;
+	}
+	template <
+	    typename Member, typename Pointer,
+	    enable_if_t<std::is_pointer<Pointer>::value &&
+	                             std::is_member_object_pointer<Member>::value,
+	                         int> = 0>
+	constexpr decltype(auto) do_invoke(Member mem, Pointer ptr) {
+		return ptr.*mem;
+	}
+} // namespace detail
+
 template <typename F, typename... Args>
 constexpr decltype(auto) invoke(F&& f, Args&&... args) {
+#if KBLIB_USE_CXX17
 	return std::apply(std::forward<F>(f),
 	                  std::forward_as_tuple(std::forward<Args>(args)...));
+#else
+	return detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...);
+#endif
 }
 
 template <class ForwardIt>
@@ -848,8 +891,8 @@ namespace detail {
 
    /**
 	 * @brief Sort data after applying an arbitrary transformation to it. The
-	 * primary template handles the general case of arbitrary transformation and
-	 * arbitrary compare predicate.
+	 * primary template handles the general case of arbitrary transformation
+	 * and arbitrary compare predicate.
 	 */
    template <typename RandomAccessIt, typename UnaryOperation,
              typename BinaryPredicate, typename SortKey,
@@ -932,8 +975,8 @@ namespace detail {
 
 	/**
 	 * @brief Sort implementation for pointer to member object of fundamental
-	 * non-integral type with default sorting, so sort keys are constant time to
-	 * extract and compare
+	 * non-integral type with default sorting, so sort keys are constant time
+	 * to extract and compare
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename SortKey>
@@ -948,8 +991,8 @@ namespace detail {
 	};
 	/**
 	 * @brief Sort implementation for pointer to member object of fundamental
-	 * non-integral type with reverse sorting, so sort keys are constant time to
-	 * extract and compare
+	 * non-integral type with reverse sorting, so sort keys are constant time
+	 * to extract and compare
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename SortKey>
@@ -1140,8 +1183,8 @@ struct zip_iterator<It1, It1, It2> {
 /**
  * @brief Iterate over two ranges in lockstep, like Python's zip.
  *
- * InputIt1 and EndIt may be different types, however that breaks range-for in
- * C++14.
+ * InputIt1 and EndIt may be different types, however that breaks range-for
+ * in C++14.
  *
  * @param begin1 The beginning of the first range to iterate over.
  * @param end1 The end of the first range.
