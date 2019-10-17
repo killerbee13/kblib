@@ -1,6 +1,9 @@
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include "catch.hpp"
 #include <chrono>
 #include <iostream>
+#include <map>
+#include <string_view>
 
 #include "kblib/variant.h"
 
@@ -24,6 +27,8 @@ TEST_CASE("visit") {
 	kblib::visit(var)([](std::monostate) { REQUIRE(false); },
 	                  [](int) { REQUIRE(true); },
 	                  [](const std::string&) { REQUIRE(false); });
+
+//	kblib::visit2(var, [](int) {});
 }
 
 TEST_CASE("visit_indexed") {
@@ -222,7 +227,7 @@ TEST_CASE("poly_obj") {
 		auto o = kblib::make_poly_obj<small_base, big_derived>();
 	}
 }
-
+namespace {
 struct Base {
 	virtual unsigned operator()() const noexcept = 0;
 	Base() = default;
@@ -254,229 +259,446 @@ struct Derived4 final : Base {
 	Derived4(unsigned i) : member(i) {}
 };
 
+struct thrower {
+	unsigned operator()() const noexcept { return member; }
+	unsigned member;
+	thrower(unsigned i = 0) : member(i) {}
+	thrower& operator=(const thrower& other) & {
+		member = other.member;
+		if ((member & 7) == 0) {
+			throw 0;
+		}
+		return *this;
+	}
+};
+}
 TEST_CASE("poly_obj performance") {
-	const unsigned count = 1000000;
+	const auto start = std::chrono::steady_clock::now();
+	   constexpr unsigned count = 1000;
+		constexpr unsigned runs = 10;
+		//	std::map<std::pair<int, std::string_view>, std::array<int, runs>>
+		// perfs;
 
-	/*
-	 * Averages of 5 runes (Release / Debug):
-	 *
-	 * baseline (non-virtual):	  4 /  35 ns
-	 * std::unique_ptr:       	 12 /  77 ns
-	 * std::function:         	 12 / 102 ns
-	 * std::variant (visit):  	 32 / 246 ns
-	 * std::variant (get_if): 	  9 / 169 ns
-	 * std::variant (switch): 	  9 / 158 ns
-	 * kblib::poly_obj:       	  8 /  91 ns
-	 *
-	 * Conclusions:
-	 *
-	 * std::visit is extremely slow for some reason. std::variant is slow in
-	 * general in debug. std::unique_ptr is faster in debug than kblib::poly_obj,
-	 * but kblib::poly_obj optimizes better than it, most likely due to the
-	 * data locality.
-	 *
-	 */
+		/*
+		 * Averages of 5 runs (Release / Debug):
+		 *
+		 * baseline (non-virtual):	  4 /  35 ns
+		 * std::unique_ptr:       	 12 /  77 ns
+		 * std::function:         	 12 / 102 ns
+		 * std::variant (visit):  	 32 / 246 ns
+		 * std::variant (get_if): 	  9 / 169 ns
+		 * std::variant (switch): 	  9 / 158 ns
+		 * kblib::poly_obj:       	  8 /  91 ns
+		 *
+		 * Conclusions:
+		 *
+		 * std::visit is extremely slow for some reason. std::variant is slow in
+		 * general in debug. std::unique_ptr is faster in debug than
+		 * kblib::poly_obj, but kblib::poly_obj optimizes better than it, most
+		 * likely due to the data locality.
+		 *
+		 */
 
-	SECTION("baseline") {
-		std::vector<Derived1> d1;
-		std::vector<Derived2> d2;
-		std::vector<Derived3> d3;
-		std::vector<Derived4> d4;
-		kblib::FNV_hash<unsigned> h;
-		for (auto i : kblib::range(count)) {
-			auto v = h(i);
-			switch (v % 4) {
-			case 0:
-				d1.push_back(v);
-				break;
-			case 1:
-				d2.push_back(v);
-				break;
-			case 2:
-				d3.push_back(v);
-				break;
-			case 3:
-				d4.push_back(v);
-			}
-		}
+		//	for (unsigned run : kblib::range(runs)) {
 
-		const auto start = std::chrono::steady_clock::now();
-		unsigned accum{};
-		for (const auto& x : d1) {
-			accum += x();
-		}
-		for (const auto& x : d2) {
-			accum += x();
-		}
-		for (const auto& x : d3) {
-			accum += x();
-		}
-		for (const auto& x : d4) {
-			accum += x();
-		}
-		const auto end = std::chrono::steady_clock::now();
-		auto time = (end - start) / count;
-		std::cout << "baseline (non-virtual):\t" << time.count() << " ns\n";
-	}
-	SECTION("unique pointer") {
-		std::vector<std::unique_ptr<Base>> d;
-		kblib::FNV_hash<unsigned> h;
-		for (auto i : kblib::range(count)) {
-			auto v = h(i);
-			switch (v % 4) {
-			case 0:
-				d.push_back(std::make_unique<Derived1>(v));
-				break;
-			case 1:
-				d.push_back(std::make_unique<Derived2>(v));
-				break;
-			case 2:
-				d.push_back(std::make_unique<Derived3>(v));
-				break;
-			case 3:
-				d.push_back(std::make_unique<Derived4>(v));
-			}
-		}
-
-		const auto start = std::chrono::steady_clock::now();
-		unsigned accum{};
-		for (const auto& x : d) {
-			accum += (*x)();
-		}
-		const auto end = std::chrono::steady_clock::now();
-		auto time = (end - start) / count;
-		std::cout << "unique pointer:        \t" << time.count() << " ns\n";
-	}
-	SECTION("std::function") {
-		std::vector<std::function<unsigned()>> d;
-		kblib::FNV_hash<unsigned> h;
-		for (auto i : kblib::range(count)) {
-			auto v = h(i);
-			switch (v % 4) {
-			case 0:
-				d.push_back(Derived1(v));
-				break;
-			case 1:
-				d.push_back(Derived2(v));
-				break;
-			case 2:
-				d.push_back(Derived3(v));
-				break;
-			case 3:
-				d.push_back(Derived4(v));
-			}
-		}
-
-		const auto start = std::chrono::steady_clock::now();
-		unsigned accum{};
-		for (const auto& x : d) {
-			accum += x();
-		}
-		const auto end = std::chrono::steady_clock::now();
-		auto time = (end - start) / count;
-		std::cout << "std::function:         \t" << time.count() << " ns\n";
-	}
-	SECTION("std::variant") {
-		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4>> d;
-		kblib::FNV_hash<unsigned> h;
-		for (auto i : kblib::range(count)) {
-			auto v = h(i);
-			switch (v % 4) {
-			case 0:
-				d.push_back(Derived1(v));
-				break;
-			case 1:
-				d.push_back(Derived2(v));
-				break;
-			case 2:
-				d.push_back(Derived3(v));
-				break;
-			case 3:
-				d.push_back(Derived4(v));
-			}
-		}
-		{
-			const auto start = std::chrono::steady_clock::now();
-			unsigned accum{};
-			for (const auto& x : d) {
-				accum += std::visit([](const auto& v) { return v(); }, x);
-			}
-			const auto end = std::chrono::steady_clock::now();
-			auto time = (end - start) / count;
-			std::cout << "std::variant (visit):  \t" << time.count() << " ns\n";
-		}
-		{
-			const auto start = std::chrono::steady_clock::now();
-			unsigned accum{};
-			for (const auto& x : d) {
-				if (auto* p = std::get_if<0>(&x)) {
-					accum += (*p)();
-				} else if (auto* p = std::get_if<1>(&x)) {
-					accum += (*p)();
-				} else if (auto* p = std::get_if<2>(&x)) {
-					accum += (*p)();
-				} else if (auto* p = std::get_if<3>(&x)) {
-					accum += (*p)();
-				}
-			}
-			const auto end = std::chrono::steady_clock::now();
-			auto time = (end - start) / count;
-			std::cout << "std::variant (get_if): \t" << time.count() << " ns\n";
-		}
-		{
-			const auto start = std::chrono::steady_clock::now();
-			unsigned accum{};
-			for (const auto& x : d) {
-				switch (x.index()) {
+		BENCHMARK_ADVANCED("baseline")(Catch::Benchmark::Chronometer meter) {
+			std::vector<Derived1> d1;
+			std::vector<Derived2> d2;
+			std::vector<Derived3> d3;
+			std::vector<Derived4> d4;
+			kblib::FNV_hash<unsigned> h;
+			for (auto i : kblib::range(count)) {
+				auto v = h(i);
+				switch (v % 4) {
 				case 0:
-					accum += std::get<0>(x)();
+					d1.push_back(v);
 					break;
 				case 1:
-					accum += std::get<1>(x)();
+					d2.push_back(v);
 					break;
 				case 2:
-					accum += std::get<2>(x)();
+					d3.push_back(v);
 					break;
 				case 3:
-					accum += std::get<3>(x)();
+					d4.push_back(v);
 				}
 			}
-			const auto end = std::chrono::steady_clock::now();
-			auto time = (end - start) / count;
-			std::cout << "std::variant (switch): \t" << time.count() << " ns\n";
-		}
-	}
-	SECTION("poly_obj") {
-		using poly_t = kblib::poly_obj<Base, sizeof(Derived1), int>;
-		std::vector<poly_t> d;
-		kblib::FNV_hash<unsigned> h;
-		for (auto i : kblib::range(count)) {
-			auto v = h(i);
-			switch (v % 4) {
-			case 0:
-				d.push_back(poly_t::make<Derived1>(v));
-				break;
-			case 1:
-				d.push_back(poly_t::make<Derived2>(v));
-				break;
-			case 2:
-				d.push_back(poly_t::make<Derived3>(v));
-				break;
-			case 3:
-				d.push_back(poly_t::make<Derived4>(v));
-			}
-		}
 
-		const auto start = std::chrono::steady_clock::now();
-		unsigned accum{};
-		for (const auto& x : d) {
-			accum += x();
+			//			const auto start = std::chrono::steady_clock::now();
+			meter.measure([&] {
+				unsigned accum{};
+				for (const auto& x : d1) {
+					accum += x();
+				}
+				for (const auto& x : d2) {
+					accum += x();
+				}
+				for (const auto& x : d3) {
+					accum += x();
+				}
+				for (const auto& x : d4) {
+					accum += x();
+				}
+				return accum;
+			});
+			//			const auto end = std::chrono::steady_clock::now();
+			//			auto time = (end - start) / count;
+			//			perfs[{__LINE__, "baseline (non-virtual):\t"}][run] =
+			// time.count(); std::cout << "baseline (non-virtual):\t" <<
+			// time.count() << " ns\n";
+		};
+		BENCHMARK_ADVANCED("raw pointer")(Catch::Benchmark::Chronometer meter) {
+			std::vector<Base*> d;
+			kblib::FNV_hash<unsigned> h;
+			for (auto i : kblib::range(count)) {
+				auto v = h(i);
+				switch (v % 4) {
+				case 0:
+					d.push_back(new Derived1(v));
+					break;
+				case 1:
+					d.push_back(new Derived2(v));
+					break;
+				case 2:
+					d.push_back(new Derived3(v));
+					break;
+				case 3:
+					d.push_back(new Derived4(v));
+				}
+			}
+
+			//			const auto start = std::chrono::steady_clock::now();
+			meter.measure([&] {
+				unsigned accum{};
+				for (auto x : d) {
+					accum += (*x)();
+				}
+				return accum;
+			});
+			//			const auto end = std::chrono::steady_clock::now();
+			//			auto time = (end - start) / count;
+			//			perfs[{__LINE__, "raw pointer:           \t"}][run] =
+			// time.count(); std::cout << "raw pointer:           \t" <<
+			// time.count() << " ns\n";
+			for (auto x : d) {
+				delete x;
+			}
+		};
+		BENCHMARK_ADVANCED("unique pointer")
+		(Catch::Benchmark::Chronometer meter) {
+			std::vector<std::unique_ptr<Base>> d;
+			kblib::FNV_hash<unsigned> h;
+			for (auto i : kblib::range(count)) {
+				auto v = h(i);
+				switch (v % 4) {
+				case 0:
+					d.push_back(std::make_unique<Derived1>(v));
+					break;
+				case 1:
+					d.push_back(std::make_unique<Derived2>(v));
+					break;
+				case 2:
+					d.push_back(std::make_unique<Derived3>(v));
+					break;
+				case 3:
+					d.push_back(std::make_unique<Derived4>(v));
+				}
+			}
+
+			//			const auto start = std::chrono::steady_clock::now();
+			meter.measure([&] {
+				unsigned accum{};
+				for (const auto& x : d) {
+					accum += (*x)();
+				}
+				return accum;
+			});
+			//			const auto end = std::chrono::steady_clock::now();
+			//			auto time = (end - start) / count;
+			//			perfs[{__LINE__, "unique pointer:        \t"}][run] =
+			// time.count(); std::cout << "unique pointer:        \t" <<
+			// time.count() << " ns\n";
+		};
+		BENCHMARK_ADVANCED("poly_obj")(Catch::Benchmark::Chronometer meter) {
+			using poly_t = kblib::poly_obj<Base, sizeof(Derived1), int>;
+			std::vector<poly_t> d;
+			kblib::FNV_hash<unsigned> h;
+			for (auto i : kblib::range(count)) {
+				auto v = h(i);
+				switch (v % 4) {
+				case 0:
+					d.push_back(poly_t::make<Derived1>(v));
+					break;
+				case 1:
+					d.push_back(poly_t::make<Derived2>(v));
+					break;
+				case 2:
+					d.push_back(poly_t::make<Derived3>(v));
+					break;
+				case 3:
+					d.push_back(poly_t::make<Derived4>(v));
+				}
+			}
+
+			//			const auto start = std::chrono::steady_clock::now();
+			meter.measure([&] {
+				unsigned accum{};
+				for (const auto& x : d) {
+					accum += x();
+				}
+				return accum;
+			});
+			//			const auto end = std::chrono::steady_clock::now();
+			//			auto time = (end - start) / count;
+			//			perfs[{__LINE__, "kblib::poly_obj:       \t"}][run] =
+			// time.count(); std::cout << "kblib::poly_obj:       \t" <<
+			// time.count() << " ns\n";
+		};
+		BENCHMARK_ADVANCED("std::function")(Catch::Benchmark::Chronometer meter) {
+			std::vector<std::function<unsigned()>> d;
+			kblib::FNV_hash<unsigned> h;
+			for (auto i : kblib::range(count)) {
+				auto v = h(i);
+				switch (v % 4) {
+				case 0:
+					d.push_back(Derived1(v));
+					break;
+				case 1:
+					d.push_back(Derived2(v));
+					break;
+				case 2:
+					d.push_back(Derived3(v));
+					break;
+				case 3:
+					d.push_back(Derived4(v));
+				}
+			}
+
+			//			const auto start = std::chrono::steady_clock::now();
+			meter.measure([&] {
+				unsigned accum{};
+				for (const auto& x : d) {
+					accum += x();
+				}
+				return accum;
+			});
+			//			const auto end = std::chrono::steady_clock::now();
+			//			auto time = (end - start) / count;
+			//			perfs[{__LINE__, "std::function:         \t"}][run] =
+			// time.count(); std::cout << "std::function:         \t" <<
+			// time.count() << " ns\n";
+		};
+		// BENCHMARK_ADVANCED("std::variant")(Catch::Benchmark::Chronometer meter)
+		{
+			std::vector<std::variant<Derived1, Derived2, Derived3, Derived4, thrower>> d;
+			kblib::FNV_hash<unsigned> h;
+			for (auto i : kblib::range(count)) {
+				auto v = h(i);
+				switch (v % 5) {
+				case 0:
+					d.push_back(Derived1(v));
+					break;
+				case 1:
+					d.push_back(Derived2(v));
+					break;
+				case 2:
+					d.push_back(Derived3(v));
+					break;
+				case 3:
+					d.push_back(Derived4(v));
+					break;
+				case 4:
+					d.push_back(thrower{});
+					try {
+						d.back() = thrower(v);
+					} catch (int) {}
+				}
+			}
+			BENCHMARK_ADVANCED("std::variant (std::visit)")
+			(Catch::Benchmark::Chronometer meter) {
+				//				const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						try {
+							accum += std::visit([](const auto& v) { return v(); }, x);
+						} catch (const std::bad_variant_access&) {}
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "variant (std::visit):  \t"}][run] =
+				// time.count(); std::cout << "variant (std::visit):  \t" <<
+				// time.count() << " ns\n";
+			};
+			BENCHMARK_ADVANCED("kblib::visit(v, f...)")
+			(Catch::Benchmark::Chronometer meter) {
+				// const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						try {
+							accum += kblib::visit(x, [](const auto& v) { return v(); });
+						} catch (const std::bad_variant_access&) {}
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "kblib::visit(v, f...): \t"}][run] =
+				// time.count(); std::cout << "kblib::visit(v, f...): \t" <<
+				// time.count() << " ns\n";
+			};
+			BENCHMARK_ADVANCED("kblib::visit(v)(f...)")
+			(Catch::Benchmark::Chronometer meter) {
+				//				const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						try {
+							accum += kblib::visit(x)([](const auto& v) { return v(); });
+						} catch (const std::bad_variant_access&) {}
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "kblib::visit(v)(f...): \t"}][run] =
+				// time.count(); std::cout << "kblib::visit(v)(f...): \t" <<
+				// time.count() << " ns\n";
+			};
+			BENCHMARK_ADVANCED("visit_indexed(v,f...)")
+			(Catch::Benchmark::Chronometer meter) {
+				//				const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						try {
+							accum += kblib::visit_indexed(
+							         x, [](auto, const auto& v) { return v(); });
+						} catch (const std::bad_variant_access&) {}
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "visit_indexed(v,f...): \t"}][run] =
+				// time.count(); std::cout << "visit_indexed(v,f...): \t" <<
+				// time.count() << " ns\n";
+			};
+			BENCHMARK_ADVANCED("kblib::visit2(v, f...)")
+			(Catch::Benchmark::Chronometer meter) {
+				// const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						try {
+							accum += kblib::visit2(x, [](const auto& v) { return v(); });
+						} catch (const std::bad_variant_access&) {}
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "kblib::visit(v, f...): \t"}][run] =
+				// time.count(); std::cout << "kblib::visit(v, f...): \t" <<
+				// time.count() << " ns\n";
+			};
+			BENCHMARK_ADVANCED("kblib::visit2_nop(v, f...)")
+			(Catch::Benchmark::Chronometer meter) {
+				// const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						kblib::visit2_nop(x, [&](const auto& v) { accum += v(); });
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "kblib::visit(v, f...): \t"}][run] =
+				// time.count(); std::cout << "kblib::visit(v, f...): \t" <<
+				// time.count() << " ns\n";
+			};
+			BENCHMARK_ADVANCED("variant (get_if)")
+			(Catch::Benchmark::Chronometer meter) {
+				//				const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						if (auto* p = std::get_if<0>(&x)) {
+							accum += (*p)();
+						} else if (auto* p = std::get_if<1>(&x)) {
+							accum += (*p)();
+						} else if (auto* p = std::get_if<2>(&x)) {
+							accum += (*p)();
+						} else if (auto* p = std::get_if<3>(&x)) {
+							accum += (*p)();
+						} else if (auto* p = std::get_if<4>(&x)) {
+							accum += (*p)();
+						}
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "variant (get_if):      \t"}][run] =
+				// time.count(); std::cout << "variant (get_if):      \t" <<
+				// time.count() << " ns\n";
+			};
+			BENCHMARK_ADVANCED("variant (switch)")
+			(Catch::Benchmark::Chronometer meter) {
+				//				const auto start = std::chrono::steady_clock::now();
+				meter.measure([&] {
+					unsigned accum{};
+					for (const auto& x : d) {
+						switch (x.index()) {
+						case 0:
+							accum += std::get<0>(x)();
+							break;
+						case 1:
+							accum += std::get<1>(x)();
+							break;
+						case 2:
+							accum += std::get<2>(x)();
+							break;
+						case 3:
+							accum += std::get<3>(x)();
+							break;
+						case 4:
+							accum += std::get<4>(x)();
+							break;
+						default:
+							;
+						}
+					}
+					return accum;
+				});
+				//				const auto end = std::chrono::steady_clock::now();
+				//				auto time = (end - start) / count;
+				//				perfs[{__LINE__, "variant (switch):      \t"}][run] =
+				// time.count(); std::cout << "variant (switch):      \t" <<
+				// time.count() << " ns\n";
+			};
 		}
-		const auto end = std::chrono::steady_clock::now();
-		auto time = (end - start) / count;
-		std::cout << "kblib::poly_obj:       \t" << time.count() << " ns\n";
-	}
-	// std::cout<<denom_of<std::chrono::steady_clock::period><<'\n';
+//	}
+
+	//	auto average = [](const auto& arr) {
+	//		return int(std::accumulate(arr.begin(), arr.end(), 0) /
+	// float(arr.size()));
+	//	};
+
+	//	std::cout<<"Averages of "<<runs<<" runs:\n";
+	//	for (auto [desc, times] : perfs) {
+	//		std::cout<<desc.second<<average(times)<<" ns\n";
+	//	}
+
+	//	// std::cout<<denom_of<std::chrono::steady_clock::period><<'\n';
+	//	}
+		auto end = std::chrono::steady_clock::now();
+		std::chrono::duration<float, std::ratio<1, 1>> time = end - start;
+		std::cout<<"Profiling took "<<time.count()<<" seconds\n";
 }
 
 #endif

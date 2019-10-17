@@ -101,7 +101,7 @@ namespace detail {
 	 * variant and pass the index to the function.
 	 */
 	template <typename Variant, typename F, std::size_t... Is>
-	auto indexed_visitor_impl(std::index_sequence<Is...>) {
+	constexpr auto indexed_visitor_impl(std::index_sequence<Is...>) {
 		return std::array{+[](Variant&& variant, F&& f) {
 			return std::forward<F>(f)(
 			    std::integral_constant<std::size_t, Is>{},
@@ -123,7 +123,10 @@ namespace detail {
  * and A = std::get<variant.index()>(variant).
  */
 template <typename Variant, typename... Fs>
-decltype(auto) visit_indexed(Variant&& variant, Fs&&... fs) {
+constexpr decltype(auto) visit_indexed(Variant&& variant, Fs&&... fs) {
+	if (variant.valueless_by_exception()) {
+		throw std::bad_variant_access();
+	}
 	using visitor_t = decltype(visitor{std::forward<Fs>(fs)...});
 	return detail::indexed_visitor_impl<Variant, visitor_t>(
 	    std::make_index_sequence<
@@ -138,7 +141,7 @@ decltype(auto) visit_indexed(Variant&& variant, Fs&&... fs) {
  * @return To A super-variant with the same value as v.
  */
 template <typename To, typename From>
-To variant_cast(From&& v) {
+constexpr To variant_cast(From&& v) {
 	static_assert(
 	    detail::contains_types_v<detail::tuple_type_t<std::decay_t<To>>,
 	                             detail::tuple_type_t<std::decay_t<From>>>,
@@ -166,9 +169,59 @@ To variant_cast(From&& v) {
  * be unambiguously called with any type in V.
  */
 template <typename V, typename F, typename... Fs>
-auto visit(V&& v, F&& f, Fs&&... fs) {
+constexpr decltype(auto) visit(V&& v, F&& f, Fs&&... fs) {
 	return std::visit(visitor{std::forward<F>(f), std::forward<Fs>(fs)...},
 	                  std::forward<V>(v));
+}
+
+namespace detail {
+
+template <typename F, typename... Ts>
+constexpr bool invocable_with_all_v = (std::is_invocable_v<F, Ts> && ...);
+
+template <typename F, typename... Ts>
+constexpr bool invocable_with_all_v<F, std::variant<Ts...>> = invocable_with_all_v<F, Ts...>;
+
+template <typename V, typename F, std::size_t I, std::size_t... Is>
+[[gnu::always_inline]] constexpr decltype(auto) visit_impl(V&& v, F&& f, std::index_sequence<I, Is...>) {
+	static_assert(I < std::variant_size_v<std::decay_t<V>>);
+	if (auto* p = std::get_if<I>(&v)) {
+		return std::forward<F>(f)(static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
+	} else if constexpr (sizeof...(Is) > 0) {
+		return visit_impl(std::forward<V>(v), std::forward<F>(f), std::index_sequence<Is...>{});
+	} else {
+		throw std::bad_variant_access();
+	}
+}
+
+template <typename V, typename F, std::size_t I, std::size_t... Is>
+[[gnu::always_inline]] constexpr void visit_nop_impl(V&& v, F&& f, std::index_sequence<I, Is...>) noexcept {
+	static_assert(I < std::variant_size_v<std::decay_t<V>>);
+	if (auto* p = std::get_if<I>(&v)) {
+		std::forward<F>(f)(static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
+		return;
+	} else if constexpr (sizeof...(Is) > 0) {
+		return visit_nop_impl(std::forward<V>(v), std::forward<F>(f), std::index_sequence<Is...>{});
+	} else {
+		// valueless_by_exception case
+		return;
+	}
+}
+
+}
+
+template <typename V, typename F, typename... Fs>
+[[gnu::always_inline]] constexpr decltype(auto) visit2(V&& v, F&& f, Fs&&... fs) {
+	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
+	static_assert(detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>, "Some variant types not accepted by any visitors.");
+	return detail::visit_impl(std::forward<V>(v), std::move(visitor_obj), std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
+}
+
+template <typename V, typename F, typename... Fs>
+[[gnu::always_inline]] constexpr void visit2_nop(V&& v, F&& f, Fs&&... fs) {
+	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
+	static_assert(detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>, "Some variant types not accepted by any visitors.");
+	return detail::visit_nop_impl(std::forward<V>(v), visitor_obj, std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
 }
 
 /**
@@ -187,9 +240,9 @@ auto visit(V&& v, F&& f, Fs&&... fs) {
  * visitor.
  */
 template <typename V>
-KBLIB_NODISCARD auto visit(V&& v) {
-	return [v](auto... fs) -> decltype(auto) {
-		return std::visit(visitor{fs...}, v);
+KBLIB_NODISCARD constexpr auto visit(V&& v) {
+	return [&v](auto... fs) -> decltype(auto) {
+		return kblib::visit(v, std::forward<decltype(fs)>(fs)...);
 	};
 }
 
@@ -709,12 +762,12 @@ class poly_obj
 	/**
 	 * @brief Check if the poly_obj contains a value.
 	 */
-	bool has_value() const { return value; }
+	bool has_value() const& noexcept { return value; }
 
 	/**
 	 * @brief Empties the poly_obj, reverting to a default-constructed state.
 	 */
-	void clear() {
+	void clear() noexcept {
 		if (value) {
 			value->~Obj();
 			value = nullptr;

@@ -12,8 +12,11 @@
  * @def KBLIB_USE_CXX17
  * @brief This internal macro is used to determine if kblib can use C++17
  * features.
+ *
+ * @remark CODE_MODEL is a custom macro set in my project configuration, because
+ * for some reason the syntax highlighting runs as C++14.
  */
-#define KBLIB_USE_CXX17 __cplusplus >= 201703L
+#define KBLIB_USE_CXX17 __cplusplus >= 201703L || defined(CODE_MODEL)
 /**
  * @def KBLIB_USE_STRING_VIEW
  * @brief This internal macro is used to determine if kblib can use C++17's
