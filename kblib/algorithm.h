@@ -605,54 +605,6 @@ replace_copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred,
 	return out;
 }
 
-namespace detail {
-
-   template <typename F, typename... Args,
-             enable_if_t<!std::is_member_pointer<fakestd::decay_t<F>>::value,
-                         int> = 0>
-   constexpr decltype(auto) do_invoke(F&& f, Args&&... args) {
-		return std::forward<F>(f)(std::forward<Args>(args)...);
-	}
-	template <typename F, typename Object, typename... Args,
-	          enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
-	                          std::is_member_function_pointer<F>::value,
-	                      int> = 0>
-	constexpr decltype(auto) do_invoke(F f, Object&& obj, Args&&... args) {
-		return (obj.*f)(std::forward<Args>(args)...);
-	}
-	template <typename F, typename Pointer, typename... Args,
-	          enable_if_t<std::is_pointer<Pointer>::value &&
-	                          std::is_member_function_pointer<F>::value,
-	                      int> = 0>
-	constexpr decltype(auto) do_invoke(F f, Pointer ptr, Args&&... args) {
-		return (ptr->*f)(std::forward<Args>(args)...);
-	}
-	template <typename Member, typename Object,
-	          enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
-	                          std::is_member_object_pointer<Member>::value,
-	                      int> = 0>
-	constexpr decltype(auto) do_invoke(Member mem, Object&& obj) {
-		return std::forward<Object>(obj).*mem;
-	}
-	template <typename Member, typename Pointer,
-	          enable_if_t<std::is_pointer<Pointer>::value &&
-	                          std::is_member_object_pointer<Member>::value,
-	                      int> = 0>
-	constexpr decltype(auto) do_invoke(Member mem, Pointer ptr) {
-		return ptr.*mem;
-	}
-} // namespace detail
-
-template <typename F, typename... Args>
-constexpr decltype(auto) invoke(F&& f, Args&&... args) {
-#if KBLIB_USE_CXX17
-	return std::apply(std::forward<F>(f),
-	                  std::forward_as_tuple(std::forward<Args>(args)...));
-#else
-	return detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...);
-#endif
-}
-
 template <class ForwardIt>
 constexpr ForwardIt
 rotate(ForwardIt first, ForwardIt n_first,
@@ -696,7 +648,7 @@ template <typename InputIt, typename OutputIt, typename UnaryOperation>
 constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
                              UnaryOperation unary_op) {
 	while (first != last) {
-		*d_first++ = fakestd::invoke(unary_op, *first);
+		*d_first++ = invoke(unary_op, *first);
 		++first;
 	}
 	return d_first;
@@ -723,7 +675,7 @@ template <typename InputIt, typename InputIt2, typename OutputIt,
 constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
                              OutputIt d_first, BinaryOperation binary_op) {
 	while (first != last) {
-		*d_first++ = fakestd::invoke(binary_op, *first, *first2);
+		*d_first++ = invoke(binary_op, *first, *first2);
 		++first;
 		++first2;
 	}
@@ -753,8 +705,8 @@ template <typename InputIt, typename OutputIt, typename UnaryPredicate,
 constexpr OutputIt transform_if(InputIt first, InputIt last, OutputIt d_first,
                                 UnaryPredicate pred, UnaryOperation unary_op) {
 	while (first != last) {
-		if (fakestd::invoke(pred, *first)) {
-			*d_first++ = fakestd::invoke(unary_op, *first);
+		if (invoke(pred, *first)) {
+			*d_first++ = invoke(unary_op, *first);
 		}
 		++first;
 	}

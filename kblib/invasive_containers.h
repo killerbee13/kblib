@@ -18,6 +18,8 @@ class invasive_map {
 	using mapped_type = Value;
 	// etc
 
+	template<int> auto get();
+
 private:
 	std::deque<Value> storage;
 	std::unordered_map<key_type_a, Value*, Hash1> map_a;
