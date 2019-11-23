@@ -21,7 +21,9 @@ SOURCES += \
     variant.cpp \
     bits.cpp \
     catch_main.cpp \
-    algorithm.cpp
+    algorithm.cpp \
+    multi_span.cpp \
+    invasive_containers.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -41,7 +43,9 @@ HEADERS += \
     kblib/traits.h \
     kblib/variant.h \
     kblib/kblib.h \
-    kblib/algorithm.h
+    kblib/algorithm.h \
+    kblib/multi_span.h \
+    kblib/invasive_containers.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags -Wreturn-std-move

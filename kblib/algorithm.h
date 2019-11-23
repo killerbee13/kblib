@@ -608,39 +608,36 @@ replace_copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred,
 namespace detail {
 
    template <typename F, typename... Args,
-             enable_if_t<
-                 !std::is_member_pointer<fakestd::decay_t<F>>::value, int> = 0>
+             enable_if_t<!std::is_member_pointer<fakestd::decay_t<F>>::value,
+                         int> = 0>
    constexpr decltype(auto) do_invoke(F&& f, Args&&... args) {
 		return std::forward<F>(f)(std::forward<Args>(args)...);
 	}
-	template <
-	    typename F, typename Object, typename... Args,
-	    enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
-	                             std::is_member_function_pointer<F>::value,
-	                         int> = 0>
+	template <typename F, typename Object, typename... Args,
+	          enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
+	                          std::is_member_function_pointer<F>::value,
+	                      int> = 0>
 	constexpr decltype(auto) do_invoke(F f, Object&& obj, Args&&... args) {
 		return (obj.*f)(std::forward<Args>(args)...);
 	}
 	template <typename F, typename Pointer, typename... Args,
 	          enable_if_t<std::is_pointer<Pointer>::value &&
-	                                   std::is_member_function_pointer<F>::value,
-	                               int> = 0>
+	                          std::is_member_function_pointer<F>::value,
+	                      int> = 0>
 	constexpr decltype(auto) do_invoke(F f, Pointer ptr, Args&&... args) {
 		return (ptr->*f)(std::forward<Args>(args)...);
 	}
-	template <
-	    typename Member, typename Object,
-	    enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
-	                             std::is_member_object_pointer<Member>::value,
-	                         int> = 0>
+	template <typename Member, typename Object,
+	          enable_if_t<!std::is_pointer<fakestd::decay_t<Object>>::value &&
+	                          std::is_member_object_pointer<Member>::value,
+	                      int> = 0>
 	constexpr decltype(auto) do_invoke(Member mem, Object&& obj) {
 		return std::forward<Object>(obj).*mem;
 	}
-	template <
-	    typename Member, typename Pointer,
-	    enable_if_t<std::is_pointer<Pointer>::value &&
-	                             std::is_member_object_pointer<Member>::value,
-	                         int> = 0>
+	template <typename Member, typename Pointer,
+	          enable_if_t<std::is_pointer<Pointer>::value &&
+	                          std::is_member_object_pointer<Member>::value,
+	                      int> = 0>
 	constexpr decltype(auto) do_invoke(Member mem, Pointer ptr) {
 		return ptr.*mem;
 	}
@@ -678,6 +675,90 @@ rotate(ForwardIt first, ForwardIt n_first,
 	// rotate the remaining sequence into place
 	kblib::rotate(write, next_read, last);
 	return write;
+}
+
+/**
+ * @brief transform applies the given function to a range and stores the result
+ * in another range, beginning at d_first. The unary operation unary_op is
+ * applied to the range defined by [first1, last1).
+ *
+ * @remark The expression `*d_first = std::invoke(unary_op, *first)` must be
+ * valid and must not modify `*first`.
+ *
+ * @param first The beginning of the input range
+ * @param last The end of the input range
+ * @param d_first The beginning of the output range
+ * @param unary_op The operation to apply
+ * @return OutputIt Output iterator to the element past the last element
+ * transformed
+ */
+template <typename InputIt, typename OutputIt, typename UnaryOperation>
+constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
+                             UnaryOperation unary_op) {
+	while (first != last) {
+		*d_first++ = fakestd::invoke(unary_op, *first);
+		++first;
+	}
+	return d_first;
+}
+
+/**
+ * @brief transform applies the given function to a range and stores the result
+ * in another range, beginning at d_first. The unary operation unary_op is
+ * applied to the range defined by [first1, last1).
+ *
+ * @remark The expression `*d_first = std::invoke(binary_op, *first, *first2)`
+ * must be valid and must not modify `*first` or `*first2`.
+ *
+ * @param first The beginning of the first input range
+ * @param last The end of the first input range
+ * @param first2 The beginning of the second input range
+ * @param d_first The beginning of the output range
+ * @param binary_op The operation to apply
+ * @return OutputIt Output iterator to the element past the last element
+ * transformed
+ */
+template <typename InputIt, typename InputIt2, typename OutputIt,
+          typename BinaryOperation>
+constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
+                             OutputIt d_first, BinaryOperation binary_op) {
+	while (first != last) {
+		*d_first++ = fakestd::invoke(binary_op, *first, *first2);
+		++first;
+		++first2;
+	}
+	return d_first;
+}
+
+/**
+ * @brief transform applies the given function to a range and stores the result
+ * in another range, beginning at d_first. The unary operation unary_op is
+ * applied to the range defined by [first1, last1).
+ *
+ * @remark The expression `std::invoke(pred, *first)` must be valid and must
+ * return a type convertible to `bool`, and must not modify `*first`
+ * @remark The expression `*d_first = std::invoke(unary_op, *first)` must be
+ * valid and must not modify `*first`.
+ *
+ * @param first The beginning of the input range
+ * @param last The end of the input range
+ * @param d_first The beginning of the output range
+ * @param pred The predicate to apply
+ * @param unary_op The operation to apply
+ * @return OutputIt Output iterator to the element past the last element
+ * transformed
+ */
+template <typename InputIt, typename OutputIt, typename UnaryPredicate,
+          typename UnaryOperation>
+constexpr OutputIt transform_if(InputIt first, InputIt last, OutputIt d_first,
+                                UnaryPredicate pred, UnaryOperation unary_op) {
+	while (first != last) {
+		if (fakestd::invoke(pred, *first)) {
+			*d_first++ = fakestd::invoke(unary_op, *first);
+		}
+		++first;
+	}
+	return d_first;
 }
 
 namespace detail {
@@ -945,7 +1026,7 @@ namespace detail {
 				              invoke(transform, *b));
 			};
 			if (end - begin < 8) {
-				insertion_sort_copy(begin, end, comp);
+				insertion_sort_copy(begin, end, d_begin, d_end, comp);
 				return;
 			} else {
 				// TODO
@@ -982,10 +1063,10 @@ namespace detail {
 	          typename SortKey>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
 	                           SortKey, true, true, false> {
-		static constexpr void inplace(RandomAccessIt begin,
-		                              const RandomAccessIt end,
-		                              UnaryOperation&& transform,
-		                              std::less<LessT>&& compare) {
+		static constexpr void inplace(KBLIB_UNUSED RandomAccessIt begin,
+		                              KBLIB_UNUSED const RandomAccessIt end,
+		                              KBLIB_UNUSED UnaryOperation&& transform,
+		                              KBLIB_UNUSED std::less<LessT>&& compare) {
 			// TODO
 		}
 	};
@@ -998,10 +1079,11 @@ namespace detail {
 	          typename SortKey>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
 	                           std::greater<LessT>, SortKey, true, true, false> {
-		static constexpr void inplace(RandomAccessIt begin,
-		                              const RandomAccessIt end,
-		                              UnaryOperation&& transform,
-		                              std::greater<LessT>&& compare) {
+		static constexpr void
+		inplace(KBLIB_UNUSED RandomAccessIt begin,
+		        KBLIB_UNUSED const RandomAccessIt end,
+		        KBLIB_UNUSED UnaryOperation&& transform,
+		        KBLIB_UNUSED std::greater<LessT>&& compare) {
 			// TODO
 		}
 	};
@@ -1014,10 +1096,10 @@ namespace detail {
 	          typename SortKey>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
 	                           SortKey, true, true, true> {
-		static constexpr void inplace(RandomAccessIt begin,
-		                              const RandomAccessIt end,
-		                              UnaryOperation&& transform,
-		                              std::less<LessT>&& compare) {
+		static constexpr void inplace(KBLIB_UNUSED RandomAccessIt begin,
+		                              KBLIB_UNUSED const RandomAccessIt end,
+		                              KBLIB_UNUSED UnaryOperation&& transform,
+		                              KBLIB_UNUSED std::less<LessT>&& compare) {
 			// TODO
 		}
 	};
@@ -1029,10 +1111,11 @@ namespace detail {
 	          typename SortKey>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
 	                           std::greater<LessT>, SortKey, true, true, true> {
-		static constexpr void inplace(RandomAccessIt begin,
-		                              const RandomAccessIt end,
-		                              UnaryOperation&& transform,
-		                              std::greater<LessT>&& compare) {
+		static constexpr void
+		inplace(KBLIB_UNUSED RandomAccessIt begin,
+		        KBLIB_UNUSED const RandomAccessIt end,
+		        KBLIB_UNUSED UnaryOperation&& transform,
+		        KBLIB_UNUSED std::greater<LessT>&& compare) {
 			// TODO
 		}
 	};

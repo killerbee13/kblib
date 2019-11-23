@@ -9,12 +9,6 @@
 #include "logic.h"
 #include "tdecl.h"
 
-#if KBLIB_USE_CXX17
-#define KBLIB_UNUSED [[gnu::unused]]
-#else
-#define KBLIB_UNUSED
-#endif
-
 namespace kblib {
 
 /**
@@ -219,7 +213,30 @@ constexpr auto sum(InputIt first, InputIt last)
 		return {};
 	}
 	auto init = *first++;
-	return accumulate(first, last, init);
+	return kblib::accumulate(first, last, init);
+}
+
+/**
+ * @brief Fold a range over an operation.
+ *
+ * Convenience wrapper for std::accumulate for numeric ranges. For an empty
+ * range, returns a value-initialized temporary (usually 0). Deduces the correct
+ * type for the initializer, which reduces risk of truncation and incorrect
+ * results.
+ *
+ * @param[in] first Beginning of range
+ * @param[in] last End of range
+ * @param[in] op The fold operation
+ * @return The sum of the input range.
+ */
+template <typename InputIt, typename BinaryOperation>
+constexpr auto sum(InputIt first, InputIt last, BinaryOperation op)
+    -> std::decay_t<decltype(*first)> {
+	if (first == last) {
+		return {};
+	}
+	auto init = *first++;
+	return accumulate(first, last, init, op);
 }
 
 inline namespace nums {

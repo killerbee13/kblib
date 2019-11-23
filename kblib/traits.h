@@ -203,6 +203,9 @@ struct is_contiguous<C, void_t<decltype(std::declval<C&>().data())>>
 template <typename C>
 constexpr bool is_contiguous_v = is_contiguous<C>::value;
 
+template <typename T, auto M>
+using member_t = typename std::remove_reference<decltype(std::declval<T&>().*M)>::type;
+
 } // namespace kblib
 
 #endif // KBLIB_TRAITS_H_INCLUDED_

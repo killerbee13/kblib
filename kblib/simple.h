@@ -425,7 +425,7 @@ namespace detail {
    constexpr std::size_t hash_tuple_impl(const Tuple& tuple, std::size_t offset,
 	                                      std::index_sequence<I>) noexcept {
 		return FNV_hash<typename std::tuple_element<I, Tuple>::type>{}(
-		    std::get<I>(tuple));
+		    std::get<I>(tuple), offset);
 	}
 
 	/**
@@ -442,7 +442,7 @@ namespace detail {
 	                std::index_sequence<I, I2, Is...>) noexcept {
 		std::size_t first_hash =
 		    FNV_hash<typename std::tuple_element<I, Tuple>::type>{}(
-		        std::get<I>(tuple));
+		        std::get<I>(tuple), offset);
 		return hash_tuple_impl(tuple, first_hash,
 		                       std::index_sequence<I2, Is...>{});
 	}
@@ -479,6 +479,22 @@ struct FNV_hash<Tuple, void_if_t<std::tuple_size<Tuple>::value == 0u &&
 		return offset;
 	}
 };
+
+template <typename T, std::size_t N>
+constexpr return_assert_t<std::is_integral<T>::value, bool> is_consecutive(const T (&array)[N]) {
+	if constexpr (N <= 1) {
+		return true;
+	} else if constexpr (N == 2) {
+		return (array[1] - array[0]) == 1;
+	} else {
+		for (std::size_t i = 1; i < N; ++i) {
+			if ((array[i] - array[i - 1]) != 1) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
 
 namespace detail {
 

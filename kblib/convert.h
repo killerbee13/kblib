@@ -11,6 +11,7 @@
 #include <typeinfo>
 
 #include "traits.h"
+#include "simple.h"
 
 #if KBLIB_DEF_MACROS
 #define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
@@ -100,6 +101,28 @@ To lexical_cast(const From& val, const char* type = typeid(To).name()) {
       throw std::runtime_error("Cannot convert \""s + toStr(val) + "\" to " +
                                type);
   }
+}
+#endif
+
+constexpr bool digits_are_ascii_like(char) {
+	return is_consecutive("0123456789");
+}
+
+constexpr bool digits_are_ascii_like(wchar_t) {
+	return is_consecutive(L"0123456789");
+}
+
+constexpr bool digits_are_ascii_like(char16_t) {
+	return is_consecutive(u"0123456789");
+}
+
+constexpr bool digits_are_ascii_like(char32_t) {
+	return is_consecutive(U"0123456789");
+}
+
+#if defined(__cpp_char8_t)
+constexpr bool digits_are_ascii_like(char8_t) {
+	return true;
 }
 #endif
 

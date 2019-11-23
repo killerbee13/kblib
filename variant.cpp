@@ -275,7 +275,6 @@ struct thrower {
 TEST_CASE("poly_obj performance") {
 	const auto start = std::chrono::steady_clock::now();
 	   constexpr unsigned count = 1000;
-		constexpr unsigned runs = 10;
 		//	std::map<std::pair<int, std::string_view>, std::array<int, runs>>
 		// perfs;
 

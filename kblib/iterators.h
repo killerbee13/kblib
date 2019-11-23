@@ -354,7 +354,7 @@ class range_t {
 		} else {
 			auto difference = max - min;
 			int sign = (step > 0) ? 1 : -1;
-			if ((sign * difference) <= (sign * step)) {
+			if ((sign * to_signed(difference)) <= (sign * step)) {
 				step = sign;
 				max = min + step;
 			} else {
@@ -438,7 +438,7 @@ constexpr range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
  * @return range_t<Value, int> An iterable range [0, max).
  */
 template <typename Value>
-constexpr range_t<Value, int> range(Value max) {
+constexpr range_t<Value, incrementer> range(Value max) {
 	return {max};
 }
 
@@ -948,6 +948,306 @@ struct indirect_range {
 	auto rbegin() const noexcept { return std::make_reverse_iterator(begin_); }
 	auto rend() const noexcept { return std::make_reverse_iterator(end_); }
 };
+
+template <typename Iter1, typename Iter2>
+indirect_range(Iter1, Iter2) -> indirect_range<Iter1, Iter2>;
+
+// Fixed number of ranges
+template <typename Iter1, typename EndIter = Iter1, std::size_t count = 0>
+class multi_range {
+public:
+
+private:
+	struct range {
+		Iter1 begin;
+		EndIter end;
+	};
+
+	std::array<range, count> ranges;
+};
+
+// Dynamic number of ranges
+template <typename Iter1, typename EndIter>
+class multi_range<Iter1, EndIter, 0> {
+public:
+
+private:
+	struct range {
+		Iter1 begin;
+		EndIter end;
+	};
+
+	std::vector<range> ranges;
+};
+
+
+/**
+ * @brief A smart pointer to an object contained inside the smart pointer
+ * object.
+ *
+ */
+template <typename T>
+struct containing_ptr {
+	/**
+	 * @brief Returns the contained object.
+	 */
+	constexpr T& operator*() noexcept { return val; }
+	/**
+	 * @brief Returns the contained object.
+	 */
+	constexpr const T& operator*() const noexcept { return val; }
+
+	/**
+	 * @brief Return the address of the contained object.
+	 */
+	constexpr T* operator->() noexcept { return &val; }
+	/**
+	 * @brief Return the address of the contained object.
+	 */
+	constexpr const T* operator->() const noexcept { return &val; }
+
+	/**
+	 * @brief Returns the address of the contained object.
+	 */
+	constexpr T* get() noexcept { return &val; }
+	/**
+	 * @brief Returns the address of the contained object.
+	 */
+	constexpr const T* get() const noexcept { return &val; }
+
+	T val;
+};
+
+#if KBLIB_USE_CXX17
+
+/**
+ * @brief An InputIterator that applies a transformation to the elements of the
+ * range.
+ *
+ * @attention This class template depends on features introduced in C++17.
+ */
+template <typename base_iterator, typename operation>
+class transform_iterator {
+ private:
+	base_iterator it;
+	std::optional<operation> op;
+
+ public:
+	using difference_type = std::ptrdiff_t;
+	using result_type = decltype(std::invoke(*op, *it));
+	using const_result_type =
+	    decltype(std::invoke(const_cast<const operation&>(*op),
+	                         const_cast<const base_iterator&>(*it)));
+	using value_type = result_type;
+	using pointer = void;
+	using reference = value_type;
+	using iterator_category = std::input_iterator_tag;
+
+	/**
+	 * @brief Constructs a transform_iterator which applies _op to the values
+	 * obtained from *_it.
+	 *
+	 * @param _it An InputIterator to a range to be transformed.
+	 * @param _op The operation to apply to each element.
+	 */
+	transform_iterator(base_iterator _it, operation _op) : it(_it), op(_op) {}
+
+	/**
+	 * @brief constructs a non-dereferenceable sentinel iterator
+	 *
+	 * @param end_it An iterator that marks the end of the input range.
+	 */
+	transform_iterator(base_iterator end_it) : it(end_it), op(std::nullopt) {}
+
+	/**
+	 * @brief Transforms the value obtained by dereferencing it.
+	 *
+	 * @return decltype(auto) The result of invoking op on *it.
+	 */
+	decltype(auto) operator*() { return std::invoke(*op, *it); }
+	/**
+	 * @brief Transforms the value obtained by dereferencing it.
+	 *
+	 * @return decltype(auto) The result of invoking op on *it.
+	 */
+	decltype(auto) operator*() const { return std::invoke(*op, *it); }
+
+	/**
+	 * @brief Returns a containing_ptr with the transformed value, because
+	 * operator-> expects a pointer-like return type.
+	 */
+	auto operator-> () {
+		return containing_ptr<result_type>{{std::invoke(*op, *it)}};
+	}
+	/**
+	 * @brief Returns a containing_ptr with the transformed value, because
+	 * operator-> expects a pointer-like return type.
+	 */
+	auto operator-> () const {
+		return containing_ptr<const_result_type>{{std::invoke(*op, *it)}};
+	}
+
+	/**
+	 * @brief Increments the underlying iterator and returns *this.
+	 */
+	transform_iterator& operator++() {
+		++it;
+		return *this;
+	}
+
+	/**
+	 * @brief Increments the underlying iterator and returns a copy of the
+	 * current value.
+	 */
+	[[deprecated(
+	    "Needlessly copies op. Use preincrement instead.")]] transform_iterator
+	operator++(int) {
+		return {it++, op};
+	}
+
+	/**
+	 * @brief Compares the base iterators of lhs and rhs.
+	 */
+	friend bool
+	operator==(const transform_iterator<base_iterator, operation>& lhs,
+	           const transform_iterator<base_iterator, operation>& rhs) {
+		return lhs.it == rhs.it;
+	}
+
+	/**
+	 * @brief Compares the base iterators of lhs and rhs.
+	 */
+	friend bool
+	operator!=(const transform_iterator<base_iterator, operation>& lhs,
+	           const transform_iterator<base_iterator, operation>& rhs) {
+		return lhs.it != rhs.it;
+	}
+};
+
+/**
+ * @brief Factory function to make transform_iterators.
+ *
+ * @param it An InputIterator to a range to transform.
+ * @param op The transformation to apply.
+ * @return transform_iterator<base_iterator, operation>
+ */
+template <typename base_iterator, typename operation>
+transform_iterator<base_iterator, operation>
+make_transform_iterator(base_iterator it, operation op) {
+	return {it, op};
+}
+#endif
+
+/**
+ * @brief An OutputIterator that transforms the values assigned to it before
+ * inserting them into the back of a container.
+ *
+ * @author From marttyfication#4235 on the C++ Help discord.
+ */
+template <typename Container, typename F>
+class back_insert_iterator_F {
+ public:
+	/**
+	 * @brief
+	 *
+	 * @param c The container to be inserted into.
+	 * @param f The tranformation to apply to each argument.
+	 */
+	explicit back_insert_iterator_F(Container& c, F f)
+	    : container(c), fun(std::move(f)) {}
+
+	using value_type = void;
+	using difference_type = void;
+	using pointer = void;
+	using reference = void;
+	using iterator_category = std::output_iterator_tag;
+
+	template <typename V>
+	/**
+	 * @brief Calls container.push_back(std::invoke(fun,
+	 * std::forward<V>(value)));
+	 *
+	 * @param value The value to transform and insert.
+	 * @return back_insert_iterator& *this.
+	 */
+	back_insert_iterator_F& operator=(V&& value) {
+		container.push_back(fakestd::invoke(fun, std::forward<V>(value)));
+		return *this;
+	}
+
+	/**
+	 * @brief A no-op.
+	 */
+	back_insert_iterator_F& operator*() { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	back_insert_iterator_F& operator++() { return *this; }
+
+ private:
+	Container& container;
+	F fun;
+};
+
+/**
+ * @brief An OutputIterator that simply calls a provided functor for each value
+ * assigned to it.
+ */
+template <typename F>
+class consume_iterator {
+ public:
+	using value_type = void;
+	using difference_type = void;
+	using pointer = void;
+	using reference = void;
+	using iterator_category = std::output_iterator_tag;
+
+	/**
+	 * @brief Constructs a consume_iterator with the given function object.
+	 *
+	 * @param f The functor to pass values to.
+	 */
+	explicit consume_iterator(F f) : fun(std::move(f)) {}
+
+	/**
+	 * @brief Pass value to F.
+	 *
+	 * @param value The argument for the functor.
+	 * @return consume_iterator& *this.
+	 */
+	template <typename V>
+	consume_iterator& operator=(V&& value) noexcept(
+	    noexcept(fakestd::invoke(fun, std::forward<V>(value)))) {
+		fakestd::invoke(fun, std::forward<V>(value));
+		return *this;
+	}
+
+	/**
+	 * @brief A no-op.
+	 */
+	consume_iterator& operator*() { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	consume_iterator& operator++() { return *this; }
+
+ private:
+	F fun;
+};
+
+/**
+ * @brief Creates a consume_iterator of deduced type F.
+ *
+ * This could be a deduction guide, if kblib didn't also support C++14. Thus,
+ * the old style is used for compatibility.
+ *
+ * @param f A functor to call on assignment.
+ * @return consume_iterator<F>
+ */
+template <typename F>
+consume_iterator<F> consumer(F f) {
+	return consume_iterator<F>{std::move(f)};
+}
 
 } // namespace kblib
 

@@ -15,8 +15,8 @@ TEST_CASE("FNV_hash") {
 	    std::unordered_map<std::tuple<std::wstring, int*>, std::vector<std::basic_string<bool>>,
 	                       kblib::FNV_hash<std::tuple<std::wstring, int*>>>>
 	    test_hash1;
-	kblib::FNV_hash<std::array<std::basic_string<bool>, 4>> test_hash2;
-	auto call = &decltype(test_hash1)::operator();
+	KBLIB_UNUSED kblib::FNV_hash<std::array<std::basic_string<bool>, 4>> test_hash2;
+	KBLIB_UNUSED auto call = &decltype(test_hash1)::operator();
 //	std::hash<
 //	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,
 //	                       std::hash<std::wstring>>>

@@ -26,7 +26,13 @@
 #if __cplusplus > 201402L
 #define KBLIB_NODISCARD [[nodiscard]]
 #else
-#define KBLIB_NODISCARD
+#define KBLIB_NODISCARD [[gnu::warn_unused_result]]
+#endif
+
+#if KBLIB_USE_CXX17
+#define KBLIB_UNUSED [[maybe_unused]]
+#else
+#define KBLIB_UNUSED [[gnu::unused]]
 #endif
 
 #if defined(_DOXYGEN_) && !defined(KBLIB_DEF_MACROS)
