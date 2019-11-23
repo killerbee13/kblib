@@ -496,7 +496,7 @@ build_copy_if(InputIt first, InputIt last, Predicate f,
               typename Container::allocator_type allocator =
                   typename Container::allocator_type{}) {
 	Container out(allocator);
-	std::copy_if(first, last, std::back_inserter(out), f);
+	kblib::copy_if(first, last, std::back_inserter(out), f);
 	return out;
 }
 

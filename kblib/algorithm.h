@@ -43,7 +43,7 @@ constexpr void erase_if(Container& c, UnaryPredicate p) {
  * @param value The value to search for
  * @return It Either the position of the found value, or end if not found
  */
-template <typename ForwardIt, typename Elem, typename Comp>
+template <typename ForwardIt, typename Elem>
 KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
                                          const Elem& value) {
 	auto equal = [](const Elem& a, const Elem& b) {
@@ -88,7 +88,25 @@ KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
 template <typename ForwardIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr ForwardIt find_if(ForwardIt begin, ForwardIt end,
                                             UnaryPredicate&& pred) {
-	while (begin != end && !pred(*begin)) {
+	while (begin != end && !kblib::invoke(pred, *begin)) {
+		++begin;
+	}
+	return begin;
+}
+
+/**
+ * @brief Finds the first value in range [begin, end) for which pred returns
+ * false. If not found, returns end.
+ *
+ * @param begin Beginning of the range to search
+ * @param end One past the end of the range
+ * @param pred The predicate to scan with
+ * @return It Either the position of the found value, or end if not found
+ */
+template <typename ForwardIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt find_if_not(ForwardIt begin, ForwardIt end,
+                                                UnaryPredicate&& pred) {
+	while (begin != end && kblib::invoke(pred, *begin)) {
 		++begin;
 	}
 	return begin;
@@ -112,7 +130,7 @@ KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, ForwardIt end,
 	}
 	auto result = end;
 	while (true) {
-		auto new_result = std::find(begin, end, v);
+		auto new_result = kblib::find(begin, end, v);
 		if (new_result == end) {
 			break;
 		} else {
@@ -130,19 +148,19 @@ KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, ForwardIt end,
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
- * @param p The predicate for comparison
+ * @param pred The predicate for comparison
  * @return It Iterator to the last element for which p returned true, or end if
  * no such element.
  */
 template <typename ForwardIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, ForwardIt end,
-                                                 UnaryPredicate p) {
+                                                 UnaryPredicate pred) {
 	if (begin == end) {
 		return end;
 	}
 	auto result = end;
 	while (true) {
-		auto new_result = kblib::find_if(begin, end, p);
+		auto new_result = kblib::find_if(begin, end, pred);
 		if (new_result == end) {
 			break;
 		} else {
@@ -160,19 +178,19 @@ KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, ForwardIt end,
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
- * @param p The predicate for comparison
+ * @param pred The predicate for comparison
  * @return It Iterator to the last element for which p returned false, or end if
  * no such element.
  */
 template <typename ForwardIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr ForwardIt
-find_last_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate p) {
+find_last_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate pred) {
 	if (begin == end) {
 		return end;
 	}
 	auto result = end;
 	while (true) {
-		auto new_result = std::find_if_not(begin, end, p);
+		auto new_result = kblib::find_if_not(begin, end, pred);
 		if (new_result == end) {
 			break;
 		} else {
@@ -197,7 +215,7 @@ find_last_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate p) {
 template <typename ForwardIt, typename Elem>
 KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, ForwardIt end,
                                          const Elem& v) {
-	return std::find(begin, end, v) - begin;
+	return kblib::find(begin, end, v) - begin;
 }
 
 /**
@@ -205,28 +223,28 @@ KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, ForwardIt end,
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
 template <typename ForwardIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_in_if(ForwardIt begin, ForwardIt end,
-                                            UnaryPredicate p) {
-	return std::find_if(begin, end, p) - begin;
+                                            UnaryPredicate pred) {
+	return kblib::find_if(begin, end, pred) - begin;
 }
 /**
  * @brief Find the offset of the first element for which p returns false.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
 template <typename ForwardIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_in_if_not(ForwardIt begin, ForwardIt end,
-                                                UnaryPredicate p) {
-	return std::find_if_not(begin, end, p) - begin;
+                                                UnaryPredicate pred) {
+	return kblib::find_if_not(begin, end, pred) - begin;
 }
 
 // find_last_in:
@@ -253,28 +271,28 @@ KBLIB_NODISCARD constexpr size_t find_last_in(ForwardIt begin, ForwardIt end,
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
 template <typename ForwardIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_last_in_if(ForwardIt begin, ForwardIt end,
-                                                 UnaryPredicate p) {
-	return kblib::find_last_if(begin, end, p) - begin;
+                                                 UnaryPredicate pred) {
+	return kblib::find_last_if(begin, end, pred) - begin;
 }
 /**
  * @brief Find the offset of the last element for which p returns false.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
 template <typename ForwardIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t
-find_last_in_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate p) {
-	return kblib::find_last_if_not(begin, end, p) - begin;
+find_last_in_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate pred) {
+	return kblib::find_last_if_not(begin, end, pred) - begin;
 }
 
 /**
@@ -304,13 +322,13 @@ KBLIB_NODISCARD constexpr size_t find_in(ExecutionPolicy&& policy, const Contain
  * Equivalent to find_in_if(std::begin(c), std::end(c), p)
  *
  * @param c The container to search in.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c,
-                                            UnaryPredicate p) {
-	return std::find_if(std::begin(c), std::end(c), p) - std::begin(c);
+                                            UnaryPredicate pred) {
+	return kblib::find_if(std::begin(c), std::end(c), pred) - std::begin(c);
 }
 /**
  * @brief Find the first element in c for which p returns false and return the
@@ -319,13 +337,13 @@ KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c,
  * Equivalent to find_in_if_not(std::begin(c), std::end(c), p)
  *
  * @param c The container to search in.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_in_if_not(const Container& c,
-                                                UnaryPredicate p) {
-	return std::find_if_not(std::begin(c), std::end(c), p) - std::begin(c);
+                                                UnaryPredicate pred) {
+	return kblib::find_if_not(std::begin(c), std::end(c), pred) - std::begin(c);
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename UnaryPredicate>
@@ -359,13 +377,13 @@ KBLIB_NODISCARD constexpr size_t find_last_in(const Container& c, const T& v) {
  * Equivalent to find_last_in_if(std::begin(c), std::end(c), p)
  *
  * @param c The container to search in.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c,
-                                                 UnaryPredicate p) {
-	return kblib::find_last_if(std::begin(c), std::end(c), p) - std::begin(c);
+                                                 UnaryPredicate pred) {
+	return kblib::find_last_if(std::begin(c), std::end(c), pred) - std::begin(c);
 }
 /**
  * @brief Find the last element in c for which p returns true and return the
@@ -374,13 +392,13 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c,
  * Equivalent to find_last_in_if_not(std::begin(c), std::end(c), p)
  *
  * @param c The container to search in.
- * @param p The predicate to check.
+ * @param pred The predicate to check.
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
-                                                     UnaryPredicate p) {
-	return kblib::find_last_if_not(std::begin(c), std::end(c), p) -
+                                                     UnaryPredicate pred) {
+	return kblib::find_last_if_not(std::begin(c), std::end(c), pred) -
 	       std::begin(c);
 }
 
@@ -480,7 +498,7 @@ KBLIB_NODISCARD constexpr Container
 get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
 	    begin, end, count, cmp);
-	return Container{temp.begin(), temp.end()};
+	return Container{std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end())};
 }
 
 /**
@@ -499,8 +517,7 @@ get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
  * @return return_assert_t<is_output_iterator<OutputIt, ElementT>::value,
- * OutputIt> An iterator derived by assigning to and advancing d_begin count
- * times.
+ * OutputIt> An iterator to past the last element written.
  */
 template <typename Comp = std::less<>, typename InputIt, typename OutputIt,
           typename Elem = typename std::iterator_traits<InputIt>::value_type>
@@ -525,8 +542,8 @@ constexpr auto get_max_n(InputIt begin, InputIt end, OutputIt d_begin,
  * @return BinaryFunction f
  */
 template <typename ForwardIt, typename ForwardIt2, typename BinaryFunction>
-KBLIB_NODISCARD constexpr BinaryFunction
-for_each(ForwardIt first, ForwardIt last, ForwardIt2 second, BinaryFunction f) {
+constexpr BinaryFunction for_each(ForwardIt first, ForwardIt last,
+                                  ForwardIt2 second, BinaryFunction f) {
 	for (; first != last; (void)++first, (void)++second) {
 		f(*first, *second);
 	}
@@ -546,7 +563,7 @@ for_each(ForwardIt first, ForwardIt last, ForwardIt2 second, BinaryFunction f) {
  */
 template <typename ForwardIt, typename ForwardIt2, typename Size,
           typename BinaryFunction>
-KBLIB_NODISCARD constexpr std::pair<ForwardIt, ForwardIt2>
+constexpr std::pair<ForwardIt, ForwardIt2>
 for_each_n(ForwardIt first, Size n, ForwardIt2 second, BinaryFunction f) {
 	for (Size i = 0; i < n; (void)++first, (void)++second, (void)++i) {
 		f(*first, *second);
@@ -555,21 +572,82 @@ for_each_n(ForwardIt first, Size n, ForwardIt2 second, BinaryFunction f) {
 }
 
 /**
+ * @brief Copies all elements of [`first`, `last`) to out
+ *
+ * @remark This function is `constexpr` in C++14.
+ *
+ * @param first The beginning of the input range
+ * @param last The end of the input range
+ * @param out The beginning of the output range
+ * @return OutputIt An iterator to past the last element written
+ */
+template <typename InputIt, typename OutputIt>
+constexpr OutputIt copy(InputIt first, InputIt last, OutputIt out) {
+	while (first != last) {
+		*out++ = *first++;
+	}
+	return out;
+}
+
+/**
+ * @brief Copies those elements of [`first`, `last`) which satisfy pred to out
+ *
+ * @remark This function is `constexpr` in C++14.
+ *
+ * @param first The beginning of the input range
+ * @param last The end of the input range
+ * @param out The beginning of the output range
+ * @param pred The predicate to apply
+ * @return OutputIt An iterator to past the last element written
+ */
+template <typename InputIt, typename OutputIt, typename UnaryPredicate>
+constexpr OutputIt copy_if(InputIt first, InputIt last, OutputIt out,
+                           UnaryPredicate pred) {
+	while (first != last) {
+		if (kblib::invoke(pred, *first)) {
+			*out++ = *first;
+		}
+		first++;
+	}
+	return out;
+}
+
+/**
+ * @brief Copies all elements of [`first`, `std::advance(first, n)`) to out.
+ *
+ * @remark This function is `constexpr` in C++14.
+ *
+ * @param first The beginning of the input range.
+ * @param count The number of elements in the input range.
+ * @param out The output range.
+ * @return OutputIt OutputIt An iterator to past the last element written
+ */
+template <typename InputIt, typename Size, typename OutputIt>
+constexpr OutputIt copy_n(InputIt first, Size count, OutputIt out) {
+	for (Size i = 0; i < count; ++i) {
+		*out++ = *first++;
+	}
+	return out;
+}
+
+/**
  * @brief Copies those elements of [`first`, `std::advance(first, n)`) which
  * satisfy pred to out.
+ *
+ * @remark This function is `constexpr` in C++14.
  *
  * @param first The beginning of the input range.
  * @param count The number of elements in the input range.
  * @param out The output range.
  * @param pred The predicate to apply.
- * @return OutputIt `std::advance(first, n)`
+ * @return OutputIt OutputIt An iterator to past the last element written
  */
 template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate>
-KBLIB_NODISCARD constexpr OutputIt
-copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred) {
+constexpr OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
+                             UnaryPredicate pred) {
 	for (Size i = 0; i < count; ++i) {
-		if (pred(*first)) {
+		if (kblib::invoke(pred, *first)) {
 			*out++ = *first;
 		}
 		++first;
@@ -579,7 +657,39 @@ copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred) {
 
 /**
  * @brief Copies an input range, but every element for which pred is true is
- * replaced by
+ * replaced by new_value.
+ *
+ * @remark This function is `constexpr` in C++14.
+ *
+ * @param first The beginning of the input range.
+ * @param last The end of the input range.
+ * @param out The beginning of the output range.
+ * @param pred The predicate to apply.
+ * @param new_value The value to replace those elements for which pred is true
+ * with.
+ * @return An iterator to past the last element written.
+ */
+template <typename InputIt, typename OutputIt,
+          typename UnaryPredicate, typename T>
+constexpr OutputIt replace_copy_if(InputIt first, InputIt last, OutputIt out,
+                                     UnaryPredicate pred, const T& new_value) {
+	while (first != last) {
+		if (kblib::invoke(pred, *first)) {
+			*out = *first;
+		} else {
+			*out = new_value;
+		}
+		++first;
+		++out;
+	}
+	return out;
+}
+
+/**
+ * @brief Copies an input range, but every element for which pred is true is
+ * replaced by new_value.
+ *
+ * @remark This function is `constexpr` in C++14.
  *
  * @param first The beginning of the input range.
  * @param count The number of elements to copy.
@@ -587,20 +697,20 @@ copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred) {
  * @param pred The predicate to apply.
  * @param new_value The value to replace those elements for which pred is true
  * with.
- * @return OutputIt out after being incremented count times.
+ * @return OutputIt An iterator to past the last element written.
  */
 template <typename InputIt, typename Size, typename OutputIt,
           typename UnaryPredicate, typename T>
-KBLIB_NODISCARD constexpr OutputIt
-replace_copy_n_if(InputIt first, Size count, OutputIt out, UnaryPredicate pred,
-                  const T& new_value) {
+constexpr OutputIt replace_copy_n_if(InputIt first, Size count, OutputIt out,
+                                     UnaryPredicate pred, const T& new_value) {
 	for (Size i = 0; i < count; ++i) {
-		if (pred(*first)) {
-			*out++ = *first;
+		if (kblib::invoke(pred, *first)) {
+			*out = *first;
 		} else {
-			*out++ = new_value;
+			*out = new_value;
 		}
 		++first;
+		++out;
 	}
 	return out;
 }
@@ -634,21 +744,20 @@ rotate(ForwardIt first, ForwardIt n_first,
  * in another range, beginning at d_first. The unary operation unary_op is
  * applied to the range defined by [first1, last1).
  *
- * @remark The expression `*d_first = std::invoke(unary_op, *first)` must be
+ * @remark The expression `*d_first = kblib::invoke(unary_op, *first)` must be
  * valid and must not modify `*first`.
  *
  * @param first The beginning of the input range
  * @param last The end of the input range
  * @param d_first The beginning of the output range
  * @param unary_op The operation to apply
- * @return OutputIt Output iterator to the element past the last element
- * transformed
+ * @return OutputIt An iterator to past the last element written
  */
 template <typename InputIt, typename OutputIt, typename UnaryOperation>
 constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
                              UnaryOperation unary_op) {
 	while (first != last) {
-		*d_first++ = invoke(unary_op, *first);
+		*d_first++ = kblib::invoke(unary_op, *first);
 		++first;
 	}
 	return d_first;
@@ -659,7 +768,7 @@ constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
  * in another range, beginning at d_first. The unary operation unary_op is
  * applied to the range defined by [first1, last1).
  *
- * @remark The expression `*d_first = std::invoke(binary_op, *first, *first2)`
+ * @remark The expression `*d_first = kblib::invoke(binary_op, *first, *first2)`
  * must be valid and must not modify `*first` or `*first2`.
  *
  * @param first The beginning of the first input range
@@ -667,15 +776,14 @@ constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
  * @param first2 The beginning of the second input range
  * @param d_first The beginning of the output range
  * @param binary_op The operation to apply
- * @return OutputIt Output iterator to the element past the last element
- * transformed
+ * @return OutputIt An iterator to past the last element written
  */
 template <typename InputIt, typename InputIt2, typename OutputIt,
           typename BinaryOperation>
 constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
                              OutputIt d_first, BinaryOperation binary_op) {
 	while (first != last) {
-		*d_first++ = invoke(binary_op, *first, *first2);
+		*d_first++ = kblib::invoke(binary_op, *first, *first2);
 		++first;
 		++first2;
 	}
@@ -687,9 +795,9 @@ constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
  * in another range, beginning at d_first. The unary operation unary_op is
  * applied to the range defined by [first1, last1).
  *
- * @remark The expression `std::invoke(pred, *first)` must be valid and must
+ * @remark The expression `kblib::invoke(pred, *first)` must be valid and must
  * return a type convertible to `bool`, and must not modify `*first`
- * @remark The expression `*d_first = std::invoke(unary_op, *first)` must be
+ * @remark The expression `*d_first = kblib::invoke(unary_op, *first)` must be
  * valid and must not modify `*first`.
  *
  * @param first The beginning of the input range
@@ -697,16 +805,15 @@ constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
  * @param d_first The beginning of the output range
  * @param pred The predicate to apply
  * @param unary_op The operation to apply
- * @return OutputIt Output iterator to the element past the last element
- * transformed
+ * @return OutputIt An iterator to past the last element written
  */
 template <typename InputIt, typename OutputIt, typename UnaryPredicate,
           typename UnaryOperation>
 constexpr OutputIt transform_if(InputIt first, InputIt last, OutputIt d_first,
                                 UnaryPredicate pred, UnaryOperation unary_op) {
 	while (first != last) {
-		if (invoke(pred, *first)) {
-			*d_first++ = invoke(unary_op, *first);
+		if (kblib::invoke(pred, *first)) {
+			*d_first++ = kblib::invoke(unary_op, *first);
 		}
 		++first;
 	}
@@ -939,8 +1046,8 @@ namespace detail {
 		                              BinaryPredicate&& compare) {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
-				return invoke(compare, invoke(transform, *a),
-				              invoke(transform, *b));
+				return kblib::invoke(compare, kblib::invoke(transform, *a),
+				              kblib::invoke(transform, *b));
 			};
 			if (end - begin < 8) {
 				insertion_sort(begin, end, comp);
@@ -956,8 +1063,8 @@ namespace detail {
 		                              BinaryPredicate&& compare) {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
-				return invoke(compare, invoke(transform, *a),
-				              invoke(transform, *b));
+				return kblib::invoke(compare, kblib::invoke(transform, *a),
+				              kblib::invoke(transform, *b));
 			};
 			if (end - begin < 8) {
 				insertion_sort(begin, end, comp);
@@ -974,8 +1081,8 @@ namespace detail {
 		                           BinaryPredicate&& compare) {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
-				return invoke(compare, invoke(transform, *a),
-				              invoke(transform, *b));
+				return kblib::invoke(compare, kblib::invoke(transform, *a),
+				              kblib::invoke(transform, *b));
 			};
 			if (end - begin < 8) {
 				insertion_sort_copy(begin, end, d_begin, d_end, comp);
@@ -998,7 +1105,7 @@ namespace detail {
 	                           true, false, false> {
 		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt
 	end, UnaryOperation&& transform, BinaryPredicate&& compare) { auto comp = [&compare,
-	&transform](RandomAccessIt a, RandomAccessIt b) { return invoke(compare,
+	&transform](RandomAccessIt a, RandomAccessIt b) { return kblib::invoke(compare,
 	(*a).*transform, (*b).*transform);
 			};
 
@@ -1124,7 +1231,7 @@ constexpr void sort_transform(RandomAccessIt begin, RandomAccessIt end,
                               UnaryOperation&& transform,
                               BinaryPredicate&& compare) {
 	detail::sort_transform_impl<RandomAccessIt, UnaryOperation, BinaryPredicate,
-	                            decltype(invoke(transform, *begin))>::
+	                            decltype(kblib::invoke(transform, *begin))>::
 	    inplace(begin, end, std::forward<UnaryOperation>(transform),
 	            std::forward<BinaryPredicate>(compare));
 }
@@ -1140,7 +1247,7 @@ template <typename RandomAccessIt, typename UnaryOperation>
 constexpr void sort_transform(RandomAccessIt begin, RandomAccessIt end,
                               UnaryOperation&& transform) {
 	detail::sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<>,
-	                            decltype(invoke(transform, *begin))>::
+	                            decltype(kblib::invoke(transform, *begin))>::
 	    inplace(begin, end, std::forward<UnaryOperation>(transform),
 	            std::less<>{});
 }

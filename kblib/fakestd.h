@@ -694,17 +694,6 @@ lexicographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2,
 	return (first1 == last1) && (first2 != last2);
 }
 
-template <class InputIt, class Size, class OutputIt>
-constexpr OutputIt copy_n(InputIt first, Size count, OutputIt result) {
-	if (count > 0) {
-		*result++ = *first;
-		for (Size i = 1; i < count; ++i) {
-			*result++ = *++first;
-		}
-	}
-	return result;
-}
-
 // cond_ptr: A pointer which can either uniquely own its referent, or which can
 // be a non-owning reference. Note that custom deleter support is not present;
 // however it will not implicitly strip a deleter from a unique_ptr.
