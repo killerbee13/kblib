@@ -602,6 +602,26 @@ template <bool... args>
 constexpr bool conjunction = (args && ...);
 #endif
 
+#if KBLIB_USE_CXX20
+
+template <typename T>
+concept zero_constructible = requires(T t) {
+  {t = 0};
+};
+
+struct zero_t {
+  consteval zero_t(int i) { i == 0 ? void() : throw 0; }
+  template <zero_constructible T>
+  constexpr operator T() const noexcept {
+	 return 0;
+  }
+  explicit constexpr operator std::nullptr_t() const noexcept {
+	 return nullptr;
+  }
+};
+
+#endif
+
 } // namespace kblib
 
 #undef KBLIB_DEBUG_LOG_RANGES

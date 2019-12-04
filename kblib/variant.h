@@ -176,52 +176,68 @@ constexpr decltype(auto) visit(V&& v, F&& f, Fs&&... fs) {
 
 namespace detail {
 
-template <typename F, typename... Ts>
-constexpr bool invocable_with_all_v = (std::is_invocable_v<F, Ts> && ...);
+   template <typename F, typename... Ts>
+   constexpr bool invocable_with_all_v = (std::is_invocable_v<F, Ts> && ...);
 
-template <typename F, typename... Ts>
-constexpr bool invocable_with_all_v<F, std::variant<Ts...>> = invocable_with_all_v<F, Ts...>;
+	template <typename F, typename... Ts>
+	constexpr bool invocable_with_all_v<F, std::variant<Ts...>> =
+	    invocable_with_all_v<F, Ts...>;
 
-template <typename V, typename F, std::size_t I, std::size_t... Is>
-[[gnu::always_inline]] constexpr decltype(auto) visit_impl(V&& v, F&& f, std::index_sequence<I, Is...>) {
-	static_assert(I < std::variant_size_v<std::decay_t<V>>);
-	if (auto* p = std::get_if<I>(&v)) {
-		return std::forward<F>(f)(static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
-	} else if constexpr (sizeof...(Is) > 0) {
-		return visit_impl(std::forward<V>(v), std::forward<F>(f), std::index_sequence<Is...>{});
-	} else {
-		throw std::bad_variant_access();
+	template <typename V, typename F, std::size_t I, std::size_t... Is>
+	[[gnu::always_inline]] constexpr decltype(auto)
+	visit_impl(V&& v, F&& f, std::index_sequence<I, Is...>) {
+		static_assert(I < std::variant_size_v<std::decay_t<V>>);
+		if (auto* p = std::get_if<I>(&v)) {
+			return std::forward<F>(f)(
+			    static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
+		} else if constexpr (sizeof...(Is) > 0) {
+			return visit_impl(std::forward<V>(v), std::forward<F>(f),
+			                  std::index_sequence<Is...>{});
+		} else {
+			throw std::bad_variant_access();
+		}
 	}
-}
 
-template <typename V, typename F, std::size_t I, std::size_t... Is>
-[[gnu::always_inline]] constexpr void visit_nop_impl(V&& v, F&& f, std::index_sequence<I, Is...>) noexcept {
-	static_assert(I < std::variant_size_v<std::decay_t<V>>);
-	if (auto* p = std::get_if<I>(&v)) {
-		std::forward<F>(f)(static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
-		return;
-	} else if constexpr (sizeof...(Is) > 0) {
-		return visit_nop_impl(std::forward<V>(v), std::forward<F>(f), std::index_sequence<Is...>{});
-	} else {
-		// valueless_by_exception case
-		return;
+	template <typename V, typename F, std::size_t I, std::size_t... Is>
+	[[gnu::always_inline]] constexpr void
+	visit_nop_impl(V&& v, F&& f, std::index_sequence<I, Is...>) noexcept {
+		static_assert(I < std::variant_size_v<std::decay_t<V>>);
+		if (auto* p = std::get_if<I>(&v)) {
+			std::forward<F>(f)(
+			    static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
+			return;
+		} else if constexpr (sizeof...(Is) > 0) {
+			return visit_nop_impl(std::forward<V>(v), std::forward<F>(f),
+			                      std::index_sequence<Is...>{});
+		} else {
+			// valueless_by_exception case
+			return;
+		}
 	}
-}
 
-}
+} // namespace detail
 
 template <typename V, typename F, typename... Fs>
-[[gnu::always_inline]] constexpr decltype(auto) visit2(V&& v, F&& f, Fs&&... fs) {
+[[gnu::always_inline]] constexpr decltype(auto) visit2(V&& v, F&& f,
+                                                       Fs&&... fs) {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
-	static_assert(detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>, "Some variant types not accepted by any visitors.");
-	return detail::visit_impl(std::forward<V>(v), std::move(visitor_obj), std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
+	static_assert(
+	    detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>,
+	    "Some variant types not accepted by any visitors.");
+	return detail::visit_impl(
+	    std::forward<V>(v), std::move(visitor_obj),
+	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
 }
 
 template <typename V, typename F, typename... Fs>
 [[gnu::always_inline]] constexpr void visit2_nop(V&& v, F&& f, Fs&&... fs) {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
-	static_assert(detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>, "Some variant types not accepted by any visitors.");
-	return detail::visit_nop_impl(std::forward<V>(v), visitor_obj, std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
+	static_assert(
+	    detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>,
+	    "Some variant types not accepted by any visitors.");
+	return detail::visit_nop_impl(
+	    std::forward<V>(v), visitor_obj,
+	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
 }
 
 /**
@@ -724,6 +740,38 @@ class poly_obj
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
 		return value;
+	}
+
+	template <typename member_type>
+	    member_type& operator->*(member_type(Obj::*member)) & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return value->*member;
+	}
+
+	template <typename member_type>
+	const member_type& operator->*(member_type(Obj::*member)) const& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return value->*member;
+	}
+
+	template <typename member_type>
+	    member_type&& operator->*(member_type(Obj::*member)) && noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return std::move(value->*member);
+	}
+
+	template <typename member_type>
+	const member_type&& operator->*(member_type(Obj::*member)) const&& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return std::move(value->*member);
 	}
 
 	/**

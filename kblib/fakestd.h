@@ -609,6 +609,16 @@ struct copy_const<C, T, true> {
 	using type = const T;
 };
 
+template <typename C, typename T>
+struct copy_const<C, T&, true> {
+	using type = const T&;
+};
+
+template <typename C, typename T>
+struct copy_const<C, T&&, true> {
+	using type = const T&&;
+};
+
 template <typename C, typename V>
 using copy_const_t = typename copy_const<C, V>::type;
 
