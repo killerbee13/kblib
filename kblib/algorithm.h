@@ -46,10 +46,10 @@ constexpr void erase_if(Container& c, UnaryPredicate p) {
 template <typename ForwardIt, typename Elem>
 KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
                                          const Elem& value) {
-	auto equal = [](const Elem& a, const Elem& b) {
+	KBLIB_UNUSED auto equal = [](const Elem& a, const Elem& b) {
 		return !(a < b) && !(b < a);
 	};
-	while (begin != end && !equal(*begin, value)) {
+	while (begin != end && !(*begin == value)) {
 		++begin;
 	}
 	return begin;
