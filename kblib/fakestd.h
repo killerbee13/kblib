@@ -834,7 +834,7 @@ class heap_value {
 
 	KBLIB_NODISCARD pointer get() const& noexcept { return p; }
 
-	KBLIB_NODISCARD operator bool() const& noexcept { return p != nullptr; }
+	KBLIB_NODISCARD explicit operator bool() const& noexcept { return p != nullptr; }
 
 	reference operator*() const& noexcept { return *p; }
 
