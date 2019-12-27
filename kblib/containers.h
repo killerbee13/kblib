@@ -4,6 +4,7 @@
 #include "fakestd.h"
 #include "iterators.h"
 #include "tdecl.h"
+#include "traits.h"
 
 #include <cstddef>
 #include <deque>
@@ -76,8 +77,7 @@ auto get_check(M&& m, const K& key) noexcept(noexcept(m.find(key) != m.end()))
  */
 template <typename V>
 void force_shrink_to_fit(V& vec) {
-	if (std::is_nothrow_move_constructible<
-	                  typename V::value_type>::value) {
+	if (std::is_nothrow_move_constructible<typename V::value_type>::value) {
 		V tmp;
 		try_reserve(tmp, vec.size());
 		std::move(vec.begin(), vec.end(), std::back_inserter(tmp));
@@ -92,6 +92,169 @@ void force_shrink_to_fit(V& vec) {
 template <typename C, std::size_t size>
 struct construct_with_size {
 	constexpr static C make() { return C(size); }
+};
+
+/**
+ * @brief Allows for constructing a container of a specified type from a range
+ * object. Copy elision means that this does not result in any extra copies.
+ *
+ * @tparam Container The container type to construct an object of.
+ * @param r The range to construct the returned container from.
+ * @return Container Container{begin(r), end(r)};
+ */
+template <typename Container, typename Range>
+Container construct_from_range(Range&& r) {
+	using std::begin;
+	using std::end;
+	return Container{begin(std::forward<Range>(r)), end(std::forward<Range>(r))};
+}
+
+template <typename Container,
+          bool ArrayLike = !detail::is_resizable_v<Container>>
+class [[nodiscard]] build_iterator {
+ public:
+	using value_type = void;
+	using difference_type = void;
+	using pointer = void;
+	using reference = void;
+	using iterator_category = std::output_iterator_tag;
+
+	template <typename... Args>
+	build_iterator(Args && ... args)
+	    : range(std::make_shared<Container>(std::forward<Args>(args)...)) {}
+
+	Container base() noexcept(
+	    std::is_nothrow_move_constructible<Container>::value) {
+		auto holder = std::move(range);
+		return std::move(*holder);
+	}
+
+	explicit operator Container() noexcept(
+	    std::is_nothrow_move_constructible<Container>::value) {
+		auto holder = std::move(range);
+		return std::move(*holder);
+	}
+
+	decltype(auto) operator*()
+	    const noexcept(noexcept(*std::back_inserter(*range))) {
+		return *std::back_inserter(*range);
+	}
+	decltype(auto) operator->()
+	    const noexcept(noexcept(std::back_inserter(*range).operator->())) {
+		return std::back_inserter(*range).operator->();
+	}
+
+	/**
+	 * @brief A no-op.
+	 */
+	build_iterator& operator++() { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	build_iterator& operator++(int) { return *this; }
+
+ private:
+	/**
+	 * @brief range A shared_ptr to the managed range.
+	 *
+	 * It is unfortunate that this has to be a shared_ptr, but that's the only
+	 * way to make this class a valid iterator. A move-only build_iterator-alike
+	 * could avoid this overhead, and I may write one because several algorithms
+	 * don't ever need to copy iterators.
+	 */
+	std::shared_ptr<Container> range;
+};
+
+KBLIB_UNUSED constexpr struct build_end_t {
+	template <typename T>
+	constexpr operator T() const noexcept(noexcept(T{*this})) {
+		return T{this};
+	}
+} build_end;
+
+template <typename Container>
+class [[nodiscard]] build_iterator<Container, true> {
+ public:
+	using value_type = void;
+	using difference_type = void;
+	using pointer = void;
+	using reference = void;
+	using iterator_category = std::output_iterator_tag;
+
+	template <typename... Args>
+	build_iterator(Args && ... args)
+	    : range(std::make_shared<Container>(std::forward<Args>(args)...)) {}
+
+	build_iterator(const build_end_t&)
+	    : range{nullptr}, index(std::tuple_size<Container>::value) {}
+
+	Container base() noexcept(
+	    std::is_nothrow_move_constructible<Container>::value) {
+		auto holder = std::move(range);
+		return std::move(*holder);
+	}
+
+	explicit operator Container() noexcept(
+	    std::is_nothrow_move_constructible<Container>::value) {
+		auto holder = std::move(range);
+		return std::move(*holder);
+	}
+
+	decltype(auto) operator*() const noexcept { return (*range)[index]; }
+	auto* operator->() const noexcept { return &(*range)[index]; }
+
+	/**
+	 * @brief Advance to the next element.
+	 */
+	build_iterator& operator++() {
+		++index;
+		return *this;
+	}
+	/**
+	 * @brief Advance to the next element.
+	 */
+	build_iterator& operator++(int) {
+		auto tmp = *this;
+		++index;
+		return tmp;
+	}
+
+	constexpr auto size() const noexcept { return std::size(*range); }
+
+	friend bool operator==(const build_iterator<Container>& it, build_end_t) {
+		return it.index == it.size();
+	}
+	friend bool operator!=(const build_iterator<Container>& it, build_end_t) {
+		return it.index != it.size();
+	}
+
+	friend bool operator==(build_end_t, const build_iterator<Container>& it) {
+		return it.index == it.size();
+	}
+	friend bool operator!=(build_end_t, const build_iterator<Container>& it) {
+		return it.index != it.size();
+	}
+
+	friend bool operator==(const build_iterator<Container>& it1,
+	                       const build_iterator<Container>& it2) {
+		return it1.index == it2.index;
+	}
+	friend bool operator!=(const build_iterator<Container>& it1,
+	                       const build_iterator<Container>& it2) {
+		return it1.index != it2.index;
+	}
+
+ private:
+	/**
+	 * @brief range A shared_ptr to the managed range.
+	 *
+	 * It is unfortunate that this has to be a shared_ptr, but that's the only
+	 * way to make this class a valid iterator. A move-only build_iterator-alike
+	 * could avoid this overhead, and I may write one because several algorithms
+	 * don't ever need to copy iterators.
+	 */
+	std::shared_ptr<Container> range;
+	std::size_t index{};
 };
 
 } // namespace kblib

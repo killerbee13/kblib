@@ -498,7 +498,8 @@ KBLIB_NODISCARD constexpr Container
 get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
 	    begin, end, count, cmp);
-	return Container{std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end())};
+	return Container{std::make_move_iterator(temp.begin()),
+		              std::make_move_iterator(temp.end())};
 }
 
 /**
@@ -669,10 +670,10 @@ constexpr OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
  * with.
  * @return An iterator to past the last element written.
  */
-template <typename InputIt, typename OutputIt,
-          typename UnaryPredicate, typename T>
+template <typename InputIt, typename OutputIt, typename UnaryPredicate,
+          typename T>
 constexpr OutputIt replace_copy_if(InputIt first, InputIt last, OutputIt out,
-                                     UnaryPredicate pred, const T& new_value) {
+                                   UnaryPredicate pred, const T& new_value) {
 	while (first != last) {
 		if (kblib::invoke(pred, *first)) {
 			*out = *first;
@@ -737,6 +738,27 @@ rotate(ForwardIt first, ForwardIt n_first,
 	// rotate the remaining sequence into place
 	kblib::rotate(write, next_read, last);
 	return write;
+}
+
+/**
+ * @brief Like std::generate except that it returns the output iterator at the
+ * end. It also allows for a sentinel end iterator.
+ *
+ * @param first The beginning of the ouput range.
+ * @param last The end of the output range.
+ * @param g A generator to repeatedly call and assign the return values to the
+ * elements of the output range.
+ * @return ForwardIt The iterator pointing past the last element written.
+ */
+template <typename ForwardIt, typename EndIt, typename Generator>
+constexpr ForwardIt generate(ForwardIt first, EndIt last,
+                             Generator g) noexcept(noexcept(first != last) &&
+                                                   noexcept(*++first = g())) {
+	while (first != last) {
+		*first = g();
+		++first;
+	}
+	return first;
 }
 
 /**
@@ -1047,7 +1069,7 @@ namespace detail {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
 				return kblib::invoke(compare, kblib::invoke(transform, *a),
-				              kblib::invoke(transform, *b));
+				                     kblib::invoke(transform, *b));
 			};
 			if (end - begin < 8) {
 				insertion_sort(begin, end, comp);
@@ -1064,7 +1086,7 @@ namespace detail {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
 				return kblib::invoke(compare, kblib::invoke(transform, *a),
-				              kblib::invoke(transform, *b));
+				                     kblib::invoke(transform, *b));
 			};
 			if (end - begin < 8) {
 				insertion_sort(begin, end, comp);
@@ -1082,7 +1104,7 @@ namespace detail {
 			auto comp = [&compare, &transform](RandomAccessIt a,
 			                                   RandomAccessIt b) {
 				return kblib::invoke(compare, kblib::invoke(transform, *a),
-				              kblib::invoke(transform, *b));
+				                     kblib::invoke(transform, *b));
 			};
 			if (end - begin < 8) {
 				insertion_sort_copy(begin, end, d_begin, d_end, comp);
