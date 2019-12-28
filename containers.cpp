@@ -92,3 +92,11 @@ TEST_CASE("build_iterator", "[build]") {
 		// REQUIRE(equal(iota, built));
 	}
 }
+
+TEST_CASE("build_iterator is nodiscard") {
+	using arr = std::array<int, 8>;
+	KBLIB_UNUSED const arr input = {2, 3, 5, 7, 11, 13, 17, 19};
+
+	// This line correctly generates a warning that the return value is ignored.
+	//std::copy(input.begin(), input.end(), kblib::build_iterator<arr>{});
+}

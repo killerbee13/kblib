@@ -13,13 +13,28 @@
 namespace kblib {
 
 /**
+ * @brief Invoke a function N times.
+ *
+ * @param N The number of times to invoke func.
+ * @param func The function to invoke.
+ */
+template <typename Callable>
+constexpr void repeat(std::size_t N, Callable func) noexcept(func()) {
+	for (std::size_t I = 0; I != N; ++I) {
+		func();
+	}
+	return;
+}
+
+/**
  * @brief Abbreviation of the erase-remove idiom as a free function.
  *
  * @param c The container to erase from.
  * @param val The value to remove.
  */
 template <typename Container, typename Elem>
-constexpr void erase(Container& c, const Elem& val) {
+constexpr void erase(Container& c, const Elem& val) noexcept(
+    noexcept(c.erase(std::remove(c.begin(), c.end(), val), c.end()))) {
 	c.erase(std::remove(c.begin(), c.end(), val), c.end());
 	return;
 }
@@ -31,24 +46,93 @@ constexpr void erase(Container& c, const Elem& val) {
  * @param p Erase all elements on which p returns true.
  */
 template <typename Container, typename UnaryPredicate>
-constexpr void erase_if(Container& c, UnaryPredicate p) {
+constexpr void erase_if(Container& c, UnaryPredicate p) noexcept(noexcept(
+    c.erase(std::remove_if(c.begin(), c.end(), std::ref(p)), c.end()))) {
 	c.erase(std::remove_if(c.begin(), c.end(), std::ref(p)), c.end());
 	return;
 }
+
 /**
- * @brief Finds a value in range [begin, end). If not found, returns end.
+ * @brief Synthesize an equivalence relation from <.
+ *
+ * @return bool Whether a is equivalent under < to b.
+ */
+template <typename Obj>
+KBLIB_NODISCARD constexpr bool equals(const Obj& a,
+                                      const Obj& b) noexcept(noexcept(a < b)) {
+	return !(a < b) && !(b < a);
+}
+
+/**
+ * @brief Synthesize an equivalence relation from comp.
+ *
+ * @return bool Whether a is equivalent under comp to b.
+ */
+template <typename Obj, typename Compare>
+KBLIB_NODISCARD constexpr bool
+equals(const Obj& a, const Obj& b,
+       Compare comp) noexcept(noexcept(comp(a, b))) {
+	return !comp(a, b) && !comp(b, a);
+}
+
+/**
+ * @brief A function object implementing the equivalence relationship over a
+ * comparison predicate.
+ *
+ * @tparam Compare The predicate to compare over. If void, use the < operator.
+ * (Equivalent to defaulting to std::less.)
+ * @tparam Obj The type of objects to compare. If void, the operator() is a
+ * template.
+ */
+template <typename Compare = void, typename Obj = void>
+struct equivalent {
+	KBLIB_NODISCARD constexpr bool operator()(const Obj& a, const Obj& b,
+	                                          Compare comp) const
+	    noexcept(noexcept(equals(a, b, comp))) {
+		return equals(a, b, comp);
+	}
+};
+
+template <typename Obj>
+struct equivalent<void, Obj> {
+	KBLIB_NODISCARD constexpr bool operator()(const Obj& a, const Obj& b) const
+	    noexcept(noexcept(equals(a, b))) {
+		return equals(a, b);
+	}
+};
+
+template <typename Compare>
+struct equivalent<Compare, void> {
+	template <typename Obj>
+	KBLIB_NODISCARD constexpr bool operator()(const Obj& a, const Obj& b,
+	                                          Compare comp) const
+	    noexcept(noexcept(equals(a, b, comp))) {
+		return equals(a, b, comp);
+	}
+};
+
+template <>
+struct equivalent<void, void> {
+	template <typename Obj>
+	KBLIB_NODISCARD constexpr bool operator()(const Obj& a, const Obj& b) const
+	    noexcept(noexcept(equals(a, b))) {
+		return equals(a, b);
+	}
+};
+
+/**
+ * @brief Finds a value in range [begin, end). If not found, returns end. It
+ * also allows for a sentinel end iterator.
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
  * @param value The value to search for
  * @return It Either the position of the found value, or end if not found
  */
-template <typename ForwardIt, typename Elem>
-KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
-                                         const Elem& value) {
-	KBLIB_UNUSED auto equal = [](const Elem& a, const Elem& b) {
-		return !(a < b) && !(b < a);
-	};
+template <typename ForwardIt, typename EndIt, typename Elem>
+KBLIB_NODISCARD constexpr ForwardIt
+find(ForwardIt begin, EndIt end,
+     const Elem& value) noexcept(noexcept(*begin == value)) {
 	while (begin != end && !(*begin == value)) {
 		++begin;
 	}
@@ -56,7 +140,8 @@ KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
 }
 
 /**
- * @brief Finds a value in range [begin, end). If not found, returns end.
+ * @brief Finds a value in range [begin, end). If not found, returns end. It
+ * also allows for a sentinel end iterator.
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
@@ -64,13 +149,11 @@ KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
  * @param comp The comparison function
  * @return It Either the position of the found value, or end if not found
  */
-template <typename ForwardIt, typename Elem, typename Comp>
-KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
-                                         const Elem& value, Comp&& comp) {
-	auto equal = [&comp](const Elem& a, const Elem& b) {
-		return !comp(a, b) && !comp(b, a);
-	};
-	while (begin != end && !equal(*begin, value)) {
+template <typename ForwardIt, typename EndIt, typename Elem, typename Comp>
+KBLIB_NODISCARD constexpr ForwardIt
+find(ForwardIt begin, EndIt end, const Elem& value,
+     Comp&& comp) noexcept(noexcept(comp(*begin, value))) {
+	while (begin != end && !equals(*begin, value, comp)) {
 		++begin;
 	}
 	return begin;
@@ -78,16 +161,16 @@ KBLIB_NODISCARD constexpr ForwardIt find(ForwardIt begin, ForwardIt end,
 
 /**
  * @brief Finds the first value in range [begin, end) for which pred returns
- * true. If not found, returns end.
+ * true. If not found, returns end. It also allows for a sentinel end iterator.
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
  * @param pred The predicate to scan with
  * @return It Either the position of the found value, or end if not found
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt find_if(ForwardIt begin, ForwardIt end,
-                                            UnaryPredicate&& pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt find_if(ForwardIt begin, EndIt end,
+                                            UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	while (begin != end && !kblib::invoke(pred, *begin)) {
 		++begin;
 	}
@@ -96,16 +179,16 @@ KBLIB_NODISCARD constexpr ForwardIt find_if(ForwardIt begin, ForwardIt end,
 
 /**
  * @brief Finds the first value in range [begin, end) for which pred returns
- * false. If not found, returns end.
+ * false. If not found, returns end. It also allows for a sentinel end iterator.
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
  * @param pred The predicate to scan with
  * @return It Either the position of the found value, or end if not found
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt find_if_not(ForwardIt begin, ForwardIt end,
-                                                UnaryPredicate&& pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt find_if_not(ForwardIt begin, EndIt end,
+                                                UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	while (begin != end && kblib::invoke(pred, *begin)) {
 		++begin;
 	}
@@ -114,23 +197,23 @@ KBLIB_NODISCARD constexpr ForwardIt find_if_not(ForwardIt begin, ForwardIt end,
 
 /**
  * @brief Searches a range for the last occurence of a match, and returns an
- * iterator to it.
+ * iterator to it. It also allows for a sentinel end iterator.
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
- * @param v The value to find
+ * @param value The value to find
  * @return It Iterator to the last element equal to v, or end if no such
  * element.
  */
-template <typename ForwardIt, typename Elem>
-KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, ForwardIt end,
-                                              const Elem& v) {
+template <typename ForwardIt, typename EndIt, typename Elem>
+KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, EndIt end,
+                                              const Elem& value) noexcept(noexcept(*begin == value)) {
 	if (begin == end) {
-		return end;
+		return begin;
 	}
 	auto result = end;
 	while (true) {
-		auto new_result = kblib::find(begin, end, v);
+		auto new_result = kblib::find(begin, end, value);
 		if (new_result == end) {
 			break;
 		} else {
@@ -144,7 +227,7 @@ KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, ForwardIt end,
 
 /**
  * @brief Searches a range for the last element on which a predicate returns
- * true.
+ * true. It also allows for a sentinel end iterator.
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
@@ -152,11 +235,11 @@ KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, ForwardIt end,
  * @return It Iterator to the last element for which p returned true, or end if
  * no such element.
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, ForwardIt end,
-                                                 UnaryPredicate pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, EndIt end,
+                                                 UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	if (begin == end) {
-		return end;
+		return begin;
 	}
 	auto result = end;
 	while (true) {
@@ -174,7 +257,7 @@ KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, ForwardIt end,
 
 /**
  * @brief Searches a range for the last element on which a predicate returns
- * false.
+ * false. It also allows for a sentinel end iterator.
  *
  * @param begin Beginning of the range to search
  * @param end One past the end of the range
@@ -182,11 +265,11 @@ KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, ForwardIt end,
  * @return It Iterator to the last element for which p returned false, or end if
  * no such element.
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt
-find_last_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr ForwardIt find_last_if_not(ForwardIt begin, EndIt end,
+                                                     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	if (begin == end) {
-		return end;
+		return begin;
 	}
 	auto result = end;
 	while (true) {
@@ -204,22 +287,23 @@ find_last_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate pred) {
 
 /**
  * @brief Find the offset of the first ocurrence of v in a range from the
- * beginning.
+ * beginning. It also allows for a sentinel end iterator.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
- * @param v The value to search for.
+ * @param value The value to search for.
  * @return size_t The offset from begin of the first element equal to v, or
  * distance(begin, end) if not found.
  */
-template <typename ForwardIt, typename Elem>
-KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, ForwardIt end,
-                                         const Elem& v) {
-	return kblib::find(begin, end, v) - begin;
+template <typename ForwardIt, typename EndIt, typename Elem>
+KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, EndIt end,
+                                         const Elem& value) noexcept(noexcept(*begin == value)) {
+	return kblib::find(begin, end, value) - begin;
 }
 
 /**
- * @brief Find the offset of the first element for which p returns true.
+ * @brief Find the offset of the first element for which p returns true. It also
+ * allows for a sentinel end iterator.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
@@ -227,13 +311,14 @@ KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, ForwardIt end,
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if(ForwardIt begin, ForwardIt end,
-                                            UnaryPredicate pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t find_in_if(ForwardIt begin, EndIt end,
+                                            UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_if(begin, end, pred) - begin;
 }
 /**
- * @brief Find the offset of the first element for which p returns false.
+ * @brief Find the offset of the first element for which p returns false. It
+ * also allows for a sentinel end iterator.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
@@ -241,9 +326,9 @@ KBLIB_NODISCARD constexpr size_t find_in_if(ForwardIt begin, ForwardIt end,
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if_not(ForwardIt begin, ForwardIt end,
-                                                UnaryPredicate pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t find_in_if_not(ForwardIt begin, EndIt end,
+                                                UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_if_not(begin, end, pred) - begin;
 }
 
@@ -252,22 +337,23 @@ KBLIB_NODISCARD constexpr size_t find_in_if_not(ForwardIt begin, ForwardIt end,
 
 /**
  * @brief Find the offset of the last ocurrence of v in a range from the
- * beginning.
+ * beginning. It also allows for a sentinel end iterator.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
- * @param v The value to search for.
+ * @param value The value to search for.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename ForwardIt, typename Elem>
-KBLIB_NODISCARD constexpr size_t find_last_in(ForwardIt begin, ForwardIt end,
-                                              const Elem& v) {
-	return kblib::find_last(begin, end, v) - begin;
+template <typename ForwardIt, typename EndIt, typename Elem>
+KBLIB_NODISCARD constexpr size_t find_last_in(ForwardIt begin, EndIt end,
+                                              const Elem& value) noexcept(noexcept(*begin == value)) {
+	return kblib::find_last(begin, end, value) - begin;
 }
 
 /**
- * @brief Find the offset of the last element for which p returns true.
+ * @brief Find the offset of the last element for which p returns true. It also
+ * allows for a sentinel end iterator.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
@@ -275,13 +361,14 @@ KBLIB_NODISCARD constexpr size_t find_last_in(ForwardIt begin, ForwardIt end,
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if(ForwardIt begin, ForwardIt end,
-                                                 UnaryPredicate pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t find_last_in_if(ForwardIt begin, EndIt end,
+                                                 UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_last_if(begin, end, pred) - begin;
 }
 /**
- * @brief Find the offset of the last element for which p returns false.
+ * @brief Find the offset of the last element for which p returns false. It also
+ * allows for a sentinel end iterator.
  *
  * @param begin The beginning of the range to search.
  * @param end One past the end of the range.
@@ -289,9 +376,9 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(ForwardIt begin, ForwardIt end,
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
  */
-template <typename ForwardIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t
-find_last_in_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate pred) {
+template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr size_t find_last_in_if_not(ForwardIt begin, EndIt end,
+                                                     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_last_if_not(begin, end, pred) - begin;
 }
 
@@ -301,12 +388,14 @@ find_last_in_if_not(ForwardIt begin, ForwardIt end, UnaryPredicate pred) {
  * Equivalent to find_in(std::begin(c), std::end(c), v)
  *
  * @param c The container to search.
- * @param v The value to search for.
+ * @param value The value to search for.
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename T>
-KBLIB_NODISCARD constexpr size_t find_in(const Container& c, const T& v) {
-	return std::find(std::begin(c), std::end(c), v) - std::begin(c);
+KBLIB_NODISCARD constexpr size_t find_in(const Container& c, const T& value) noexcept(noexcept(*std::declval<iterator_type_for_t<const Container>&>() == value)) {
+	using std::begin;
+	using std::end;
+	return kblib::find(begin(c), end(c), value) - begin(c);
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename T>
@@ -327,8 +416,10 @@ KBLIB_NODISCARD constexpr size_t find_in(ExecutionPolicy&& policy, const Contain
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c,
-                                            UnaryPredicate pred) {
-	return kblib::find_if(std::begin(c), std::end(c), pred) - std::begin(c);
+                                            UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+	using std::begin;
+	using std::end;
+	return kblib::find_if(begin(c), end(c), pred) - begin(c);
 }
 /**
  * @brief Find the first element in c for which p returns false and return the
@@ -342,8 +433,10 @@ KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c,
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_in_if_not(const Container& c,
-                                                UnaryPredicate pred) {
-	return kblib::find_if_not(std::begin(c), std::end(c), pred) - std::begin(c);
+                                                UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+	using std::begin;
+	using std::end;
+	return kblib::find_if_not(begin(c), end(c), pred) - begin(c);
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename UnaryPredicate>
@@ -362,12 +455,14 @@ KBLIB_NODISCARD constexpr size_t find_in_if_not(ExecutionPolicy&& policy, const 
  * Equivalent to find_last_in(std::begin(c), std::end(c), v)
  *
  * @param c The container to search.
- * @param v The value to search for.
+ * @param value The value to search for.
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename T>
-KBLIB_NODISCARD constexpr size_t find_last_in(const Container& c, const T& v) {
-	return kblib::find_last(std::begin(c), std::end(c), v) - std::begin(c);
+KBLIB_NODISCARD constexpr size_t find_last_in(const Container& c, const T& value) noexcept(noexcept(*std::declval<iterator_type_for_t<const Container>&>() == value)) {
+	using std::begin;
+	using std::end;
+	return kblib::find_last(begin(c), end(c), value) - begin(c);
 }
 
 /**
@@ -382,8 +477,10 @@ KBLIB_NODISCARD constexpr size_t find_last_in(const Container& c, const T& v) {
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c,
-                                                 UnaryPredicate pred) {
-	return kblib::find_last_if(std::begin(c), std::end(c), pred) - std::begin(c);
+                                                 UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+	using std::begin;
+	using std::end;
+	return kblib::find_last_if(begin(c), end(c), pred) - begin(c);
 }
 /**
  * @brief Find the last element in c for which p returns true and return the
@@ -397,14 +494,15 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c,
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
-                                                     UnaryPredicate pred) {
-	return kblib::find_last_if_not(std::begin(c), std::end(c), pred) -
-	       std::begin(c);
+                                                     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+	using std::begin;
+	using std::end;
+	return kblib::find_last_if_not(begin(c), end(c), pred) - begin(c);
 }
 
 /**
  * @brief Returns a container of the greatest count elements according to cmp of
- * the range [begin, end), in arbitrary order. This overload works for linear
+ * the range [first, last), in arbitrary order. This overload works for linear
  * containers.
  *
  * This function is included because its performance is sometimes better than
@@ -414,8 +512,8 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
  * @attention The returned container will not be sorted, unless it is something
  * like std::multiset which will use the other overload.
  *
- * @param begin The beginning of the range.
- * @param end One past the end of the range.
+ * @param first The beginning of the range.
+ * @param last One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
  * @return Container The greatest count elements of the range, in arbitrary
@@ -424,11 +522,13 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
 template <typename Container, typename Comp = std::less<>, typename It,
           enable_if_t<is_linear_container_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
-get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
-	assert(begin + count <= end);
-	Container c{begin, begin + count};
-	std::for_each(begin + count, end, [&](const auto& v) {
-		auto& min = *std::min_element(c.begin(), c.end(), cmp);
+get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
+	using std::begin;
+	using std::end;
+	assert(first + count <= last);
+	Container c{first, begin + count};
+	std::for_each(first + count, last, [&](const auto& v) {
+		auto& min = *std::min_element(begin(c), end(c), cmp);
 		if (cmp(min, v)) {
 			min = v;
 		}
@@ -438,14 +538,14 @@ get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
 
 /**
  * @brief Returns a container of the greatest count elements according to cmp of
- * the range [begin, end). This overload works for set-like types.
+ * the range [first, last). This overload works for set-like types.
  *
  * This function is included because its performance is sometimes better than
  * the new version, and additionally, it does not rely on
  * default-constructibility for the value type.
  *
- * @param begin The beginning of the range.
- * @param end One past the end of the range.
+ * @param first The beginning of the range.
+ * @param first One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
  * @return Container The greatest count elements of the range, in arbitrary
@@ -454,19 +554,20 @@ get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
 template <typename Container, typename Comp = std::less<>, typename It,
           enable_if_t<is_setlike_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
-get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
+get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
-	    begin, end, count, cmp);
-	return Container{temp.begin(), temp.end()};
+	    first, last, count, cmp);
+	return Container{std::make_move_iterator(temp.begin()),
+		              std::make_move_iterator(temp.end())};
 }
 
 /**
  * @brief Returns a container of the greatest count elements according to cmp of
- * the range [begin, end), in descending order. This overload works for linear
+ * the range [first, last), in descending order. This overload works for linear
  * containers.
  *
- * @param begin The beginning of the range.
- * @param end One past the end of the range.
+ * @param first The beginning of the range.
+ * @param last One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
  * @return Container The greatest count elements of the range, in arbitrary
@@ -475,18 +576,20 @@ get_max_n_old(It begin, It end, std::size_t count, Comp cmp = {}) {
 template <typename Container, typename Comp = std::less<>, typename It,
           enable_if_t<is_linear_container_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
-get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
+get_max_n(It first, It last, std::size_t count, Comp cmp = {}) {
+	using std::begin;
+	using std::end;
 	Container c(count);
-	std::partial_sort_copy(begin, end, c.begin(), c.end(), fakestd::not_fn(cmp));
+	std::partial_sort_copy(first, last, begin(c), end(c), fakestd::not_fn(cmp));
 	return c;
 }
 
 /**
  * @brief Returns a container of the greatest count elements according to cmp of
- * the range [begin, end). This overload works for set-like containers.
+ * the range [first, last). This overload works for set-like containers.
  *
- * @param begin The beginning of the range.
- * @param end One past the end of the range.
+ * @param first The beginning of the range.
+ * @param last One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
  * @return Container The greatest count elements of the range, in arbitrary
@@ -495,16 +598,16 @@ get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
 template <typename Container, typename Comp = std::less<>, typename It,
           enable_if_t<is_setlike_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container
-get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
+get_max_n(It first, It last, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
-	    begin, end, count, cmp);
+	    first, last, count, cmp);
 	return Container{std::make_move_iterator(temp.begin()),
 		              std::make_move_iterator(temp.end())};
 }
 
 /**
  * @brief Copies the count greatest elements according to cmp of the range
- * [begin, end) to the range beginning at d_begin.
+ * [first, last) to the range beginning at d_begin.
  *
  * Note that this function uses O(count) extra memory to store a mutable range
  * for sorting. Directly calling std::partial_sort_copy with a properly sized
@@ -512,8 +615,8 @@ get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
  * allocating extra working memory. This function should rather be used for
  * non-random-access output ranges.
  *
- * @param begin The beginning of the range.
- * @param end One past the end of the range.
+ * @param first The beginning of the range.
+ * @param last One past the end of the range.
  * @param d_begin The beginning of the output range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
@@ -522,16 +625,16 @@ get_max_n(It begin, It end, std::size_t count, Comp cmp = {}) {
  */
 template <typename Comp = std::less<>, typename InputIt, typename OutputIt,
           typename Elem = typename std::iterator_traits<InputIt>::value_type>
-constexpr auto get_max_n(InputIt begin, InputIt end, OutputIt d_begin,
+constexpr auto get_max_n(InputIt first, InputIt last, OutputIt d_begin,
                          std::size_t count, Comp cmp = {})
     -> return_assert_t<is_output_iterator<OutputIt, Elem>::value, OutputIt> {
-	auto temp = get_max_n<std::vector<Elem>>(begin, end, count, cmp);
+	auto temp = get_max_n<std::vector<Elem>>(first, last, count, cmp);
 	return std::move(temp.begin(), temp.end(), d_begin);
 }
 
 /**
  * @brief Applies a binary operation to each pair of corresponding elements in
- * two input ranges.
+ * two input ranges. It also allows for a sentinel end iterator.
  *
  * In the style of <algorithm> algorithms, the second range is simply assumed to
  * be at least as large as the first.
@@ -542,8 +645,9 @@ constexpr auto get_max_n(InputIt begin, InputIt end, OutputIt d_begin,
  * @param f The operation to apply.
  * @return BinaryFunction f
  */
-template <typename ForwardIt, typename ForwardIt2, typename BinaryFunction>
-constexpr BinaryFunction for_each(ForwardIt first, ForwardIt last,
+template <typename ForwardIt, typename EndIt, typename ForwardIt2,
+          typename BinaryFunction>
+constexpr BinaryFunction for_each(ForwardIt first, EndIt last,
                                   ForwardIt2 second, BinaryFunction f) {
 	for (; first != last; (void)++first, (void)++second) {
 		f(*first, *second);
@@ -573,7 +677,8 @@ for_each_n(ForwardIt first, Size n, ForwardIt2 second, BinaryFunction f) {
 }
 
 /**
- * @brief Copies all elements of [`first`, `last`) to out
+ * @brief Copies all elements of [`first`, `last`) to out.  It also allows for a
+ * sentinel end iterator.
  *
  * @remark This function is `constexpr` in C++14.
  *
@@ -582,8 +687,8 @@ for_each_n(ForwardIt first, Size n, ForwardIt2 second, BinaryFunction f) {
  * @param out The beginning of the output range
  * @return OutputIt An iterator to past the last element written
  */
-template <typename InputIt, typename OutputIt>
-constexpr OutputIt copy(InputIt first, InputIt last, OutputIt out) {
+template <typename InputIt, typename EndIt, typename OutputIt>
+constexpr OutputIt copy(InputIt first, EndIt last, OutputIt out) {
 	while (first != last) {
 		*out++ = *first++;
 	}
@@ -591,7 +696,8 @@ constexpr OutputIt copy(InputIt first, InputIt last, OutputIt out) {
 }
 
 /**
- * @brief Copies those elements of [`first`, `last`) which satisfy pred to out
+ * @brief Copies those elements of [`first`, `last`) which satisfy pred to out.
+ * It also allows for a sentinel end iterator.
  *
  * @remark This function is `constexpr` in C++14.
  *
@@ -601,8 +707,9 @@ constexpr OutputIt copy(InputIt first, InputIt last, OutputIt out) {
  * @param pred The predicate to apply
  * @return OutputIt An iterator to past the last element written
  */
-template <typename InputIt, typename OutputIt, typename UnaryPredicate>
-constexpr OutputIt copy_if(InputIt first, InputIt last, OutputIt out,
+template <typename InputIt, typename EndIt, typename OutputIt,
+          typename UnaryPredicate>
+constexpr OutputIt copy_if(InputIt first, EndIt last, OutputIt out,
                            UnaryPredicate pred) {
 	while (first != last) {
 		if (kblib::invoke(pred, *first)) {
@@ -658,7 +765,7 @@ constexpr OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
 
 /**
  * @brief Copies an input range, but every element for which pred is true is
- * replaced by new_value.
+ * replaced by new_value. It also allows for a sentinel end iterator.
  *
  * @remark This function is `constexpr` in C++14.
  *
@@ -670,9 +777,9 @@ constexpr OutputIt copy_n_if(InputIt first, Size count, OutputIt out,
  * with.
  * @return An iterator to past the last element written.
  */
-template <typename InputIt, typename OutputIt, typename UnaryPredicate,
-          typename T>
-constexpr OutputIt replace_copy_if(InputIt first, InputIt last, OutputIt out,
+template <typename InputIt, typename EndIt, typename OutputIt,
+          typename UnaryPredicate, typename T>
+constexpr OutputIt replace_copy_if(InputIt first, EndIt last, OutputIt out,
                                    UnaryPredicate pred, const T& new_value) {
 	while (first != last) {
 		if (kblib::invoke(pred, *first)) {
@@ -716,6 +823,15 @@ constexpr OutputIt replace_copy_n_if(InputIt first, Size count, OutputIt out,
 	return out;
 }
 
+/**
+ * @brief Rotates the input range. This is just a constexpr-in-C++14 version of
+ * std::rotate.
+ *
+ * @param first
+ * @param n_first
+ * @param last
+ * @return ForwardIt
+ */
 template <class ForwardIt>
 constexpr ForwardIt
 rotate(ForwardIt first, ForwardIt n_first,
@@ -750,10 +866,10 @@ rotate(ForwardIt first, ForwardIt n_first,
  * elements of the output range.
  * @return ForwardIt The iterator pointing past the last element written.
  */
-template <typename ForwardIt, typename EndIt, typename Generator>
-constexpr ForwardIt generate(ForwardIt first, EndIt last,
-                             Generator g) noexcept(noexcept(first != last) &&
-                                                   noexcept(*++first = g())) {
+template <typename OutputIt, typename EndIt, typename Generator>
+constexpr OutputIt generate(OutputIt first, EndIt last,
+                            Generator g) noexcept(noexcept(first != last) &&
+                                                  noexcept(*++first = g())) {
 	while (first != last) {
 		*first = g();
 		++first;
@@ -764,7 +880,8 @@ constexpr ForwardIt generate(ForwardIt first, EndIt last,
 /**
  * @brief transform applies the given function to a range and stores the result
  * in another range, beginning at d_first. The unary operation unary_op is
- * applied to the range defined by [first1, last1).
+ * applied to the range defined by [first1, last1). It also allows for a
+ * sentinel end iterator.
  *
  * @remark The expression `*d_first = kblib::invoke(unary_op, *first)` must be
  * valid and must not modify `*first`.
@@ -775,8 +892,9 @@ constexpr ForwardIt generate(ForwardIt first, EndIt last,
  * @param unary_op The operation to apply
  * @return OutputIt An iterator to past the last element written
  */
-template <typename InputIt, typename OutputIt, typename UnaryOperation>
-constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
+template <typename InputIt, typename EndIt, typename OutputIt,
+          typename UnaryOperation>
+constexpr OutputIt transform(InputIt first, EndIt last, OutputIt d_first,
                              UnaryOperation unary_op) {
 	while (first != last) {
 		*d_first++ = kblib::invoke(unary_op, *first);
@@ -788,7 +906,8 @@ constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
 /**
  * @brief transform applies the given function to a range and stores the result
  * in another range, beginning at d_first. The unary operation unary_op is
- * applied to the range defined by [first1, last1).
+ * applied to the range defined by [first1, last1). It also allows for a
+ * sentinel end iterator.
  *
  * @remark The expression `*d_first = kblib::invoke(binary_op, *first, *first2)`
  * must be valid and must not modify `*first` or `*first2`.
@@ -800,9 +919,9 @@ constexpr OutputIt transform(InputIt first, InputIt last, OutputIt d_first,
  * @param binary_op The operation to apply
  * @return OutputIt An iterator to past the last element written
  */
-template <typename InputIt, typename InputIt2, typename OutputIt,
-          typename BinaryOperation>
-constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
+template <typename InputIt, typename EndIt, typename InputIt2,
+          typename OutputIt, typename BinaryOperation>
+constexpr OutputIt transform(InputIt first, EndIt last, InputIt first2,
                              OutputIt d_first, BinaryOperation binary_op) {
 	while (first != last) {
 		*d_first++ = kblib::invoke(binary_op, *first, *first2);
@@ -815,7 +934,8 @@ constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
 /**
  * @brief transform applies the given function to a range and stores the result
  * in another range, beginning at d_first. The unary operation unary_op is
- * applied to the range defined by [first1, last1).
+ * applied to the range defined by [first1, last1). It also allows for a
+ * sentinel end iterator.
  *
  * @remark The expression `kblib::invoke(pred, *first)` must be valid and must
  * return a type convertible to `bool`, and must not modify `*first`
@@ -829,9 +949,9 @@ constexpr OutputIt transform(InputIt first, InputIt last, InputIt first2,
  * @param unary_op The operation to apply
  * @return OutputIt An iterator to past the last element written
  */
-template <typename InputIt, typename OutputIt, typename UnaryPredicate,
-          typename UnaryOperation>
-constexpr OutputIt transform_if(InputIt first, InputIt last, OutputIt d_first,
+template <typename InputIt, typename EndIt, typename OutputIt,
+          typename UnaryPredicate, typename UnaryOperation>
+constexpr OutputIt transform_if(InputIt first, EndIt last, OutputIt d_first,
                                 UnaryPredicate pred, UnaryOperation unary_op) {
 	while (first != last) {
 		if (kblib::invoke(pred, *first)) {

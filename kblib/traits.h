@@ -206,6 +206,20 @@ constexpr bool is_contiguous_v = is_contiguous<C>::value;
 template <typename T, auto M>
 using member_t = typename std::remove_reference<decltype(std::declval<T&>().*M)>::type;
 
+template <typename Container>
+struct iterator_type_for {
+private:
+	static decltype(auto) begin(Container& c) {
+		using std::begin;
+		return begin(c);
+	}
+public:
+	using type = decltype(begin(std::declval<Container&>()));
+};
+
+template <typename Container>
+using iterator_type_for_t = typename iterator_type_for<Container>::type;
+
 } // namespace kblib
 
 #endif // KBLIB_TRAITS_H_INCLUDED_

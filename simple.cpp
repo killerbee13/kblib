@@ -91,7 +91,7 @@ template <typename>
 struct print;
 
 TEST_CASE("enumerate") {
-	std::vector<int> persistent{0, 1, 1, 2, 3, 5, 8};
+	std::vector<unsigned long long> persistent{0, 1, 1, 2, 3, 5, 8};
 	SECTION("lvalue") {
 		for (auto t : kblib::enumerate(persistent)) {
 			[[gnu::unused]] auto& v = std::get<0>(t);
@@ -130,7 +130,7 @@ TEST_CASE("enumerate") {
 		                    [](int v) { return v == 0; }));
 	}
 	SECTION("reverse iterators") {
-		std::vector<int> reversed{7, 6, 5, 4, 3, 2, 1, 0};
+		std::vector<std::size_t> reversed{7, 6, 5, 4, 3, 2, 1, 0};
 		for (auto t : kblib::enumerate(reversed.rbegin(), reversed.rend())) {
 			[[gnu::unused]] auto& v = std::get<0>(t);
 			[[gnu::unused]] auto& i = std::get<1>(t);
@@ -139,7 +139,7 @@ TEST_CASE("enumerate") {
 	}
 
 	SECTION("temporary") {
-		for (auto t : kblib::enumerate(std::vector<int>{0, 1, 1, 2, 3, 5, 8})) {
+		for (auto t : kblib::enumerate(std::vector<unsigned long long>{0, 1, 1, 2, 3, 5, 8})) {
 			[[gnu::unused]] auto& v = std::get<0>(t);
 			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
