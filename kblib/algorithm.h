@@ -169,8 +169,9 @@ find(ForwardIt begin, EndIt end, const Elem& value,
  * @return It Either the position of the found value, or end if not found
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt find_if(ForwardIt begin, EndIt end,
-                                            UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr ForwardIt
+find_if(ForwardIt begin, EndIt end,
+        UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	while (begin != end && !kblib::invoke(pred, *begin)) {
 		++begin;
 	}
@@ -187,8 +188,9 @@ KBLIB_NODISCARD constexpr ForwardIt find_if(ForwardIt begin, EndIt end,
  * @return It Either the position of the found value, or end if not found
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt find_if_not(ForwardIt begin, EndIt end,
-                                                UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr ForwardIt find_if_not(
+    ForwardIt begin, EndIt end,
+    UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	while (begin != end && kblib::invoke(pred, *begin)) {
 		++begin;
 	}
@@ -206,8 +208,9 @@ KBLIB_NODISCARD constexpr ForwardIt find_if_not(ForwardIt begin, EndIt end,
  * element.
  */
 template <typename ForwardIt, typename EndIt, typename Elem>
-KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, EndIt end,
-                                              const Elem& value) noexcept(noexcept(*begin == value)) {
+KBLIB_NODISCARD constexpr ForwardIt
+find_last(ForwardIt begin, EndIt end,
+          const Elem& value) noexcept(noexcept(*begin == value)) {
 	if (begin == end) {
 		return begin;
 	}
@@ -236,8 +239,9 @@ KBLIB_NODISCARD constexpr ForwardIt find_last(ForwardIt begin, EndIt end,
  * no such element.
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, EndIt end,
-                                                 UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr ForwardIt find_last_if(
+    ForwardIt begin, EndIt end,
+    UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	if (begin == end) {
 		return begin;
 	}
@@ -266,8 +270,9 @@ KBLIB_NODISCARD constexpr ForwardIt find_last_if(ForwardIt begin, EndIt end,
  * no such element.
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr ForwardIt find_last_if_not(ForwardIt begin, EndIt end,
-                                                     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr ForwardIt find_last_if_not(
+    ForwardIt begin, EndIt end,
+    UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	if (begin == end) {
 		return begin;
 	}
@@ -296,8 +301,9 @@ KBLIB_NODISCARD constexpr ForwardIt find_last_if_not(ForwardIt begin, EndIt end,
  * distance(begin, end) if not found.
  */
 template <typename ForwardIt, typename EndIt, typename Elem>
-KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, EndIt end,
-                                         const Elem& value) noexcept(noexcept(*begin == value)) {
+KBLIB_NODISCARD constexpr size_t
+find_in(ForwardIt begin, EndIt end,
+        const Elem& value) noexcept(noexcept(*begin == value)) {
 	return kblib::find(begin, end, value) - begin;
 }
 
@@ -312,8 +318,9 @@ KBLIB_NODISCARD constexpr size_t find_in(ForwardIt begin, EndIt end,
  * end) if not.
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if(ForwardIt begin, EndIt end,
-                                            UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr size_t find_in_if(
+    ForwardIt begin, EndIt end,
+    UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_if(begin, end, pred) - begin;
 }
 /**
@@ -327,8 +334,9 @@ KBLIB_NODISCARD constexpr size_t find_in_if(ForwardIt begin, EndIt end,
  * end) if not.
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if_not(ForwardIt begin, EndIt end,
-                                                UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr size_t find_in_if_not(
+    ForwardIt begin, EndIt end,
+    UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_if_not(begin, end, pred) - begin;
 }
 
@@ -346,8 +354,9 @@ KBLIB_NODISCARD constexpr size_t find_in_if_not(ForwardIt begin, EndIt end,
  * end) if not.
  */
 template <typename ForwardIt, typename EndIt, typename Elem>
-KBLIB_NODISCARD constexpr size_t find_last_in(ForwardIt begin, EndIt end,
-                                              const Elem& value) noexcept(noexcept(*begin == value)) {
+KBLIB_NODISCARD constexpr size_t
+find_last_in(ForwardIt begin, EndIt end,
+             const Elem& value) noexcept(noexcept(*begin == value)) {
 	return kblib::find_last(begin, end, value) - begin;
 }
 
@@ -362,8 +371,9 @@ KBLIB_NODISCARD constexpr size_t find_last_in(ForwardIt begin, EndIt end,
  * end) if not.
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if(ForwardIt begin, EndIt end,
-                                                 UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr size_t find_last_in_if(
+    ForwardIt begin, EndIt end,
+    UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_last_if(begin, end, pred) - begin;
 }
 /**
@@ -377,8 +387,9 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(ForwardIt begin, EndIt end,
  * end) if not.
  */
 template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if_not(ForwardIt begin, EndIt end,
-                                                     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
+KBLIB_NODISCARD constexpr size_t find_last_in_if_not(
+    ForwardIt begin, EndIt end,
+    UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
 	return kblib::find_last_if_not(begin, end, pred) - begin;
 }
 
@@ -392,7 +403,9 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if_not(ForwardIt begin, EndIt end,
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename T>
-KBLIB_NODISCARD constexpr size_t find_in(const Container& c, const T& value) noexcept(noexcept(*std::declval<iterator_type_for_t<const Container>&>() == value)) {
+KBLIB_NODISCARD constexpr size_t
+find_in(const Container& c, const T& value) noexcept(
+    noexcept(*std::declval<iterator_type_for_t<const Container>&>() == value)) {
 	using std::begin;
 	using std::end;
 	return kblib::find(begin(c), end(c), value) - begin(c);
@@ -415,8 +428,10 @@ KBLIB_NODISCARD constexpr size_t find_in(ExecutionPolicy&& policy, const Contain
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c,
-                                            UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+KBLIB_NODISCARD constexpr size_t
+find_in_if(const Container& c, UnaryPredicate pred) noexcept(noexcept(
+    kblib::invoke(pred,
+                  *std::declval<iterator_type_for_t<const Container>&>()))) {
 	using std::begin;
 	using std::end;
 	return kblib::find_if(begin(c), end(c), pred) - begin(c);
@@ -432,8 +447,10 @@ KBLIB_NODISCARD constexpr size_t find_in_if(const Container& c,
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if_not(const Container& c,
-                                                UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+KBLIB_NODISCARD constexpr size_t
+find_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
+    kblib::invoke(pred,
+                  *std::declval<iterator_type_for_t<const Container>&>()))) {
 	using std::begin;
 	using std::end;
 	return kblib::find_if_not(begin(c), end(c), pred) - begin(c);
@@ -459,7 +476,9 @@ KBLIB_NODISCARD constexpr size_t find_in_if_not(ExecutionPolicy&& policy, const 
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename T>
-KBLIB_NODISCARD constexpr size_t find_last_in(const Container& c, const T& value) noexcept(noexcept(*std::declval<iterator_type_for_t<const Container>&>() == value)) {
+KBLIB_NODISCARD constexpr size_t
+find_last_in(const Container& c, const T& value) noexcept(
+    noexcept(*std::declval<iterator_type_for_t<const Container>&>() == value)) {
 	using std::begin;
 	using std::end;
 	return kblib::find_last(begin(c), end(c), value) - begin(c);
@@ -476,8 +495,10 @@ KBLIB_NODISCARD constexpr size_t find_last_in(const Container& c, const T& value
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c,
-                                                 UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+KBLIB_NODISCARD constexpr size_t
+find_last_in_if(const Container& c, UnaryPredicate pred) noexcept(noexcept(
+    kblib::invoke(pred,
+                  *std::declval<iterator_type_for_t<const Container>&>()))) {
 	using std::begin;
 	using std::end;
 	return kblib::find_last_if(begin(c), end(c), pred) - begin(c);
@@ -493,8 +514,10 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(const Container& c,
  * @return size_t The position of the element found, or c.size() if not.
  */
 template <typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_last_in_if_not(const Container& c,
-                                                     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *std::declval<iterator_type_for_t<const Container>&>()))) {
+KBLIB_NODISCARD constexpr size_t
+find_last_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
+    kblib::invoke(pred,
+                  *std::declval<iterator_type_for_t<const Container>&>()))) {
 	using std::begin;
 	using std::end;
 	return kblib::find_last_if_not(begin(c), end(c), pred) - begin(c);

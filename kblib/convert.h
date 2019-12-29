@@ -1,3 +1,7 @@
+#if KBLIB_DEF_MACROS && !defined(pFromStr)
+#define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
+#endif
+
 #ifndef KBLIB_CONVERT_H
 #define KBLIB_CONVERT_H
 
@@ -12,10 +16,6 @@
 
 #include "traits.h"
 #include "simple.h"
-
-#if KBLIB_DEF_MACROS
-#define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
-#endif
 
 namespace kblib {
 
