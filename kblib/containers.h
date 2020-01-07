@@ -135,13 +135,17 @@ class [[nodiscard]] build_iterator {
 		return std::move(*holder);
 	}
 
+	/**
+	 * @brief Creates a temporary std::back_insert_iterator for the range and
+	 * returns it.
+	 *
+	 * Returning an iterator from operator* might look strange, but
+	 * std::back_insert_iterator can be assigned to to insert into the range,
+	 * and its operator* returns itself anyhow.
+	 */
 	decltype(auto) operator*()
 	    const noexcept(noexcept(*std::back_inserter(*range))) {
-		return *std::back_inserter(*range);
-	}
-	decltype(auto) operator->()
-	    const noexcept(noexcept(std::back_inserter(*range).operator->())) {
-		return std::back_inserter(*range).operator->();
+		return std::back_inserter(*range);
 	}
 
 	/**
