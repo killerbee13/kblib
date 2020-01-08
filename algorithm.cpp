@@ -163,6 +163,7 @@ TEST_CASE("insertion sort performance") {
 		double time_slow = time_per(10000)/10000;
 		double error = time_slow / time_fast;
 		std::cout<<__LINE__<<": "<<time_fast<<'\t'<<time_slow<<'\t'<<error<<'\t'<<time_slow*10000<<'\t'<<time_fast*30<<"\n";
+
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
 	}
@@ -183,6 +184,7 @@ TEST_CASE("insertion sort performance") {
 		auto time_slow = time_per(1000)/(1000*1000);
 		auto error = time_slow / time_fast;
 		std::cout<<__LINE__<<": "<<time_fast<<'\t'<<time_slow<<'\t'<<error<<'\t'<<time_slow*1000*1000<<'\t'<<time_fast*30*30<<"\n";
+
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
 	}
@@ -203,6 +205,7 @@ TEST_CASE("insertion sort performance") {
 		auto time_slow = time_per(10'000)/(10'000);
 		double error = time_slow / time_fast;
 		std::cout<<__LINE__<<": "<<time_fast<<'\t'<<time_slow<<'\t'<<error<<'\t'<<time_slow*10'000<<'\t'<<time_fast*30<<"\n";
+
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
 	}
@@ -223,7 +226,8 @@ TEST_CASE("insertion sort performance") {
 		auto time_slow = time_per(10'000)/(10'000);
 		double error = time_slow / time_fast;
 		std::cout<<__LINE__<<": "<<time_fast<<'\t'<<time_slow<<'\t'<<error<<'\t'<<time_slow*10'000<<'\t'<<time_fast*30<<"\n";
-		// Can't overshoot the bound by more than 5%:
+
+		           // Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
 	}
 	SECTION("insertion_sort_copy on mostly sorted data is fast") {
@@ -250,8 +254,11 @@ TEST_CASE("insertion sort performance") {
 		auto ratio = time_slow / time_fast;
 		auto error = ratio/(n/v);
 		std::cout<<__LINE__<<": "<<time_fast<<'\t'<<time_slow<<'\t'<<error<<'\t'<<time_slow*n<<'\t'<<time_fast*n<<"\n";
+
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
+
+		// This test causes spurious failures in Debug builds:
 		// error = 1.19 in Debug build
 		// error = 0.76 in Release build
 	}
