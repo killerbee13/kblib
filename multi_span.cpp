@@ -1,3 +1,5 @@
+#if KBLIB_USE_CXX17
+
 #include "kblib/multi_span.h"
 #include "catch.hpp"
 
@@ -18,4 +20,6 @@ TEST_CASE("input iterators") {
 		 {std::istream_iterator<int>(i1), std::istream_iterator<int>()},
 		 {std::istream_iterator<int>(i2), std::istream_iterator<int>()}};
 }
+#endif
+
 #endif

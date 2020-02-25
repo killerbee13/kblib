@@ -57,8 +57,7 @@ struct is_output_iterator : std::false_type {};
 
 template <typename T, typename E>
 struct is_output_iterator<
-    T, E,
-    void_t<decltype(*std::declval<T&>() = std::declval<const E&>())>>
+    T, E, void_t<decltype(*std::declval<T&>() = std::declval<const E&>())>>
     : std::true_type {};
 
 template <typename Container>
@@ -595,6 +594,10 @@ enumerate_t<It, EIt> enumerate(It begin, EIt end) {
 	return {begin, end};
 }
 
+/*
+ * End of contributed code.
+ * */
+
 #if KBLIB_USE_CXX17
 
 template <typename T>
@@ -608,7 +611,8 @@ namespace detail {
 	}
 
 	struct force_copy_tag {};
-	// Get a pointer which is guaranteed to be invalid to use
+	// Get a pointer which is guaranteed to be invalid to use (but not UB to
+	// merely store)
 	template <typename T>
 	T* get_magic_ptr() {
 		static const char enumeration_magic_pointer = '\0';
@@ -627,7 +631,7 @@ class enumeration {
 	    : idx(other.idx), local([&] {
 		      assert(other.source || other.local);
 				assert(other.source != detail::get_magic_ptr<T>());
-				return *other;
+				return other.copied();
 	      }()),
 	      source(nullptr) {}
 	enumeration(volatile enumeration& other)
@@ -639,25 +643,23 @@ class enumeration {
  public:
 	std::size_t index() const noexcept { return idx; }
 
-	std::remove_const_t<T>& operator*() & noexcept {
+	std::remove_const_t<T>& copied() & noexcept {
 		assert(source != detail::get_magic_ptr<T>());
 		assert(local);
 		return *local;
 	}
-	const T& operator*() const& noexcept {
+	const T& copied() const& noexcept {
 		assert(source != detail::get_magic_ptr<T>());
 		return detail::get_or(local, source);
 	}
 
-	T& operator*() volatile& noexcept {
-		auto& self = *const_cast<enumeration*>(this);
-		assert(self.source != detail::get_magic_ptr<T>());
-		return detail::get_or(self.local, self.source);
+	T& reffed() & noexcept {
+		assert(source != detail::get_magic_ptr<T>());
+		return detail::get_or(local, source);
 	}
-	const T& operator*() const volatile& noexcept {
-		auto& self = *const_cast<const enumeration*>(this);
-		assert(self.source != detail::get_magic_ptr<T>());
-		return detail::get_or(self.local, self.source);
+	const T& reffed() const& noexcept {
+		assert(source != detail::get_magic_ptr<T>());
+		return detail::get_or(local, source);
 	}
 
  private:
@@ -680,9 +682,9 @@ class enumeration {
 
 namespace std {
 #if defined(__clang__)
-    // Fix from: https://github.com/nlohmann/json/issues/1401
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wmismatched-tags"
+// Fix from: https://github.com/nlohmann/json/issues/1401
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmismatched-tags"
 #endif
 
 template <typename T>
@@ -729,40 +731,43 @@ class tuple_element<1, const ::kblib::enumeration<T>> {
 };
 
 #if defined(__clang__)
-    #pragma clang diagnostic pop
+#pragma clang diagnostic pop
 #endif
 
 } // namespace std
 
 namespace kblib {
 
+// When a structured binding is created by value, this function is called as if
+// by get<i>(std::move(e)), so it does not call the lvalue reference function.
+// I have no idea why it's implicitly moved, but it works for my purposes.
 template <std::size_t I, typename T>
-decltype(auto) get(const enumeration<T>& e) {
+decltype(auto) get(enumeration<T>&& e) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
 		return e.index();
 	} else {
-		return *e;
+		return e.copied();
 	}
 }
-
 template <std::size_t I, typename T>
-decltype(auto) get(enumeration<T>& e) {
+decltype(auto) get(const enumeration<T>&& e) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
 		return e.index();
 	} else {
-		return *e;
+		return e.copied();
 	}
 }
-
+// When captured by reference, the volatile qualifier is added, which allows
+// std::tuple_element to detect the copying-nonconst-from-const case.
 template <std::size_t I, typename T>
 decltype(auto) get(volatile enumeration<T>& e) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
 		return const_cast<enumeration<T>&>(e).index();
 	} else {
-		return *e;
+		return const_cast<enumeration<T>&>(e).reffed();
 	}
 }
 
@@ -770,19 +775,9 @@ template <std::size_t I, typename T>
 decltype(auto) get(const volatile enumeration<T>& e) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
-		return const_cast<enumeration<T>&>(e).index();
+		return const_cast<const enumeration<T>&>(e).index();
 	} else {
-		return *e;
-	}
-}
-
-template <std::size_t I, typename T>
-decltype(auto) get(enumeration<T>&& e) {
-	static_assert(I <= 1, "enumeration only has two elements");
-	if constexpr (I == 0) {
-		return e.index();
-	} else {
-		return *e;
+		return const_cast<const enumeration<T>&>(e).reffed();
 	}
 }
 
@@ -790,7 +785,8 @@ template <typename It>
 class enumerator_iterator {
  public:
 	using nested_value =
-	    copy_const_t<decltype(*std::declval<It&>()), typename It::value_type>;
+	    copy_const_t<decltype(*std::declval<It&>()),
+	                 typename std::iterator_traits<It>::value_type>;
 
 	using value_type = enumeration<nested_value>;
 	using difference_type = std::ptrdiff_t;
@@ -799,7 +795,6 @@ class enumerator_iterator {
 	using iterator_category = std::input_iterator_tag;
 
 	enumerator_iterator() = default;
-	// enumerator_iterator(const enumerator_iterator& other) = delete;
 	enumerator_iterator(const enumerator_iterator& other)
 	    : enumerator_iterator(detail::force_copy_tag{}, other.curr_.idx,
 	                          other.it_) {}
@@ -817,11 +812,6 @@ class enumerator_iterator {
 		captured = false;
 		++it_;
 		return *this;
-	}
-	enumerator_iterator operator++(int) & {
-		curr_.advance();
-		captured = false;
-		return {detail::force_copy_tag{}, curr_.idx, it_++};
 	}
 
 	friend bool operator==(const enumerator_iterator& lhs,
@@ -864,7 +854,7 @@ class enumerator_t<Range, void> {
 	}
 	iterator begin() & noexcept(noexcept(r.begin())) { return r.begin(); }
 
-	const_iterator end() const & noexcept(noexcept(r.cend())) { return r.cend(); }
+	const_iterator end() const& noexcept(noexcept(r.cend())) { return r.cend(); }
 	end_iterator end() & noexcept(noexcept(r.end())) { return r.end(); }
 };
 
@@ -882,31 +872,6 @@ class enumerator_t {
 	It r_begin;
 	EndIt r_end;
 };
-
-/**
- * @brief Allow access to indexes while using range-based for loops. Safe to use
- * with rvalues.
- *
- * The "magic" part is that
- * \code
- * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
- * \endcode
- * captures 'val' by reference, while
- * \code
- * for (auto [idx, val] : kblib::magic_enumerate(range)) {
- * \endcode
- * captures 'val' by value, so that the effect is similar to if you had written
- * \code
- * for (auto val : range) {
- * \endcode
- * and kept track of the index manually.
- *
- * @param r A range to iterate over.
- */
-template <typename Range>
-enumerator_t<Range&&> magic_enumerate(Range&& r) {
-	return {std::forward<Range>(r)};
-}
 
 /**
  * @brief Allow access to indexes while using range-based for loops.
@@ -933,6 +898,206 @@ enumerator_t<It, EIt> magic_enumerate(It begin, EIt end) {
 	return {begin, end};
 }
 
+/**
+ * @brief Allow access to indexes while using range-based for loops. Safe to use
+ * with rvalues.
+ *
+ * The "magic" part is that
+ * \code
+ * for (auto&& [idx, val] : kblib::magic_enumerate(range)) {
+ * \endcode
+ * captures 'val' by reference, while
+ * \code
+ * for (auto [idx, val] : kblib::magic_enumerate(range)) {
+ * \endcode
+ * captures 'val' by value, so that the effect is similar to if you had written
+ * \code
+ * for (auto val : range) {
+ * \endcode
+ * and kept track of the index manually.
+ *
+ * @param r A range to iterate over.
+ */
+template <typename Range>
+auto magic_enumerate(Range&& r) {
+	if constexpr (std::is_lvalue_reference_v<Range&&>) {
+		using std::begin;
+		using std::end;
+		return magic_enumerate(begin(r), end(r));
+	} else {
+		return enumerator_t<Range&&>{std::forward<Range>(r)};
+	}
+}
+
+#endif
+
+/* *****************************************************************************
+ * This code adapted from code written by Krystian Stasiowski
+ * <sdkrystian@gmail.com>
+ *
+ * His code is much faster and cleaner than my magic_enumerate is. HOWEVER, it
+ * is fundamentally unable to detect the copying-nonconst-from-const case.
+ *
+ * My modifications are:
+ * - Change from [val, idx] to [idx, val] to match Python's enumerate()
+ * - Wrote documentation
+ * - Change name from value_and_index() to cry_enumerate()
+ * - Silenced Clang warnings about std::tuple_element specializations with
+ *   mismatched tags.
+ *
+ * All credit for everything else goes to Krystian.
+ *
+ * ****************************************************************************/
+
+#if KBLIB_USE_CXX17
+
+namespace detail {
+   template <typename>
+   struct value_index_pair;
+
+	template <std::size_t N, typename T, std::enable_if_t<N == 0>* = nullptr>
+	auto get(T&& t)
+	    -> std::conditional_t<std::is_reference_v<T>, const std::size_t&,
+	                          const std::size_t> {
+		return t.index;
+	}
+
+	template <std::size_t N, typename T, std::enable_if_t<N == 1>* = nullptr>
+	auto get(T&& t)
+	    -> std::conditional_t<std::is_reference_v<T>,
+	                          typename std::remove_reference_t<T>::value_type&,
+	                          typename std::remove_reference_t<T>::value_type> {
+		// static_assert(std::is_reference_v<T>);
+		//	static_assert(
+		//	    std::is_const_v<std::remove_reference_t<decltype(*t.iter)>>);
+		return *t.iter;
+	}
+
+	template <typename Iterator>
+	struct value_index_pair {
+		using value_type =
+		    std::remove_reference_t<decltype(*std::declval<Iterator&>())>;
+
+		std::size_t index;
+		Iterator iter;
+	};
+
+	template <typename Range, typename = void>
+	struct value_and_index_base {
+	 public:
+		using iterator_type = decltype(std::begin(std::declval<Range&>()));
+
+		value_and_index_base(Range& range)
+		    : range_begin_(std::begin(range)), range_end_(std::end(range)) {}
+
+		iterator_type range_begin() { return range_begin_; }
+
+		iterator_type range_end() { return range_end_; }
+
+		iterator_type range_begin_;
+		iterator_type range_end_;
+	};
+
+	template <typename Range>
+	struct value_and_index_base<Range,
+	                            std::enable_if_t<!std::is_reference_v<Range>>> {
+	 public:
+		using iterator_type = decltype(std::begin(std::declval<Range&>()));
+
+		value_and_index_base(Range& range) : range_(std::move(range)) {}
+
+		iterator_type range_begin() { return std::begin(range_); }
+
+		iterator_type range_end() { return std::end(range_); }
+
+		Range range_;
+	};
+
+	template <typename Range>
+	struct value_and_index_impl : value_and_index_base<Range> {
+		using iterator_type = typename value_and_index_base<Range>::iterator_type;
+
+		value_and_index_impl(Range& range)
+		    : value_and_index_base<Range>(range), begin_(this->range_begin(), 0),
+		      end_(this->range_end(), 0) {}
+
+		struct iterator {
+		 private:
+			value_index_pair<iterator_type> pair_;
+
+		 public:
+			iterator(iterator_type iter, std::size_t index = 0)
+			    : pair_{index, iter} {}
+
+			value_index_pair<iterator_type>& operator*() { return pair_; }
+
+			iterator operator++(int) {
+				iterator copy(pair_.iter, pair_.index);
+				++pair_.iter, ++pair_.index;
+				return copy;
+			}
+
+			iterator& operator++() {
+				++pair_.iter, ++pair_.index;
+				return *this;
+			}
+
+			bool operator==(const iterator& other) const {
+				return other.pair_.iter == pair_.iter;
+			}
+
+			bool operator!=(const iterator& other) const {
+				return !(other == *this);
+			}
+		};
+
+		iterator begin() { return begin_; }
+
+		iterator end() { return end_; }
+
+	 private:
+		iterator begin_;
+		iterator end_;
+	};
+} // namespace detail
+}
+namespace std {
+#if defined(__clang__)
+// Fix from: https://github.com/nlohmann/json/issues/1401
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmismatched-tags"
+#endif
+template <typename T>
+struct tuple_size<kblib::detail::value_index_pair<T>> {
+	static constexpr std::size_t value = 2;
+};
+
+template <typename T>
+struct tuple_element<0, kblib::detail::value_index_pair<T>> {
+	using type = const std::size_t;
+};
+
+template <typename T>
+struct tuple_element<1, kblib::detail::value_index_pair<T>> {
+	using type = std::remove_reference_t<decltype(*std::declval<T&>())>;
+};
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+} // namespace std
+
+namespace kblib {
+
+template <typename Range>
+auto cry_enumerate(Range&& range) {
+	return detail::value_and_index_impl<Range>(range);
+}
+
+/*
+ * End of contributed code.
+ * */
+
 #endif
 
 /**
@@ -949,15 +1114,23 @@ struct indirect_range {
 	auto rend() const noexcept { return std::make_reverse_iterator(end_); }
 };
 
+#if KBLIB_USE_CXX17
+
 template <typename Iter1, typename Iter2>
-indirect_range(Iter1, Iter2) -> indirect_range<Iter1, Iter2>;
+indirect_range(Iter1, Iter2)->indirect_range<Iter1, Iter2>;
+
+template <typename Iter1, typename Iter2>
+auto cry_enumerate(Iter1 begin, Iter2 end) {
+	return cry_enumerate(indirect_range{begin, end});
+}
+
+#endif
 
 // Fixed number of ranges
 template <typename Iter1, typename EndIter = Iter1, std::size_t count = 0>
 class multi_range {
-public:
-
-private:
+ public:
+ private:
 	struct range {
 		Iter1 begin;
 		EndIter end;
@@ -969,9 +1142,8 @@ private:
 // Dynamic number of ranges
 template <typename Iter1, typename EndIter>
 class multi_range<Iter1, EndIter, 0> {
-public:
-
-private:
+ public:
+ private:
 	struct range {
 		Iter1 begin;
 		EndIter end;
@@ -979,7 +1151,6 @@ private:
 
 	std::vector<range> ranges;
 };
-
 
 /**
  * @brief A smart pointer to an object contained inside the smart pointer
@@ -1171,7 +1342,7 @@ class back_insert_iterator_F {
 	 * @return back_insert_iterator& *this.
 	 */
 	back_insert_iterator_F& operator=(V&& value) {
-		container.push_back(fakestd::invoke(fun, std::forward<V>(value)));
+		container.push_back(invoke(fun, std::forward<V>(value)));
 		return *this;
 	}
 
@@ -1217,8 +1388,8 @@ class consume_iterator {
 	 */
 	template <typename V>
 	consume_iterator& operator=(V&& value) noexcept(
-	    noexcept(fakestd::invoke(fun, std::forward<V>(value)))) {
-		fakestd::invoke(fun, std::forward<V>(value));
+	    noexcept(invoke(fun, std::forward<V>(value)))) {
+		invoke(fun, std::forward<V>(value));
 		return *this;
 	}
 

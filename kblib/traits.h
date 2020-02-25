@@ -203,8 +203,12 @@ struct is_contiguous<C, void_t<decltype(std::declval<C&>().data())>>
 template <typename C>
 constexpr bool is_contiguous_v = is_contiguous<C>::value;
 
+#if KBLIB_USE_CXX17
+
 template <typename T, auto M>
 using member_t = typename std::remove_reference<decltype(std::declval<T&>().*M)>::type;
+
+#endif
 
 template <typename Container>
 struct iterator_type_for {
@@ -219,6 +223,12 @@ public:
 
 template <typename Container>
 using iterator_type_for_t = typename iterator_type_for<Container>::type;
+
+template <typename T>
+constexpr bool is_reference_v = std::is_reference<T>::value;
+
+template <typename T>
+using remove_reference_t = typename std::remove_reference<T>::type;
 
 } // namespace kblib
 

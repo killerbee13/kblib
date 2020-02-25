@@ -73,20 +73,13 @@ struct trivial_array {
 	constexpr T& operator[](std::size_t n) { return arr[n]; }
 	constexpr const T& operator[](std::size_t n) const { return arr[n]; }
 	constexpr std::size_t size() const { return N; }
-	constexpr T* begin() & noexcept {
-		return arr;
-	}
-	constexpr const T* begin() const& noexcept {
-		return arr;
-	}
-	constexpr T* end() & noexcept {
-		return arr+N;
-	}
-	constexpr const T* end() const& noexcept {
-		return arr+N;
-	}
+	constexpr T* begin() & noexcept { return arr; }
+	constexpr const T* begin() const& noexcept { return arr; }
+	constexpr T* end() & noexcept { return arr + N; }
+	constexpr const T* end() const& noexcept { return arr + N; }
 
-	constexpr friend bool operator==(const trivial_array& a, const trivial_array& b) {
+	constexpr friend bool operator==(const trivial_array& a,
+	                                 const trivial_array& b) {
 		for (std::size_t idx = 0; idx != N; ++idx) {
 			if (a[idx] != b[idx]) {
 				return false;
@@ -94,7 +87,8 @@ struct trivial_array {
 		}
 		return true;
 	}
-	constexpr friend bool operator!=(const trivial_array& a, const trivial_array& b) {
+	constexpr friend bool operator!=(const trivial_array& a,
+	                                 const trivial_array& b) {
 		return !(a == b);
 	}
 };
@@ -306,6 +300,27 @@ inline namespace nums {
 	}
 
 } // namespace nums
+
+template <typename T>
+constexpr T pi() {
+	return 3.1415926535897932384626433832795028841971693993751;
+}
+template <typename T>
+constexpr T tau() {
+	return 2 * pi<T>;
+}
+template <typename T>
+constexpr T e() {
+	return 2.7182818284590452353602874713526624977572470937000;
+}
+template <typename T>
+constexpr T root_2() {
+	return 1.4142135623730950488016887242096980785696718753769;
+}
+template <typename T>
+constexpr T phi() {
+	return 1.6180339887498948482045868343656381177203091798058;
+}
 
 /**
  * @brief Quantize a real-valued value into a discrete integer.

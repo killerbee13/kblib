@@ -482,9 +482,9 @@ struct FNV_hash<Tuple, void_if_t<std::tuple_size<Tuple>::value == 0u &&
 
 template <typename T, std::size_t N>
 constexpr return_assert_t<std::is_integral<T>::value, bool> is_consecutive(const T (&array)[N]) {
-	if constexpr (N <= 1) {
+	if (N <= 1) {
 		return true;
-	} else if constexpr (N == 2) {
+	} else if (N == 2) {
 		return (array[1] - array[0]) == 1;
 	} else {
 		for (std::size_t i = 1; i < N; ++i) {

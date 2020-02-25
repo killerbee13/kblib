@@ -13,7 +13,7 @@ struct example {
 };
 
 TEST_CASE("invasive") {
-	kblib::invasive_map<example, &example::first, &example::second> map;
+	kblib::invasive_dual_map<example, &example::first, &example::second> map;
 }
 
 #endif

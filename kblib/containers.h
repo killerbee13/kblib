@@ -94,6 +94,15 @@ struct construct_with_size {
 	constexpr static C make() { return C(size); }
 };
 
+template <typename C, std::size_t size>
+struct construct_with_capacity {
+	constexpr static C make() {
+		C c;
+		c.reserve(size);
+		return c;
+	}
+};
+
 /**
  * @brief Allows for constructing a container of a specified type from a range
  * object. Copy elision means that this does not result in any extra copies.
@@ -111,7 +120,7 @@ Container construct_from_range(Range&& r) {
 
 template <typename Container,
           bool ArrayLike = !detail::is_resizable_v<Container>>
-class [[nodiscard]] build_iterator {
+class KBLIB_NODISCARD build_iterator {
  public:
 	using value_type = void;
 	using difference_type = void;
@@ -177,7 +186,7 @@ KBLIB_UNUSED constexpr struct build_end_t {
 } build_end;
 
 template <typename Container>
-class [[nodiscard]] build_iterator<Container, true> {
+class KBLIB_NODISCARD build_iterator<Container, true> {
  public:
 	using value_type = void;
 	using difference_type = void;
@@ -223,7 +232,7 @@ class [[nodiscard]] build_iterator<Container, true> {
 		return tmp;
 	}
 
-	constexpr auto size() const noexcept { return std::size(*range); }
+	constexpr auto size() const noexcept { return kblib::size(*range); }
 
 	friend bool operator==(const build_iterator<Container>& it, build_end_t) {
 		return it.index == it.size();

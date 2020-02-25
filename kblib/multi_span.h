@@ -1,6 +1,8 @@
 #ifndef MULTI_SPAN_H
 #define MULTI_SPAN_H
 
+#if KBLIB_USE_CXX17
+
 #include "tdecl.h"
 
 #include <initializer_list>
@@ -257,5 +259,7 @@ class multi_span {
 };
 
 } // namespace kblib
+
+#endif
 
 #endif // MULTI_SPAN_H

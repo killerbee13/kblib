@@ -188,14 +188,13 @@ std::string time_to_str(std::chrono::time_point<clock, duration>& tp,
 	return ret;
 }
 
-inline std::string url_encode(const std::string& value) {
+template <typename string>
+inline std::string url_encode(const string& value) {
 	std::ostringstream escaped;
 	escaped.fill('0');
 	escaped << std::hex;
 
-	for (auto i = value.begin(), n = value.end(); i != n; ++i) {
-		char c = (*i);
-
+	for (char c : value) {
 		// Keep alphanumeric and other accepted characters intact
 		if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
 			escaped << c;
@@ -210,11 +209,13 @@ inline std::string url_encode(const std::string& value) {
 	return escaped.str();
 }
 
-inline std::string html_encode(const std::string data) {
+template <typename string>
+inline std::string html_encode(const string& data) {
 	std::string buffer;
+	// Arbitrary estimate for amount of growth caused by the escaping is 12.5%.
 	buffer.reserve(data.size() + data.size() / 8);
-	for (size_t pos = 0; pos != data.size(); ++pos) {
-		switch (data[pos]) {
+	for (char c : data) {
+		switch (c) {
 		case '&':
 			buffer.append("&amp;");
 			break;
@@ -231,7 +232,7 @@ inline std::string html_encode(const std::string data) {
 			buffer.append("&gt;");
 			break;
 		default:
-			buffer.append(&data[pos], 1);
+			buffer.push_back(c);
 			break;
 		}
 	}
@@ -254,7 +255,7 @@ inline std::string escapify(char c) {
 
 // Accepts any sequence of char, returns printable string
 template <typename string>
-std::string escapify(string value) {
+std::string escapify(const string& value) {
 	std::ostringstream ret;
 	for (char c : value) {
 		if (c < ' ' || c >= '\x7F') {

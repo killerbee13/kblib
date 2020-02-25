@@ -691,6 +691,18 @@ constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2) {
 	return true;
 }
 
+template <typename C>
+constexpr auto size(const C& c) -> decltype(c.size())
+{
+	 return c.size();
+}
+
+template <typename T, std::size_t N>
+constexpr std::size_t size(const T (&)[N]) noexcept
+{
+	 return N;
+}
+
 template <class InputIt1, class InputIt2>
 KBLIB_NODISCARD constexpr bool
 lexicographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2,
