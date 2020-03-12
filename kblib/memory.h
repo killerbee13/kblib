@@ -106,17 +106,19 @@ class live_ptr {
 	void add() { obj->_observers.push_back(&obj); }
 	void rem() { erase(obj->_observers, &obj); }
 
-	mutable live_wrapper<T>* obj;
+	mutable live_wrapper<T>* obj = nullptr;
+
+	friend class live_ptr<const T>;
 };
 
-template <typename T>
-class live_ptr<const T> {
+template <typename mT>
+class live_ptr<const mT> {
  public:
-	using mT = typename std::remove_const<T>::type;
+	using T = const mT;
 	live_ptr() = default;
-	live_ptr(const live_ptr& o) : obj(o.obj) { add(); }
+	live_ptr(const live_ptr<T>& o) : obj(o.obj) { add(); }
 	live_ptr(const live_ptr<mT>& o) : obj(o.obj) { add(); }
-	live_ptr(live_ptr&& o) : obj(o.pop()) { add(); }
+	live_ptr(live_ptr<T>&& o) : obj(o.pop()) { add(); }
 	live_ptr(live_ptr<mT>&& o) : obj(o.pop()) { add(); }
 	explicit live_ptr(live_wrapper<T>& o) : obj(&o) { add(); }
 	explicit live_ptr(live_wrapper<mT>& o) : obj(&o) { add(); }
@@ -177,7 +179,7 @@ class live_ptr<const T> {
 		return std::exchange(obj, nullptr);
 	}
 
-	mutable live_wrapper<mT>* obj;
+	mutable live_wrapper<mT>* obj = nullptr;
 };
 
 template <typename T>
