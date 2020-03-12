@@ -21,8 +21,6 @@
 #include <string_view>
 #endif
 
-
-
 namespace kblib {
 
 /**
@@ -481,7 +479,8 @@ struct FNV_hash<Tuple, void_if_t<std::tuple_size<Tuple>::value == 0u &&
 };
 
 template <typename T, std::size_t N>
-constexpr return_assert_t<std::is_integral<T>::value, bool> is_consecutive(const T (&array)[N]) {
+constexpr return_assert_t<std::is_integral<T>::value, bool>
+is_consecutive(const T (&array)[N]) {
 	if (N <= 1) {
 		return true;
 	} else if (N == 2) {
@@ -596,6 +595,21 @@ struct ignore {
 template <typename U, typename T>
 using ignore_t = typename ignore<U, T>::type;
 
+template <typename T, bool = std::is_class<T>::value>
+struct null_construct {
+	null_construct() : t{} {};
+
+	T t;
+
+	operator T&() { return t; }
+	operator const T&() const { return t; }
+};
+
+template <typename T>
+struct null_construct<T, true> : public T {
+	null_construct() : T{} {};
+};
+
 #if KBLIB_USE_CXX17
 
 template <bool... args>
@@ -606,18 +620,18 @@ constexpr bool conjunction = (args && ...);
 
 template <typename T>
 concept zero_constructible = requires(T t) {
-  {t = 0};
+   {t = 0};
 };
 
 struct zero_t {
-  consteval zero_t(int i) { i == 0 ? void() : throw 0; }
-  template <zero_constructible T>
-  constexpr operator T() const noexcept {
-	 return 0;
-  }
-  explicit constexpr operator std::nullptr_t() const noexcept {
-	 return nullptr;
-  }
+	consteval zero_t(int i) { i == 0 ? void() : throw 0; }
+	template <zero_constructible T>
+	constexpr operator T() const noexcept {
+		return 0;
+	}
+	explicit constexpr operator std::nullptr_t() const noexcept {
+		return nullptr;
+	}
 };
 
 #endif
