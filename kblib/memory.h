@@ -2,13 +2,27 @@
 #define MEMORY_H
 
 #include "algorithm.h"
-#include "simple.h"
 #include "tdecl.h"
 
 #include <utility>
 #include <vector>
 
 namespace kblib {
+
+template <typename T, bool = std::is_class<T>::value>
+struct null_construct {
+	null_construct() : t{} {};
+
+	T t;
+
+	operator T&() { return t; }
+	operator const T&() const { return t; }
+};
+
+template <typename T>
+struct null_construct<T, true> : public T {
+	null_construct() : T{} {};
+};
 
 template <typename T>
 class live_ptr;
@@ -26,6 +40,8 @@ class live_wrapper {
 	}
 
 	live_ptr<T> ref();
+	live_ptr<const T> ref() const;
+	live_ptr<const T> cref() const;
 
 	T data;
 
@@ -52,6 +68,7 @@ class live_ptr {
 		rem();
 		obj = o.obj;
 		add();
+		return *this;
 	}
 	live_ptr& operator=(live_ptr&& o) noexcept {
 		rem();
@@ -59,24 +76,20 @@ class live_ptr {
 			std::replace(obj->_observers.begin(), obj->_observers.end(), &o.obj,
 			             &obj);
 		}
+		return *this;
 	}
 	live_ptr& operator=(live_wrapper<T>& o) {
 		rem();
 		obj = &o;
 		add();
+		return *this;
 	}
 
-	T& operator*() noexcept { return *obj->data; }
-	const T& operator*() const noexcept { return *obj->data; }
+	T& operator*() noexcept { return obj->data; }
+	const T& operator*() const noexcept { return obj->data; }
 
-	T* operator->() noexcept { return obj->data; }
-	const T* operator->() const noexcept { return obj->data; }
-
-	template <typename L, typename memptr_type>
-	friend auto operator->*(L&& l, memptr_type member) noexcept
-	    -> decltype((*l).*member) {
-		return (*l).*member;
-	}
+	T* operator->() noexcept { return &obj->data; }
+	const T* operator->() const noexcept { return &obj->data; }
 
 	operator bool() const noexcept { return obj; }
 
@@ -104,7 +117,11 @@ class live_ptr {
 
  private:
 	void add() { obj->_observers.push_back(&obj); }
-	void rem() { erase(obj->_observers, &obj); }
+	void rem() {
+		if (obj) {
+			erase(obj->_observers, &obj);
+		}
+	}
 
 	mutable live_wrapper<T>* obj = nullptr;
 
@@ -127,6 +144,7 @@ class live_ptr<const mT> {
 		rem();
 		obj = o.obj;
 		add();
+		return *this;
 	}
 	live_ptr& operator=(live_ptr&& o) noexcept {
 		rem();
@@ -134,11 +152,13 @@ class live_ptr<const mT> {
 			std::replace(obj->_observers.begin(), obj->_observers.end(), &o.obj,
 			             &obj);
 		}
+		return *this;
 	}
 	live_ptr& operator=(live_wrapper<T>& o) {
 		rem();
 		obj = &o;
 		add();
+		return *this;
 	}
 
 	T& operator*() noexcept { return *obj->data; }
@@ -172,9 +192,13 @@ class live_ptr<const mT> {
 	}
 
  private:
-	void add() {}
-	void rem() {}
-	live_wrapper<T>* pop() {
+	void add() { obj->_observers.push_back(&obj); }
+	void rem() {
+		if (obj) {
+			erase(obj->_observers, &obj);
+		}
+	}
+	live_wrapper<mT>* pop() {
 		rem();
 		return std::exchange(obj, nullptr);
 	}
@@ -184,6 +208,16 @@ class live_ptr<const mT> {
 
 template <typename T>
 live_ptr<T> live_wrapper<T>::ref() {
+	return live_ptr<T>{*this};
+}
+
+template <typename T>
+live_ptr<const T> live_wrapper<T>::ref() const {
+	return live_ptr<T>{*this};
+}
+
+template <typename T>
+live_ptr<const T> live_wrapper<T>::cref() const {
 	return live_ptr<T>{*this};
 }
 

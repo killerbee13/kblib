@@ -595,21 +595,6 @@ struct ignore {
 template <typename U, typename T>
 using ignore_t = typename ignore<U, T>::type;
 
-template <typename T, bool = std::is_class<T>::value>
-struct null_construct {
-	null_construct() : t{} {};
-
-	T t;
-
-	operator T&() { return t; }
-	operator const T&() const { return t; }
-};
-
-template <typename T>
-struct null_construct<T, true> : public T {
-	null_construct() : T{} {};
-};
-
 #if KBLIB_USE_CXX17
 
 template <bool... args>
