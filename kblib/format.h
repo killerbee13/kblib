@@ -51,6 +51,9 @@ constexpr int digitsOf(Number val, int base) {
  */
 template <typename ForwardIt>
 int digitsList(ForwardIt first, ForwardIt last) {
+	if (first == last) {
+		return 0;
+	}
 	return digitsOf(*std::max_element(first, last));
 }
 
@@ -66,6 +69,9 @@ int digitsList(ForwardIt first, ForwardIt last) {
  */
 template <typename ForwardIt>
 int digitsList(ForwardIt first, ForwardIt last, int base) {
+	if (first == last) {
+		return 0;
+	}
 	return digitsOf(*std::max_element(first, last), base);
 }
 

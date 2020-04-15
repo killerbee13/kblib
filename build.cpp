@@ -3,6 +3,8 @@
 #include <array>
 #include <iostream>
 
+#include "kblib/containers.h"
+
 TEST_CASE("build family", "[build]") {
 	using arr = std::array<int, 8>;
 	const arr input = {2, 3, 5, 7, 11, 13, 17, 19};
@@ -59,6 +61,31 @@ TEST_CASE("build family", "[build]") {
 		auto built = kblib::buildiota<arr>(0);
 		REQUIRE(equal(iota, built));
 	}
+}
+
+TEST_CASE("buildiota") {
+	auto equal = [](auto r1, auto r2) {
+		auto r1b = r1.begin();
+		auto r1e = r1.end();
+		auto r2b = r2.begin();
+		auto r2e = r2.end();
+		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) &&
+		       kblib::equal(r1b, r1e, r2b);
+	};
+
+	constexpr auto target = std::array<int, 10>{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
+	auto i1 = kblib::buildiota<std::vector<int>>(10, 0);
+	auto i2 = kblib::buildiota<std::vector<int>>(10, 0, 1);
+	auto i3 = kblib::buildiota<std::array<int, 10>>(0);
+	auto i4 = kblib::buildiota<std::array<int, 10>>(0, 1);
+	auto i5 =
+	    kblib::buildiota<kblib::construct_with_size<std::vector<int>, 10>>(0);
+
+	REQUIRE((i1.size() == target.size() && equal(i1, target)));
+	REQUIRE((i2.size() == target.size() && equal(i2, target)));
+	REQUIRE((i3.size() == target.size() && equal(i3, target)));
+	REQUIRE((i4.size() == target.size() && equal(i4, target)));
+	REQUIRE((i5.size() == target.size() && equal(i5, target)));
 }
 
 TEST_CASE("build_copy family") {

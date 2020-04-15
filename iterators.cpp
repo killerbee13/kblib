@@ -3,6 +3,22 @@
 #include <iterator>
 #include <sstream>
 
+TEST_CASE("to_pointer") {
+	auto smart_ptr = std::make_unique<int>(0);
+	[[gnu::unused]] auto* raw_pointer = kblib::to_pointer(smart_ptr);
+	REQUIRE(raw_pointer == smart_ptr.get());
+	const auto& smart_ptr_const_ref = smart_ptr;
+	[[gnu::unused]] auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
+	REQUIRE(raw_pointer2 == smart_ptr_const_ref.get());
+}
+
+TEST_CASE("range") {
+	// range supports iterators and other similar types.
+	std::vector<int> v(100);
+	REQUIRE(v.begin() == *kblib::range(v.begin(), v.end()).begin());
+	REQUIRE(v.end() == *kblib::range(v.begin(), v.end()).end());
+}
+
 #if KBLIB_USE_CXX17
 
 TEST_CASE("magic_enumerate") {
@@ -28,18 +44,15 @@ TEST_CASE("magic_enumerate") {
 		const auto& cp = persistent;
 		for (auto&& [i, v] : kblib::magic_enumerate(cp)) {
 			REQUIRE(&v == &cp[i]);
-			static_assert(
-			    std::is_const_v<
-			        std::remove_reference_t<decltype(v)>>,
-			    "v must refer to const when the range is const");
+			static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>,
+			              "v must refer to const when the range is const");
 		}
 	}
 	SECTION("const reference") {
 		for (const auto& [i, v] : kblib::magic_enumerate(persistent)) {
 			REQUIRE(&v == &persistent[i]);
 			static_assert(
-			    std::is_const_v<
-			        std::remove_reference_t<decltype(v)>>,
+			    std::is_const_v<std::remove_reference_t<decltype(v)>>,
 			    "v must refer to const when the bound reference is const");
 		}
 	}
@@ -48,20 +61,16 @@ TEST_CASE("magic_enumerate") {
 		for (auto [i, v] : kblib::magic_enumerate(cp)) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
-			static_assert(
-			    !std::is_const_v<
-			        std::remove_reference_t<decltype(v)>>,
-			    "v must not be const when copied from a const range");
+			static_assert(!std::is_const_v<std::remove_reference_t<decltype(v)>>,
+			              "v must not be const when copied from a const range");
 		}
 	}
 	SECTION("const copy from non-const") {
 		for (const auto [i, v] : kblib::magic_enumerate(persistent)) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
-			static_assert(
-			    std::is_const_v<
-			        std::remove_reference_t<decltype(v)>>,
-			    "v must refer to const in a const copy");
+			static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>,
+			              "v must refer to const in a const copy");
 		}
 	}
 
@@ -237,23 +246,22 @@ TEST_CASE("cry_enumerate") {
 	}
 
 	SECTION("temporary") {
-		for (auto&& [i, v] :
-		     kblib::cry_enumerate(std::vector<int>(persistent))) {
+		for (auto&& [i, v] : kblib::cry_enumerate(std::vector<int>(persistent))) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
 		}
 	}
 	SECTION("input iterators") {
 		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
-		for (auto&& [i, v] : kblib::cry_enumerate(
-		         std::istream_iterator<int>(is), std::istream_iterator<int>())) {
+		for (auto&& [i, v] : kblib::cry_enumerate(std::istream_iterator<int>(is),
+		                                          std::istream_iterator<int>())) {
 			REQUIRE(v == i / 2);
 		}
 	}
 	SECTION("copied input iterators") {
 		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
 		for (auto [i, v] : kblib::cry_enumerate(std::istream_iterator<int>(is),
-		                                          std::istream_iterator<int>())) {
+		                                        std::istream_iterator<int>())) {
 			REQUIRE(v == i / 2);
 		}
 	}

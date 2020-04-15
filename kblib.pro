@@ -25,7 +25,8 @@ SOURCES += \
     multi_span.cpp \
     invasive_containers.cpp \
     delayed_construct.cpp \
-    memory.cpp
+    memory.cpp \
+    io.cpp
 
 HEADERS += \
     kblib/bits.h \

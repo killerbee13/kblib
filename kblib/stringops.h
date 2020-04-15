@@ -108,6 +108,48 @@ namespace detail {
 		static type convert(T&& in) { return std::forward<T>(in); }
 	};
 	/**
+	 * @brief Override for char to avoid conversion to integer
+	 */
+	template <>
+	struct str_type<char, char> {
+		using type = char;
+		static char convert(char in) { return in; }
+	};
+	/**
+	 * @brief Override for wchar_t to avoid conversion to integer
+	 */
+	template <>
+	struct str_type<wchar_t, wchar_t> {
+		using type = wchar_t;
+		static wchar_t convert(wchar_t in) { return in; }
+	};
+	/**
+	 * @brief Override for char16_t to avoid conversion to integer
+	 */
+	template <>
+	struct str_type<char16_t, char16_t> {
+		using type = char16_t;
+		static char16_t convert(char16_t in) { return in; }
+	};
+	/**
+	 * @brief Override for char32_t to avoid conversion to integer
+	 */
+	template <>
+	struct str_type<char32_t, char32_t> {
+		using type = char32_t;
+		static char32_t convert(char32_t in) { return in; }
+	};
+#ifdef __cpp_char8_t
+	/**
+	 * @brief Override for char8_t to avoid conversion to integer
+	 */
+	template <>
+	struct str_type<char8_t, char8_t> {
+		using type = char8_t;
+		static char8_t convert(char8_t in) { return in; }
+	};
+#endif
+	/**
 	 * @brief Provides the natural stringlike type for representing a T.
 	 */
 	template <typename T>
@@ -192,11 +234,8 @@ namespace detail {
 template <typename string = std::string, typename F, typename... S>
 string concat(F&& f, S&&... ins) {
 	return detail::concat_impl<string>(
-	    std::make_index_sequence<1 + sizeof...(S)>{}, f, ins...);
-	string ret;
-	ret.reserve((strsize(f) + ... + strsize(ins)));
-	append(ret, f, ins...);
-	return ret;
+	    std::make_index_sequence<1 + sizeof...(S)>{}, std::forward<F>(f),
+	    std::forward<S>(ins)...);
 }
 
 /**

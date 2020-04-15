@@ -1,8 +1,32 @@
-#include "kblib/algorithm.h"
 #include "kblib/containers.h"
 #include "catch.hpp"
+#include "kblib/algorithm.h"
 
 #include <iostream>
+#include <map>
+
+TEST_CASE("try_get") {
+	std::map<int, int> m;
+	const auto& cm = m;
+
+	// m[0] doesn't exist
+	REQUIRE(kblib::try_get(m, 0) == nullptr);
+	// Works for const maps
+	REQUIRE(kblib::try_get(cm, 0) == nullptr);
+	// Make m[0]
+	m[0] = 0;
+
+	// Basic correctness testing
+	REQUIRE(kblib::try_get(m, 0) == &m[0]);
+	*kblib::try_get(m, 0) = 1;
+	REQUIRE(m[0] == 1);
+
+	// Returns pointer to const when given const map
+	//*kblib::try_get(cm, 0) = 1;
+
+	// Can't call for temporaries because it would return a dangling pointer
+	// kblib::try_get(std::map<int, int>{{0, 1}}, 0);
+}
 
 TEST_CASE("build_iterator", "[build]") {
 	using arr = std::array<int, 8>;
@@ -67,10 +91,10 @@ TEST_CASE("build_iterator", "[build]") {
 	}
 	SECTION("array generator build") {
 		// auto built = kblib::build<arr>([x = 0]() mutable { return x++; });
-		auto built = kblib::generate(kblib::build_iterator<arr>{},
-		                             kblib::build_end,
-		                             [x = 0]() mutable { return x++; })
-		                 .base();
+		auto built =
+		    kblib::generate(kblib::build_iterator<arr>{}, kblib::build_end,
+		                    [x = 0]() mutable { return x++; })
+		        .base();
 		// Using only the standard library, it would have to be this in order to
 		// avoid a magic number for the size.
 		//		auto built = std::generate_n(kblib::build_iterator<arr>{},
@@ -83,7 +107,8 @@ TEST_CASE("build_iterator", "[build]") {
 	SECTION("dynamic buildiota") {
 		// auto built = kblib::buildiota<std::vector<int>>(8, 0);
 		// auto built = ...
-		auto built = kblib::construct_from_range<std::vector<int>>(kblib::range(0, 8));
+		auto built =
+		    kblib::construct_from_range<std::vector<int>>(kblib::range(0, 8));
 		REQUIRE(equal(iota, built));
 	}
 	SECTION("array buildiota") {
@@ -98,5 +123,5 @@ TEST_CASE("build_iterator is nodiscard") {
 	KBLIB_UNUSED const arr input = {2, 3, 5, 7, 11, 13, 17, 19};
 
 	// This line correctly generates a warning that the return value is ignored.
-	//std::copy(input.begin(), input.end(), kblib::build_iterator<arr>{});
+	// std::copy(input.begin(), input.end(), kblib::build_iterator<arr>{});
 }

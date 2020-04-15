@@ -11,19 +11,23 @@
 #include <unordered_map>
 
 TEST_CASE("FNV_hash") {
-	kblib::FNV_hash<
-	    std::unordered_map<std::tuple<std::wstring, int*>, std::vector<std::basic_string<bool>>,
-	                       kblib::FNV_hash<std::tuple<std::wstring, int*>>>>
+	kblib::FNV_hash<std::unordered_map<
+	    std::tuple<std::wstring, int*>, std::vector<std::basic_string<bool>>,
+	    kblib::FNV_hash<std::tuple<std::wstring, int*>>>>
 	    test_hash1;
-	KBLIB_UNUSED kblib::FNV_hash<std::array<std::basic_string<bool>, 4>> test_hash2;
+	KBLIB_UNUSED kblib::FNV_hash<std::array<std::basic_string<bool>, 4>>
+	    test_hash2;
 	KBLIB_UNUSED auto call = &decltype(test_hash1)::operator();
-//	std::hash<
-//	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,
-//	                       std::hash<std::wstring>>>
-//	    std_hash;
+	//	std::hash<
+	//	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,
+	//	                       std::hash<std::wstring>>>
+	//	    std_hash;
 	using namespace kblib::literals;
 	kblib::FNV_hash<unsigned long long> h_i;
-	static_assert(3452452_fnv64 == h_i(3452452ull), "hash literal and FNH_hash don't agree");
+	static_assert(3452452_fnv64 == h_i(3452452ull),
+	              "hash literal and FNH_hash don't agree");
+
+	REQUIRE(kblib::FNV_hash<int>{}(1000) == 3434534542295815964);
 }
 
 TEST_CASE("range comparison") {
@@ -139,7 +143,8 @@ TEST_CASE("enumerate") {
 	}
 
 	SECTION("temporary") {
-		for (auto t : kblib::enumerate(std::vector<unsigned long long>{0, 1, 1, 2, 3, 5, 8})) {
+		for (auto t : kblib::enumerate(
+		         std::vector<unsigned long long>{0, 1, 1, 2, 3, 5, 8})) {
 			[[gnu::unused]] auto& v = std::get<0>(t);
 			[[gnu::unused]] auto& i = std::get<1>(t);
 			REQUIRE(v == kblib::fibonacci(i));
