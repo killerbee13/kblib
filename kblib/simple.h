@@ -294,10 +294,19 @@ struct FNV_hash {
 	FNV_hash& operator=(FNV_hash&&) = delete;
 };
 
+template <typename Key, typename = void>
+struct is_hashable {
+	static constexpr bool value = false;
+};
+
+template <typename Key>
+struct is_hashable<Key,
+                   void_if_t<std::is_constructible<FNV_hash<Key>>::value>> {
+	static constexpr bool value = true;
+};
+
 /**
- * @brief Hasher for bool. Note that because bool has only two states, this
- * specialization does not actually use FNV to hash the bool, and it uses a more
- * trivial algorithm instead.
+ * @brief Hasher for bool.
  *
  */
 template <>
@@ -306,7 +315,8 @@ struct FNV_hash<bool, void> {
 	operator()(bool key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
 	    noexcept {
-		return key ? offset : ~offset;
+		char tmp[1] = {key};
+		return FNVa_a<std::size_t>(tmp, offset);
 	}
 };
 
@@ -356,11 +366,45 @@ struct FNV_hash<unsigned char, void> {
 };
 
 /**
- * @brief Hasher for any integral type not explicitly mentioned above.
+ * @brief An empty type is treated as if it were a single null byte.
+ */
+template <typename T>
+struct FNV_hash<T, void_if_t<std::is_empty<T>::value>> {
+	constexpr std::size_t
+	operator()(const T&,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
+		return FNVa_a<std::size_t>("", offset); // hashes the null terminator
+	}
+};
+
+#if KBLIB_USE_CXX17
+
+template <typename T>
+struct is_trivially_hashable {
+	constexpr static bool value = (std::is_trivially_copyable_v<T> &&
+	                               std::has_unique_object_representations_v<T> &&
+	                               !std::is_empty<T>::value);
+};
+
+template <typename T>
+constexpr bool is_trivially_hashable_v = is_trivially_hashable<T>::value;
+
+#else
+
+template <typename T>
+struct is_trivially_hashable
+    : std::bool_constant<(std::is_integral<T>::value &&
+                          padding_bits<T>::value == 0)>;
+#endif
+
+/**
+ * @brief Hasher for any trivially hashable type not explicitly mentioned above.
  *
  */
 template <typename T>
-struct FNV_hash<T, void_if_t<std::is_integral<T>::value>> {
+struct FNV_hash<T, void_if_t<std::is_integral<T>::value &&
+                             is_trivially_hashable<T>::value>> {
 	constexpr std::size_t
 	operator()(T key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
@@ -371,17 +415,48 @@ struct FNV_hash<T, void_if_t<std::is_integral<T>::value>> {
 	}
 };
 
+namespace asserts {
+
+   template <typename Container>
+   constexpr bool is_trivial_container =
+	    (is_contiguous<Container>::value &&
+	     is_trivially_hashable<typename Container::value_type>::value);
+	static_assert(is_trivial_container<std::string>);
+
+} // namespace asserts
+
 /**
- * @brief Hasher for any non-integral trivial type.
+ * @brief Container hasher, for contiguously-stored trivial elements
+ *
+ */
+template <typename Container>
+struct FNV_hash<
+    Container,
+    void_if_t<(is_contiguous<Container>::value &&
+               is_trivially_hashable<typename Container::value_type>::value)>> {
+   constexpr std::size_t
+   operator()(const Container& key,
+              std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+       noexcept {
+      return FNVa_s(reinterpret_cast<const char*>(key.data()),
+                    key.size() * sizeof(*key.begin()), offset);
+   }
+};
+
+#if 1
+
+/**
+ * @brief Hasher for any non-integral trivially copyable type that has no
+ * padding.
  *
  * @note Unfortunately, this specialization cannot be constexpr until C++20
  * brings std::bit_cast.
  *
  */
 template <typename T>
-struct FNV_hash<
-    T, void_if_t<std::is_trivial<T>::value && !std::is_integral<T>::value>> {
-	constexpr std::size_t
+struct FNV_hash<T, void_if_t<!std::is_integral<T>::value &&
+                             is_trivially_hashable<T>::value>> {
+	std::size_t
 	operator()(T key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
 	    noexcept {
@@ -392,11 +467,16 @@ struct FNV_hash<
 };
 
 /**
- * @brief Container hasher
+ * @brief Container hasher, for non-trivial elements (or non-contiguous storage)
  *
  */
 template <typename Container>
-struct FNV_hash<Container, void_t<typename Container::value_type>> {
+struct FNV_hash<Container,
+                void_if_t<value_detected<Container>::value &&
+                          is_hashable<typename Container::value_type>::value &&
+                          !(is_contiguous<Container>::value &&
+                            is_trivially_hashable<
+                                typename Container::value_type>::value)>> {
 	constexpr std::size_t
 	operator()(const Container& key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
@@ -408,6 +488,25 @@ struct FNV_hash<Container, void_t<typename Container::value_type>> {
 		                       });
 	}
 };
+
+/**
+ * @brief Container hasher, for contiguously-stored trivial elements
+ */
+template <typename Container>
+struct FNV_hash<
+    Container,
+    void_if_t<is_linear_container_v<Container> && is_contiguous_v<Container> &&
+              is_trivially_hashable_v<Container::value_type>>> {
+	constexpr std::size_t
+	operator()(const Container& key,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
+		return FNVa_s(reinterpret_cast<const char*>(key.data()),
+		              key.size() * sizeof(*key.begin()), offset);
+	}
+};
+
+#endif
 
 namespace detail {
 
@@ -445,6 +544,20 @@ namespace detail {
 		                       std::index_sequence<I2, Is...>{});
 	}
 
+	template <typename Tuple, std::size_t... Is>
+	constexpr bool all_hashable_impl(std::index_sequence<Is...>) {
+		return (... &&
+		        is_hashable<typename std::tuple_element<Is, Tuple>::type>::value);
+	}
+
+	template <typename Tuple,
+	          typename std::enable_if<(std::tuple_size<Tuple>::value > 0u),
+	                                  int>::type = 0>
+	constexpr bool all_hashable() {
+	   return all_hashable_impl<Tuple>(
+	       std::make_index_sequence<std::tuple_size<Tuple>::value>{});
+   }
+
 } // namespace detail
 
 /**
@@ -452,7 +565,8 @@ namespace detail {
  *
  */
 template <typename Tuple>
-struct FNV_hash<Tuple, void_if_t<(std::tuple_size<Tuple>::value > 0u) &&
+struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() &&
+                                 (std::tuple_size<Tuple>::value > 0u) &&
                                  !is_linear_container_v<Tuple>>> {
    constexpr std::size_t
    operator()(const Tuple& key,
@@ -462,20 +576,6 @@ struct FNV_hash<Tuple, void_if_t<(std::tuple_size<Tuple>::value > 0u) &&
           key, offset,
           std::make_index_sequence<std::tuple_size<Tuple>::value>{});
    }
-};
-
-/**
- * @brief The hash of an empty tuple is trivial.
- */
-template <typename Tuple>
-struct FNV_hash<Tuple, void_if_t<std::tuple_size<Tuple>::value == 0u &&
-                                 !is_linear_container_v<Tuple>>> {
-	constexpr std::size_t
-	operator()(const Tuple&,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
-		return offset;
-	}
 };
 
 template <typename T, std::size_t N>

@@ -1388,8 +1388,8 @@ class consume_iterator {
 	 */
 	template <typename V>
 	consume_iterator& operator=(V&& value) noexcept(
-	    noexcept(invoke(fun, std::forward<V>(value)))) {
-		invoke(fun, std::forward<V>(value));
+	    noexcept(kblib::invoke(fun, std::forward<V>(value)))) {
+		kblib::invoke(fun, std::forward<V>(value));
 		return *this;
 	}
 

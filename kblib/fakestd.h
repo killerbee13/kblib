@@ -662,6 +662,12 @@ template <typename Container>
 using value_type_linear_t = typename value_type_linear<Container>::type;
 
 template <typename Container>
+struct is_linear_container {
+	constexpr static bool value =
+	    value_detected_v<Container> && !key_detected_v<Container>;
+};
+
+template <typename Container>
 constexpr static bool is_linear_container_v =
     value_detected_v<Container> && !key_detected_v<Container>;
 
@@ -692,15 +698,13 @@ constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2) {
 }
 
 template <typename C>
-constexpr auto size(const C& c) -> decltype(c.size())
-{
-	 return c.size();
+constexpr auto size(const C& c) -> decltype(c.size()) {
+	return c.size();
 }
 
 template <typename T, std::size_t N>
-constexpr std::size_t size(const T (&)[N]) noexcept
-{
-	 return N;
+constexpr std::size_t size(const T (&)[N]) noexcept {
+	return N;
 }
 
 template <class InputIt1, class InputIt2>
@@ -846,7 +850,9 @@ class heap_value {
 
 	KBLIB_NODISCARD pointer get() const& noexcept { return p; }
 
-	KBLIB_NODISCARD explicit operator bool() const& noexcept { return p != nullptr; }
+	KBLIB_NODISCARD explicit operator bool() const& noexcept {
+		return p != nullptr;
+	}
 
 	reference operator*() const& noexcept { return *p; }
 
