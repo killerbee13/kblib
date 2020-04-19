@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iterator>
 #include <list>
+#include <map>
 #include <sstream>
 #include <unordered_map>
 
@@ -37,9 +38,9 @@ TEST_CASE("FNV_hash") {
 	                   std::vector<std::basic_string<bool>>,
 	                   kblib::FNV_hash<std::tuple<std::wstring, int*>>>
 	    test_map;
-	kblib::FNV_hash<std::unordered_map<
-	    std::tuple<std::wstring, int*>, std::vector<std::basic_string<bool>>,
-	    kblib::FNV_hash<std::tuple<std::wstring, int*>>>>
+	kblib::FNV_hash<std::map<std::tuple<std::wstring, int*>,
+	                         std::vector<std::basic_string<bool>>,
+	                         kblib::FNV_hash<std::tuple<std::wstring, int*>>>>
 	    test_hash1;
 	KBLIB_UNUSED kblib::FNV_hash<std::array<std::basic_string<bool>, 4>>
 	    test_hash2;
@@ -58,6 +59,8 @@ TEST_CASE("FNV_hash") {
 	kblib::FNV_hash<std::vector<empty_t>>{}({});
 	// fails because of padding:
 	// kblib::FNV_hash<std::vector<has_padding>>{}({});
+	// fails because of unorderedness:
+	// kblib::FNV_hash<std::unordered_map<int, int>>{}({});
 }
 
 TEST_CASE("range comparison") {

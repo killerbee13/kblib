@@ -474,6 +474,7 @@ template <typename Container>
 struct FNV_hash<Container,
                 void_if_t<value_detected<Container>::value &&
                           is_hashable<typename Container::value_type>::value &&
+                          !hash_detected<Container>::value &&
                           !(is_contiguous<Container>::value &&
                             is_trivially_hashable<
                                 typename Container::value_type>::value)>> {
@@ -566,6 +567,7 @@ namespace detail {
  */
 template <typename Tuple>
 struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() &&
+                                 !is_trivially_hashable<Tuple>::value &&
                                  (std::tuple_size<Tuple>::value > 0u) &&
                                  !is_linear_container_v<Tuple>>> {
    constexpr std::size_t

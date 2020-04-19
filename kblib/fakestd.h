@@ -649,6 +649,15 @@ struct mapped_detected<T, void_t<typename T::mapped_type>> : std::true_type {};
 template <typename T>
 constexpr bool mapped_detected_v = mapped_detected<T>::value;
 
+template <typename T, typename = void>
+struct hash_detected : std::false_type {};
+
+template <typename T>
+struct hash_detected<T, void_t<typename T::hasher>> : std::true_type {};
+
+template <typename T>
+constexpr bool hash_detected_v = hash_detected<T>::value;
+
 template <typename Container, bool = key_detected_v<Container>,
           typename T = typename Container::value_type>
 struct value_type_linear {};
