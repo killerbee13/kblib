@@ -189,12 +189,11 @@ constexpr T accumulate(InputIt first, InputIt last, T init,
 }
 
 /**
- * @brief Sum a numeric range
+ * @brief Sum a range
  *
- * Convenience wrapper for std::accumulate for numeric ranges. For an empty
- * range, returns a value-initialized temporary (usually 0). Deduces the correct
- * type for the initializer, which reduces risk of truncation and incorrect
- * results.
+ * Convenience wrapper for std::accumulate. For an empty range, returns a
+ * value-initialized temporary (usually 0). Deduces the correct type for the
+ * initializer, which reduces risk of truncation and incorrect results.
  *
  * @param[in] first Beginning of range
  * @param[in] last End of range
@@ -207,16 +206,15 @@ constexpr auto sum(InputIt first, InputIt last)
 		return {};
 	}
 	auto init = *first++;
-	return kblib::accumulate(first, last, init);
+	return kblib::accumulate(first, last, std::move(init));
 }
 
 /**
  * @brief Fold a range over an operation.
  *
- * Convenience wrapper for std::accumulate for numeric ranges. For an empty
- * range, returns a value-initialized temporary (usually 0). Deduces the correct
- * type for the initializer, which reduces risk of truncation and incorrect
- * results.
+ * Convenience wrapper for std::accumulate. For an empty range, returns a
+ * value-initialized temporary (usually 0). Deduces the correct type for the
+ * initializer, which reduces risk of truncation and incorrect results.
  *
  * @param[in] first Beginning of range
  * @param[in] last End of range
@@ -230,7 +228,29 @@ constexpr auto sum(InputIt first, InputIt last, BinaryOperation op)
 		return {};
 	}
 	auto init = *first++;
-	return accumulate(first, last, init, op);
+	return kblib::accumulate(first, last, std::move(init), op);
+}
+
+/**
+ * @brief Sum a range
+ *
+ * Convenience wrapper for std::accumulate. For an empty range, returns a
+ * value-initialized temporary (usually 0). Deduces the correct type for the
+ * initializer, which reduces risk of truncation and incorrect results.
+ *
+ * @param[in] r The range to sum
+ * @return The sum of the input range.
+ */
+template <typename Range>
+constexpr auto sum(Range&& r) {
+	using std::begin;
+	auto first = begin(r);
+	auto last = end(r);
+	if (first == last) {
+		return std::decay_t<decltype(*first)>{};
+	}
+	auto init = *first++;
+	return kblib::accumulate(first, last, std::move(init));
 }
 
 inline namespace nums {

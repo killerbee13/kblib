@@ -652,12 +652,12 @@ using int_smallest_t = typename int_smallest<I>::type;
  * @return Container A container consisting of the elements of A and B in that
  * order.
  */
-template <typename Container>
-Container arraycat(Container A,
-                   Container&& B) noexcept(noexcept(A.insert(A.end(), B.begin(),
+template <typename LeftContainer, typename RightContainer>
+LeftContainer arraycat(LeftContainer A,
+                   RightContainer&& B) noexcept(noexcept(A.insert(A.end(), B.begin(),
                                                              B.end()))) {
 	A.insert(A.end(), B.begin(), B.end());
-	return A;
+	return std::move(A);
 }
 
 /**
