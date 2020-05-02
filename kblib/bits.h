@@ -452,10 +452,16 @@ namespace detail {
 	                                        &Parent::name##_get_impl>{this};    \
    }
 
-#ifdef KBLIB_DEF_MACROS
+
+
+} // namespace kblib
+
+#endif // KBLIB_BITS_H
+
+#if KBLIB_DEF_MACROS && !defined(BITFIELD)
 /**
  * @def BITFIELD(offset, size, name, raw)
- * Defines appropreiate member functions which operate on a bitfield. The
+ * Defines appropriate member functions which operate on a bitfield. The
  * generated functions are constexpr and optimize well.
  *
  * Declare inside a struct to add a simulated bitfield to it. In total, 5 member
@@ -470,7 +476,7 @@ namespace detail {
  * to the bitfield, which may be assigned to or implicitly converted to the
  * value type.
  *
- * @note This macro is only defined if KBLIB_DEF_MACROS is defined.
+ * @note This macro is only defined if KBLIB_DEF_MACROS is true.
  *
  * @sa See #KBLIB_INTERNAL_BITFIELD_MACRO for definition.
  *
@@ -483,7 +489,3 @@ namespace detail {
 #define BITFIELD(offset, size, name, raw) \
 	KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
 #endif
-
-} // namespace kblib
-
-#endif // KBLIB_BITS_H

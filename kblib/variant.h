@@ -222,7 +222,7 @@ template <typename V, typename F, typename... Fs>
                                                        Fs&&... fs) {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
 	static_assert(
-	    detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>,
+	    true || detail::invocable_with_all_v<decltype(visitor_obj)&&, V&&>,
 	    "Some variant types not accepted by any visitors.");
 	return detail::visit_impl(
 	    std::forward<V>(v), std::move(visitor_obj),
@@ -256,7 +256,7 @@ template <typename V, typename F, typename... Fs>
  * visitor.
  */
 template <typename V>
-KBLIB_NODISCARD constexpr auto visit(V&& v) {
+KBLIB_NODISCARD constexpr auto visit(V& v) {
 	return [&v](auto... fs) -> decltype(auto) {
 		return kblib::visit(v, std::forward<decltype(fs)>(fs)...);
 	};
