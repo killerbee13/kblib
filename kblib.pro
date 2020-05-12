@@ -63,3 +63,6 @@ QMAKE_LFLAGS += -fsanitize=address,undefined
 
 QMAKE_CXXFLAGS_RELEASE += -flto
 QMAKE_LFLAGS_RELEASE += -flto
+
+DISTFILES += \
+    LICENSE.txt

@@ -372,6 +372,15 @@ TEST_CASE("poly_obj performance") {
 	 * compares favorably to unique_ptr, which is good, because it is meant to
 	 * replace it in some uses.
 	 *
+	 * std::get_if and switch are predictably the fastest way of accessing a
+	 * variant in debug, but in release are tied with visit2. I do not think
+	 * that the messy and verbose code is justified by the debug performance
+	 * gain compared to the other options.
+	 *
+	 * If you want to use exceptions for invalid objects, kblib::visit2 is the
+	 * fastest way, followed by std::function. The others are equally twice as
+	 * slow.
+	 *
 	 * I cannot tell why visit_indexed is so much slower than visit2 in this
 	 * test. Their code is very similar. It must be the additional parameter
 	 * causing delays in setting up the call.
