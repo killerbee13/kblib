@@ -452,8 +452,6 @@ namespace detail {
 	                                        &Parent::name##_get_impl>{this};    \
    }
 
-
-
 } // namespace kblib
 
 #endif // KBLIB_BITS_H

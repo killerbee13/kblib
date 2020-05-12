@@ -1,4 +1,4 @@
-#define KBLIB_DEF_MACROS
+#define KBLIB_DEF_MACROS 1
 #include "kblib/bits.h"
 #include "catch.hpp"
 

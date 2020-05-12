@@ -179,8 +179,31 @@ namespace detail {
    template <typename F, typename... Ts>
    constexpr bool invocable_with_all_v = (std::is_invocable_v<F, Ts> && ...);
 
+	template <typename, typename>
+	constexpr bool v_invocable_with_all_v = false;
+
 	template <typename F, typename... Ts>
-	constexpr bool invocable_with_all_v<F, std::variant<Ts...>> =
+	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>> =
+	    invocable_with_all_v<F, Ts...>;
+
+	template <typename F, typename... Ts>
+	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>> =
+	    invocable_with_all_v<F, Ts...>;
+
+	template <typename F, typename... Ts>
+	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&> =
+	    invocable_with_all_v<F, Ts...>;
+
+	template <typename F, typename... Ts>
+	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&> =
+	    invocable_with_all_v<F, Ts...>;
+
+	template <typename F, typename... Ts>
+	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&&> =
+	    invocable_with_all_v<F, Ts...>;
+
+	template <typename F, typename... Ts>
+	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&&> =
 	    invocable_with_all_v<F, Ts...>;
 
 	template <typename V, typename F, std::size_t I, std::size_t... Is>
@@ -221,9 +244,8 @@ template <typename V, typename F, typename... Fs>
 [[gnu::always_inline]] constexpr decltype(auto) visit2(V&& v, F&& f,
                                                        Fs&&... fs) {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
-	static_assert(
-	    true || detail::invocable_with_all_v<decltype(visitor_obj)&&, V&&>,
-	    "Some variant types not accepted by any visitors.");
+	static_assert(detail::v_invocable_with_all_v<decltype(visitor_obj), V&&>,
+	              "Some variant types not accepted by any visitors.");
 	return detail::visit_impl(
 	    std::forward<V>(v), std::move(visitor_obj),
 	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
@@ -232,9 +254,8 @@ template <typename V, typename F, typename... Fs>
 template <typename V, typename F, typename... Fs>
 [[gnu::always_inline]] constexpr void visit2_nop(V&& v, F&& f, Fs&&... fs) {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
-	static_assert(
-	    detail::invocable_with_all_v<decltype(visitor_obj), std::decay_t<V>>,
-	    "Some variant types not accepted by any visitors.");
+	static_assert(detail::v_invocable_with_all_v<decltype(visitor_obj), V&&>,
+	              "Some variant types not accepted by any visitors.");
 	return detail::visit_nop_impl(
 	    std::forward<V>(v), visitor_obj,
 	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
@@ -340,18 +361,18 @@ namespace detail {
 
 	// clang-format off
 
-// It gets confused and thinks these are pointers for some reason and misaligns
-// the asterisks.
+	// It gets confused and thinks these are pointers for some reason and misaligns
+	// the asterisks.
 
-template <typename T>
-constexpr construct_type assign_traits =
-    construct_type::copy * std::is_copy_assignable_v<T> |
-    construct_type::move * std::is_move_assignable_v<T>;
+	template <typename T>
+	constexpr construct_type assign_traits =
+	    construct_type::copy * std::is_copy_assignable_v<T> |
+	    construct_type::move * std::is_move_assignable_v<T>;
 
-   // clang-format on
+	// clang-format on
 
-   template <typename T>
-   struct disable_conditional : construct_conditional<construct_traits<T>>,
+	template <typename T>
+	struct disable_conditional : construct_conditional<construct_traits<T>>,
 	                             assign_conditional<assign_traits<T>> {};
 
 	inline void* noop(void*, void*) { return nullptr; }
@@ -487,16 +508,19 @@ class poly_obj
 	/**
 	 * @brief Explicitly do not construct an object.
 	 */
-	constexpr poly_obj(std::nullptr_t) : poly_obj() {}
+	constexpr poly_obj(std::nullptr_t) noexcept : poly_obj() {}
 	/**
 	 * @brief Constructs a copy of other.
 	 *
 	 * This function can only be called if Traits is copy-constructible.
 	 *
 	 * @param other A poly_obj to copy from.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	constexpr poly_obj(const poly_obj& other) noexcept(
-	    std::is_nothrow_copy_constructible<Obj>::value)
+	    std::is_nothrow_copy_constructible_v<Obj>)
 	    : disabler(other), ops_t(other) {
 		if (other.value) {
 			value = static_cast<Obj*>(this->copy(data, other.get()));
@@ -508,9 +532,12 @@ class poly_obj
 	 * This function can only be called if Traits is move-constructible.
 	 *
 	 * @param other A poly_obj to move from.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	constexpr poly_obj(poly_obj&& other) noexcept(
-	    std::is_nothrow_move_constructible<Obj>::value)
+	    std::is_nothrow_move_constructible_v<Obj>)
 	    : disabler(std::move(other)), ops_t(std::move(other)) {
 		if (other.value) {
 			value = static_cast<Obj*>(this->move(data, other.get()));
@@ -523,9 +550,12 @@ class poly_obj
 	 * This function can only be called is Traits is copy-constructible.
 	 *
 	 * @param obj The object to copy.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	constexpr poly_obj(const Obj& obj) noexcept(
-	    std::is_nothrow_copy_constructible<Obj>::value)
+	    std::is_nothrow_copy_constructible_v<Obj>)
 	    : value(new (data) Obj(obj)) {}
 	/**
 	 * @brief Move-constructs the contained object from obj.
@@ -533,20 +563,27 @@ class poly_obj
 	 * This function can only be called if Traits is move-constructible.
 	 *
 	 * @param obj The object to move from.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	constexpr poly_obj(Obj&& obj) noexcept(
-	    std::is_nothrow_move_constructible<Obj>::value)
+	    std::is_nothrow_move_constructible_v<Obj>)
 	    : value(new (data) Obj(std::move(obj))) {}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
 	 *
 	 * @param args Arguments to be passed to the constructor of Obj.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	template <typename... Args,
 	          typename std::enable_if_t<std::is_constructible_v<Obj, Args...>,
 	                                    int> = 0>
-	constexpr explicit poly_obj(std::in_place_t, Args&&... args)
+	constexpr explicit poly_obj(std::in_place_t, Args&&... args) noexcept(
+	    std::is_nothrow_constructible_v<Obj, Args&&...>)
 	    : ops_t(detail::make_ops_t<Obj, Traits>()),
 	      value(new (data) Obj(std::forward<Args>(args)...)) {}
 
@@ -556,6 +593,9 @@ class poly_obj
 	 *
 	 * @param other A poly_obj to copy from.
 	 * @return poly_obj& *this.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	poly_obj& operator=(const poly_obj& other) & {
 		clear();
@@ -571,6 +611,9 @@ class poly_obj
 	 *
 	 * @param other A poly_obj to move from.
 	 * @return poly_obj& *this.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	poly_obj& operator=(poly_obj&& other) & {
 		clear();
@@ -591,9 +634,13 @@ class poly_obj
 	 * @tparam U A type publically derived from Obj.
 	 * @param args Arguments to pass to the constructor of U.
 	 * @return poly_obj A poly_obj<Obj> containing an object of type U.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
 	 */
 	template <typename U, typename... Args>
-	static poly_obj make(Args&&... args) {
+	static poly_obj make(Args&&... args) noexcept(
+	    std::is_nothrow_constructible_v<U, Args&&...>) {
 		static_assert(sizeof(U) <= Capacity,
 		              "U must fit inside of the inline capacity.");
 		static_assert(std::is_base_of_v<Obj, U> &&
@@ -804,13 +851,15 @@ class poly_obj
 	auto operator()(Args&&... args) const
 	    noexcept(std::is_nothrow_invocable_v<const Obj&, Args&&...>)
 	        -> std::invoke_result_t<const Obj&, Args&&...> {
-		return std::invoke(**this, std::forward<Args>(args)...);
+		return std::invoke(*value, std::forward<Args>(args)...);
 	}
 
 	/**
 	 * @brief Check if the poly_obj contains a value.
 	 */
 	bool has_value() const& noexcept { return value; }
+
+	explicit operator bool() const& noexcept { return has_value(); }
 
 	/**
 	 * @brief Empties the poly_obj, reverting to a default-constructed state.
@@ -837,7 +886,8 @@ class poly_obj
 	struct tag {};
 
 	template <typename U, typename... Args>
-	poly_obj(tag<U>, Args&&... args)
+	poly_obj(tag<U>, Args&&... args) noexcept(
+	    std::is_nothrow_constructible_v<U, Args&&...>)
 	    : ops_t(detail::make_ops_t<U, Traits>()),
 	      value(new (data) U(std::forward<Args>(args)...)) {}
 };

@@ -45,7 +45,7 @@ class live_wrapper {
 
 	T data;
 
-	kblib::null_construct<std::vector<live_wrapper**>> _observers;
+	kblib::null_construct<std::vector<live_wrapper**>> _observers{};
 };
 
 template <typename T>

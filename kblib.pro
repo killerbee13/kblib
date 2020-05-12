@@ -55,7 +55,7 @@ HEADERS += \
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags -Wreturn-std-move
 QMAKE_CXXFLAGS += -I/mnt/Vers1/include
-QMAKE_CXXFLAGS += -glldb
+QMAKE_CXXFLAGS_DEBUG += -glldb
 QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib
 
 QMAKE_CXXFLAGS += -fsanitize=address,undefined -fstandalone-debug

@@ -57,24 +57,19 @@ namespace detail {
 
 } // namespace detail
 
-enum class endian {
-	unknown,
-	little,
-	big,
-	weird
-};
+enum class endian { unknown, little, big, weird };
 
 namespace detail {
-constexpr endian get_system_endian() {
-	if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
-		return endian::big;
-	} else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
-		return endian::little;
-	} else {
-		return endian::weird;
+   constexpr endian get_system_endian() {
+		if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
+			return endian::big;
+		} else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
+			return endian::little;
+		} else {
+			return endian::weird;
+		}
 	}
-}
-}
+} // namespace detail
 
 #ifdef __BYTE_ORDER__
 constexpr endian system_endian = detail::get_system_endian();
@@ -83,14 +78,14 @@ constexpr endian system_endian = endian::unknown;
 #endif
 
 namespace detail {
-constexpr endian get_hash_order() {
-	if (system_endian == endian::little || system_endian == endian::big) {
-		return system_endian;
-	} else {
-		return endian::little;
+   constexpr endian get_hash_order() {
+		if (system_endian == endian::little || system_endian == endian::big) {
+			return system_endian;
+		} else {
+			return endian::little;
+		}
 	}
-}
-}
+} // namespace detail
 
 #ifdef KBLIB_CONSISTENT_HASHES
 constexpr endian hash_order = little;
