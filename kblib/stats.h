@@ -2,6 +2,7 @@
 #define KBLIB_STATS_H
 
 #include <array>
+#include <cassert>
 #include <limits>
 #include <numeric>
 #include <random>

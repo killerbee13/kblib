@@ -425,7 +425,7 @@ namespace detail {
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
  private:                                                                      \
 	constexpr decltype(raw) name##_get_impl() const noexcept {                  \
-	   return (raw >> offset) & ((1 << size) - 1);                              \
+	   return (raw >> offset) & ((decltype(raw)(1) << size) - 1);               \
    }                                                                           \
 	                                                                            \
  public:                                                                       \
@@ -434,9 +434,9 @@ namespace detail {
  private:                                                                      \
 	constexpr decltype(raw) name##_set_impl(decltype(raw) val) noexcept {       \
 	   /* Clear the bits for this field */                                      \
-	   raw &= ~(((1 << size) - 1) << offset);                                   \
+	   raw &= ~(((decltype(raw)(1) << size) - 1) << offset);                    \
 	   /* Set the field */                                                      \
-	   raw |= (val & ((1 << size) - 1)) << offset;                              \
+	   raw |= (val & ((decltype(raw)(1) << size) - 1)) << offset;               \
 	   return val;                                                              \
    }                                                                           \
 	                                                                            \
@@ -450,7 +450,16 @@ namespace detail {
 	   return kblib::detail::bitfield_proxy<Parent, decltype(raw),              \
 	                                        &Parent::name##_set_impl,           \
 	                                        &Parent::name##_get_impl>{this};    \
-   }
+   }                                                                           \
+	                                                                            \
+	template <decltype(raw) val, decltype(raw) basis = 0>                       \
+	constexpr static decltype(raw) set_##name##_v =                             \
+	    (basis & ~(((decltype(raw)(1) << size) - 1) << offset)) |               \
+	    (val & ((decltype(raw)(1) << size) - 1)) << offset;                     \
+	                                                                            \
+	template <decltype(raw) basis>                                              \
+	constexpr static decltype(raw) get_##name##_v =                             \
+	    (basis >> offset) & ((decltype(raw)(1) << size) - 1);
 
 } // namespace kblib
 
@@ -475,6 +484,7 @@ namespace detail {
  * value type.
  *
  * @note This macro is only defined if KBLIB_DEF_MACROS is true.
+ * @note This macro always declares the member functions publically.
  *
  * @sa See #KBLIB_INTERNAL_BITFIELD_MACRO for definition.
  *
