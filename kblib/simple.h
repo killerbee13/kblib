@@ -98,7 +98,7 @@ namespace fnv {
 	 * @brief The prime to use for the FNVa hash algorithm, as a type trait.
 	 */
    template <typename UInt>
-   struct fnv_prime {};
+   struct fnv_prime;
 
 	template <>
 	struct fnv_prime<std::uint32_t>
@@ -107,11 +107,18 @@ namespace fnv {
 	struct fnv_prime<std::uint64_t>
 	    : std::integral_constant<std::uint64_t, 1099511628211ull> {};
 
+	template <typename UInt>
+	struct fnv_prime {
+		constexpr static UInt value = (sizeof(UInt) == sizeof(std::uint64_t)
+		                                   ? fnv_prime<std::uint64_t>::value
+		                                   : fnv_prime<std::uint32_t>::value);
+	};
+
 	/**
 	 * @brief The starting value for the FNVa hash algorithm, as a type trait.
 	 */
 	template <typename UInt>
-	struct fnv_offset {};
+	struct fnv_offset;
 
 	template <>
 	struct fnv_offset<std::uint32_t>
@@ -119,6 +126,13 @@ namespace fnv {
 	template <>
 	struct fnv_offset<std::uint64_t>
 	    : std::integral_constant<std::uint64_t, 14695981039346656037ull> {};
+
+	template <typename UInt>
+	struct fnv_offset {
+		constexpr static UInt value = (sizeof(UInt) == sizeof(std::uint64_t)
+		                                   ? fnv_offset<std::uint64_t>::value
+		                                   : fnv_offset<std::uint32_t>::value);
+	};
 
 } // namespace fnv
 
@@ -653,9 +667,8 @@ using int_smallest_t = typename int_smallest<I>::type;
  * order.
  */
 template <typename LeftContainer, typename RightContainer>
-LeftContainer arraycat(LeftContainer A,
-                   RightContainer&& B) noexcept(noexcept(A.insert(A.end(), B.begin(),
-                                                             B.end()))) {
+LeftContainer arraycat(LeftContainer A, RightContainer&& B) noexcept(
+    noexcept(A.insert(A.end(), B.begin(), B.end()))) {
 	A.insert(A.end(), B.begin(), B.end());
 	return std::move(A);
 }
