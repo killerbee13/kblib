@@ -177,9 +177,10 @@ constexpr decltype(auto) visit(V&& v, F&& f, Fs&&... fs) {
 namespace detail {
 
    template <typename F, typename... Ts>
-   constexpr bool invocable_with_all_v = (std::is_invocable_v<F, Ts> && ...);
+   constexpr bool invocable_with_all_v =
+	    (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value && ...);
 
-	template <typename, typename>
+	template <typename Callable, typename Variant>
 	constexpr bool v_invocable_with_all_v = false;
 
 	template <typename F, typename... Ts>
@@ -188,23 +189,23 @@ namespace detail {
 
 	template <typename F, typename... Ts>
 	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>> =
-	    invocable_with_all_v<F, Ts...>;
+	    invocable_with_all_v<F, const Ts...>;
 
 	template <typename F, typename... Ts>
 	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&> =
-	    invocable_with_all_v<F, Ts...>;
+	    invocable_with_all_v<F, Ts&...>;
 
 	template <typename F, typename... Ts>
 	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&> =
-	    invocable_with_all_v<F, Ts...>;
+	    invocable_with_all_v<F, const Ts&...>;
 
 	template <typename F, typename... Ts>
 	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&&> =
-	    invocable_with_all_v<F, Ts...>;
+	    invocable_with_all_v<F, Ts&&...>;
 
 	template <typename F, typename... Ts>
 	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&&> =
-	    invocable_with_all_v<F, Ts...>;
+	    invocable_with_all_v<F, const Ts&&...>;
 
 	template <typename V, typename F, std::size_t I, std::size_t... Is>
 	[[gnu::always_inline]] constexpr decltype(auto)
@@ -790,7 +791,10 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	    member_type& operator->*(member_type(Obj::*member)) & noexcept {
+	    return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
+		                 member_type>&
+		 operator->*(member_type(Obj::*member)) &
+		 noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -798,7 +802,9 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	const member_type& operator->*(member_type(Obj::*member)) const& noexcept {
+	const return_assert_t<
+	    !std::is_member_function_pointer_v<member_type(Obj::*)>, member_type>&
+	operator->*(member_type(Obj::*member)) const& noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -806,7 +812,10 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	    member_type&& operator->*(member_type(Obj::*member)) && noexcept {
+	    return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
+		                 member_type>&&
+		 operator->*(member_type(Obj::*member)) &&
+		 noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -814,11 +823,106 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	const member_type&& operator->*(member_type(Obj::*member)) const&& noexcept {
+	const return_assert_t<
+	    !std::is_member_function_pointer_v<member_type(Obj::*)>, member_type>&&
+	operator->*(member_type(Obj::*member)) const&& noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
 		return std::move(value->*member);
+	}
+
+	template <typename member_type, typename... Args>
+	    auto operator->*(member_type (Obj::*member)(Args...)) & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+		 auto operator->*(member_type (Obj::*member)(Args...) const) & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+	auto operator->*(member_type (Obj::*member)(Args...) const) const& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+	    auto operator->*(member_type (Obj::*member)(Args...) &) & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+		 auto operator->*(member_type (Obj::*member)(Args...) const&) & noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+	auto operator->*(member_type (Obj::*member)(Args...)
+	                     const&) const& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+	    auto operator->*(member_type (Obj::*member)(Args...) &&) && noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (std::move(*value).*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+		 auto operator->*(member_type (Obj::*member)(Args...) const&&) &&
+		 noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (std::move(*value).*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	template <typename member_type, typename... Args>
+	auto operator->*(member_type (Obj::*member)(Args...)
+	                     const&&) const&& noexcept {
+#if __has_builtin(__builtin_assume)
+		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
+#endif
+		return [member, value = value](Args... args) -> decltype(auto) {
+			return (std::move(*value).*member)(std::forward<Args>(args)...);
+		};
 	}
 
 	/**

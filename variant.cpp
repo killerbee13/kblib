@@ -230,15 +230,21 @@ TEST_CASE("poly_obj") {
 
 struct mem_ptr_test {
 	int member{42};
-	int get_member() const noexcept { return member; }
+	int get_member() & noexcept { return member; }
+	int cget_member() const& noexcept { return member; }
+	int rget_member() && noexcept { return member; }
+	int crget_member() const&& noexcept { return member; }
+
+	int get_member2() noexcept { return member; }
+	int cget_member2() const noexcept { return member; }
+
 	virtual ~mem_ptr_test() = default;
 };
 
 TEST_CASE("poly_obj->*") {
 	kblib::poly_obj<mem_ptr_test> obj{std::in_place};
-	constexpr auto data_member = &mem_ptr_test::member;
-	[[maybe_unused]] constexpr auto func_member = &mem_ptr_test::get_member;
 	SECTION("member data") {
+		constexpr auto data_member = &mem_ptr_test::member;
 		REQUIRE(obj->*data_member == 42);
 		static_assert(std::is_same_v<decltype(obj->*data_member), int&>);
 		static_assert(std::is_same_v<decltype(std::as_const(obj)->*data_member),
@@ -250,9 +256,39 @@ TEST_CASE("poly_obj->*") {
 		                   const int&&>);
 	}
 	SECTION("member function") {
-		// REQUIRE((obj->*func_member)() == 42);
-		// static_assert(std::is_same_v<decltype((obj.get()->*func_member)()),
-		// int>);
+		constexpr auto func_member = &mem_ptr_test::get_member;
+		constexpr auto cfunc_member = &mem_ptr_test::cget_member;
+		constexpr auto rfunc_member = &mem_ptr_test::rget_member;
+		constexpr auto crfunc_member = &mem_ptr_test::crget_member;
+		REQUIRE((obj->*func_member)() == 42);
+		static_assert(std::is_same_v<decltype((obj->*func_member)()), int>);
+		REQUIRE((obj->*cfunc_member)() == 42);
+		static_assert(std::is_same_v<decltype((obj->*cfunc_member)()), int>);
+		REQUIRE((std::as_const(obj)->*cfunc_member)() == 42);
+		static_assert(
+		    std::is_same_v<decltype((std::as_const(obj)->*cfunc_member)()), int>);
+		REQUIRE((std::move(obj)->*rfunc_member)() == 42);
+		static_assert(
+		    std::is_same_v<decltype((std::move(obj)->*rfunc_member)()), int>);
+		REQUIRE((std::move(obj)->*crfunc_member)() == 42);
+		static_assert(
+		    std::is_same_v<decltype((std::move(obj)->*crfunc_member)()), int>);
+		REQUIRE((std::move(std::as_const(obj))->*crfunc_member)() == 42);
+		static_assert(std::is_same_v<
+		              decltype((std::move(std::as_const(obj))->*crfunc_member)()),
+		              int>);
+
+		constexpr auto func_member2 = &mem_ptr_test::get_member2;
+		constexpr auto cfunc_member2 = &mem_ptr_test::cget_member2;
+
+		REQUIRE((obj->*func_member2)() == 42);
+		static_assert(std::is_same_v<decltype((obj->*func_member2)()), int>);
+		REQUIRE((obj->*cfunc_member2)() == 42);
+		static_assert(std::is_same_v<decltype((obj->*cfunc_member2)()), int>);
+		REQUIRE((std::as_const(obj)->*cfunc_member2)() == 42);
+		static_assert(
+		    std::is_same_v<decltype((std::as_const(obj)->*cfunc_member2)()),
+		                   int>);
 	}
 }
 
