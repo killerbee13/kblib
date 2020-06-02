@@ -3,7 +3,7 @@
 
 #include "tdecl.h"
 
-#if KBLIB_USE_CXX17 || 1
+#if KBLIB_USE_CXX17
 
 #include <optional>
 

@@ -408,8 +408,12 @@ constexpr bool is_trivially_hashable_v = is_trivially_hashable<T>::value;
 
 template <typename T>
 struct is_trivially_hashable
-    : std::bool_constant<(std::is_integral<T>::value &&
-                          padding_bits<T>::value == 0)>;
+    : std::integral_constant<bool, (std::is_integral<T>::value &&
+                                    padding_bits<T>::value == 0) ||
+                                       std::is_pointer<T>::value> {};
+
+template <typename T>
+constexpr bool is_trivially_hashable_v = is_trivially_hashable<T>::value;
 #endif
 
 /**
@@ -435,7 +439,8 @@ namespace asserts {
    constexpr bool is_trivial_container =
 	    (is_contiguous<Container>::value &&
 	     is_trivially_hashable<typename Container::value_type>::value);
-	static_assert(is_trivial_container<std::string>);
+	static_assert(is_trivial_container<std::string>,
+	              "kblib bug: std::string should be trivially hashable");
 
 } // namespace asserts
 
@@ -559,11 +564,35 @@ namespace detail {
 		                       std::index_sequence<I2, Is...>{});
 	}
 
+#if KBLIB_USE_CXX17
 	template <typename Tuple, std::size_t... Is>
 	constexpr bool all_hashable_impl(std::index_sequence<Is...>) {
 		return (... &&
 		        is_hashable<typename std::tuple_element<Is, Tuple>::type>::value);
 	}
+#else
+
+	template <typename Tuple, typename IS>
+	struct all_hashable_impl_t;
+
+	template <typename Tuple, std::size_t I, std::size_t... Is>
+	struct all_hashable_impl_t<Tuple, std::index_sequence<I, Is...>> {
+		constexpr static bool value =
+		    (is_hashable<typename std::tuple_element<I, Tuple>::type>::value &&
+		     all_hashable_impl_t<Tuple, std::index_sequence<Is...>>::value);
+	};
+
+	template <typename Tuple, std::size_t I>
+	struct all_hashable_impl_t<Tuple, std::index_sequence<I>> {
+		constexpr static bool value =
+		    is_hashable<typename std::tuple_element<I, Tuple>::type>::value;
+	};
+
+	template <typename Tuple, std::size_t... Is>
+	constexpr bool all_hashable_impl(std::index_sequence<Is...>) {
+		return all_hashable_impl_t<Tuple, std::index_sequence<Is...>>::value;
+	}
+#endif
 
 	template <typename Tuple,
 	          typename std::enable_if<(std::tuple_size<Tuple>::value > 0u),

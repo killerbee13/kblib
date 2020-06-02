@@ -1218,7 +1218,7 @@ namespace detail {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
-				// TODO
+				/// TODO: write efficient sort_transform
 			}
 		}
 
@@ -1235,7 +1235,7 @@ namespace detail {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
-				// TODO
+				/// TODO: write efficient sort
 			}
 		}
 
@@ -1253,7 +1253,7 @@ namespace detail {
 				insertion_sort_copy(begin, end, d_begin, d_end, comp);
 				return;
 			} else {
-				// TODO
+				/// TODO: write efficent sort_copy
 			}
 		}
 	};
@@ -1291,7 +1291,7 @@ namespace detail {
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
 		                              KBLIB_UNUSED std::less<LessT>&& compare) {
-			// TODO
+			/// TODO: write efficient inplace sort
 		}
 	};
 	/**
@@ -1308,7 +1308,7 @@ namespace detail {
 		        KBLIB_UNUSED const RandomAccessIt end,
 		        KBLIB_UNUSED UnaryOperation&& transform,
 		        KBLIB_UNUSED std::greater<LessT>&& compare) {
-			// TODO
+			/// TODO: write efficient inplace sort_transform
 		}
 	};
 
@@ -1324,7 +1324,7 @@ namespace detail {
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
 		                              KBLIB_UNUSED std::less<LessT>&& compare) {
-			// TODO
+			/// TODO: write efficient inplace sort_transform
 		}
 	};
 	/**
@@ -1340,7 +1340,7 @@ namespace detail {
 		        KBLIB_UNUSED const RandomAccessIt end,
 		        KBLIB_UNUSED UnaryOperation&& transform,
 		        KBLIB_UNUSED std::greater<LessT>&& compare) {
-			// TODO
+			/// TODO: write efficient sort_transform
 		}
 	};
 

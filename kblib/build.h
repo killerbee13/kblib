@@ -84,9 +84,8 @@ KBLIB_NODISCARD Container build(InputIt first, InputIt last, InputIt2 first2,
  * @return An Array where each element is a transformed element of the input
  *    range.
  */
-template <
-    typename Array, typename InputIt, typename UnaryFunction,
-    enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
+template <typename Array, typename InputIt, typename UnaryFunction,
+          enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
 	Array out;
 	std::transform(first, last, out.begin(), f);
@@ -110,10 +109,9 @@ KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
  * @return An Array where each element is generated from a corresponding pair
  *    of elements in the input ranges.
  */
-template <
-    typename Array, typename InputIt, typename InputIt2,
-    typename BinaryFunction,
-    enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
+template <typename Array, typename InputIt, typename InputIt2,
+          typename BinaryFunction,
+          enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, InputIt2 first2,
                             BinaryFunction f) {
 	Array out;
@@ -158,9 +156,8 @@ KBLIB_NODISCARD Container build(Functor f, size_t size,
  * @return An Array where each element is the result of invoking `f` in
  *    sequence.
  */
-template <
-    typename Array, typename Functor,
-    enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
+template <typename Array, typename Functor,
+          enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(Functor f,
                             size_t size = std::tuple_size<Array>::value) {
 	Array out;
@@ -401,9 +398,8 @@ build_copy(Range&& r, typename Container::allocator_type allocator =
  * @param last
  * @return Container
  */
-template <
-    typename Container, typename InputIt,
-    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+template <typename Container, typename InputIt,
+          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
 	Container out{};
 	auto pos = std::begin(out);
@@ -420,9 +416,8 @@ KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
  * @param r
  * @return Container
  */
-template <
-    typename Container, typename Range,
-    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+template <typename Container, typename Range,
+          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
 	Container out{};
 	auto first = std::begin(r);
@@ -443,9 +438,8 @@ KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
  * @param size
  * @return Container
  */
-template <
-    typename Container, typename InputIt,
-    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+template <typename Container, typename InputIt,
+          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
                                      std::size_t size) {
 	Container out;
@@ -465,9 +459,8 @@ KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
  * @param size
  * @return Container
  */
-template <
-    typename Container, typename Range,
-    enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+template <typename Container, typename Range,
+          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD Container build_copy(Range&& r, std::size_t size) {
 	Container out;
 	auto first = std::begin(r);

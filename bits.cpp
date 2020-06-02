@@ -138,21 +138,21 @@ constexpr Addr test_bitfield() {
 TEST_CASE("bitfields") {
 	static_assert(sizeof(Addr) == 2, "");
 	constexpr Addr a = test_bitfield();
-	static_assert(a.raw == 0b0001100111001100);
-	static_assert(a.cX() == 0b01100);
-	static_assert(a.cY() == 0b01110);
-	static_assert(a.nt() == 0b10);
-	static_assert(a.fY() == 0b001);
+	static_assert(a.raw == 0b0001100111001100, "");
+	static_assert(a.cX() == 0b01100, "");
+	static_assert(a.cY() == 0b01110, "");
+	static_assert(a.nt() == 0b10, "");
+	static_assert(a.fY() == 0b001, "");
 
-	static_assert(Addr::get_cX_v<a.raw> == 0b01100);
-	static_assert(Addr::get_cY_v<a.raw> == 0b01110);
-	static_assert(Addr::get_nt_v<a.raw> == 0b10);
-	static_assert(Addr::get_fY_v<a.raw> == 0b001);
+	static_assert(Addr::get_cX_v<a.raw> == 0b01100, "");
+	static_assert(Addr::get_cY_v<a.raw> == 0b01110, "");
+	static_assert(Addr::get_nt_v<a.raw> == 0b10, "");
+	static_assert(Addr::get_fY_v<a.raw> == 0b001, "");
 
 	constexpr Addr b = {Addr::set_h_v<0b0011001, Addr::set_l_v<0b11001100>>};
 
-	static_assert(Addr::get_cX_v<b.raw> == 0b01100);
-	static_assert(Addr::get_cY_v<b.raw> == 0b01110);
-	static_assert(Addr::get_nt_v<b.raw> == 0b10);
-	static_assert(Addr::get_fY_v<b.raw> == 0b001);
+	static_assert(Addr::get_cX_v<b.raw> == 0b01100, "");
+	static_assert(Addr::get_cY_v<b.raw> == 0b01110, "");
+	static_assert(Addr::get_nt_v<b.raw> == 0b10, "");
+	static_assert(Addr::get_fY_v<b.raw> == 0b001, "");
 }

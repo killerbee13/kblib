@@ -1,6 +1,8 @@
 #include "kblib/delayed_construct.h"
 #include "catch.hpp"
 
+#if KBLIB_USE_CXX17
+
 TEST_CASE("delayed_construct") {
 	kblib::delayed_construct<int> a(0), b(0);
 	REQUIRE(a == b);
@@ -20,3 +22,5 @@ static_assert(!std::is_default_constructible_v<
                   std::hash<kblib::delayed_construct<no_hash>>>,
               "hashing a delayed_construct<T> is not possible if hashing T is "
               "not possible");
+
+#endif

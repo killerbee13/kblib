@@ -20,9 +20,11 @@ struct has_padding {
 struct empty_t {};
 
 static_assert(kblib::is_linear_container_v<std::string> &&
-              kblib::is_contiguous_v<std::string> &&
-              kblib::is_trivially_hashable_v<std::string::value_type>);
-static_assert(kblib::asserts::is_trivial_container<std::vector<char>>);
+                  kblib::is_contiguous_v<std::string> &&
+                  kblib::is_trivially_hashable_v<std::string::value_type> &&
+                  kblib::is_trivially_hashable_v<int*>,
+              "");
+static_assert(kblib::asserts::is_trivial_container<std::vector<char>>, "");
 
 TEST_CASE("FNV_hash") {
 	kblib::FNV_hash<int*>{}({});

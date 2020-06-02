@@ -129,11 +129,11 @@ class KBLIB_NODISCARD build_iterator {
 	using iterator_category = std::output_iterator_tag;
 
 	template <typename... Args>
-	build_iterator(Args && ... args)
+	build_iterator(Args&&... args)
 	    : range(std::make_shared<Container>(std::forward<Args>(args)...)) {}
 
-	Container base() noexcept(
-	    std::is_nothrow_move_constructible<Container>::value) {
+	Container
+	base() noexcept(std::is_nothrow_move_constructible<Container>::value) {
 		auto holder = std::move(range);
 		return std::move(*holder);
 	}
@@ -152,8 +152,8 @@ class KBLIB_NODISCARD build_iterator {
 	 * std::back_insert_iterator can be assigned to to insert into the range,
 	 * and its operator* returns itself anyhow.
 	 */
-	decltype(auto) operator*()
-	    const noexcept(noexcept(*std::back_inserter(*range))) {
+	decltype(auto) operator*() const
+	    noexcept(noexcept(*std::back_inserter(*range))) {
 		return std::back_inserter(*range);
 	}
 
@@ -195,14 +195,14 @@ class KBLIB_NODISCARD build_iterator<Container, true> {
 	using iterator_category = std::output_iterator_tag;
 
 	template <typename... Args>
-	build_iterator(Args && ... args)
+	build_iterator(Args&&... args)
 	    : range(std::make_shared<Container>(std::forward<Args>(args)...)) {}
 
 	build_iterator(const build_end_t&)
 	    : range{nullptr}, index(std::tuple_size<Container>::value) {}
 
-	Container base() noexcept(
-	    std::is_nothrow_move_constructible<Container>::value) {
+	Container
+	base() noexcept(std::is_nothrow_move_constructible<Container>::value) {
 		auto holder = std::move(range);
 		return std::move(*holder);
 	}
@@ -214,7 +214,7 @@ class KBLIB_NODISCARD build_iterator<Container, true> {
 	}
 
 	decltype(auto) operator*() const noexcept { return (*range)[index]; }
-	auto* operator->() const noexcept { return &(*range)[index]; }
+	auto* operator-> () const noexcept { return &(*range)[index]; }
 
 	/**
 	 * @brief Advance to the next element.

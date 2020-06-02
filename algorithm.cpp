@@ -27,35 +27,71 @@ TEST_CASE("erase") {
 }
 
 TEST_CASE("find family") {
-	// TODO
+	//           0  1  2  3  4  5  6  7  8  9  e
+	int vec[] = {0, 3, 4, 5, 6, 1, 2, 4, 4, 5};
+	auto begin = std::begin(vec);
+	auto end = std::end(vec);
+	REQUIRE(kblib::find(begin, end, 4) == begin + 2);
+	REQUIRE(kblib::find(begin, end, 10) == end);
+	REQUIRE(kblib::find(begin, end, 0) == begin);
+	REQUIRE(kblib::find(begin, end, 10) == end);
+
+	REQUIRE(kblib::find_last(begin, end, 10) == end);
+	REQUIRE(kblib::find_last(begin, end, 0) == begin);
+	REQUIRE(kblib::find_last(begin, end, 4) == begin + 8);
+
+	REQUIRE(kblib::find_if(begin, end, [](int i) { return i == 2; }) ==
+	        begin + 6);
+	REQUIRE(kblib::find_if_not(begin, end, [](int i) { return i == 2; }) ==
+	        begin);
+	REQUIRE(kblib::find_if(begin, end, [](int) { return false; }) == end);
+	REQUIRE(kblib::find_if_not(begin, end, [](int) { return true; }) == end);
+
+	REQUIRE(kblib::find_last_if(begin, end, [](int i) { return i == 2; }) ==
+	        begin + 6);
+	REQUIRE(kblib::find_last_if_not(begin, end, [](int i) { return i == 2; }) ==
+	        begin + 9);
+	REQUIRE(kblib::find_last_if(begin, end, [](int) { return false; }) == end);
+	REQUIRE(kblib::find_last_if_not(begin, end, [](int) { return true; }) ==
+	        end);
 }
 TEST_CASE("find_in") {
+	//           0  1  2  3  4  5  6  7  8  9  e
+	int vec[] = {0, 3, 4, 5, 6, 1, 2, 4, 4, 5};
+	auto begin = std::begin(vec);
+	auto end = std::end(vec);
+	auto size = kblib::fakestd::size(vec);
+	REQUIRE(kblib::find_in(begin, end, 4) == 2);
+	REQUIRE(kblib::find_in(begin, end, 10) == size);
+	REQUIRE(kblib::find_in(begin, end, 0) == 0);
+	REQUIRE(kblib::find_in(begin, end, 10) == size);
 
-	{
-		//           0  1  2  3  4  5  6  7  8  9  e
-		int vec[] = {0, 3, 4, 5, 6, 1, 2, 4, 4, 5};
-		auto begin = std::begin(vec);
-		auto end = std::end(vec);
-		REQUIRE(kblib::find_last(begin, end, 10) == end);
-		REQUIRE(kblib::find_last(begin, end, 0) == begin);
-		REQUIRE(kblib::find_last(begin, end, 4) == begin + 8);
-		REQUIRE(kblib::find_last_if(begin, end, [](int i) { return i == 2; }) ==
-		        begin + 6);
-		REQUIRE(kblib::find_last_if_not(
-		            begin, end, [](int i) { return i == 2; }) == begin + 9);
-		REQUIRE(kblib::find_last_if(begin, end, [](int) { return false; }) ==
-		        end);
-		REQUIRE(kblib::find_last_if_not(begin, end, [](int) { return true; }) ==
-		        end);
-	}
+	REQUIRE(kblib::find_last_in(begin, end, 10) == size);
+	REQUIRE(kblib::find_last_in(begin, end, 0) == 0);
+	REQUIRE(kblib::find_last_in(begin, end, 4) == 8);
+
+	REQUIRE(kblib::find_in_if(begin, end, [](int i) { return i == 2; }) == 6);
+	REQUIRE(kblib::find_in_if_not(begin, end, [](int i) { return i == 2; }) ==
+	        0);
+	REQUIRE(kblib::find_in_if(begin, end, [](int) { return false; }) == size);
+	REQUIRE(kblib::find_in_if_not(begin, end, [](int) { return true; }) == size);
+
+	REQUIRE(kblib::find_last_in_if(begin, end, [](int i) { return i == 2; }) ==
+	        6);
+	REQUIRE(kblib::find_last_in_if_not(begin, end,
+	                                   [](int i) { return i == 2; }) == 9);
+	REQUIRE(kblib::find_last_in_if(begin, end, [](int) { return false; }) ==
+	        size);
+	REQUIRE(kblib::find_last_in_if_not(begin, end, [](int) { return true; }) ==
+	        size);
 }
 
 TEST_CASE("get_max family") {
-	// TODO
+	/// TODO: tests for get_max_*
 }
 
 TEST_CASE("general algorithms") {
-	// TODO
+	/// TODO: tests for other algorithms
 }
 
 TEST_CASE("assorted algorithms") {
