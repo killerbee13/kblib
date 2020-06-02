@@ -40,12 +40,16 @@ TEST_CASE("FNV_hash") {
 	                   std::vector<std::basic_string<bool>>,
 	                   kblib::FNV_hash<std::tuple<std::wstring, int*>>>
 	    test_map;
-	kblib::FNV_hash<std::map<std::tuple<std::wstring, int*>,
-	                         std::vector<std::basic_string<bool>>,
-	                         kblib::FNV_hash<std::tuple<std::wstring, int*>>>>
-	    test_hash1;
-	KBLIB_UNUSED kblib::FNV_hash<std::array<std::basic_string<bool>, 4>>
+	KBLIB_UNUSED kblib::FNV_hash<std::map<int, int>> test_hash1;
+	KBLIB_UNUSED kblib::FNV_hash<std::tuple<int, int*>> test_hash1a;
+	KBLIB_UNUSED kblib::FNV_hash<std::pair<int* const, int>> test_hash1b;
+	KBLIB_UNUSED kblib::FNV_hash<std::pair<const std::tuple<int, int*>, int>>
+	    test_hash1c;
+	KBLIB_UNUSED kblib::FNV_hash<std::map<std::tuple<std::wstring, int*>,
+	                                      std::vector<std::basic_string<bool>>>>
 	    test_hash2;
+	KBLIB_UNUSED kblib::FNV_hash<std::array<std::basic_string<bool>, 4>>
+	    test_hash3;
 	KBLIB_UNUSED auto call = &decltype(test_hash1)::operator();
 	//	std::hash<
 	//	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,

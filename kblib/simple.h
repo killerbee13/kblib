@@ -433,6 +433,24 @@ struct FNV_hash<T, void_if_t<std::is_integral<T>::value &&
 	}
 };
 
+/**
+ * @brief Hasher for any pointer type.
+ *
+ * @note Unfortunately, this specialization cannot be constexpr until C++20
+ * brings std::bit_cast.
+ *
+ */
+template <typename T>
+struct FNV_hash<T, void_if_t<std::is_pointer<T>::value>> {
+	std::size_t
+	operator()(T key_in,
+	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
+	    noexcept {
+		return FNV_hash<std::uintptr_t>{}(
+		    reinterpret_cast<std::uintptr_t>(key_in), offset);
+	}
+};
+
 namespace asserts {
 
    template <typename Container>
@@ -473,8 +491,9 @@ struct FNV_hash<
  *
  */
 template <typename T>
-struct FNV_hash<T, void_if_t<!std::is_integral<T>::value &&
-                             is_trivially_hashable<T>::value>> {
+struct FNV_hash<
+    T, void_if_t<!std::is_integral<T>::value && !std::is_pointer<T>::value &&
+                 is_trivially_hashable<T>::value>> {
 	std::size_t
 	operator()(T key,
 	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
