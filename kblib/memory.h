@@ -11,7 +11,7 @@ namespace kblib {
 
 template <typename T, bool = std::is_class<T>::value>
 struct null_construct {
-	null_construct() : t{} {};
+	null_construct() : t{} {}
 
 	T t;
 
@@ -21,7 +21,7 @@ struct null_construct {
 
 template <typename T>
 struct null_construct<T, true> : public T {
-	null_construct() : T{} {};
+	null_construct() : T{} {}
 };
 
 template <typename T>

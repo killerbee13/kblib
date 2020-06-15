@@ -29,6 +29,32 @@ TEST_CASE("to_unique(lambda)") {
 	auto p = kblib::to_unique(new auto([] {}), [](auto* p) { delete p; });
 }
 
+TEST_CASE("cond_ptr") {
+	int a{42};
+	auto op = kblib::cond_ptr(std::make_unique<int>(42));
+	auto rp = kblib::cond_ptr(&a);
+	REQUIRE(op);
+	REQUIRE(rp);
+	REQUIRE(*op == *rp);
+	REQUIRE(op.owns());
+	REQUIRE_FALSE(rp.owns());
+	auto cp = op;
+	REQUIRE(cp);
+	REQUIRE(cp == op);
+	REQUIRE(op.owns());
+	REQUIRE_FALSE(cp.owns());
+	auto up = std::unique_ptr<int>(std::move(rp));
+	REQUIRE_FALSE(up);
+	up = std::move(op).to_unique();
+	REQUIRE(up == cp);
+	REQUIRE(up);
+	op.reset(up.release(), true);
+	REQUIRE(cp == op);
+	rp = std::move(up);
+	REQUIRE_FALSE(rp);
+	REQUIRE_FALSE(rp.owns());
+}
+
 TEST_CASE("signed_cast") {
 	REQUIRE(kblib::signed_cast<unsigned>(-1ll) == -1ull);
 	REQUIRE(kblib::signed_cast<signed>(static_cast<unsigned short>(78)) == 78);
