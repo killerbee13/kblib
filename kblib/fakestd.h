@@ -396,8 +396,8 @@ signed_cast(F x) {
 
 template <typename T>
 struct has_member_swap {
-	typedef char (&yes)[1];
-	typedef char (&no)[2];
+	using yes = char (&)[1];
+	using no = char (&)[2];
 
 	template <typename C>
 	static yes check(decltype(&C::swap));
@@ -449,11 +449,11 @@ swap(T (&a)[N],
 namespace detail {
 
    template <typename... Ts>
-   constexpr void ignore(Ts&&...) noexcept {}
+   constexpr void ignore(Ts&&... /*unused*/) noexcept {}
 
 	template <typename T, std::size_t... Is>
 	constexpr void
-	swap_tuple_impl(T& a, T& b, std::index_sequence<Is...>) noexcept(
+	swap_tuple_impl(T& a, T& b, std::index_sequence<Is...> /*unused*/) noexcept(
 	    noexcept(ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)), 0)...))) {
 		ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)), 0)...);
 	}
@@ -474,19 +474,19 @@ namespace detail {
    constexpr std::intmax_t max_val = std::numeric_limits<T>::max();
 
 	constexpr unsigned long long msb(unsigned long long x) {
-		x |= (x >> 1);
-		x |= (x >> 2);
-		x |= (x >> 4);
-		x |= (x >> 8);
-		x |= (x >> 16);
-		x |= (x >> 32);
-		return (x & ~(x >> 1));
+		x |= (x >> 1u);
+		x |= (x >> 2u);
+		x |= (x >> 4u);
+		x |= (x >> 8u);
+		x |= (x >> 16u);
+		x |= (x >> 32u);
+		return (x & ~(x >> 1u));
 	}
 
 	template <typename Num>
 	constexpr Num msb_possible() {
 		return std::numeric_limits<Num>::max() ^
-		       (std::numeric_limits<Num>::max() >> 1);
+		       (std::numeric_limits<Num>::max() >> 1u);
 	}
 
 	template <class... Args>
@@ -592,7 +592,7 @@ template <typename N>
 using safe_signed_t = typename safe_signed<N>::type;
 
 template <typename N>
-KBLIB_NODISCARD safe_signed_t<N> signed_promote(N x) {
+KBLIB_NODISCARD constexpr safe_signed_t<N> signed_promote(N x) noexcept {
 	return static_cast<safe_signed_t<N>>(x);
 }
 
