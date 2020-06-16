@@ -742,6 +742,40 @@ namespace detail {
 
 	template <typename D, typename T>
 	using filter_deleter_pointer_t = typename filter_deleter_pointer<D, T>::type;
+
+	template <typename T,
+	          bool = std::is_class<T>::value&& std::is_empty<T>::value &&
+	                 !std::is_final<T>::value,
+	          bool =
+	              std::is_object<typename std::remove_reference<T>::type>::value>
+	struct as_base_class;
+
+	template <typename T>
+	struct as_base_class<T, false, true> {
+		T base_;
+		T& base() noexcept { return base_; }
+		const T& base() const noexcept { return base_; }
+	};
+
+	template <typename T>
+	struct as_base_class<T, true, true> : T {
+		T& base() noexcept { return *this; }
+		const T& base() const noexcept { return *this; }
+	};
+
+	template <typename R, typename A, bool E>
+	struct as_base_class<R (&)(A) noexcept(E), false, false> {
+		using type = R(A) noexcept(E);
+		type* base_;
+		type& base() const noexcept { return *base_; }
+	};
+
+	template <typename T, bool B>
+	struct as_base_class<T&, B, true> {
+		std::reference_wrapper<T> base_;
+		T& base() noexcept { return base_; }
+		const T& base() const noexcept { return base_; }
+	};
 } // namespace detail
 
 // cond_ptr: A pointer which can either uniquely own its referent, or which can
@@ -749,7 +783,9 @@ namespace detail {
 // however it will not implicitly strip a deleter from a unique_ptr.
 
 template <typename T, typename Deleter = std::default_delete<T>>
-class cond_ptr : private Deleter {
+class cond_ptr : private detail::as_base_class<Deleter> {
+	using d_base = detail::as_base_class<Deleter>;
+
  public:
 	using pointer = detail::filter_deleter_pointer_t<Deleter, T>;
 	using element_type = T;
@@ -763,13 +799,19 @@ class cond_ptr : private Deleter {
 	cond_ptr() noexcept = default;
 	cond_ptr(std::nullptr_t) noexcept {}
 
-	explicit cond_ptr(T* p, bool owner = false) noexcept
-	    : ptr_(p), owns_(owner) {}
-	cond_ptr(unique&& p) noexcept : ptr_(p.release()), owns_(ptr_) {}
+	explicit cond_ptr(T* p, bool owner = false,
+	                  std::decay_t<Deleter> del = {}) noexcept
+	    : d_base{std::move(del)}, ptr_(p), owns_(owner) {}
+	explicit cond_ptr(T* p, std::decay_t<Deleter> del) noexcept
+	    : d_base{std::move(del)}, ptr_(p), owns_(false) {}
+	cond_ptr(unique&& p) noexcept
+	    : d_base{p.get_deleter()}, ptr_(p.release()), owns_(ptr_) {}
 
-	cond_ptr(const cond_ptr& other) noexcept : ptr_(other.ptr_), owns_(false) {}
+	cond_ptr(const cond_ptr& other) noexcept
+	    : d_base{other.get_deleter()}, ptr_(other.ptr_), owns_(false) {}
 	cond_ptr(cond_ptr&& other) noexcept
-	    : ptr_(other.ptr_), owns_(std::exchange(other.owns_, false)) {}
+	    : d_base{other.get_deleter()}, ptr_(other.ptr_),
+	      owns_(std::exchange(other.owns_, false)) {}
 
 	cond_ptr& operator=(const cond_ptr& rhs) & noexcept {
 		if (owns_) {
@@ -784,13 +826,14 @@ class cond_ptr : private Deleter {
 			get_deleter()(ptr_);
 		}
 		owns_ = rhs.owns();
+		static_cast<d_base&>(*this) = {std::move(rhs.get_deleter())};
 		ptr_ = rhs.release();
 		return *this;
 	}
 	cond_ptr& operator=(unique&& rhs) {
+		static_cast<d_base&>(*this) = {std::move(rhs.get_deleter())};
 		ptr_ = rhs.release();
 		owns_ = bool(ptr_);
-		get_deleter() = std::move(rhs.get_deleter());
 		return *this;
 	}
 
@@ -806,9 +849,9 @@ class cond_ptr : private Deleter {
 	 */
 	unique to_unique() && noexcept {
 		if (owns_) {
-			return {release(), get_deleter()};
+			return {release(), std::move(get_deleter())};
 		} else {
-			return nullptr;
+			return {nullptr, get_deleter()};
 		}
 	}
 
@@ -817,7 +860,7 @@ class cond_ptr : private Deleter {
 	}
 
 	~cond_ptr() noexcept {
-		if (owns_) {
+		if (owns_ && ptr_) {
 			get_deleter()(ptr_);
 		}
 	}
@@ -832,21 +875,33 @@ class cond_ptr : private Deleter {
 		return std::exchange(ptr_, nullptr);
 	}
 
-	Deleter& get_deleter() noexcept { return *this; }
+	Deleter& get_deleter() noexcept { return this->d_base::base(); }
 
-	const Deleter& get_deleter() const noexcept { return *this; }
+	const Deleter& get_deleter() const noexcept { return this->d_base::base(); }
 
-	void reset(T* p = nullptr, bool owner = false) & noexcept {
+	void reset(T* p = nullptr, bool owner = false,
+	           std::decay_t<Deleter> del = {}) &
+	    noexcept {
 		if (owns_) {
 			get_deleter()(ptr_);
 		}
 		ptr_ = p;
 		owns_ = owner;
+		get_deleter() = std::move(del);
+	}
+	void reset(T* p, std::decay_t<Deleter> del = {}) & noexcept {
+		if (owns_) {
+			get_deleter()(ptr_);
+		}
+		ptr_ = p;
+		owns_ = false;
+		get_deleter() = std::move(del);
 	}
 
 	void swap(cond_ptr& other) {
 		std::swap(ptr_, other.ptr_);
 		std::swap(owns_, other.owns_);
+		std::swap(get_deleter(), other.get_deleter());
 	}
 
 	KBLIB_NODISCARD T* get() & noexcept { return ptr_; }
@@ -881,7 +936,9 @@ class cond_ptr : private Deleter {
 };
 
 template <typename T, typename Deleter>
-class cond_ptr<T[], Deleter> : private Deleter {
+class cond_ptr<T[], Deleter> : private detail::as_base_class<Deleter> {
+	using d_base = detail::as_base_class<Deleter>;
+
  public:
 	using pointer = detail::filter_deleter_pointer_t<Deleter, T>;
 	using element_type = T;
@@ -895,13 +952,19 @@ class cond_ptr<T[], Deleter> : private Deleter {
 	cond_ptr() noexcept = default;
 	cond_ptr(std::nullptr_t) noexcept {}
 
-	explicit cond_ptr(T* p, bool owner = false) noexcept
-	    : ptr_(p), owns_(owner) {}
-	cond_ptr(unique&& p) noexcept : ptr_(p.release()), owns_(ptr_) {}
+	explicit cond_ptr(T* p, bool owner = false,
+	                  std::decay_t<Deleter> del = {}) noexcept
+	    : d_base{std::move(del)}, ptr_(p), owns_(owner) {}
+	explicit cond_ptr(T* p, std::decay_t<Deleter> del) noexcept
+	    : d_base{std::move(del)}, ptr_(p), owns_(false) {}
+	cond_ptr(unique&& p) noexcept
+	    : d_base{p.get_deleter()}, ptr_(p.release()), owns_(ptr_) {}
 
-	cond_ptr(const cond_ptr& other) noexcept : ptr_(other.ptr_), owns_(false) {}
+	cond_ptr(const cond_ptr& other) noexcept
+	    : d_base{other.get_deleter()}, ptr_(other.ptr_), owns_(false) {}
 	cond_ptr(cond_ptr&& other) noexcept
-	    : ptr_(other.ptr_), owns_(std::exchange(other.owns_, false)) {}
+	    : d_base{other.get_deleter()}, ptr_(other.ptr_),
+	      owns_(std::exchange(other.owns_, false)) {}
 
 	cond_ptr& operator=(const cond_ptr& rhs) & noexcept {
 		if (owns_) {
@@ -968,17 +1031,29 @@ class cond_ptr<T[], Deleter> : private Deleter {
 
 	const Deleter& get_deleter() const noexcept { return *this; }
 
-	void reset(T* p = nullptr, bool owner = false) & noexcept {
+	void reset(T* p = nullptr, bool owner = false,
+	           std::decay_t<Deleter> del = {}) &
+	    noexcept {
 		if (owns_) {
 			get_deleter()(ptr_);
 		}
 		ptr_ = p;
 		owns_ = owner;
+		get_deleter() = std::move(del);
+	}
+	void reset(T* p, std::decay_t<Deleter> del = {}) & noexcept {
+		if (owns_) {
+			get_deleter()(ptr_);
+		}
+		ptr_ = p;
+		owns_ = false;
+		get_deleter() = std::move(del);
 	}
 
 	void swap(cond_ptr& other) {
 		std::swap(ptr_, other.ptr_);
 		std::swap(owns_, other.owns_);
+		std::swap(get_deleter(), other.get_deleter());
 	}
 
 	KBLIB_NODISCARD T* get() & noexcept { return ptr_; }
