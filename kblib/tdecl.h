@@ -1,7 +1,7 @@
 #ifndef KBLIB_TDECL_H
 #define KBLIB_TDECL_H
 
-#include <ciso646>
+#include <iso646.h>
 
 /**
  * @file

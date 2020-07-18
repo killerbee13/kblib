@@ -412,7 +412,8 @@ find_in(const Container& c, const T& value) noexcept(
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename T>
-KBLIB_NODISCARD constexpr size_t find_in(ExecutionPolicy&& policy, const Container& c, const T& v) {
+KBLIB_NODISCARD constexpr size_t find_in(ExecutionPolicy&& policy,
+                                         const Container& c, const T& v) {
   return std::find(policy, std::begin(c), std::end(c), v) - std::begin(c);
 }
 #endif
@@ -457,12 +458,17 @@ find_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if(ExecutionPolicy&& policy, const Container& c, UnaryPredicate p) {
+KBLIB_NODISCARD constexpr size_t find_in_if(ExecutionPolicy&& policy,
+                                            const Container& c,
+                                            UnaryPredicate p) {
   return std::find_if(policy, std::begin(c), std::end(c), p) - std::begin(c);
 }
 template<typename ExecutionPolicy, typename Container, typename UnaryPredicate>
-KBLIB_NODISCARD constexpr size_t find_in_if_not(ExecutionPolicy&& policy, const Container& c, UnaryPredicate p) {
-  return std::find_if_not(policy, std::begin(c), std::end(c), p) - std::begin(c);
+KBLIB_NODISCARD constexpr size_t find_in_if_not(ExecutionPolicy&& policy,
+                                                const Container& c,
+                                                UnaryPredicate p) {
+  return std::find_if_not(policy, std::begin(c), std::end(c), p)
+        - std::begin(c);
 }
 #endif
 
@@ -581,7 +587,7 @@ get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
 	    first, last, count, cmp);
 	return Container{std::make_move_iterator(temp.begin()),
-		              std::make_move_iterator(temp.end())};
+	                 std::make_move_iterator(temp.end())};
 }
 
 /**
@@ -603,7 +609,10 @@ get_max_n(It first, It last, std::size_t count, Comp cmp = {}) {
 	using std::begin;
 	using std::end;
 	Container c(count);
-	std::partial_sort_copy(first, last, begin(c), end(c), fakestd::not_fn(cmp));
+	std::partial_sort_copy(first, last, begin(c), end(c),
+	                       [&](auto&&... args) -> decltype(auto) {
+		                       return !cmp(std::forward<decltype(args)>(args)...);
+	                       });
 	return c;
 }
 
@@ -625,7 +634,7 @@ get_max_n(It first, It last, std::size_t count, Comp cmp = {}) {
 	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
 	    first, last, count, cmp);
 	return Container{std::make_move_iterator(temp.begin()),
-		              std::make_move_iterator(temp.end())};
+	                 std::make_move_iterator(temp.end())};
 }
 
 /**
@@ -890,9 +899,8 @@ rotate(ForwardIt first, ForwardIt n_first,
  * @return ForwardIt The iterator pointing past the last element written.
  */
 template <typename OutputIt, typename EndIt, typename Generator>
-constexpr OutputIt generate(OutputIt first, EndIt last,
-                            Generator g) noexcept(noexcept(first != last) &&
-                                                  noexcept(*++first = g())) {
+constexpr OutputIt generate(OutputIt first, EndIt last, Generator g) noexcept(
+    noexcept(first != last) && noexcept(*++first = g())) {
 	while (first != last) {
 		*first = g();
 		++first;
@@ -987,7 +995,7 @@ constexpr OutputIt transform_if(InputIt first, EndIt last, OutputIt d_first,
 
 namespace detail {
 
-   /**
+	/**
 	 * @brief Implementation function for insertion_sort_copy. Like
 	 * std::move(begin, end, d_begin) but using the interface of rotate and
 	 * supporting backward overlapping, but not forward overlapping.
@@ -996,8 +1004,8 @@ namespace detail {
 	 * @param n_first Start of range to read from
 	 * @param last End of range to read from
 	 */
-   template <class ForwardIt>
-   constexpr void shift_backward(
+	template <class ForwardIt>
+	constexpr void shift_backward(
 	    ForwardIt first, ForwardIt n_first,
 	    ForwardIt last) noexcept(noexcept(*first = std::move(*first))) {
 		if (first == n_first || n_first == last)
@@ -1031,8 +1039,10 @@ namespace detail {
 template <typename RandomAccessIt, typename Compare = std::less<>>
 constexpr void insertion_sort(
     const RandomAccessIt begin, const RandomAccessIt end,
-    Compare&& compare = {}) noexcept(noexcept(swap(*begin, *begin)) &&
-                                     noexcept(compare(*begin, *begin))) {
+    Compare&& compare =
+        {}) noexcept(noexcept(swap(*begin,
+                                   *begin)) && noexcept(compare(*begin,
+                                                                *begin))) {
 	// Trivial inputs are trivially already sorted.
 	if (end - begin <= 1) {
 		return;
@@ -1069,10 +1079,11 @@ template <typename RandomAccessIt, typename RandomAccessIt2,
 constexpr void insertion_sort_copy(
     const RandomAccessIt begin, const RandomAccessIt end,
     const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
-    Compare&& compare = {}) noexcept(noexcept(*d_begin = *begin) &&
-                                     noexcept(detail::shift_backward(d_begin,
-                                                                     d_begin,
-                                                                     d_end))) {
+    Compare&& compare =
+        {}) noexcept(noexcept(detail::
+                                  shift_backward(
+                                      d_begin, d_begin,
+                                      d_end)) && noexcept(*d_begin = *begin)) {
 	const auto dist = end - begin;
 	assert(end - begin == d_end - d_begin);
 	if (dist == 0) {
@@ -1115,14 +1126,14 @@ constexpr void insertion_sort_copy(
 			auto index =
 			    kblib::find_if(write + 1, d_end, [&compare, read](const auto& a) {
 				    if (stable) {
-						 // find first element greater than
-						 // *read
-						 return compare(*read, a);
-					 } else {
-						 // find first element greater than
-						 // or equal to *read
-						 return !compare(a, *read);
-					 }
+					    // find first element greater than
+					    // *read
+					    return compare(*read, a);
+				    } else {
+					    // find first element greater than
+					    // or equal to *read
+					    return !compare(a, *read);
+				    }
 			    });
 #endif
 			detail::shift_backward(write, write + 1, index);
@@ -1156,13 +1167,10 @@ constexpr void adaptive_insertion_sort_copy(
     const RandomAccessIt begin, const RandomAccessIt end,
     const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
     Compare&& compare =
-        {}) noexcept(noexcept(insertion_sort_copy(begin, end, d_begin, d_end,
-                                                  std::forward<Compare>(
-                                                      compare))) &&
-                     noexcept(insertion_sort_copy(
-                         std::make_reverse_iterator(begin),
-                         std::make_reverse_iterator(end), d_begin, d_end,
-                         std::forward<Compare>(compare)))) {
+        {}) noexcept(noexcept(detail::
+                                  shift_backward(
+                                      d_begin, d_begin,
+                                      d_end)) && noexcept(*d_begin = *begin)) {
 	const auto dist = end - begin;
 	const auto scan_end = begin + static_cast<std::size_t>(std::sqrt(dist));
 	// For trivial inputs, don't bother doing anything
@@ -1194,17 +1202,17 @@ constexpr void adaptive_insertion_sort_copy(
 
 namespace detail {
 
-   /**
+	/**
 	 * @brief Sort data after applying an arbitrary transformation to it. The
 	 * primary template handles the general case of arbitrary transformation
 	 * and arbitrary compare predicate.
 	 */
-   template <typename RandomAccessIt, typename UnaryOperation,
-             typename BinaryPredicate, typename SortKey,
-             bool = std::is_member_object_pointer<UnaryOperation>::value,
-             bool = std::is_fundamental<SortKey>::value,
-             bool = std::is_integral<SortKey>::value>
-   struct sort_transform_impl {
+	template <typename RandomAccessIt, typename UnaryOperation,
+	          typename BinaryPredicate, typename SortKey,
+	          bool = std::is_member_object_pointer<UnaryOperation>::value,
+	          bool = std::is_fundamental<SortKey>::value,
+	          bool = std::is_integral<SortKey>::value>
+	struct sort_transform_impl {
 		static constexpr void inplace(RandomAccessIt begin,
 		                              const RandomAccessIt end,
 		                              UnaryOperation&& transform,
@@ -1266,14 +1274,16 @@ namespace detail {
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation,
 	          typename BinaryPredicate, typename SortKey>
-	struct sort_transform_impl<RandomAccessIt, UnaryOperation, BinaryPredicate, SortKey,
-	                           true, false, false> {
-		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt
-	end, UnaryOperation&& transform, BinaryPredicate&& compare) { auto comp = [&compare,
-	&transform](RandomAccessIt a, RandomAccessIt b) { return kblib::invoke(compare,
-	(*a).*transform, (*b).*transform);
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation, BinaryPredicate,
+	                            SortKey,true, false, false> {
+		static constexpr void inplace(RandomAccessIt begin,
+		                              const RandomAccessIt end,
+		                              UnaryOperation&& transform,
+		                              BinaryPredicate&& compare) {
+			auto comp = [&compare, &transform](RandomAccessIt a,
+			            RandomAccessIt b) {
+				return kblib::invoke(compare,(*a).*transform, (*b).*transform);
 			};
-
 		}
 	};
 #endif
@@ -1353,7 +1363,9 @@ namespace detail {
 	          typename CharT>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
 	                           std::basic_string<CharT>, true, false, false> {
-		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt end, UnaryOperation&& transform,
+		static constexpr void inplace(RandomAccessIt begin,
+		                              const RandomAccessIt end,
+		                              UnaryOperation&& transform,
 		           BinaryPredicate&& compare) {
 			//TODO
 		}
@@ -1364,9 +1376,12 @@ namespace detail {
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
 	          typename CharT>
-	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::greater<LessT>,
-	                           std::basic_string<CharT>, true, false, false> {
-		static constexpr void inplace(RandomAccessIt begin, const RandomAccessIt end, UnaryOperation&& transform,
+	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
+	                           std::greater<LessT>, std::basic_string<CharT>,
+	                           true, false, false> {
+		static constexpr void inplace(RandomAccessIt begin,
+		                              const RandomAccessIt end,
+		                              UnaryOperation&& transform,
 		           BinaryPredicate&& compare) {
 			//TODO
 		}

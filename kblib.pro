@@ -26,7 +26,8 @@ SOURCES += \
     invasive_containers.cpp \
     delayed_construct.cpp \
     memory.cpp \
-    io.cpp
+    io.cpp \
+    trie.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -50,7 +51,8 @@ HEADERS += \
     kblib/multi_span.h \
     kblib/invasive_containers.h \
     kblib/delayed_construct.h \
-    kblib/memory.h
+    kblib/memory.h \
+    kblib/trie.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags -Wreturn-std-move

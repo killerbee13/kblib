@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <iterator>
+#include <vector>
 
 #if KBLIB_USE_CXX17
 #include <optional>
@@ -41,7 +42,7 @@ constexpr auto to_pointer(P&& p) noexcept {
 template <typename Container,
           typename Comp = std::less<value_type_linear_t<Container>>>
 value_type_linear_t<Container>* max_element(Container& c, Comp comp) {
-	auto it = fakestd::max_element(std::begin(c), std::end(c), comp);
+	auto it = max_element(std::begin(c), std::end(c), comp);
 	if (it != std::end(c)) {
 		return to_pointer(it);
 	} else {
@@ -470,8 +471,8 @@ constexpr range_t<Value, incrementer> range(Value max) {
 
 namespace detail {
 
-   template <typename T>
-   struct no_dangle {
+	template <typename T>
+	struct no_dangle {
 		using type = T&;
 	};
 
@@ -605,8 +606,8 @@ class enumerator_iterator;
 
 namespace detail {
 
-   template <typename T1, typename T2>
-   decltype(auto) get_or(T1&& t1, T2&& t2) {
+	template <typename T1, typename T2>
+	decltype(auto) get_or(T1&& t1, T2&& t2) {
 		return t1 ? *t1 : *t2;
 	}
 
@@ -630,8 +631,8 @@ class enumeration {
 	enumeration(const enumeration& other)
 	    : idx(other.idx), local([&] {
 		      assert(other.source || other.local);
-				assert(other.source != detail::get_magic_ptr<T>());
-				return other.copied();
+		      assert(other.source != detail::get_magic_ptr<T>());
+		      return other.copied();
 	      }()),
 	      source(nullptr) {}
 	enumeration(volatile enumeration& other)
@@ -952,8 +953,8 @@ auto magic_enumerate(Range&& r) {
 #if KBLIB_USE_CXX17
 
 namespace detail {
-   template <typename>
-   struct value_index_pair;
+	template <typename>
+	struct value_index_pair;
 
 	template <std::size_t N, typename T, std::enable_if_t<N == 0>* = nullptr>
 	auto get(T&& t)
@@ -1117,7 +1118,7 @@ struct indirect_range {
 #if KBLIB_USE_CXX17
 
 template <typename Iter1, typename Iter2>
-indirect_range(Iter1, Iter2)->indirect_range<Iter1, Iter2>;
+indirect_range(Iter1, Iter2) -> indirect_range<Iter1, Iter2>;
 
 template <typename Iter1, typename Iter2>
 auto cry_enumerate(Iter1 begin, Iter2 end) {
@@ -1205,10 +1206,10 @@ class transform_iterator {
 
  public:
 	using difference_type = std::ptrdiff_t;
-	using result_type = decltype(std::invoke(*op, *it));
+	using result_type = decltype(kblib::invoke(*op, *it));
 	using const_result_type =
-	    decltype(std::invoke(const_cast<const operation&>(*op),
-	                         const_cast<const base_iterator&>(*it)));
+	    decltype(kblib::invoke(const_cast<const operation&>(*op),
+	                           const_cast<const base_iterator&>(*it)));
 	using value_type = result_type;
 	using pointer = void;
 	using reference = value_type;
@@ -1235,27 +1236,27 @@ class transform_iterator {
 	 *
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
-	decltype(auto) operator*() { return std::invoke(*op, *it); }
+	decltype(auto) operator*() { return kblib::invoke(*op, *it); }
 	/**
 	 * @brief Transforms the value obtained by dereferencing it.
 	 *
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
-	decltype(auto) operator*() const { return std::invoke(*op, *it); }
+	decltype(auto) operator*() const { return kblib::invoke(*op, *it); }
 
 	/**
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator-> () {
-		return containing_ptr<result_type>{{std::invoke(*op, *it)}};
+	auto operator->() {
+		return containing_ptr<result_type>{{kblib::invoke(*op, *it)}};
 	}
 	/**
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator-> () const {
-		return containing_ptr<const_result_type>{{std::invoke(*op, *it)}};
+	auto operator->() const {
+		return containing_ptr<const_result_type>{{kblib::invoke(*op, *it)}};
 	}
 
 	/**
@@ -1335,7 +1336,7 @@ class back_insert_iterator_F {
 
 	template <typename V>
 	/**
-	 * @brief Calls container.push_back(std::invoke(fun,
+	 * @brief Calls container.push_back(kblib::invoke(fun,
 	 * std::forward<V>(value)));
 	 *
 	 * @param value The value to transform and insert.

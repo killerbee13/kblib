@@ -5,6 +5,7 @@
 #ifndef KBLIB_CONVERT_H
 #define KBLIB_CONVERT_H
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <exception>
@@ -14,8 +15,8 @@
 #include <string>
 #include <typeinfo>
 
-#include "traits.h"
 #include "simple.h"
+#include "traits.h"
 
 namespace kblib {
 
@@ -50,7 +51,7 @@ struct lexical_caster {
 			return ret;
 		else
 			throw std::runtime_error("Cannot convert \"" + toStr(val) + "\" to " +
-		                            type);
+			                         type);
 	}
 };
 
@@ -121,9 +122,7 @@ constexpr bool digits_are_ascii_like(char32_t) {
 }
 
 #if defined(__cpp_char8_t)
-constexpr bool digits_are_ascii_like(char8_t) {
-	return true;
-}
+constexpr bool digits_are_ascii_like(char8_t) { return true; }
 #endif
 
 template <int base, typename Int>
@@ -243,7 +242,7 @@ inline std::string escapify(char c) {
 	auto value = (unsigned char)c;
 	if (value < ' ' || value == '\x7F' || value & '\x80') {
 		constexpr std::array<char, 16> digits{
-			 remove_null_terminator("0123456789ABCDEF")};
+		    remove_null_terminator("0123456789ABCDEF")};
 		std::string rc("\\x  ");
 		rc[2] = digits[value >> 4];
 		rc[3] = digits[value & 15];
