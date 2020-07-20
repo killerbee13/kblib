@@ -118,7 +118,7 @@ TEST_CASE("cond_ptr") {
 	REQUIRE(*op == *rp);
 	REQUIRE(op.owns());
 	REQUIRE_FALSE(rp.owns());
-	auto cp = op;
+	auto cp = op.weak();
 	REQUIRE(cp);
 	REQUIRE(cp == op);
 	REQUIRE(op.owns());
@@ -146,7 +146,7 @@ TEST_CASE("cond_ptr fptr") {
 	REQUIRE(*op == *rp);
 	REQUIRE(op.owns());
 	REQUIRE_FALSE(rp.owns());
-	auto cp = op;
+	auto cp = op.weak();
 	REQUIRE(cp);
 	REQUIRE(cp == op);
 	REQUIRE(op.owns());
@@ -174,7 +174,7 @@ TEST_CASE("cond_ptr rfptr") {
 	REQUIRE(*op == *rp);
 	REQUIRE(op.owns());
 	REQUIRE_FALSE(rp.owns());
-	auto cp = op;
+	auto cp = op.weak();
 	REQUIRE(cp);
 	REQUIRE(cp == op);
 	REQUIRE(op.owns());
@@ -192,7 +192,7 @@ TEST_CASE("cond_ptr array") {
 	REQUIRE_FALSE(op == rp);
 	REQUIRE(op.owns());
 	REQUIRE_FALSE(rp.owns());
-	auto cp = op;
+	auto cp = op.weak();
 	REQUIRE(cp);
 	REQUIRE(cp == op);
 	REQUIRE(op.owns());

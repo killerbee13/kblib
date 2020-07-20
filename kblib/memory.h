@@ -309,23 +309,31 @@ class cond_ptr : private detail::as_base_class<Deleter> {
 	    : d_base{std::move(del)}, ptr_(p), owns_(owner) {}
 	explicit cond_ptr(T* p, std::decay_t<Deleter> del) noexcept
 	    : d_base{std::move(del)}, ptr_(p), owns_(false) {}
+
 	cond_ptr(unique&& p) noexcept
 	    : d_base{p.get_deleter()}, ptr_(p.release()), owns_(ptr_) {}
 
-	cond_ptr(const cond_ptr& other) noexcept
-	    : d_base{other.get_deleter()}, ptr_(other.ptr_), owns_(false) {}
+	cond_ptr(const cond_ptr& other) = delete;
+	//	cond_ptr(const cond_ptr& other) noexcept
+	//	    : d_base{other.get_deleter()}, ptr_(other.ptr_), owns_(false) {}
 	cond_ptr(cond_ptr&& other) noexcept
 	    : d_base{other.get_deleter()}, ptr_(other.ptr_),
 	      owns_(std::exchange(other.owns_, false)) {}
 
-	cond_ptr& operator=(const cond_ptr& rhs) & noexcept {
-		if (owns_) {
-			get_deleter()(ptr_);
-		}
-		owns_ = false;
-		ptr_ = rhs.release();
-		return *this;
+	static cond_ptr adopt(T* p) noexcept { return {p, true}; }
+	static cond_ptr adopt(T* p, deleter_type del) noexcept {
+		return {p, true, del};
 	}
+
+	cond_ptr& operator=(const cond_ptr& rhs) & = delete;
+	//	cond_ptr& operator=(const cond_ptr& rhs) & noexcept {
+	//		if (owns_) {
+	//			get_deleter()(ptr_);
+	//		}
+	//		owns_ = false;
+	//		ptr_ = rhs.release();
+	//		return *this;
+	//	}
 	cond_ptr& operator=(cond_ptr&& rhs) & noexcept {
 		if (owns_) {
 			get_deleter()(ptr_);
@@ -461,23 +469,31 @@ class cond_ptr<T[], Deleter> : private detail::as_base_class<Deleter> {
 	    : d_base{std::move(del)}, ptr_(p), owns_(owner) {}
 	explicit cond_ptr(T* p, std::decay_t<Deleter> del) noexcept
 	    : d_base{std::move(del)}, ptr_(p), owns_(false) {}
+
 	cond_ptr(unique&& p) noexcept
 	    : d_base{p.get_deleter()}, ptr_(p.release()), owns_(ptr_) {}
 
-	cond_ptr(const cond_ptr& other) noexcept
-	    : d_base{other.get_deleter()}, ptr_(other.ptr_), owns_(false) {}
+	cond_ptr(const cond_ptr& other) = delete;
+	//	cond_ptr(const cond_ptr& other) noexcept
+	//	    : d_base{other.get_deleter()}, ptr_(other.ptr_), owns_(false) {}
 	cond_ptr(cond_ptr&& other) noexcept
 	    : d_base{other.get_deleter()}, ptr_(other.ptr_),
 	      owns_(std::exchange(other.owns_, false)) {}
 
-	cond_ptr& operator=(const cond_ptr& rhs) & noexcept {
-		if (owns_) {
-			get_deleter()(ptr_);
-		}
-		owns_ = false;
-		ptr_ = rhs.release();
-		return *this;
+	static cond_ptr adopt(T* p) noexcept { return {p, true}; }
+	static cond_ptr adopt(T* p, deleter_type del) noexcept {
+		return {p, true, del};
 	}
+
+	cond_ptr& operator=(const cond_ptr& rhs) & = delete;
+	//	cond_ptr& operator=(const cond_ptr& rhs) & noexcept {
+	//		if (owns_) {
+	//			get_deleter()(ptr_);
+	//		}
+	//		owns_ = false;
+	//		ptr_ = rhs.release();
+	//		return *this;
+	//	}
 	cond_ptr& operator=(cond_ptr&& rhs) & noexcept {
 		if (owns_) {
 			get_deleter()(ptr_);
