@@ -18,14 +18,14 @@
 namespace kblib {
 namespace detail {
 
-   // contains_types adapted from code by Maarten Bamelis,
-   // https://stackoverflow.com/a/42581257/1924641
+	// contains_types adapted from code by Maarten Bamelis,
+	// https://stackoverflow.com/a/42581257/1924641
 
-   /**
+	/**
 	 * @brief Determines if T is a type in Tuple, which must be a std::tuple.
 	 */
-   template <typename Tuple, typename T>
-   struct contains_type;
+	template <typename Tuple, typename T>
+	struct contains_type;
 
 	template <typename T, typename U, typename... Ts>
 	struct contains_type<std::tuple<T, Ts...>, U>
@@ -127,8 +127,8 @@ T byte_cast(F v) {
 
 namespace detail {
 
-   template <typename C, typename = decltype(std::declval<C&>().resize(0))>
-   constexpr bool calc_resizable() noexcept {
+	template <typename C, typename = decltype(std::declval<C&>().resize(0))>
+	constexpr bool calc_resizable() noexcept {
 		return true;
 	}
 
@@ -158,8 +158,8 @@ namespace detail {
 
 	template <typename C>
 	struct has_reserve<C, void_t<decltype(std::declval<C&>.reserve(0))>> {
-	   constexpr static bool value = true;
-   };
+		constexpr static bool value = true;
+	};
 	/**
 	 * @brief True if and only if C contains an accessible reserve() member.
 	 */
@@ -193,6 +193,10 @@ void try_reserve(C&, std::size_t) noexcept {
 	return;
 }
 
+/**
+ * @brief Type trait to determine if a container is contiguous.
+ *
+ */
 template <typename C, typename = void>
 struct is_contiguous : std::false_type {};
 
@@ -205,30 +209,54 @@ constexpr bool is_contiguous_v = is_contiguous<C>::value;
 
 #if KBLIB_USE_CXX17
 
+/**
+ * @brief The type of data member pointed to by M.
+ *
+ */
 template <typename T, auto M>
-using member_t = typename std::remove_reference<decltype(std::declval<T&>().*M)>::type;
+using member_t =
+    typename std::remove_reference<decltype(std::declval<T&>().*M)>::type;
 
 #endif
 
-template <typename Container>
+/**
+ * @brief Type trait that determines the iterator type for a range.
+ *
+ */
+template <typename Range>
 struct iterator_type_for {
-private:
-	static decltype(auto) begin(Container& c) {
+ private:
+	static decltype(auto) begin(Range& c) {
 		using std::begin;
 		return begin(c);
 	}
-public:
-	using type = decltype(begin(std::declval<Container&>()));
+
+ public:
+	using type = decltype(begin(std::declval<Range&>()));
 };
 
-template <typename Container>
-using iterator_type_for_t = typename iterator_type_for<Container>::type;
+template <typename Range>
+using iterator_type_for_t = typename iterator_type_for<Range>::type;
 
+/**
+ * @brief Abbreviated name for std::is_reference<T>::value for C++14.
+ *
+ */
 template <typename T>
 constexpr bool is_reference_v = std::is_reference<T>::value;
 
+/**
+ * @brief Abbreviated name for std::remove_reference<T>::type for C++14.
+ *
+ */
 template <typename T>
 using remove_reference_t = typename std::remove_reference<T>::type;
+
+/**
+ * @brief Names the EOF value for the given character type in std::char_traits.
+ */
+template <typename CharT = char>
+auto eof = std::char_traits<CharT>::eof();
 
 } // namespace kblib
 

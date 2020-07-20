@@ -17,9 +17,6 @@
 
 namespace kblib {
 
-template <typename CharT = char>
-auto eof = std::char_traits<CharT>::eof();
-
 #if true || KBLIB_USE_CXX17
 /**
  * @brief Determine if the given type, ignoring const or reference qualifiers,
