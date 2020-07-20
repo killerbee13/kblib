@@ -17,6 +17,9 @@
 
 namespace kblib {
 
+template <typename CharT = char>
+auto eof = std::char_traits<CharT>::eof();
+
 #if true || KBLIB_USE_CXX17
 /**
  * @brief Determine if the given type, ignoring const or reference qualifiers,
@@ -37,14 +40,14 @@ constexpr bool is_character_v = is_character<C>::value;
 
 namespace detail {
 
-   /**
+	/**
 	 * @brief Filter only arithmetic types.
 	 *
 	 * If T is an arithmetic type, provides the member type = T. Otherwise, type
 	 * = void. The primary template is for non-arithmetic types.
 	 */
-   template <typename T, bool = std::is_arithmetic<T>::value>
-   struct arithmetic_type {
+	template <typename T, bool = std::is_arithmetic<T>::value>
+	struct arithmetic_type {
 		using type = void;
 	};
 	/**
@@ -208,8 +211,8 @@ void append(string&& out, F&& f, S&&... tail) {
 
 namespace detail {
 
-   template <typename string, typename... S, std::size_t... I>
-   string concat_impl(std::index_sequence<I...>, S&&... ins) {
+	template <typename string, typename... S, std::size_t... I>
+	string concat_impl(std::index_sequence<I...>, S&&... ins) {
 		std::tuple<detail::str_type_t<S>...> buf(
 		    detail::str_type<S>::convert(std::forward<S>(ins))...);
 		string ret;
