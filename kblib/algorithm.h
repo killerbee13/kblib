@@ -545,17 +545,17 @@ find_last_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
  * @param last One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
- * @return Container The greatest count elements of the range, in arbitrary
- * order.
+ * @return SequenceContainer The greatest count elements of the range, in
+ * arbitrary order.
  */
-template <typename Container, typename Comp = std::less<>, typename It,
-          enable_if_t<is_linear_container_v<Container>, int> = 0>
-KBLIB_NODISCARD constexpr Container
+template <typename SequenceContainer, typename Comp = std::less<>, typename It,
+          enable_if_t<is_linear_container_v<SequenceContainer>, int> = 0>
+KBLIB_NODISCARD constexpr SequenceContainer
 get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
 	using std::begin;
 	using std::end;
 	assert(first + count <= last);
-	Container c{first, begin + count};
+	SequenceContainer c{first, begin + count};
 	std::for_each(first + count, last, [&](const auto& v) {
 		auto& min = *std::min_element(begin(c), end(c), cmp);
 		if (cmp(min, v)) {
@@ -577,17 +577,18 @@ get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
  * @param first One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
- * @return Container The greatest count elements of the range, in arbitrary
+ * @return SetlikeContainer The greatest count elements of the range, in
+arbitrary
  * order.
  */
-template <typename Container, typename Comp = std::less<>, typename It,
-          enable_if_t<is_setlike_v<Container>, int> = 0>
-KBLIB_NODISCARD constexpr Container
+template <typename SetlikeContainer, typename Comp = std::less<>, typename It,
+          enable_if_t<is_setlike_v<SetlikeContainer>, int> = 0>
+KBLIB_NODISCARD constexpr SetlikeContainer
 get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
-	auto temp = get_max_n_old<std::vector<key_type_setlike_t<Container>>>(
+	auto temp = get_max_n_old<std::vector<key_type_setlike_t<SetlikeContainer>>>(
 	    first, last, count, cmp);
-	return Container{std::make_move_iterator(temp.begin()),
-	                 std::make_move_iterator(temp.end())};
+	return SetlikeContainer{std::make_move_iterator(temp.begin()),
+	                        std::make_move_iterator(temp.end())};
 }
 
 /**
@@ -599,16 +600,16 @@ get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
  * @param last One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
- * @return Container The greatest count elements of the range, in arbitrary
- * order.
+ * @return SequenceContainer The greatest count elements of the range, in
+ * arbitrary order.
  */
-template <typename Container, typename Comp = std::less<>, typename It,
-          enable_if_t<is_linear_container_v<Container>, int> = 0>
-KBLIB_NODISCARD constexpr Container
+template <typename SequenceContainer, typename Comp = std::less<>, typename It,
+          enable_if_t<is_linear_container_v<SequenceContainer>, int> = 0>
+KBLIB_NODISCARD constexpr SequenceContainer
 get_max_n(It first, It last, std::size_t count, Comp cmp = {}) {
 	using std::begin;
 	using std::end;
-	Container c(count);
+	SequenceContainer c(count);
 	std::partial_sort_copy(first, last, begin(c), end(c),
 	                       [&](auto&&... args) -> decltype(auto) {
 		                       return !cmp(std::forward<decltype(args)>(args)...);
@@ -624,17 +625,17 @@ get_max_n(It first, It last, std::size_t count, Comp cmp = {}) {
  * @param last One past the end of the range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
- * @return Container The greatest count elements of the range, in arbitrary
- * order.
+ * @return SetlikeContainer The greatest count elements of the range, in
+ * arbitrary order.
  */
-template <typename Container, typename Comp = std::less<>, typename It,
-          enable_if_t<is_setlike_v<Container>, int> = 0>
-KBLIB_NODISCARD constexpr Container
+template <typename SetlikeContainer, typename Comp = std::less<>, typename It,
+          enable_if_t<is_setlike_v<SetlikeContainer>, int> = 0>
+KBLIB_NODISCARD constexpr SetlikeContainer
 get_max_n(It first, It last, std::size_t count, Comp cmp = {}) {
-	auto temp = get_max_n<std::vector<key_type_setlike_t<Container>>>(
+	auto temp = get_max_n<std::vector<key_type_setlike_t<SetlikeContainer>>>(
 	    first, last, count, cmp);
-	return Container{std::make_move_iterator(temp.begin()),
-	                 std::make_move_iterator(temp.end())};
+	return SetlikeContainer{std::make_move_iterator(temp.begin()),
+	                        std::make_move_iterator(temp.end())};
 }
 
 /**
