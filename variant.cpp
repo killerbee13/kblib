@@ -7,6 +7,8 @@
 
 #include "kblib/variant.h"
 
+//#define FAST_TEST
+
 #if KBLIB_USE_CXX17
 
 TEST_CASE("visit") {
@@ -19,9 +21,9 @@ TEST_CASE("visit") {
 	           var);
 
 	// Basic single-variant syntax:
-	kblib::visit(var, [](std::monostate) { REQUIRE(false); },
-	             [](int) { REQUIRE(true); },
-	             [](const std::string&) { REQUIRE(false); });
+	kblib::visit(
+	    var, [](std::monostate) { REQUIRE(false); }, [](int) { REQUIRE(true); },
+	    [](const std::string&) { REQUIRE(false); });
 
 	// Pattern-matching-like syntax:
 	kblib::visit(var)([](std::monostate) { REQUIRE(false); },
@@ -340,9 +342,15 @@ struct thrower final : Base {
 	}
 };
 } // namespace
+
+#ifndef FAST_TEST
 TEST_CASE("poly_obj performance") {
 	const auto start = std::chrono::steady_clock::now();
+#ifdef NDEBUG
 	constexpr unsigned count = 1000;
+#else
+	constexpr unsigned count = 100;
+#endif
 
 	std::vector<std::pair<unsigned, std::string_view>> reproducibility_test;
 
@@ -351,8 +359,8 @@ TEST_CASE("poly_obj performance") {
 		auto end = reproducibility_test.end();
 		// Take only the first result for each run type
 		if (std::find_if(begin, end, [&](const auto& p) {
-		       return p.second == name;
-	       }) == end) {
+			    return p.second == name;
+		    }) == end) {
 			reproducibility_test.emplace_back(s, name);
 		}
 	};
@@ -1034,5 +1042,6 @@ TEST_CASE("poly_obj performance") {
 		REQUIRE(run.first == expected_value);
 	}
 }
+#endif
 
 #endif
