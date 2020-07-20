@@ -12,6 +12,8 @@
 #include <optional>
 #endif
 
+#include <iostream>
+
 namespace kblib {
 
 #if KBLIB_USE_CXX17
@@ -113,9 +115,31 @@ inline std::istream& eatWord(std::istream& is) {
  * @param is
  * @return std::istream
  */
-inline std::istream& eatSpace(std::istream& is) {
+[[deprecated("use std::ws instead")]] inline std::istream&
+eatSpace(std::istream& is) {
 	while (is && isspace(is.peek())) {
 		is.get();
+	}
+	return is;
+}
+
+/**
+ * @brief Read in spaces until the end of the line is found.
+ *
+ * @param std::basic_istream<CharT
+ * @param is
+ */
+template <typename CharT, typename Traits>
+auto nl(std::basic_istream<CharT, Traits>& is)
+    -> std::basic_istream<CharT, Traits>& {
+	for (typename Traits::int_type c = is.peek();
+	     is && c != kblib::eof<CharT> &&
+	     std::isspace(static_cast<CharT>(c), is.getloc()) && c != is.widen('\n');
+	     c = is.peek()) {
+		is.ignore();
+	}
+	if (is.peek() == is.widen('\n')) {
+		is.ignore();
 	}
 	return is;
 }

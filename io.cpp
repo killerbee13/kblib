@@ -26,6 +26,46 @@ TEST_CASE("wide get_line") {
 	REQUIRE(v == std::vector<std::wstring>{L"line1", L"line2", L"line3"});
 }
 
+TEST_CASE("nl") {
+	std::istringstream is("abc  \t \n"
+	                      " xyz  \n"
+	                      "shd sgdf ");
+	std::string v;
+	is >> v;
+	REQUIRE(v == "abc");
+	is >> kblib::nl;
+	REQUIRE(is.peek() == ' ');
+	std::getline(is, v);
+	REQUIRE(v == " xyz  ");
+	is >> v;
+	REQUIRE(v == "shd");
+	is >> kblib::nl;
+	is >> v;
+	REQUIRE(v == "sgdf");
+	is >> kblib::nl;
+	REQUIRE(is.eof());
+}
+
+TEST_CASE("nl(wchar_t)") {
+	std::wistringstream is(L"abc  \t \n"
+	                       " xyz  \n"
+	                       "shd sgdf ");
+	std::wstring v;
+	is >> v;
+	REQUIRE(v == L"abc");
+	is >> kblib::nl;
+	REQUIRE(is.peek() == ' ');
+	std::getline(is, v);
+	REQUIRE(v == L" xyz  ");
+	is >> v;
+	REQUIRE(v == L"shd");
+	is >> kblib::nl;
+	is >> v;
+	REQUIRE(v == L"sgdf");
+	is >> kblib::nl;
+	REQUIRE(is.eof());
+}
+
 #if KBLIB_USE_CXX17
 TEST_CASE("get_file_contents") {
 	auto filename = "kblib";
