@@ -52,6 +52,7 @@ TEST_CASE("variant_cast") {
 	REQUIRE(to.index() == 1);
 }
 
+namespace {
 struct good_base {
 	good_base() = default;
 	virtual ~good_base() noexcept { std::cout << "~good_base\n"; }
@@ -59,13 +60,12 @@ struct good_base {
 	virtual void bark() const { std::cout << "good_base\n"; }
 };
 struct good_derived : good_base {
-	virtual ~good_derived() noexcept { std::cout << "~good_derived\n"; }
+	~good_derived() noexcept override { std::cout << "~good_derived\n"; }
 
 	void bark() const override { std::cout << "good_derived\n"; }
 };
 struct unrelated {};
 struct bad_nocopy : good_base {
-	bad_nocopy() = default;
 	bad_nocopy(const bad_nocopy&) = delete;
 };
 
@@ -75,7 +75,7 @@ struct bad_base1 {
 };
 struct bad_derived1 : bad_base1 {
 	virtual void bark() const { std::cout << "bad_derived1\n"; }
-	~bad_derived1() noexcept { std::cout << "~bad_derived1\n"; }
+	KBLIB_UNUSED ~bad_derived1() noexcept { std::cout << "~bad_derived1\n"; }
 };
 
 struct bad_base2 {
@@ -95,25 +95,25 @@ struct small_base {
 };
 struct big_derived : small_base {
 	std::size_t x =
-	    (x = 1,
+	    (static_cast<void>(x = 1),
 	     kblib::FNVa_a<std::size_t>(
 	         reinterpret_cast<const char (&)[sizeof(big_derived)]>(*this)));
 	void bark() const override {
 		std::cout << "big_derived " << std::hex << x << "\n";
 	}
-	virtual ~big_derived() noexcept = default;
+	~big_derived() noexcept override = default;
 	int id() const override { return 1; }
 };
 
 struct not_copyable {
 	not_copyable() = default;
 	not_copyable(const not_copyable&) = delete;
-	not_copyable(not_copyable&&) = default;
+	KBLIB_UNUSED not_copyable(not_copyable&&) = default;
 	virtual ~not_copyable() = default;
 };
 
 struct copyable_derived : not_copyable {
-	copyable_derived() = default;
+	KBLIB_UNUSED copyable_derived() = default;
 	copyable_derived(const copyable_derived&) : not_copyable() {}
 };
 
@@ -122,10 +122,11 @@ struct copyable_base {
 };
 
 struct noncopyable_derived : copyable_base {
-	noncopyable_derived() = default;
+	KBLIB_UNUSED noncopyable_derived() = default;
 	noncopyable_derived(const noncopyable_derived&) = delete;
-	noncopyable_derived(noncopyable_derived&&) = default;
+	KBLIB_UNUSED noncopyable_derived(noncopyable_derived&&) = default;
 };
+} // namespace
 
 TEST_CASE("poly_obj") {
 	SECTION("basic") {
@@ -227,9 +228,14 @@ TEST_CASE("poly_obj") {
 		// Automatically takes the larger capacity value, but returns a base
 		// pointer
 		auto o = kblib::make_poly_obj<small_base, big_derived>();
+		static_assert(
+		    std::is_same_v<decltype(o),
+		                   kblib::poly_obj<small_base, sizeof(big_derived)>>,
+		    "make_poly_obj must return the correct type.");
 	}
 }
 
+namespace {
 struct mem_ptr_test {
 	int member{42};
 	int get_member() & noexcept { return member; }
@@ -242,6 +248,7 @@ struct mem_ptr_test {
 
 	virtual ~mem_ptr_test() = default;
 };
+} // namespace
 
 TEST_CASE("poly_obj->*") {
 	kblib::poly_obj<mem_ptr_test> obj{std::in_place};
@@ -328,14 +335,20 @@ struct Derived4 final : Base {
 
 struct thrower final : Base {
 	unsigned operator()() const noexcept { return member; }
+
 	unsigned member;
+
 	thrower(unsigned i = 0) : member(i) {}
+	thrower(const thrower&) = default;
+
 	thrower& operator=(const thrower& other) & {
 		check_throw(other.member);
 		member = other.member;
 		return *this;
 	}
-	static void check_throw(int v) {
+
+ private:
+	static void check_throw(unsigned v) {
 		if ((v & 7) == 0) {
 			throw 0;
 		}
@@ -438,7 +451,7 @@ TEST_CASE("poly_obj performance") {
 		std::vector<Derived4> d4;
 		kblib::FNV_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
-			auto v = h(i);
+			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
 				d1.push_back(v);
@@ -476,7 +489,7 @@ TEST_CASE("poly_obj performance") {
 		std::vector<Base*> d;
 		kblib::FNV_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
-			auto v = h(i);
+			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
 				d.push_back(new Derived1(v));
@@ -568,7 +581,7 @@ TEST_CASE("poly_obj performance") {
 		std::vector<std::function<unsigned()>> d;
 		kblib::FNV_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
-			auto v = h(i);
+			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
 				d.push_back(Derived1(v));
@@ -597,7 +610,7 @@ TEST_CASE("poly_obj performance") {
 		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4>> d;
 		kblib::FNV_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
-			auto v = h(i);
+			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
 				d.push_back(Derived1(v));
@@ -733,7 +746,7 @@ TEST_CASE("poly_obj performance") {
 			std::vector<Base*> d;
 			kblib::FNV_hash<unsigned> h;
 			for (auto i : kblib::range(count)) {
-				auto v = h(i);
+				auto v = static_cast<unsigned>(h(i));
 				switch (v % 5) {
 				case 0:
 					d.push_back(new Derived1(v));
@@ -746,6 +759,7 @@ TEST_CASE("poly_obj performance") {
 					break;
 				case 3:
 					d.push_back(new Derived4(v));
+					break;
 				case 4:
 					try {
 						d.push_back(new thrower(v));
@@ -786,6 +800,7 @@ TEST_CASE("poly_obj performance") {
 					break;
 				case 3:
 					d.push_back(std::make_unique<Derived4>(v));
+					break;
 				case 4:
 					try {
 						d.push_back(std::make_unique<thrower>(v));
@@ -823,6 +838,7 @@ TEST_CASE("poly_obj performance") {
 					break;
 				case 3:
 					d.push_back(poly_t::make<Derived4>(v));
+					break;
 				case 4:
 					try {
 						d.push_back(poly_t::make<thrower>(v));
@@ -847,7 +863,7 @@ TEST_CASE("poly_obj performance") {
 		    d;
 		kblib::FNV_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
-			auto v = h(i);
+			auto v = static_cast<unsigned>(h(i));
 			switch (v % 5) {
 			case 0:
 				df.push_back(Derived1(v));
@@ -864,6 +880,7 @@ TEST_CASE("poly_obj performance") {
 			case 3:
 				df.push_back(Derived4(v));
 				d.push_back(Derived4(v));
+				break;
 				// Test speed of exception throwing and catching
 			case 4:
 				try {

@@ -4,10 +4,10 @@
 #include <string>
 
 TEST_CASE("trie") {
-	auto test =
+	KBLIB_UNUSED auto test =
 	    kblib::trie<std::string, int, kblib::indexer_extractor<std::string>>{};
-	auto test2 = kblib::trie<char, int, void>{};
-	auto test3 = kblib::trie<char[], int, void>{};
+	KBLIB_UNUSED auto test2 = kblib::trie<char, int, void>{};
+	KBLIB_UNUSED auto test3 = kblib::trie<char[], int, void>{};
 	static_assert(kblib::extractor_policy_for<std::string>::value ==
 	                  kblib::extractor_policy::random_access,
 	              "std::string is a random access container");
