@@ -23,12 +23,22 @@
 
 // Note that has_cpp_attribute(nodiscard) does not work with at least certain
 // versions of Clang
+/**
+ * @def KBLIB_NODISCARD
+ * @brief This internal macro is used to provide a fallback for [[nodiscard]]
+ * in C++14.
+ */
 #if __cplusplus > 201402L
 #define KBLIB_NODISCARD [[nodiscard]]
 #else
 #define KBLIB_NODISCARD [[gnu::warn_unused_result]]
 #endif
 
+/**
+ * @def KBLIB_UNUSED
+ * @brief This internal macro is used to provide a fallback for [[maybe_unused]]
+ * in C++14.
+ */
 #if KBLIB_USE_CXX17
 #define KBLIB_UNUSED [[maybe_unused]]
 #else
@@ -47,8 +57,8 @@
 namespace kblib {
 namespace detail {
 
-   template <typename Container, bool, typename...>
-   struct buildiota_impl;
+	template <typename Container, bool, typename...>
+	struct buildiota_impl;
 
 	template <typename T>
 	struct tag {
@@ -60,7 +70,7 @@ namespace detail {
 enum class endian { unknown, little, big, weird };
 
 namespace detail {
-   constexpr endian get_system_endian() {
+	constexpr endian get_system_endian() {
 		if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
 			return endian::big;
 		} else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
@@ -78,7 +88,7 @@ constexpr endian system_endian = endian::unknown;
 #endif
 
 namespace detail {
-   constexpr endian get_hash_order() {
+	constexpr endian get_hash_order() {
 		if (system_endian == endian::little || system_endian == endian::big) {
 			return system_endian;
 		} else {
