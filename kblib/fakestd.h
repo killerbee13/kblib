@@ -8,11 +8,15 @@
 #include <type_traits>
 #include <utility>
 
-// This header provides some features of C++17 <type_traits> for C++14; see
-// below.
 #ifndef KBLIB_FAKESTD
 #define KBLIB_FAKESTD (__cplusplus < 201703L)
 #endif
+
+/**
+ * @file fakestd.h
+ * @brief This header provides some features of C++17 <type_traits> and other
+ * headers for C++14, as well as some other traits.
+ */
 
 namespace kblib {
 
@@ -79,11 +83,22 @@ constexpr decltype(auto) invoke(F&& f, Args&&... args) noexcept(noexcept(
 #endif
 }
 
+/**
+ * @namespace kblib::fakestd
+ * @brief A namespace which holds all the C++14 implementations of C++17
+ * standard library features. In C++17, it is simply defined as an alias to std.
+ */
 #if KBLIB_FAKESTD
 namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 	                 // (partially) is_invocable, and is_nothrow_swappable
 	using std::swap;
 
+	/**
+	 * @namespace kblib::fakestd::detail
+	 * @brief Implementation details for kblib::fakestd features
+	 *
+	 * @internal
+	 */
 	namespace detail {
 
 		template <typename AlwaysVoid, typename, typename...>

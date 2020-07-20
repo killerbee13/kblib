@@ -124,8 +124,7 @@ struct equivalent<void, void> {
  * @brief Finds a value in range [begin, end). If not found, returns end. It
  * also allows for a sentinel end iterator.
  *
- * @param begin Beginning of the range to search
- * @param end One past the end of the range
+ * @param begin,end The range to search in
  * @param value The value to search for
  * @return It Either the position of the found value, or end if not found
  */
@@ -143,8 +142,7 @@ find(ForwardIt begin, EndIt end,
  * @brief Finds a value in range [begin, end). If not found, returns end. It
  * also allows for a sentinel end iterator.
  *
- * @param begin Beginning of the range to search
- * @param end One past the end of the range
+ * @param begin,end The range to search in
  * @param value The value to search for
  * @param comp The comparison function
  * @return It Either the position of the found value, or end if not found
@@ -163,8 +161,7 @@ find(ForwardIt begin, EndIt end, const Elem& value,
  * @brief Finds the first value in range [begin, end) for which pred returns
  * true. If not found, returns end. It also allows for a sentinel end iterator.
  *
- * @param begin Beginning of the range to search
- * @param end One past the end of the range
+ * @param begin,end The range to search in
  * @param pred The predicate to scan with
  * @return It Either the position of the found value, or end if not found
  */
@@ -182,8 +179,7 @@ find_if(ForwardIt begin, EndIt end,
  * @brief Finds the first value in range [begin, end) for which pred returns
  * false. If not found, returns end. It also allows for a sentinel end iterator.
  *
- * @param begin Beginning of the range to search
- * @param end One past the end of the range
+ * @param begin,end The range to search in
  * @param pred The predicate to scan with
  * @return It Either the position of the found value, or end if not found
  */
@@ -201,8 +197,7 @@ KBLIB_NODISCARD constexpr ForwardIt find_if_not(
  * @brief Searches a range for the last occurence of a match, and returns an
  * iterator to it. It also allows for a sentinel end iterator.
  *
- * @param begin Beginning of the range to search
- * @param end One past the end of the range
+ * @param begin,end The range to search in
  * @param value The value to find
  * @return It Iterator to the last element equal to v, or end if no such
  * element.
@@ -232,8 +227,7 @@ find_last(ForwardIt begin, EndIt end,
  * @brief Searches a range for the last element on which a predicate returns
  * true. It also allows for a sentinel end iterator.
  *
- * @param begin Beginning of the range to search
- * @param end One past the end of the range
+ * @param begin,end The range to search in
  * @param pred The predicate for comparison
  * @return It Iterator to the last element for which p returned true, or end if
  * no such element.
@@ -263,8 +257,7 @@ KBLIB_NODISCARD constexpr ForwardIt find_last_if(
  * @brief Searches a range for the last element on which a predicate returns
  * false. It also allows for a sentinel end iterator.
  *
- * @param begin Beginning of the range to search
- * @param end One past the end of the range
+ * @param begin,end The range to search in
  * @param pred The predicate for comparison
  * @return It Iterator to the last element for which p returned false, or end if
  * no such element.
@@ -294,8 +287,7 @@ KBLIB_NODISCARD constexpr ForwardIt find_last_if_not(
  * @brief Find the offset of the first ocurrence of v in a range from the
  * beginning. It also allows for a sentinel end iterator.
  *
- * @param begin The beginning of the range to search.
- * @param end One past the end of the range.
+ * @param begin,end The range to search in
  * @param value The value to search for.
  * @return size_t The offset from begin of the first element equal to v, or
  * distance(begin, end) if not found.
@@ -311,8 +303,7 @@ find_in(ForwardIt begin, EndIt end,
  * @brief Find the offset of the first element for which p returns true. It also
  * allows for a sentinel end iterator.
  *
- * @param begin The beginning of the range to search.
- * @param end One past the end of the range.
+ * @param begin,end The range to search in
  * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
@@ -327,8 +318,7 @@ KBLIB_NODISCARD constexpr size_t find_in_if(
  * @brief Find the offset of the first element for which p returns false. It
  * also allows for a sentinel end iterator.
  *
- * @param begin The beginning of the range to search.
- * @param end One past the end of the range.
+ * @param begin,end The range to search in
  * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
@@ -347,8 +337,7 @@ KBLIB_NODISCARD constexpr size_t find_in_if_not(
  * @brief Find the offset of the last ocurrence of v in a range from the
  * beginning. It also allows for a sentinel end iterator.
  *
- * @param begin The beginning of the range to search.
- * @param end One past the end of the range.
+ * @param begin,end The range to search in
  * @param value The value to search for.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
@@ -361,11 +350,9 @@ find_last_in(ForwardIt begin, EndIt end,
 }
 
 /**
- * @brief Find the offset of the last element for which p returns true. It also
- * allows for a sentinel end iterator.
+ * @param begin,end The range to search in
  *
- * @param begin The beginning of the range to search.
- * @param end One past the end of the range.
+ * @param begin,end The range to search in
  * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
@@ -380,8 +367,7 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if(
  * @brief Find the offset of the last element for which p returns false. It also
  * allows for a sentinel end iterator.
  *
- * @param begin The beginning of the range to search.
- * @param end One past the end of the range.
+ * @param begin,end The range to search in
  * @param pred The predicate to check.
  * @return size_t The offset from begin of the element found, or distance(begin,
  * end) if not.
@@ -1033,8 +1019,7 @@ namespace detail {
  * @remark Best-case Θ(n) (for sorted input)
  * @remark worst-case O(n^2) (for reverse-sorted input)
  *
- * @param begin Beginning of range to sort
- * @param end End of range
+ * @param begin,end The range to sort
  * @param compare The comparison predicate
  */
 template <typename RandomAccessIt, typename Compare = std::less<>>
@@ -1069,10 +1054,8 @@ constexpr void insertion_sort(
  * @remark Best-case Θ(n) (for sorted input)
  * @remark worst-case O(n^2) (for reverse-sorted input)
  *
- * @param begin Beginning of input range
- * @param end End of input range
- * @param d_begin Beginning of output range
- * @param d_end End of output range
+ * @param begin,end The input range
+ * @param d_begin,d_end The output range
  * @param compare The comparison predicate
  */
 template <typename RandomAccessIt, typename RandomAccessIt2,
@@ -1156,10 +1139,8 @@ constexpr void insertion_sort_copy(
  * @remark Best-case Θ(n + sqrt(n)) (for sorted input)
  * @remark worst-case O(n^2) (for reverse-sorted input)
  *
- * @param begin Beginning of input range
- * @param end End of input range
- * @param d_begin Beginning of output range
- * @param d_end End of output range
+ * @param begin,end The input range
+ * @param d_begin,d_end The output range
  * @param compare The comparison predicate
  */
 template <typename RandomAccessIt, typename RandomAccessIt2,
@@ -1396,8 +1377,7 @@ namespace detail {
  * Complexity: worst-case O(N log(N)), where N = std::distance(begin, end)
  * comparisons and swaps.
  *
- * @param begin The beginning of the input range.
- * @param end A past-the-end iterator marking the end of the input range.
+ * @param begin,end The range to sort
  * @param transform A transformer (such as unary function or pointer to
  * member) which will be applied to each object before comparing it. A
  * transformer may not modify the object it is called with.
@@ -1420,9 +1400,8 @@ constexpr void sort_transform(RandomAccessIt begin, RandomAccessIt end,
 /**
  * @brief
  *
- * @param begin
- * @param end
- * @param transform
+ * @param begin,end The range to sort
+ * @param transform The transformation to apply
  */
 template <typename RandomAccessIt, typename UnaryOperation>
 constexpr void sort_transform(RandomAccessIt begin, RandomAccessIt end,
@@ -1509,9 +1488,8 @@ struct zip_iterator<It1, It1, It2> {
  * InputIt1 and EndIt may be different types, however that breaks range-for
  * in C++14.
  *
- * @param begin1 The beginning of the first range to iterate over.
- * @param end1 The end of the first range.
- * @param begin2 The beginning of the second range to iterate over.
+ * @param begin1,end1 The first range.
+ * @param begin2 The beginning of the second range.
  * @return zip_iterator<InputIt1, EndIt, InputIt2> A range (and also an
  * iterator) which represents the two ranges taken in pairs.
  */

@@ -3,7 +3,7 @@
 
 /**
  * @file kblib.h
- * Includes most other headers in kblib.
+ * @brief Includes most other headers in kblib.
  *
  * @note Provided as a simple upgrade path for the original single-header
  * version of the library, whose functions are split between the below files.

@@ -11,6 +11,12 @@
 #include <optional>
 #endif
 
+/**
+ * @file iterators.h
+ * @brief This file provides some iterators, ranges, iterator/range adapters,
+ * and operations that can be performed on iterators or smart pointers.
+ */
+
 namespace kblib {
 
 template <typename ptr>
@@ -431,8 +437,8 @@ constexpr range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
 }
 
 /**
- * @brief Constructs a half-open range [from 0 to max. [0, max). The step is
- * automatically determined based on the sign of max.
+ * @brief Constructs a half-open range [0, max). The step is automatically
+ * determined based on the sign of max.
  *
  * @param max The first value not in the produced range.
  * @return range_t<Value, int> An iterable range [0, max).
@@ -485,6 +491,13 @@ namespace detail {
 	using no_dangle_t = typename no_dangle<T>::type;
 } // namespace detail
 
+/**
+ * @brief
+ *
+ * @author Tobias Widlund, killerbee
+ * @date 2018-2020
+ * @copyright MIT license.
+ */
 template <typename It>
 struct enumerate_iterator {
 	It it;
@@ -533,6 +546,13 @@ struct enumerate_iterator {
 template <typename Range, typename = void>
 struct enumerate_t;
 
+/**
+ * @brief
+ *
+ * @author Tobias Widlund, killerbee
+ * @date 2018-2020
+ * @copyright MIT license.
+ */
 template <typename Range>
 struct enumerate_t<Range, void> {
 	detail::no_dangle_t<Range> r;
@@ -559,6 +579,13 @@ struct enumerate_t<Range, void> {
 	}
 };
 
+/**
+ * @brief
+ *
+ * @author Tobias Widlund, killerbee
+ * @date 2018-2020
+ * @copyright MIT license.
+ */
 template <typename It, typename EndIt>
 struct enumerate_t {
 	using nested_iterator = It;
@@ -587,8 +614,7 @@ enumerate_t<Range&&> enumerate(Range&& r) {
 /**
  * @brief Allow access to indexes while using range-based for loops.
  *
- * @param begin The beginning of the input range.
- * @param end The end of the input range.
+ * @param begin,end The input range.
  */
 template <typename It, typename EIt>
 enumerate_t<It, EIt> enumerate(It begin, EIt end) {
@@ -891,8 +917,7 @@ class enumerator_t {
  * \endcode
  * and kept track of the index manually.
  *
- * @param begin The beginning of the input range.
- * @param end The end of the input range.
+ * @param begin,end The input range.
  */
 template <typename It, typename EIt>
 enumerator_t<It, EIt> magic_enumerate(It begin, EIt end) {
@@ -935,6 +960,9 @@ auto magic_enumerate(Range&& r) {
 /* *****************************************************************************
  * This code adapted from code written by Krystian Stasiowski
  * <sdkrystian@gmail.com>
+ *
+ * No specific license provisions were given, however permission was granted for
+ * me to include it in kblib.
  *
  * His code is much faster and cleaner than my magic_enumerate is. HOWEVER, it
  * is fundamentally unable to detect the copying-nonconst-from-const case.
@@ -1114,6 +1142,17 @@ struct indirect_range {
 	auto rbegin() const noexcept { return std::make_reverse_iterator(begin_); }
 	auto rend() const noexcept { return std::make_reverse_iterator(end_); }
 };
+
+/**
+ * @brief Create a range from an iterator pair. Primarily useful for range-for
+ * loops.
+ *
+ * @param begin,end The range to wrap.
+ */
+template <typename Iter1, typename Iter2>
+indirect_range<Iter1, Iter2> indirect(Iter1 begin, Iter2 end) {
+	return {begin, end};
+}
 
 #if KBLIB_USE_CXX17
 

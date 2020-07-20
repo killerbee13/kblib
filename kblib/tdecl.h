@@ -4,8 +4,8 @@
 #include <iso646.h>
 
 /**
- * @file
- * Contains basic declarations needed by other files.
+ * @file tdecl.h
+ * @brief Contains basic declarations needed by other files.
  */
 
 /**
@@ -53,8 +53,18 @@
  */
 #define KBLIB_DEF_MACROS
 #endif
-
+/**
+ * @namespace kblib
+ * @brief The main namespace in which all entities from kblib are defined.
+ */
 namespace kblib {
+
+/**
+ * @namespace kblib::detail
+ * @brief The namespace used for implementation details within kblib.
+ *
+ * @internal
+ */
 namespace detail {
 
 	template <typename Container, bool, typename...>

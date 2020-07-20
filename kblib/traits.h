@@ -2,9 +2,9 @@
 #define KBLIB_TRAITS_H_INCLUDED_
 
 /**
- * @file
- * Contains some type traits not in the standard library that are useful in the
- * implementation of kblib.
+ * @file traits.h
+ * @brief Contains some type traits not in the standard library that are useful
+ * in the implementation of kblib.
  */
 
 #include "fakestd.h"

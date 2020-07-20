@@ -132,7 +132,7 @@ eatSpace(std::istream& is) {
  * input operation before doing an unformatted input operation (such as
  * std::getline).
  *
- * @example
+ * @remark Example usage:
  * @code
  * int x{};
  * std::cout << "Enter a number: ";
