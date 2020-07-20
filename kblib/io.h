@@ -112,10 +112,12 @@ inline std::istream& eatWord(std::istream& is) {
 /**
  * @brief Eat spaces, don't eat an extra.
  *
+ * @deprecated Use std::ws instead.
+ *
  * @param is
  * @return std::istream
  */
-[[deprecated("use std::ws instead")]] inline std::istream&
+[[deprecated("Use std::ws instead")]] inline std::istream&
 eatSpace(std::istream& is) {
 	while (is && isspace(is.peek())) {
 		is.get();
