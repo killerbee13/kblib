@@ -126,8 +126,24 @@ eatSpace(std::istream& is) {
 /**
  * @brief Read in spaces until the end of the line is found.
  *
- * @param std::basic_istream<CharT
- * @param is
+ * nl may be used to consume whitespace left over after a formatted
+ * input operation before doing an unformatted input operation (such as
+ * std::getline).
+ *
+ * @example
+ * @code
+ * int x{};
+ * std::cout << "Enter a number: ";
+ * std::cin >> x; // potentially leaves a new line in the stream
+ * std::cout << "Got " << x << '\n';
+ * std::string str;
+ * std::cout << "Enter a line of text: ";
+ * std::getline(std::cin >> kblib::nl, str);
+ * std::cout << "Got " << std::quoted(str) << '\n';
+ * @endcode
+ *
+ * @param is The stream to read from.
+ * @return std::istream& is.
  */
 template <typename CharT, typename Traits>
 auto nl(std::basic_istream<CharT, Traits>& is)
