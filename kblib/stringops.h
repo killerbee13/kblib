@@ -393,6 +393,16 @@ inline bool ends_with(std::string_view haystack, std::string_view needle) {
 }
 
 /**
+ * @brief Checks if a given string ends with a particular string.
+ * @param haystack The string to be checked.
+ * @param needle The suffix to check for.
+ * @return bool If haystack ends with needle.
+ */
+inline bool ends_with(std::string_view haystack, char needle) {
+	return haystack.size() >= 1 && haystack.back() == needle;
+}
+
+/**
  * @brief Checks if a given string starts with a particular string.
  * @param haystack The string to be checked.
  * @param needle The prefix to check for.
@@ -401,6 +411,16 @@ inline bool ends_with(std::string_view haystack, std::string_view needle) {
 inline bool starts_with(std::string_view haystack, std::string_view needle) {
 	return haystack.size() >= needle.size() &&
 	       haystack.compare(0, needle.size(), needle) == 0;
+}
+
+/**
+ * @brief Checks if a given string starts with a particular string.
+ * @param haystack The string to be checked.
+ * @param needle The prefix to check for.
+ * @return bool If haystack starts with needle.
+ */
+inline bool starts_with(std::string_view haystack, char needle) {
+	return haystack.size() >= 1 && haystack.front() == needle;
 }
 
 #endif
