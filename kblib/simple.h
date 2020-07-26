@@ -92,13 +92,37 @@ constexpr void to_bytes(Integral val,
 	}
 }
 
+#if KBLIB_USE_CXX17
+
+template <typename... Ts>
+constexpr bool any_void = (std::is_void_v<Ts> || ...);
+
+template <typename F, typename... T>
+auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
+    kblib::apply(f, std::forward<T>(t))...}))
+    -> return_assert_t<
+        !any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>,
+        decltype(std::tuple{kblib::apply(f, std::forward<T>(t))...})> {
+	return std::tuple{kblib::apply(f, std::forward<T>(t))...};
+}
+
+template <typename F, typename... T>
+auto map(F f, T&&... t) noexcept(
+    noexcept((static_cast<void>(kblib::apply(f, std::forward<T>(t))), ...)))
+    -> return_assert_t<
+        any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>, void> {
+	(static_cast<void>(kblib::apply(f, std::forward<T>(t))), ...);
+}
+
+#endif
+
 namespace fnv {
 
-   /**
+	/**
 	 * @brief The prime to use for the FNVa hash algorithm, as a type trait.
 	 */
-   template <typename UInt>
-   struct fnv_prime;
+	template <typename UInt>
+	struct fnv_prime;
 
 	template <>
 	struct fnv_prime<std::uint32_t>
@@ -327,8 +351,8 @@ template <>
 struct FNV_hash<bool, void> {
 	constexpr std::size_t
 	operator()(bool key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		char tmp[1] = {key};
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
@@ -342,8 +366,8 @@ template <>
 struct FNV_hash<char, void> {
 	constexpr std::size_t
 	operator()(char key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		char tmp[1] = {key};
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
@@ -357,8 +381,8 @@ template <>
 struct FNV_hash<signed char, void> {
 	constexpr std::size_t
 	operator()(signed char key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		signed char tmp[1] = {key};
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
@@ -372,8 +396,8 @@ template <>
 struct FNV_hash<unsigned char, void> {
 	constexpr std::size_t
 	operator()(unsigned char key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		unsigned char tmp[1] = {key};
 		return FNVa_a<std::size_t>(tmp, offset);
 	}
@@ -386,8 +410,8 @@ template <typename T>
 struct FNV_hash<T, void_if_t<std::is_empty<T>::value>> {
 	constexpr std::size_t
 	operator()(const T&,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		return FNVa_a<std::size_t>("", offset); // hashes the null terminator
 	}
 };
@@ -424,9 +448,8 @@ template <typename T>
 struct FNV_hash<T, void_if_t<std::is_integral<T>::value &&
                              is_trivially_hashable<T>::value>> {
 	constexpr std::size_t
-	operator()(T key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	operator()(T key, std::size_t offset =
+	                      fnv::fnv_offset<std::size_t>::value) const noexcept {
 		unsigned char tmp[sizeof(T)]{};
 		to_bytes(key, tmp);
 		return FNVa_a<std::size_t>(tmp, offset);
@@ -444,8 +467,8 @@ template <typename T>
 struct FNV_hash<T, void_if_t<std::is_pointer<T>::value>> {
 	std::size_t
 	operator()(T key_in,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		return FNV_hash<std::uintptr_t>{}(
 		    reinterpret_cast<std::uintptr_t>(key_in), offset);
 	}
@@ -453,8 +476,8 @@ struct FNV_hash<T, void_if_t<std::is_pointer<T>::value>> {
 
 namespace asserts {
 
-   template <typename Container>
-   constexpr bool is_trivial_container =
+	template <typename Container>
+	constexpr bool is_trivial_container =
 	    (is_contiguous<Container>::value &&
 	     is_trivially_hashable<typename Container::value_type>::value);
 	static_assert(is_trivial_container<std::string>,
@@ -471,13 +494,13 @@ struct FNV_hash<
     Container,
     void_if_t<(is_contiguous<Container>::value &&
                is_trivially_hashable<typename Container::value_type>::value)>> {
-   constexpr std::size_t
-   operator()(const Container& key,
-              std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-       noexcept {
-      return FNVa_s(reinterpret_cast<const char*>(key.data()),
-                    key.size() * sizeof(*key.begin()), offset);
-   }
+	constexpr std::size_t
+	operator()(const Container& key,
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
+		return FNVa_s(reinterpret_cast<const char*>(key.data()),
+		              key.size() * sizeof(*key.begin()), offset);
+	}
 };
 
 #if 1
@@ -495,9 +518,8 @@ struct FNV_hash<
     T, void_if_t<!std::is_integral<T>::value && !std::is_pointer<T>::value &&
                  is_trivially_hashable<T>::value>> {
 	std::size_t
-	operator()(T key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	operator()(T key, std::size_t offset =
+	                      fnv::fnv_offset<std::size_t>::value) const noexcept {
 		char tmp[sizeof(T)];
 		std::memcpy(tmp, &key, sizeof(T));
 		return FNVa_a<std::size_t>(tmp, offset);
@@ -518,8 +540,8 @@ struct FNV_hash<Container,
                                 typename Container::value_type>::value)>> {
 	constexpr std::size_t
 	operator()(const Container& key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		using Elem = typename Container::value_type;
 		return std::accumulate(key.cbegin(), key.cend(), offset,
 		                       [](std::size_t offset, const Elem& elem) {
@@ -538,8 +560,8 @@ struct FNV_hash<
               is_trivially_hashable_v<Container::value_type>>> {
 	constexpr std::size_t
 	operator()(const Container& key,
-	           std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-	    noexcept {
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		return FNVa_s(reinterpret_cast<const char*>(key.data()),
 		              key.size() * sizeof(*key.begin()), offset);
 	}
@@ -549,7 +571,7 @@ struct FNV_hash<
 
 namespace detail {
 
-   /**
+	/**
 	 * @brief Hash each element of a tuple. This overload is for tuples of a
 	 * single type, or as the base case for the other overload.
 	 *
@@ -557,8 +579,8 @@ namespace detail {
 	 * @param offset
 	 * @return std::size_t
 	 */
-   template <typename Tuple, std::size_t I>
-   constexpr std::size_t hash_tuple_impl(const Tuple& tuple, std::size_t offset,
+	template <typename Tuple, std::size_t I>
+	constexpr std::size_t hash_tuple_impl(const Tuple& tuple, std::size_t offset,
 	                                      std::index_sequence<I>) noexcept {
 		return FNV_hash<typename std::tuple_element<I, Tuple>::type>{}(
 		    std::get<I>(tuple), offset);
@@ -617,9 +639,9 @@ namespace detail {
 	          typename std::enable_if<(std::tuple_size<Tuple>::value > 0u),
 	                                  int>::type = 0>
 	constexpr bool all_hashable() {
-	   return all_hashable_impl<Tuple>(
-	       std::make_index_sequence<std::tuple_size<Tuple>::value>{});
-   }
+		return all_hashable_impl<Tuple>(
+		    std::make_index_sequence<std::tuple_size<Tuple>::value>{});
+	}
 
 } // namespace detail
 
@@ -632,14 +654,14 @@ struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() &&
                                  !is_trivially_hashable<Tuple>::value &&
                                  (std::tuple_size<Tuple>::value > 0u) &&
                                  !is_linear_container_v<Tuple>>> {
-   constexpr std::size_t
-   operator()(const Tuple& key,
-              std::size_t offset = fnv::fnv_offset<std::size_t>::value) const
-       noexcept {
-      return detail::hash_tuple_impl(
-          key, offset,
-          std::make_index_sequence<std::tuple_size<Tuple>::value>{});
-   }
+	constexpr std::size_t
+	operator()(const Tuple& key,
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
+		return detail::hash_tuple_impl(
+		    key, offset,
+		    std::make_index_sequence<std::tuple_size<Tuple>::value>{});
+	}
 };
 
 template <typename T, std::size_t N>
@@ -661,7 +683,7 @@ is_consecutive(const T (&array)[N]) {
 
 namespace detail {
 
-   /**
+	/**
 	 * @brief Floored integer binary logarithm. Returns floor(lb(val)).
 	 *
 	 * Returns the number of significant bits in the given integer.
@@ -669,7 +691,7 @@ namespace detail {
 	 * @param val
 	 * @return int
 	 */
-   constexpr int
+	constexpr int
 	filg2(const std::bitset<std::numeric_limits<std::uintmax_t>::digits>
 	          val) noexcept {
 		for (int i : range(to_signed(val.size() - 1), std::ptrdiff_t{0}, -1)) {
@@ -768,7 +790,7 @@ constexpr bool conjunction = (args && ...);
 
 template <typename T>
 concept zero_constructible = requires(T t) {
-   {t = 0};
+	{t = 0};
 };
 
 struct zero_t {

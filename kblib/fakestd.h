@@ -370,6 +370,35 @@ struct return_assert<true, T> {
 
 template <bool V, typename T>
 using return_assert_t = typename return_assert<V, T>::type;
+namespace detail {
+
+	template <typename F, typename Arg, typename = void>
+	struct apply_impl {
+		static auto do_apply(F&& f, Arg&& arg) noexcept(
+		    noexcept(kblib::invoke(std::forward<F>(f), std::forward<Arg>(arg))))
+		    -> decltype(auto) {
+			return kblib::invoke(std::forward<F>(f), std::forward<Arg>(arg));
+		}
+	};
+
+	template <typename F, typename Arg>
+	struct apply_impl<F, Arg, void_if<true or std::tuple_size<Arg>::value>> {
+		static auto do_apply(F&& f, Arg&& arg) noexcept(
+		    noexcept(std::apply(std::forward<F>(f), std::forward<Arg>(arg))))
+		    -> decltype(auto) {
+			return std::apply(std::forward<F>(f), std::forward<Arg>(arg));
+		}
+	};
+
+} // namespace detail
+
+template <typename F, typename Arg>
+auto apply(F&& f, Arg&& arg) noexcept(
+    noexcept(detail::apply_impl<F, Arg>::do_apply(std::forward<F>(f),
+                                                  std::forward<Arg>(arg)))) {
+	return detail::apply_impl<F, Arg>::do_apply(std::forward<F>(f),
+	                                            std::forward<Arg>(arg));
+}
 
 template <typename T>
 std::unique_ptr<T> to_unique(T* p) {
