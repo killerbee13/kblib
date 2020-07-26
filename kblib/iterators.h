@@ -1261,14 +1261,16 @@ class transform_iterator {
 	 * @param _it An InputIterator to a range to be transformed.
 	 * @param _op The operation to apply to each element.
 	 */
-	transform_iterator(base_iterator _it, operation _op) : it(_it), op(_op) {}
+	explicit transform_iterator(base_iterator _it, operation _op)
+	    : it(_it), op(_op) {}
 
 	/**
 	 * @brief constructs a non-dereferenceable sentinel iterator
 	 *
 	 * @param end_it An iterator that marks the end of the input range.
 	 */
-	transform_iterator(base_iterator end_it) : it(end_it), op(std::nullopt) {}
+	explicit transform_iterator(base_iterator end_it)
+	    : it(end_it), op(std::nullopt) {}
 
 	/**
 	 * @brief Transforms the value obtained by dereferencing it.
@@ -1341,11 +1343,32 @@ class transform_iterator {
  * @param it An InputIterator to a range to transform.
  * @param op The transformation to apply.
  * @return transform_iterator<base_iterator, operation>
+ *
+ * @deprecated Use transformer instead
  */
 template <typename base_iterator, typename operation>
-transform_iterator<base_iterator, operation>
+[[deprecated(
+    "use transformer instead")]] transform_iterator<base_iterator, operation>
 make_transform_iterator(base_iterator it, operation op) {
 	return {it, op};
+}
+
+/**
+ * @brief Factory function to make transform_iterators.
+ *
+ * @param it An InputIterator to a range to transform.
+ * @param op The transformation to apply.
+ * @return transform_iterator<base_iterator, operation>
+ */
+template <typename base_iterator, typename operation>
+transform_iterator<base_iterator, operation> transformer(base_iterator it,
+                                                         operation op) {
+	return {it, op};
+}
+
+template <typename It, typename EndIt, typename operation>
+auto transform_range(It begin, EndIt end, operation op) {
+	return indirect(transform_iterator{begin, op}, end);
 }
 #endif
 
@@ -1406,6 +1429,9 @@ class back_insert_iterator_F {
  */
 template <typename F>
 class consume_iterator {
+ private:
+	F fun;
+
  public:
 	using value_type = void;
 	using difference_type = void;
@@ -1441,9 +1467,6 @@ class consume_iterator {
 	 * @brief A no-op.
 	 */
 	consume_iterator& operator++() { return *this; }
-
- private:
-	F fun;
 };
 
 /**

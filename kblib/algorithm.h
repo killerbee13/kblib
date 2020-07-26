@@ -516,6 +516,21 @@ find_last_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
 }
 
 /**
+ * @brief
+ *
+ * @param set
+ * @param val
+ * @return bool
+ */
+template <typename Set, typename Value>
+KBLIB_NODISCARD constexpr bool contains(Set&& set, Value val) noexcept(
+    noexcept(*std::declval<iterator_type_for_t<const Set>&>() == val)) {
+	using std::begin;
+	using std::end;
+	return kblib::find(begin(set), end(set), val) != end(set);
+}
+
+/**
  * @brief Returns a container of the greatest count elements according to cmp of
  * the range [first, last), in arbitrary order. This overload works for linear
  * containers.

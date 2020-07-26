@@ -64,16 +64,16 @@ struct visitor : Ts... {
 	using Ts::operator()...;
 };
 template <typename... Ts>
-visitor(Ts...)->visitor<Ts...>;
+visitor(Ts...) -> visitor<Ts...>;
 
 namespace detail {
 
-   /**
+	/**
 	 * @brief Given a std::variant T, provides the member type which is a tuple
 	 * of the same types.
 	 */
-   template <typename T>
-   struct tuple_type {
+	template <typename T>
+	struct tuple_type {
 		/**
 		 * @brief Non-variant inputs produce the empty tuple.
 		 */
@@ -176,8 +176,8 @@ constexpr decltype(auto) visit(V&& v, F&& f, Fs&&... fs) {
 
 namespace detail {
 
-   template <typename F, typename... Ts>
-   constexpr bool invocable_with_all_v =
+	template <typename F, typename... Ts>
+	constexpr bool invocable_with_all_v =
 	    (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value && ...);
 
 	template <typename Callable, typename Variant>
@@ -285,7 +285,7 @@ KBLIB_NODISCARD constexpr auto visit(V& v) {
 }
 
 namespace detail {
-   enum class construct_type {
+	enum class construct_type {
 		none = 0,
 		copy = 1,
 		move = 2,
@@ -658,6 +658,14 @@ class poly_obj
 		return {tag<U>{}, std::forward<Args>(args)...};
 	}
 
+	/*template <typename U = Obj, typename... Args>
+	constexpr Obj& emplace(Args&&... args) noexcept(
+	    std::is_nothrow_constructible_v<U, Args&&...>) {
+	   clear();
+	   static_cast<ops_t&>(*this) = detail::make_ops_t<U, Traits>();
+	   value = new (data) U(std::forward<Args>(args)...);
+	}*/
+
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -700,8 +708,8 @@ class poly_obj
 	 *
 	 * @return Obj&& An rvalue reference to the contained object.
 	 */
-	Obj&& operator*() &&
-	    noexcept(std::is_nothrow_move_constructible<Obj>::value) {
+	Obj&&
+	operator*() && noexcept(std::is_nothrow_move_constructible<Obj>::value) {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -791,10 +799,9 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	    return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
-		                 member_type>&
-		 operator->*(member_type(Obj::*member)) &
-		 noexcept {
+	return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
+	                member_type>&
+	operator->*(member_type(Obj::*member)) & noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -812,10 +819,9 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	    return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
-		                 member_type>&&
-		 operator->*(member_type(Obj::*member)) &&
-		 noexcept {
+	return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
+	                member_type>&&
+	operator->*(member_type(Obj::*member)) && noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -833,7 +839,7 @@ class poly_obj
 	}
 
 	template <typename member_type, typename... Args>
-	    auto operator->*(member_type (Obj::*member)(Args...)) & noexcept {
+	auto operator->*(member_type (Obj::*member)(Args...)) & noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -843,7 +849,7 @@ class poly_obj
 	}
 
 	template <typename member_type, typename... Args>
-		 auto operator->*(member_type (Obj::*member)(Args...) const) & noexcept {
+	auto operator->*(member_type (Obj::*member)(Args...) const) & noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -863,7 +869,7 @@ class poly_obj
 	}
 
 	template <typename member_type, typename... Args>
-	    auto operator->*(member_type (Obj::*member)(Args...) &) & noexcept {
+	auto operator->*(member_type (Obj::*member)(Args...) &) & noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -873,7 +879,7 @@ class poly_obj
 	}
 
 	template <typename member_type, typename... Args>
-		 auto operator->*(member_type (Obj::*member)(Args...) const&) & noexcept {
+	auto operator->*(member_type (Obj::*member)(Args...) const&) & noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -894,7 +900,7 @@ class poly_obj
 	}
 
 	template <typename member_type, typename... Args>
-	    auto operator->*(member_type (Obj::*member)(Args...) &&) && noexcept {
+	auto operator->*(member_type (Obj::*member)(Args...) &&) && noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -904,8 +910,7 @@ class poly_obj
 	}
 
 	template <typename member_type, typename... Args>
-		 auto operator->*(member_type (Obj::*member)(Args...) const&&) &&
-		 noexcept {
+	auto operator->*(member_type (Obj::*member)(Args...) const&&) && noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
 #endif
@@ -938,8 +943,8 @@ class poly_obj
 	template <typename... Args>
 	auto operator()(Args&&... args) noexcept(
 	    std::is_nothrow_invocable_v<Obj&, Args&&...>)
-	    -> std::invoke_result_t<Obj&, Args&&...> {
-		return std::invoke(**this, std::forward<Args>(args)...);
+	    -> fakestd::invoke_result_t<Obj&, Args&&...> {
+		return kblib::invoke(**this, std::forward<Args>(args)...);
 	}
 	/**
 	 * @brief Invokes the container function object, if Obj is a callable type.
@@ -954,8 +959,8 @@ class poly_obj
 	template <typename... Args>
 	auto operator()(Args&&... args) const
 	    noexcept(std::is_nothrow_invocable_v<const Obj&, Args&&...>)
-	        -> std::invoke_result_t<const Obj&, Args&&...> {
-		return std::invoke(*value, std::forward<Args>(args)...);
+	        -> fakestd::invoke_result_t<const Obj&, Args&&...> {
+		return kblib::invoke(*value, std::forward<Args>(args)...);
 	}
 
 	/**
