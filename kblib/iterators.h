@@ -1150,7 +1150,8 @@ struct indirect_range {
  * @param begin,end The range to wrap.
  */
 template <typename Iter1, typename Iter2>
-indirect_range<Iter1, Iter2> indirect(Iter1 begin, Iter2 end) {
+indirect_range<Iter1, Iter2> indirect(Iter1 begin, Iter2 end) noexcept(
+    noexcept(indirect_range<Iter1, Iter2>{begin, end})) {
 	return {begin, end};
 }
 
@@ -1248,7 +1249,7 @@ class transform_iterator {
 	using result_type = decltype(kblib::invoke(*op, *it));
 	using const_result_type =
 	    decltype(kblib::invoke(const_cast<const operation&>(*op),
-	                           const_cast<const base_iterator&>(*it)));
+	                           *const_cast<const base_iterator&>(it)));
 	using value_type = result_type;
 	using pointer = void;
 	using reference = value_type;
@@ -1261,15 +1262,17 @@ class transform_iterator {
 	 * @param _it An InputIterator to a range to be transformed.
 	 * @param _op The operation to apply to each element.
 	 */
-	explicit transform_iterator(base_iterator _it, operation _op)
-	    : it(_it), op(_op) {}
+	explicit transform_iterator(base_iterator _it, operation _op) noexcept(
+	    noexcept(base_iterator{_it}) and noexcept(op.emplace(std::move(_op))))
+	    : it(_it), op(std::move(_op)) {}
 
 	/**
 	 * @brief constructs a non-dereferenceable sentinel iterator
 	 *
 	 * @param end_it An iterator that marks the end of the input range.
 	 */
-	explicit transform_iterator(base_iterator end_it)
+	explicit transform_iterator(base_iterator end_it) noexcept(
+	    noexcept(base_iterator{end_it}))
 	    : it(end_it), op(std::nullopt) {}
 
 	/**
@@ -1277,33 +1280,38 @@ class transform_iterator {
 	 *
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
-	decltype(auto) operator*() { return kblib::invoke(*op, *it); }
+	decltype(auto) operator*() noexcept(noexcept(kblib::invoke(*op, *it))) {
+		return kblib::invoke(*op, *it);
+	}
 	/**
 	 * @brief Transforms the value obtained by dereferencing it.
 	 *
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
-	decltype(auto) operator*() const { return kblib::invoke(*op, *it); }
+	decltype(auto) operator*() const
+	    noexcept(noexcept(kblib::invoke(*op, *it))) {
+		return kblib::invoke(*op, *it);
+	}
 
 	/**
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator->() {
+	auto operator->() noexcept(noexcept(kblib::invoke(*op, *it))) {
 		return containing_ptr<result_type>{{kblib::invoke(*op, *it)}};
 	}
 	/**
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator->() const {
+	auto operator->() const noexcept(noexcept(kblib::invoke(*op, *it))) {
 		return containing_ptr<const_result_type>{{kblib::invoke(*op, *it)}};
 	}
 
 	/**
 	 * @brief Increments the underlying iterator and returns *this.
 	 */
-	transform_iterator& operator++() {
+	transform_iterator& operator++() noexcept(noexcept(++it)) {
 		++it;
 		return *this;
 	}
@@ -1314,28 +1322,59 @@ class transform_iterator {
 	 */
 	[[deprecated(
 	    "Needlessly copies op. Use preincrement instead.")]] transform_iterator
-	operator++(int) {
+	operator++(int) noexcept(noexcept(transform_iterator{it++, op})) {
 		return {it++, op};
 	}
+
+	base_iterator base() const noexcept { return it; }
 
 	/**
 	 * @brief Compares the base iterators of lhs and rhs.
 	 */
-	friend bool
-	operator==(const transform_iterator<base_iterator, operation>& lhs,
-	           const transform_iterator<base_iterator, operation>& rhs) {
+	friend bool operator==(
+	    const transform_iterator<base_iterator, operation>& lhs,
+	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
 		return lhs.it == rhs.it;
 	}
 
 	/**
 	 * @brief Compares the base iterators of lhs and rhs.
 	 */
-	friend bool
-	operator!=(const transform_iterator<base_iterator, operation>& lhs,
-	           const transform_iterator<base_iterator, operation>& rhs) {
+	friend bool operator!=(
+	    const transform_iterator<base_iterator, operation>& lhs,
+	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
 		return lhs.it != rhs.it;
 	}
+
+	template <typename OIt>
+	friend bool
+	operator==(const transform_iterator<base_iterator, operation>& lhs,
+	           const OIt& rhs) noexcept {
+		return lhs.base() == rhs;
+	}
+	template <typename OIt>
+	friend bool operator==(
+	    const OIt& lhs,
+	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
+		return lhs == rhs.base();
+	}
+
+	template <typename OIt>
+	friend bool
+	operator!=(const transform_iterator<base_iterator, operation>& lhs,
+	           const OIt& rhs) noexcept {
+		return lhs.base() != rhs;
+	}
+	template <typename OIt>
+	friend bool operator!=(
+	    const OIt& lhs,
+	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
+		return lhs != rhs.base();
+	}
 };
+
+template <typename It, typename operation>
+transform_iterator(It, operation) -> transform_iterator<It, operation>;
 
 /**
  * @brief Factory function to make transform_iterators.
@@ -1349,8 +1388,9 @@ class transform_iterator {
 template <typename base_iterator, typename operation>
 [[deprecated(
     "use transformer instead")]] transform_iterator<base_iterator, operation>
-make_transform_iterator(base_iterator it, operation op) {
-	return {it, op};
+make_transform_iterator(base_iterator it, operation op) noexcept(
+    noexcept(transform_iterator<base_iterator, operation>{it, std::move(op)})) {
+	return {it, std::move(op)};
 }
 
 /**
@@ -1361,13 +1401,15 @@ make_transform_iterator(base_iterator it, operation op) {
  * @return transform_iterator<base_iterator, operation>
  */
 template <typename base_iterator, typename operation>
-transform_iterator<base_iterator, operation> transformer(base_iterator it,
-                                                         operation op) {
-	return {it, op};
+transform_iterator<base_iterator, operation>
+transformer(base_iterator it, operation op) noexcept(
+    noexcept(transform_iterator<base_iterator, operation>{it, std::move(op)})) {
+	return {it, std::move(op)};
 }
 
 template <typename It, typename EndIt, typename operation>
-auto transform_range(It begin, EndIt end, operation op) {
+auto transform_range(It begin, EndIt end, operation op) noexcept(
+    noexcept(indirect(transform_iterator{begin, op}, end))) {
 	return indirect(transform_iterator{begin, op}, end);
 }
 #endif
