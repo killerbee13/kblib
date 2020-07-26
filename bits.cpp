@@ -88,7 +88,7 @@ struct buffer {
 using kblib::bitfield;
 
 union Addr1 {
-	bitfield<0, 16, uint16_t> raw;
+	bitfield<0, 16, uint16_t> raw{};
 
 	bitfield<0, 5, uint16_t> cX;
 	bitfield<5, 5, uint16_t> cY;
@@ -104,18 +104,18 @@ union Addr1 {
 TEST_CASE("bitfields1") {
 	static_assert(sizeof(Addr1) == 2, "");
 	Addr1 a;
-	a.l = 0b11001100;
-	a.h(0b0011001);
-	REQUIRE(a.raw == 0b0001100111001100);
-	REQUIRE(a.cX() == 0b01100);
-	REQUIRE(a.cY == 0b01110);
+	a.l = 0b1100'1100;
+	a.h(0b001'1001);
+	REQUIRE(a.raw == 0b0001'1001'1100'1100);
+	REQUIRE(a.cX() == 0b0'1100);
+	REQUIRE(a.cY == 0b0'1110);
 	REQUIRE(a.nt == 0b10);
 	REQUIRE(a.fY == 0b001);
 }
 
 // Loopy's VRAM address
 struct Addr {
-	std::uint16_t raw = 0;
+	std::uint16_t raw{};
 
 	BITFIELD(0, 5, cX, raw)
 	BITFIELD(5, 5, cY, raw)
@@ -130,29 +130,29 @@ struct Addr {
 
 constexpr Addr test_bitfield() {
 	Addr a;
-	a.l() = 0b11001100;
-	a.h(0b0011001);
+	a.l() = 0b1100'1100;
+	a.h(0b001'1001);
 	return a;
 }
 
 TEST_CASE("bitfields") {
 	static_assert(sizeof(Addr) == 2, "");
 	constexpr Addr a = test_bitfield();
-	static_assert(a.raw == 0b0001100111001100, "");
-	static_assert(a.cX() == 0b01100, "");
-	static_assert(a.cY() == 0b01110, "");
+	static_assert(a.raw == 0b0001'1001'1100'1100, "");
+	static_assert(a.cX() == 0b0'1100, "");
+	static_assert(a.cY() == 0b0'1110, "");
 	static_assert(a.nt() == 0b10, "");
 	static_assert(a.fY() == 0b001, "");
 
-	static_assert(Addr::get_cX_v<a.raw> == 0b01100, "");
-	static_assert(Addr::get_cY_v<a.raw> == 0b01110, "");
+	static_assert(Addr::get_cX_v<a.raw> == 0b0'1100, "");
+	static_assert(Addr::get_cY_v<a.raw> == 0b0'1110, "");
 	static_assert(Addr::get_nt_v<a.raw> == 0b10, "");
 	static_assert(Addr::get_fY_v<a.raw> == 0b001, "");
 
-	constexpr Addr b = {Addr::set_h_v<0b0011001, Addr::set_l_v<0b11001100>>};
+	constexpr Addr b = {Addr::set_h_v<0b001'1001, Addr::set_l_v<0b1100'1100>>};
 
-	static_assert(Addr::get_cX_v<b.raw> == 0b01100, "");
-	static_assert(Addr::get_cY_v<b.raw> == 0b01110, "");
+	static_assert(Addr::get_cX_v<b.raw> == 0b0'1100, "");
+	static_assert(Addr::get_cY_v<b.raw> == 0b0'1110, "");
 	static_assert(Addr::get_nt_v<b.raw> == 0b10, "");
 	static_assert(Addr::get_fY_v<b.raw> == 0b001, "");
 }

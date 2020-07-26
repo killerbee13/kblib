@@ -70,7 +70,7 @@ namespace detail {
 	template <typename T, int N, int... I>
 	constexpr auto trim_array(const T (&arr)[N],
 	                          std::integer_sequence<int, I...> Is)
-	    -> std::array<T, Is.size()> {
+	    -> std::array<T, std::integer_sequence<int, I...>::size()> {
 		return {arr[I]...};
 	}
 
@@ -157,7 +157,7 @@ namespace detail {
 	};
 
 	template <typename C>
-	struct has_reserve<C, void_t<decltype(std::declval<C&>.reserve(0))>> {
+	struct has_reserve<C, void_t<decltype(std::declval<C&>().reserve(0))>> {
 		constexpr static bool value = true;
 	};
 	/**
