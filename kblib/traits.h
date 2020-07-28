@@ -69,7 +69,7 @@ namespace detail {
 	 */
 	template <typename T, int N, int... I>
 	constexpr auto trim_array(const T (&arr)[N],
-	                          std::integer_sequence<int, I...> Is)
+	                          std::integer_sequence<int, I...>)
 	    -> std::array<T, std::integer_sequence<int, I...>::size()> {
 		return {arr[I]...};
 	}

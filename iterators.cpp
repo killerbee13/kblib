@@ -5,10 +5,10 @@
 
 TEST_CASE("to_pointer") {
 	auto smart_ptr = std::make_unique<int>(0);
-	[[gnu::unused]] auto* raw_pointer = kblib::to_pointer(smart_ptr);
+	auto* raw_pointer = kblib::to_pointer(smart_ptr);
 	REQUIRE(raw_pointer == smart_ptr.get());
 	const auto& smart_ptr_const_ref = smart_ptr;
-	[[gnu::unused]] auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
+	auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
 	REQUIRE(raw_pointer2 == smart_ptr_const_ref.get());
 }
 
@@ -66,12 +66,20 @@ TEST_CASE("magic_enumerate") {
 		}
 	}
 	SECTION("const copy from non-const") {
+#if defined(__clang__)
+		// Suppress warning for intentional behavior
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wrange-loop-construct"
+#endif
 		for (const auto [i, v] : kblib::magic_enumerate(persistent)) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
 			static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>,
 			              "v must refer to const in a const copy");
 		}
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 	}
 
 	SECTION("iterators") {
@@ -207,9 +215,9 @@ TEST_CASE("cry_enumerate") {
 			REQUIRE(&v != &persistent[i]);
 			// This approach can't do this
 			/*static_assert(
-				 !std::is_const<
-					  typename std::remove_reference<decltype(v)>::type>::value,
-				 "v must not be const when copied from a const range");*/
+			    !std::is_const<
+			        typename std::remove_reference<decltype(v)>::type>::value,
+			    "v must not be const when copied from a const range");*/
 		}
 	}
 	SECTION("const copy from non-const") {

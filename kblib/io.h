@@ -150,13 +150,14 @@ eatSpace(std::istream& is) {
 template <typename CharT, typename Traits>
 auto nl(std::basic_istream<CharT, Traits>& is)
     -> std::basic_istream<CharT, Traits>& {
+	auto n = static_cast<typename Traits::int_type>(is.widen('\n'));
 	for (typename Traits::int_type c = is.peek();
 	     is && c != kblib::eof<CharT> &&
-	     std::isspace(static_cast<CharT>(c), is.getloc()) && c != is.widen('\n');
+	     std::isspace(static_cast<CharT>(c), is.getloc()) && c != n;
 	     c = is.peek()) {
 		is.ignore();
 	}
-	if (is.peek() == is.widen('\n')) {
+	if (is.peek() == n) {
 		is.ignore();
 	}
 	return is;

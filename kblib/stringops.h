@@ -22,12 +22,19 @@ namespace kblib {
  * @brief Determine if the given type, ignoring const or reference qualifiers,
  * is a character type.
  *
- * Standard character types include char, wchar_t, char16_t, and char32_t.
+ * Standard character types include char, wchar_t, char16_t, char32_t, and,
+ * in C++20, char8_t.
  */
 template <typename C>
 struct is_character
-    : detail::contains_type<std::tuple<char, wchar_t, char16_t, char32_t>,
-                            std::decay_t<C>> {};
+    : detail::contains_type<std::tuple<char, wchar_t, char16_t, char32_t
+#ifdef __cpp_char8_t
+                                       ,
+                                       char8_t
+#endif
+                                       >,
+                            std::decay_t<C>> {
+};
 
 /**
  * @brief Equivalent to is_character<C>::value.
@@ -357,10 +364,10 @@ string toUpper(string str) {
  * @todo Defer constrution of a string with a class.
  */
 template <typename string>
-string repeat(string val, int count) {
+string repeat(string val, std::size_t count) {
 	string tmp;
 	try_reserve(tmp, fakestd::size(val) * count);
-	for (int i = 0; i < count; ++i) {
+	for (std::size_t i = 0; i < count; ++i) {
 		tmp += val;
 	}
 	return tmp;
@@ -374,7 +381,7 @@ string repeat(string val, int count) {
  * @param val The character to be repeated.
  * @param count The number of times to repeat val.
  */
-inline std::string repeat(char val, int count) {
+inline std::string repeat(char val, std::size_t count) {
 	return std::string(count, val);
 }
 
