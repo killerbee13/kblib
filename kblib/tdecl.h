@@ -79,6 +79,7 @@ namespace detail {
 
 enum class endian { unknown, little, big, weird };
 
+#ifdef __BYTE_ORDER__
 namespace detail {
 	constexpr endian get_system_endian() {
 		if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
@@ -91,7 +92,6 @@ namespace detail {
 	}
 } // namespace detail
 
-#ifdef __BYTE_ORDER__
 constexpr endian system_endian = detail::get_system_endian();
 #else
 constexpr endian system_endian = endian::unknown;
