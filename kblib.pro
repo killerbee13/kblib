@@ -27,7 +27,8 @@ SOURCES += \
     delayed_construct.cpp \
     memory.cpp \
     io.cpp \
-    trie.cpp
+    trie.cpp \
+    direct_map.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -52,7 +53,8 @@ HEADERS += \
     kblib/invasive_containers.h \
     kblib/delayed_construct.h \
     kblib/memory.h \
-    kblib/trie.h
+    kblib/trie.h \
+    kblib/direct_map.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags -Wreturn-std-move
