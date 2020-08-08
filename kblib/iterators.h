@@ -224,14 +224,14 @@ class range_t {
 		 *
 		 * @return Value The value in the range this iterator corresponds to.
 		 */
-		constexpr Value operator*() { return val; }
+		constexpr Value operator*() const { return val; }
 		/**
 		 * @brief Return a pointer to the value.
 		 *
 		 * @return pointer A pointer to a value equivalent to *(*this). Valid
 		 * until the iterator is modified in any way or destroyed.
 		 */
-		constexpr pointer operator->() { return &val; }
+		constexpr pointer operator->() const { return &val; }
 		/**
 		 * @brief Prefix increment. Advance to the next value in the range.
 		 *
@@ -344,9 +344,6 @@ class range_t {
 	Delta step;
 
 	constexpr void normalize() {
-#if KBLIB_DEBUG_LOG_RANGES
-		std::clog << "(" << min << ", " << max << ", " << step << ") -> ";
-#endif
 		if (min == max) {
 			min = Value{};
 			max = Value{};
@@ -371,9 +368,6 @@ class range_t {
 				}
 			}
 		}
-#if KBLIB_DEBUG_LOG_RANGES
-		std::clog << "(" << min << ", " << max << ", " << step << ")\n";
-#endif
 	}
 };
 

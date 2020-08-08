@@ -4,6 +4,7 @@
 #include "tdecl.h"
 
 #include <array>
+#include <limits>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -783,14 +784,20 @@ namespace detail {
 	struct pointer<D, T, void_t<typename D::pointer>> {
 		using type = typename D::pointer;
 	};
+
 } // namespace detail
+
+constexpr struct in_place_agg_t {
+} in_place_agg;
 
 template <typename T>
 class heap_value {
  public:
-	using pointer = T*;
 	using element_type = T;
+	using pointer = T*;
+	using const_pointer = const T*;
 	using reference = T&;
+	using const_reference = const T&;
 
 	constexpr heap_value() noexcept : p{nullptr} {}
 	constexpr heap_value(std::nullptr_t) noexcept : p{nullptr} {}
@@ -798,27 +805,71 @@ class heap_value {
 	template <typename... Args,
 	          enable_if_t<std::is_constructible<T, Args...>::value> = 0>
 	heap_value(fakestd::in_place_t, Args&&... args) : p{new T(args...)} {}
+	template <typename... Args,
+	          enable_if_t<std::is_constructible<T, Args...>::value> = 0>
+	heap_value(in_place_agg_t, Args&&... args) : p{new T{args...}} {}
 
 	heap_value(const heap_value& u) : p{(u.p ? (new T(*u.p)) : nullptr)} {}
 	heap_value(heap_value&& u) : p{std::exchange(u.p, nullptr)} {}
 
 	heap_value& operator=(const heap_value& u) & {
-		if (!u) {
+		if (this == &u) {
+			return *this;
+		} else if (!u) {
 			reset();
+		} else if (p) {
+			*p = *u;
 		} else {
-			if (p) {
-				*p = *u;
-			} else {
-				p = new T(*u.p);
-			}
+			p = new T(*u.p);
 		}
 		return *this;
 	}
 
 	heap_value& operator=(heap_value&& u) & {
+		if (this == &u) {
+			return *this;
+		}
 		reset();
 		p = std::exchange(u.p, nullptr);
 		return *this;
+	}
+
+	heap_value& operator=(const T& val) & {
+		if (this == &val) {
+			return *this;
+		}
+		reset();
+		p = new T(val);
+	}
+	heap_value& operator=(T&& val) & {
+		if (this == &val) {
+			return *this;
+		}
+		reset();
+		p = new T(std::move(val));
+	}
+
+	void assign() & {
+		reset();
+		p = new T();
+	}
+	void assign(const T& val) & {
+		reset();
+		p = new T(val);
+	}
+	void assign(T&& val) & {
+		reset();
+		p = new T(std::move(val));
+	}
+	template <typename... Args>
+	void assign(fakestd::in_place_t, Args&&... args) {
+		reset();
+		p = new T(std::forward<Args>(args)...);
+	}
+	template <typename... Args>
+	void assign(in_place_agg_t, Args&&... args) {
+		reset();
+		p = new T{std::forward<Args>(args)...};
 	}
 
 	void reset() & {
@@ -827,13 +878,29 @@ class heap_value {
 		return;
 	}
 
-	KBLIB_NODISCARD pointer get() const& noexcept { return p; }
-
 	KBLIB_NODISCARD explicit operator bool() const& noexcept {
 		return p != nullptr;
 	}
 
-	reference operator*() const& noexcept { return *p; }
+	friend void swap(heap_value<T> l, heap_value<T> r) noexcept {
+		std::swap(l.p, r.p);
+	}
+
+	KBLIB_NODISCARD pointer get() & noexcept { return p; }
+	KBLIB_NODISCARD const_pointer get() const& noexcept { return p; }
+
+	KBLIB_NODISCARD reference value() & noexcept { return *p; }
+	KBLIB_NODISCARD const_reference value() const& noexcept { return *p; }
+	KBLIB_NODISCARD T&& value() && noexcept { return *p; }
+	KBLIB_NODISCARD const T&& value() const&& noexcept { return *p; }
+
+	KBLIB_NODISCARD reference operator*() & noexcept { return *p; }
+	KBLIB_NODISCARD const_reference operator*() const& noexcept { return *p; }
+	KBLIB_NODISCARD T&& operator*() && noexcept { return *p; }
+	KBLIB_NODISCARD const T&& operator*() const&& noexcept { return *p; }
+
+	KBLIB_NODISCARD pointer operator->() & noexcept { return p; }
+	KBLIB_NODISCARD const_pointer operator->() const& noexcept { return p; }
 
 	~heap_value() { delete p; }
 
