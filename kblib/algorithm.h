@@ -19,7 +19,7 @@ namespace kblib {
  * @param func The function to invoke.
  */
 template <typename Callable>
-constexpr void repeat(std::size_t N, Callable func) noexcept(func()) {
+constexpr void repeat(std::size_t N, Callable func) noexcept(noexcept(func())) {
 	for (std::size_t I = 0; I != N; ++I) {
 		func();
 	}
@@ -556,7 +556,7 @@ get_max_n_old(It first, It last, std::size_t count, Comp cmp = {}) {
 	using std::begin;
 	using std::end;
 	assert(first + count <= last);
-	SequenceContainer c{first, begin + count};
+	SequenceContainer c{first, first + count};
 	std::for_each(first + count, last, [&](const auto& v) {
 		auto& min = *std::min_element(begin(c), end(c), cmp);
 		if (cmp(min, v)) {

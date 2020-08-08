@@ -4,8 +4,6 @@
 #include "tdecl.h"
 #include "traits.h"
 
-#include "gsl/span"
-
 namespace kblib {
 
 enum class extractor_policy {
@@ -39,13 +37,13 @@ struct extractor_policy_for {
 template <typename Container>
 struct extractor_policy_for<Container,
                             void_t<decltype(std::declval<Container>()[0])>> {
-   constexpr static extractor_policy value = extractor_policy::random_access;
+	constexpr static extractor_policy value = extractor_policy::random_access;
 };
 
 namespace detail {
 
-   template <typename Elem, typename Value>
-   struct node {};
+	template <typename Elem, typename Value>
+	struct node {};
 
 } // namespace detail
 

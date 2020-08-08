@@ -296,8 +296,10 @@ class cond_ptr : private detail::as_base_class<Deleter> {
 	using element_type = T;
 	using deleter_type = Deleter;
 
+#if 0
 	static_assert(std::is_nothrow_invocable<Deleter&, pointer>::value,
 	              "cond_ptr<T> requires that get_deleter not throw exceptions.");
+#endif
 
 	using unique = std::unique_ptr<T, Deleter>;
 
@@ -456,8 +458,10 @@ class cond_ptr<T[], Deleter> : private detail::as_base_class<Deleter> {
 	using element_type = T;
 	using deleter_type = Deleter;
 
+#if 0
 	static_assert(std::is_nothrow_invocable<Deleter&, pointer>::value,
-	              "cond_ptr<T> requires that get_deleter not throw exceptions.");
+	              "cond_ptr<T[]> requires that deleter not throw exceptions.");
+#endif
 
 	using unique = std::unique_ptr<T[], Deleter>;
 

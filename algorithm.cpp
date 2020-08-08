@@ -88,6 +88,34 @@ TEST_CASE("find_in") {
 
 TEST_CASE("get_max family") {
 	/// TODO: tests for get_max_*
+	std::array<int, 11> arr{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+	{
+		auto max_two =
+		    kblib::get_max_n_old<std::vector<int>>(arr.begin(), arr.end(), 2);
+		REQUIRE(max_two.size() == 2);
+		REQUIRE(std::max(max_two[0], max_two[1]) == 10);
+		REQUIRE(std::min(max_two[0], max_two[1]) == 9);
+	}
+	{
+		auto max_two =
+		    kblib::get_max_n_old<std::set<int>>(arr.begin(), arr.end(), 2);
+		REQUIRE(max_two.size() == 2);
+		REQUIRE(max_two.find(10) != max_two.end());
+		REQUIRE(max_two.find(9) != max_two.end());
+	}
+	{
+		auto max_two =
+		    kblib::get_max_n<std::vector<int>>(arr.begin(), arr.end(), 2);
+		REQUIRE(max_two.size() == 2);
+		REQUIRE(std::max(max_two[0], max_two[1]) == 10);
+		REQUIRE(std::min(max_two[0], max_two[1]) == 9);
+	}
+	{
+		auto max_two = kblib::get_max_n<std::set<int>>(arr.begin(), arr.end(), 2);
+		REQUIRE(max_two.size() == 2);
+		REQUIRE(max_two.find(10) != max_two.end());
+		REQUIRE(max_two.find(9) != max_two.end());
+	}
 }
 
 TEST_CASE("general algorithms") {
@@ -235,7 +263,10 @@ TEST_CASE("sort") {
 	}
 }
 
+std::ostream& log_location = std::cout;
+
 TEST_CASE("insertion sort performance") {
+	log_location << __FILE__ ":";
 	SECTION("insertion_sort_copy on sorted data is fast") {
 		auto time_per = [](std::size_t size) {
 			std::vector<int> input(size);
@@ -253,9 +284,9 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / 30;
 		double time_slow = time_per(10000) / 10000;
 		double error = time_slow / time_fast;
-		std::cout << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		          << error << '\t' << time_slow * 10000 << '\t' << time_fast * 30
-		          << "\n";
+		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
+		             << error << '\t' << time_slow * 10000 << '\t'
+		             << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
@@ -277,9 +308,9 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / (30 * 30);
 		auto time_slow = time_per(1000) / (1000 * 1000);
 		auto error = time_slow / time_fast;
-		std::cout << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		          << error << '\t' << time_slow * 1000 * 1000 << '\t'
-		          << time_fast * 30 * 30 << "\n";
+		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
+		             << error << '\t' << time_slow * 1000 * 1000 << '\t'
+		             << time_fast * 30 * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
@@ -301,9 +332,9 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / (30);
 		auto time_slow = time_per(10'000) / (10'000);
 		double error = time_slow / time_fast;
-		std::cout << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		          << error << '\t' << time_slow * 10'000 << '\t' << time_fast * 30
-		          << "\n";
+		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
+		             << error << '\t' << time_slow * 10'000 << '\t'
+		             << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
@@ -325,9 +356,9 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / (30);
 		auto time_slow = time_per(10'000) / (10'000);
 		double error = time_slow / time_fast;
-		std::cout << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		          << error << '\t' << time_slow * 10'000 << '\t' << time_fast * 30
-		          << "\n";
+		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
+		             << error << '\t' << time_slow * 10'000 << '\t'
+		             << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
@@ -356,9 +387,9 @@ TEST_CASE("insertion sort performance") {
 		auto time_slow = time_per(n, v) / (n);
 		auto ratio = time_slow / time_fast;
 		auto error = ratio / (n / v);
-		std::cout << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		          << error << '\t' << time_slow * n << '\t' << time_fast * n
-		          << "\n";
+		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
+		             << error << '\t' << time_slow * n << '\t' << time_fast * n
+		             << "\n";
 
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);

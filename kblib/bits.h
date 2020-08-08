@@ -24,8 +24,8 @@ constexpr int bits_of = std::numeric_limits<Int>::digits;
 
 namespace detail {
 
-   template <typename Key, typename Value>
-   class trie_node {
+	template <typename Key, typename Value>
+	class trie_node {
 		std::unique_ptr<std::array<trie_node, 4>> children;
 		unsigned char storage[sizeof(Value)]{};
 		bool exists = false;
@@ -333,7 +333,9 @@ class compact_bit_trie {
 
 	 private:
 		iterator_t(const compact_bit_trie& range, size_type n_)
-		    : iterator_t(range), node{n_} {}
+		    : iterator_t(range) {
+			node = n_;
+		}
 
 		const std::vector<inline_node>* tree_ptr{};
 		const std::vector<Value>* values_ptr{};
@@ -396,7 +398,7 @@ struct bitfield {
 
 namespace detail {
 
-   /**
+	/**
 	 * @brief A proxy reference type for BITFIELD-declared bitfields.
 	 *
 	 * It may be assigned to, or it may be used as a prvalue of type ReturnT.
@@ -404,10 +406,10 @@ namespace detail {
 	 * language bitfield, which has only those capabilities. Like all other proxy
 	 * references, it should not generally be bound to an auto variable.
 	 */
-   template <typename Parent, typename ReturnT,
-             ReturnT (Parent::*Set)(ReturnT) noexcept,
-             ReturnT (Parent::*Get)() const noexcept>
-   struct bitfield_proxy {
+	template <typename Parent, typename ReturnT,
+	          ReturnT (Parent::*Set)(ReturnT) noexcept,
+	          ReturnT (Parent::*Get)() const noexcept>
+	struct bitfield_proxy {
 		Parent* p;
 		constexpr ReturnT operator=(ReturnT val) noexcept {
 			return (p->*Set)(val);
@@ -425,38 +427,38 @@ namespace detail {
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
  private:                                                                      \
 	constexpr decltype(raw) name##_get_impl() const noexcept {                  \
-	   return (raw >> offset) & ((decltype(raw)(1) << size) - 1);               \
-   }                                                                           \
-	                                                                            \
+		return (raw >> offset) & ((decltype(raw)(1) << size) - 1);               \
+	}                                                                           \
+                                                                               \
  public:                                                                       \
 	constexpr decltype(raw) name() const noexcept { return name##_get_impl(); } \
-	                                                                            \
+                                                                               \
  private:                                                                      \
 	constexpr decltype(raw) name##_set_impl(decltype(raw) val) noexcept {       \
-	   /* Clear the bits for this field */                                      \
-	   raw &= ~(((decltype(raw)(1) << size) - 1) << offset);                    \
-	   /* Set the field */                                                      \
-	   raw |= (val & ((decltype(raw)(1) << size) - 1)) << offset;               \
-	   return val;                                                              \
-   }                                                                           \
-	                                                                            \
+		/* Clear the bits for this field */                                      \
+		raw &= ~(((decltype(raw)(1) << size) - 1) << offset);                    \
+		/* Set the field */                                                      \
+		raw |= (val & ((decltype(raw)(1) << size) - 1)) << offset;               \
+		return val;                                                              \
+	}                                                                           \
+                                                                               \
  public:                                                                       \
 	constexpr decltype(raw) name(decltype(raw) val) noexcept {                  \
-	   return name##_set_impl(val);                                             \
-   }                                                                           \
-	                                                                            \
+		return name##_set_impl(val);                                             \
+	}                                                                           \
+                                                                               \
 	constexpr auto name() noexcept {                                            \
-	   using Parent = std::remove_pointer<decltype(this)>::type;                \
-	   return kblib::detail::bitfield_proxy<Parent, decltype(raw),              \
-	                                        &Parent::name##_set_impl,           \
-	                                        &Parent::name##_get_impl>{this};    \
-   }                                                                           \
-	                                                                            \
+		using Parent = std::remove_pointer<decltype(this)>::type;                \
+		return kblib::detail::bitfield_proxy<Parent, decltype(raw),              \
+		                                     &Parent::name##_set_impl,           \
+		                                     &Parent::name##_get_impl>{this};    \
+	}                                                                           \
+                                                                               \
 	template <decltype(raw) val, decltype(raw) basis = 0>                       \
 	constexpr static decltype(raw) set_##name##_v =                             \
 	    (basis & ~(((decltype(raw)(1) << size) - 1) << offset)) |               \
 	    (val & ((decltype(raw)(1) << size) - 1)) << offset;                     \
-	                                                                            \
+                                                                               \
 	template <decltype(raw) basis>                                              \
 	constexpr static decltype(raw) get_##name##_v =                             \
 	    (basis >> offset) & ((decltype(raw)(1) << size) - 1);

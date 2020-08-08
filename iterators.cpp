@@ -17,6 +17,10 @@ TEST_CASE("range") {
 	std::vector<int> v(100);
 	REQUIRE(v.begin() == *kblib::range(v.begin(), v.end()).begin());
 	REQUIRE(v.end() == *kblib::range(v.begin(), v.end()).end());
+
+	std::vector<int> r{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	auto r2 = kblib::range(10);
+	REQUIRE(std::equal(r.begin(), r.end(), r2.begin()));
 }
 
 #if KBLIB_USE_CXX17
@@ -132,8 +136,7 @@ TEST_CASE("magic_enumerate") {
 
 	SECTION("move-only") {
 		std::vector<std::unique_ptr<int>> ptr_vec(10);
-		for (auto&& [i, ptr] : kblib::magic_enumerate(ptr_vec)) {
-			(void)i;
+		for ([[maybe_unused]] auto&& [i, ptr] : kblib::magic_enumerate(ptr_vec)) {
 			REQUIRE(!ptr);
 		}
 	}

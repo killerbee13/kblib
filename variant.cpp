@@ -53,16 +53,45 @@ TEST_CASE("variant_cast") {
 }
 
 namespace {
+
+enum barks {
+	vgood_base,
+	dgood_base,
+
+	vgood_derived,
+	dgood_derived,
+
+	vbad_base1,
+	dbad_base1,
+
+	vbad_derived1,
+	dbad_derived1,
+
+	vbad_base2,
+	dbad_base2,
+
+	vbad_derived2,
+	dbad_derived2,
+
+	vsmall_base,
+	dsmall_base,
+
+	vbig_derived,
+	dbig_derived,
+};
+
+std::vector<barks> bark_log;
+
 struct good_base {
 	good_base() = default;
-	virtual ~good_base() noexcept { std::cout << "~good_base\n"; }
+	virtual ~good_base() noexcept { bark_log.push_back(dgood_base); }
 
-	virtual void bark() const { std::cout << "good_base\n"; }
+	virtual void bark() const { bark_log.push_back(vgood_base); }
 };
 struct good_derived : good_base {
-	~good_derived() noexcept override { std::cout << "~good_derived\n"; }
+	~good_derived() noexcept override { bark_log.push_back(dgood_derived); }
 
-	void bark() const override { std::cout << "good_derived\n"; }
+	void bark() const override { bark_log.push_back(vgood_derived); }
 };
 struct unrelated {};
 struct bad_nocopy : good_base {
@@ -70,27 +99,28 @@ struct bad_nocopy : good_base {
 };
 
 struct bad_base1 {
-	virtual void bark() const { std::cout << "bad_base1\n"; }
-	~bad_base1() noexcept { std::cout << "~bad_base1\n"; }
+	virtual void bark() const { bark_log.push_back(vbad_base1); }
+	// non-virtual destructor
+	~bad_base1() noexcept { bark_log.push_back(dbad_base1); }
 };
 struct bad_derived1 : bad_base1 {
-	virtual void bark() const { std::cout << "bad_derived1\n"; }
-	KBLIB_UNUSED ~bad_derived1() noexcept { std::cout << "~bad_derived1\n"; }
+	virtual void bark() const { bark_log.push_back(vbad_derived1); }
+	KBLIB_UNUSED ~bad_derived1() noexcept { bark_log.push_back(dbad_derived1); }
 };
 
 struct bad_base2 {
 	bad_base2() = default;
-	virtual ~bad_base2() noexcept { std::cout << "~bad_base2\n"; }
-	virtual void bark() const { std::cout << "bad_base2\n"; }
+	virtual ~bad_base2() noexcept { bark_log.push_back(dbad_base2); }
+	virtual void bark() const { bark_log.push_back(vbad_base2); }
 };
 struct bad_derived2 : protected bad_base2 {
-	virtual void bark() const { std::cout << "bad_derived2\n"; }
-	virtual ~bad_derived2() noexcept { std::cout << "~bad_derived2\n"; }
+	virtual void bark() const { bark_log.push_back(vbad_derived2); }
+	virtual ~bad_derived2() noexcept { bark_log.push_back(dbad_derived2); }
 };
 struct small_base {
 	small_base() = default;
 	virtual ~small_base() noexcept = default;
-	virtual void bark() const { std::cout << "small_base\n"; }
+	virtual void bark() const { bark_log.push_back(vsmall_base); }
 	virtual int id() const { return 0; }
 };
 struct big_derived : small_base {
@@ -98,9 +128,7 @@ struct big_derived : small_base {
 	    (static_cast<void>(x = 1),
 	     kblib::FNVa_a<std::size_t>(
 	         reinterpret_cast<const char (&)[sizeof(big_derived)]>(*this)));
-	void bark() const override {
-		std::cout << "big_derived " << std::hex << x << "\n";
-	}
+	void bark() const override { bark_log.push_back(vbig_derived); }
 	~big_derived() noexcept override = default;
 	int id() const override { return 1; }
 };
@@ -130,20 +158,48 @@ struct noncopyable_derived : copyable_base {
 
 TEST_CASE("poly_obj") {
 	SECTION("basic") {
-		kblib::poly_obj<good_base> o1, o2{std::in_place};
-		REQUIRE(!o1.has_value());
-		REQUIRE(o2.has_value());
-		o2->bark(); // good_base
-		o1 =
-		    kblib::poly_obj<good_base>::make<good_derived>(); // temporary deleted
-		REQUIRE(o1.has_value());
-		o1->bark(); // good_derived
-		o2 = o1;    // o2 ~good_base
-		o2->bark(); // good_derived
-		o1.clear(); //~good_base
-		REQUIRE(!o1.has_value());
-		// kblib::poly_obj<good_base> o3 =
-		// kblib::poly_obj<good_base>::make<bad_nocopy>();
+		std::vector<barks> expected;
+		bark_log.clear();
+		{
+			kblib::poly_obj<good_base> o1, o2{std::in_place};
+			REQUIRE(!o1.has_value());
+			REQUIRE(o2.has_value());
+			o2->bark(); // good_base
+			expected.push_back(vgood_base);
+			REQUIRE(bark_log == expected);
+
+			o1 = kblib::poly_obj<good_base>::make<good_derived>(); // temporary
+			                                                       // destroyed
+			expected.push_back(dgood_derived);
+			expected.push_back(dgood_base);
+			REQUIRE(bark_log == expected);
+			REQUIRE(o1.has_value());
+
+			o1->bark(); // good_derived
+			expected.push_back(vgood_derived);
+			REQUIRE(bark_log == expected);
+
+			o2 = o1; // o2 ~good_base
+			expected.push_back(dgood_base);
+			REQUIRE(bark_log == expected);
+
+			o2->bark(); // good_derived
+			expected.push_back(vgood_derived);
+			REQUIRE(bark_log == expected);
+
+			o1.clear(); //~good_derived, ~good_base
+			expected.push_back(dgood_derived);
+			expected.push_back(dgood_base);
+			REQUIRE(bark_log == expected);
+			REQUIRE(!o1.has_value());
+			REQUIRE(o2.has_value());
+			// kblib::poly_obj<good_base> o3 =
+			// kblib::poly_obj<good_base>::make<bad_nocopy>();
+		} // o2: ~good_derived, ~good_base
+
+		expected.push_back(dgood_derived);
+		expected.push_back(dgood_base);
+		REQUIRE(bark_log == expected);
 	}
 
 	SECTION("non-virtual destructor") {
@@ -153,12 +209,21 @@ TEST_CASE("poly_obj") {
 	}
 
 	SECTION("private base") {
-		kblib::poly_obj<bad_base2> o5, o6{std::in_place};
-		// illegal - non-public base
-		// o5 = kblib::poly_obj<bad_base2>::make<bad_derived2>();
+		std::vector<barks> expected;
+		bark_log.clear();
+		{
+			kblib::poly_obj<bad_base2> o5, o6{std::in_place};
+			// illegal - non-public base
+			// o5 = kblib::poly_obj<bad_base2>::make<bad_derived2>();
+		}
+		expected.push_back(dbad_base2);
+		REQUIRE(bark_log == expected);
 	}
 
 	SECTION("capacity") {
+		std::vector<barks> expected;
+		bark_log.clear();
+
 		// illegal - unrelated types
 		// kblib::poly_obj<good_base>::make<unrelated>();
 		// illegal - derived too big
@@ -166,10 +231,14 @@ TEST_CASE("poly_obj") {
 		// fine
 		kblib::poly_obj<small_base, sizeof(big_derived)> o7, o8{std::in_place};
 		o8->bark();
+		expected.push_back(vsmall_base);
+		REQUIRE(bark_log == expected);
 		o7 =
 		    kblib::poly_obj<small_base, sizeof(big_derived)>::make<big_derived>();
 		REQUIRE(o7.has_value());
 		o7->bark();
+		expected.push_back(vbig_derived);
+		REQUIRE(bark_log == expected);
 	}
 
 	SECTION("non-copyable type") {
@@ -213,15 +282,17 @@ TEST_CASE("poly_obj") {
 				return obj(std::in_place);
 			}
 		});
-		std::cout << std::dec << "\ng: " << g[0] << ' ' << g[1] << '\n';
+		REQUIRE(g[0] == 64);
+		REQUIRE(g[1] == 64);
 
 		int c[2] = {};
-		char ab[] = "ab";
+		// char ab[] = "ab";
 		for (const auto& o : polyvec) {
 			++c[o->id()];
-			std::cout << ab[o->id()];
+			// std::cout << ab[o->id()];
 		}
-		std::cout << "\nc: " << c[0] << ' ' << c[1] << '\n';
+		REQUIRE(c[0] == 64);
+		REQUIRE(c[1] == 64);
 	}
 
 	SECTION("free make function") {

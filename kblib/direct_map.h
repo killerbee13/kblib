@@ -8,6 +8,7 @@
 #include <array>
 #include <bitset>
 #include <cinttypes>
+#include <climits>
 #include <limits>
 #include <optional>
 
@@ -73,8 +74,8 @@ class direct_map {
 		copy_const_t<V, heap_type>* storage;
 		std::ptrdiff_t pos;
 
-		using value_type = value_type;
-		using difference_type = difference_type;
+		using value_type = typename direct_map::value_type;
+		using difference_type = typename direct_map::difference_type;
 		using reference = copy_const_t<V, value_type>&;
 		using pointer = copy_const_t<V, value_type>*;
 		using iterator_category = std::bidirectional_iterator_tag;

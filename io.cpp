@@ -3,6 +3,7 @@
 
 #include "kblib/simple.h"
 
+#include <deque>
 #include <iostream>
 #include <sstream>
 #include <vector>

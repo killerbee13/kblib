@@ -1,8 +1,6 @@
 #include "kblib/fakestd.h"
 #include "catch.hpp"
 
-#include <iostream>
-
 template <class... Args>
 struct Ref {
 
@@ -76,6 +74,17 @@ constexpr std::string_view type_name_f() {
 
 #if KBLIB_USE_CXX17
 TEST_CASE("next_larger") {
+	static_assert(
+	    std::is_same<kblib::detail::next_larger_signed<signed char>::type,
+	                 short>::value,
+	    "signed char < short");
+	static_assert(
+	    std::is_same<kblib::detail::next_larger_signed<short>::type, int>::value,
+	    "short < int");
+	static_assert(
+	    std::is_same<kblib::detail::next_larger_signed<int>::type, long>::value,
+	    "int < long");
+#if 0
 	std::cout
 	    << "Next_larger: \n"
 	    << "signed char: "
@@ -90,5 +99,6 @@ TEST_CASE("next_larger") {
 	//	    << "long long:   "
 	//	    << type_name_f<kblib::detail::next_larger_signed<long long>::type>()
 	//	    << '\n';
+#endif
 }
 #endif
