@@ -19,7 +19,8 @@ namespace kblib {
  * @param func The function to invoke.
  */
 template <typename Callable>
-constexpr void repeat(std::size_t N, Callable func) noexcept(noexcept(func())) {
+constexpr return_assert_t<std::is_invocable<Callable>::value, void>
+repeat(std::size_t N, Callable func) noexcept(noexcept(func())) {
 	for (std::size_t I = 0; I != N; ++I) {
 		func();
 	}
