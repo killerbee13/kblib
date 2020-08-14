@@ -371,6 +371,7 @@ struct return_assert<true, T> {
 
 template <bool V, typename T>
 using return_assert_t = typename return_assert<V, T>::type;
+
 namespace detail {
 
 	template <typename F, typename Arg, typename = void>
@@ -396,7 +397,8 @@ namespace detail {
 template <typename F, typename Arg>
 auto apply(F&& f, Arg&& arg) noexcept(
     noexcept(detail::apply_impl<F, Arg>::do_apply(std::forward<F>(f),
-                                                  std::forward<Arg>(arg)))) {
+                                                  std::forward<Arg>(arg))))
+    -> decltype(auto) {
 	return detail::apply_impl<F, Arg>::do_apply(std::forward<F>(f),
 	                                            std::forward<Arg>(arg));
 }
@@ -410,17 +412,25 @@ std::unique_ptr<T, D> to_unique(T* p, D&& d) {
 	return std::unique_ptr<T, D>(p, d);
 }
 
+/**
+ * @brief Cast integral argument to corresponding unsigned type
+ */
 template <typename I>
 constexpr std::make_unsigned_t<I> to_unsigned(I x) {
 	return static_cast<std::make_unsigned_t<I>>(x);
 }
+/**
+ * @brief Cast integral argument to corresponding signed type
+ */
 template <typename I>
 constexpr std::make_signed_t<I> to_signed(I x) {
 	return static_cast<std::make_signed_t<I>>(x);
 }
 
-// Cast argument to equivalently-sized type with the same signedness as the
-// template parameter
+/**
+ * @brief Cast argument to equivalently-sized type with the same signednessas
+ * the template parameter
+ */
 template <typename A, typename F>
 KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value &&
                                           std::is_integral<F>::value &&
@@ -430,6 +440,10 @@ signed_cast(F x) {
 	return to_signed(x);
 }
 
+/**
+ * @brief Cast argument to equivalently-sized type with the same signednessas
+ * the template parameter
+ */
 template <typename A, typename F>
 KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value &&
                                           std::is_integral<F>::value &&
@@ -462,6 +476,11 @@ struct is_tuple_like<T, void_t<typename std::tuple_element<0, T>::type>> {
 	constexpr static bool value = true;
 };
 
+/**
+ * @brief Swaps two objects, using move operations.
+ *
+ * @param a,b The objects that will be swapped.
+ */
 template <typename T,
           enable_if_t<!has_member_swap<T>::value && !is_tuple_like<T>::value,
                       int> = 0>
@@ -474,6 +493,11 @@ swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value&&
 	return;
 }
 
+/**
+ * @brief Swaps two objects, using a member swap function, if detected.
+ *
+ * @param a,b The objects that will be swapped.
+ */
 template <
     typename T,
     enable_if_t<has_member_swap<T>::value && !is_tuple_like<T>::value, int> = 0>
@@ -482,6 +506,11 @@ constexpr void swap(T& a, T& b) noexcept(noexcept(a.swap(b))) {
 	return;
 }
 
+/**
+ * @brief Swaps two arrays elementwise.
+ *
+ * @param a,b The arrays that will be swapped.
+ */
 template <typename T, std::size_t N>
 constexpr void
 swap(T (&a)[N],
@@ -505,6 +534,11 @@ namespace detail {
 
 } // namespace detail
 
+/**
+ * @brief Swaps two tuples elementwise.
+ *
+ * @param a,b The tuples that will be swapped.
+ */
 template <typename T, std::size_t N = std::tuple_size<T>::value>
 constexpr void swap(T& a, T& b) noexcept(
     noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) {
