@@ -589,6 +589,22 @@ class poly_obj
 	      value(new (data) Obj(std::forward<Args>(args)...)) {}
 
 	/**
+	 * @brief Constructs the contained object in-place without copying or moving.
+	 *
+	 * @param args Arguments to be passed to the constructor of Obj.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
+	 */
+	template <typename... Args,
+	          typename std::enable_if_t<std::is_constructible_v<Obj, Args...>,
+	                                    int> = 0>
+	constexpr explicit poly_obj(kblib::in_place_agg_t, Args&&... args) noexcept(
+	    std::is_nothrow_constructible_v<Obj, Args&&...>)
+	    : ops_t(detail::make_ops_t<Obj, Traits>()),
+	      value(new (data) Obj{std::forward<Args>(args)...}) {}
+
+	/**
 	 * @brief Destroys the contained object, if any, and then copies other as in
 	 * the copy constructor.
 	 *
@@ -656,6 +672,40 @@ class poly_obj
 		                        std::is_move_constructible_v<U>>,
 		              "U must be move constructible if Traits is.");
 		return {tag<U>{}, std::forward<Args>(args)...};
+	}
+
+	/**
+	 * @brief Constructs a poly_obj containing an object of derived type.
+	 *
+	 * This function provides the polymorphism of poly_obj.
+	 *
+	 * sizeof(U) must be less than or equal to Capacity, and must be
+	 * copy-constructible and move-constructible if Traits is.
+	 *
+	 * @tparam U A type publically derived from Obj.
+	 * @param args Arguments to pass to the constructor of U.
+	 * @return poly_obj A poly_obj<Obj> containing an object of type U.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
+	 */
+	template <typename U, typename... Args>
+	static poly_obj make_aggregate(Args&&... args) noexcept(
+	    std::is_nothrow_constructible_v<U, Args&&...>) {
+		static_assert(sizeof(U) <= Capacity,
+		              "U must fit inside of the inline capacity.");
+		static_assert(std::is_base_of_v<Obj, U> &&
+		                  std::is_convertible_v<U*, Obj*>,
+		              "Obj must be an accessible base of Obj.");
+		static_assert(std::has_virtual_destructor_v<Obj>,
+		              "It must be safe to delete a U through an Obj*.");
+		static_assert(implies_v<std::is_copy_constructible_v<Traits>,
+		                        std::is_copy_constructible_v<U>>,
+		              "U must be copy constructible if Traits is.");
+		static_assert(implies_v<std::is_move_constructible_v<Traits>,
+		                        std::is_move_constructible_v<U>>,
+		              "U must be move constructible if Traits is.");
+		return {tag<U, true>{}, std::forward<Args>(args)...};
 	}
 
 	/*template <typename U = Obj, typename... Args>
@@ -991,7 +1041,7 @@ class poly_obj
 	alignas(Obj) std::byte data[Capacity];
 	Obj* value = nullptr;
 
-	template <typename U>
+	template <typename U, bool = false>
 	struct tag {};
 
 	template <typename U, typename... Args>
@@ -999,6 +1049,12 @@ class poly_obj
 	    std::is_nothrow_constructible_v<U, Args&&...>)
 	    : ops_t(detail::make_ops_t<U, Traits>()),
 	      value(new (data) U(std::forward<Args>(args)...)) {}
+
+	template <typename U, typename... Args>
+	poly_obj(tag<U, true>, Args&&... args) noexcept(
+	    std::is_nothrow_constructible_v<U, Args&&...>)
+	    : ops_t(detail::make_ops_t<U, Traits>()),
+	      value(new (data) U{std::forward<Args>(args)...}) {}
 };
 
 template <typename T, typename D = T, std::size_t Capacity = sizeof(D),
