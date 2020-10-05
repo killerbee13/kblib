@@ -17,7 +17,7 @@
 
 namespace kblib {
 
-#if true || KBLIB_USE_CXX17
+#if true or KBLIB_USE_CXX17
 /**
  * @brief Determine if the given type, ignoring const or reference qualifiers,
  * is a character type.
@@ -302,7 +302,7 @@ Container split(const String& in, char delim = ' ') {
 	Container ret{""};
 	bool delim_run = true;
 	for (char c : in) {
-		if (c == delim && !std::exchange(delim_run, true)) {
+		if (c == delim and not std::exchange(delim_run, true)) {
 			ret.emplace_back();
 		} else {
 			delim_run = false;
@@ -394,7 +394,7 @@ inline std::string repeat(char val, std::size_t count) {
  * @return bool If haystack ends with needle.
  */
 inline bool ends_with(std::string_view haystack, std::string_view needle) {
-	return haystack.size() >= needle.size() &&
+	return haystack.size() >= needle.size() and
 	       haystack.compare(haystack.size() - needle.size(),
 	                        std::string_view::npos, needle) == 0;
 }
@@ -406,7 +406,7 @@ inline bool ends_with(std::string_view haystack, std::string_view needle) {
  * @return bool If haystack ends with needle.
  */
 inline bool ends_with(std::string_view haystack, char needle) {
-	return haystack.size() >= 1 && haystack.back() == needle;
+	return haystack.size() >= 1 and haystack.back() == needle;
 }
 
 /**
@@ -416,7 +416,7 @@ inline bool ends_with(std::string_view haystack, char needle) {
  * @return bool If haystack starts with needle.
  */
 inline bool starts_with(std::string_view haystack, std::string_view needle) {
-	return haystack.size() >= needle.size() &&
+	return haystack.size() >= needle.size() and
 	       haystack.compare(0, needle.size(), needle) == 0;
 }
 
@@ -427,7 +427,7 @@ inline bool starts_with(std::string_view haystack, std::string_view needle) {
  * @return bool If haystack starts with needle.
  */
 inline bool starts_with(std::string_view haystack, char needle) {
-	return haystack.size() >= 1 && haystack.front() == needle;
+	return haystack.size() >= 1 and haystack.front() == needle;
 }
 
 #endif

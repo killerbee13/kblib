@@ -90,7 +90,7 @@ struct trivial_array {
 	}
 	constexpr friend bool operator!=(const trivial_array& a,
 	                                 const trivial_array& b) {
-		return !(a == b);
+		return not(a == b);
 	}
 };
 
@@ -161,7 +161,7 @@ constexpr trivial_array<U, N> make_fib_arr() {
 template <typename U = unsigned long long>
 constexpr U fibonacci(int n) {
 	constexpr auto arr = make_fib_arr<U>();
-	assert(n >= 0 && static_cast<std::size_t>(n) < arr.size());
+	assert(n >= 0 and static_cast<std::size_t>(n) < arr.size());
 	return arr[n];
 }
 

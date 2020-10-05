@@ -85,7 +85,7 @@ KBLIB_NODISCARD Container build(InputIt first, InputIt last, InputIt2 first2,
  *    range.
  */
 template <typename Array, typename InputIt, typename UnaryFunction,
-          enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
+          enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
 	Array out;
 	std::transform(first, last, out.begin(), f);
@@ -111,7 +111,7 @@ KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
  */
 template <typename Array, typename InputIt, typename InputIt2,
           typename BinaryFunction,
-          enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
+          enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(InputIt first, InputIt last, InputIt2 first2,
                             BinaryFunction f) {
 	Array out;
@@ -157,7 +157,7 @@ KBLIB_NODISCARD Container build(Functor f, size_t size,
  *    sequence.
  */
 template <typename Array, typename Functor,
-          enable_if_t<!detail::is_resizable_v<Array>, int> = 0>
+          enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD Array build(Functor f,
                             size_t size = std::tuple_size<Array>::value) {
 	Array out;
@@ -290,8 +290,8 @@ inline Array build(ExecutionPolicy&& policy, Functor f, size_t size = std::tuple
 
 namespace detail {
 
-   template <typename Container>
-   struct buildiota_impl<Container, true> {
+	template <typename Container>
+	struct buildiota_impl<Container, true> {
 		template <typename T>
 		constexpr static Container impl(std::size_t count, T value) {
 			Container out;
@@ -399,12 +399,12 @@ build_copy(Range&& r, typename Container::allocator_type allocator =
  * @return Container
  */
 template <typename Container, typename InputIt,
-          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
 	Container out{};
 	auto pos = std::begin(out);
 	auto end = std::end(out);
-	for (; first != last && pos != end; ++first, ++pos) {
+	for (; first != last and pos != end; ++first, ++pos) {
 		*pos = *first;
 	}
 	return out;
@@ -417,14 +417,14 @@ KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
  * @return Container
  */
 template <typename Container, typename Range,
-          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
 	Container out{};
 	auto first = std::begin(r);
 	auto last = std::end(r);
 	auto pos = std::begin(out);
 	auto end = std::end(out);
-	for (; first != last && pos != end; ++first, ++pos) {
+	for (; first != last and pos != end; ++first, ++pos) {
 		*pos = *first;
 	}
 	return out;
@@ -439,13 +439,13 @@ KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
  * @return Container
  */
 template <typename Container, typename InputIt,
-          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
                                      std::size_t size) {
 	Container out;
 	auto pos = std::begin(out);
 	auto end = std::end(out);
-	for (std::size_t count = 0; count != size && first != last && pos != end;
+	for (std::size_t count = 0; count != size and first != last and pos != end;
 	     ++first, ++pos, ++count) {
 		*pos = *first;
 	}
@@ -460,14 +460,14 @@ KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
  * @return Container
  */
 template <typename Container, typename Range,
-          enable_if_t<!detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD Container build_copy(Range&& r, std::size_t size) {
 	Container out;
 	auto first = std::begin(r);
 	auto last = std::end(r);
 	auto pos = std::begin(out);
 	auto end = std::end(out);
-	for (std::size_t count = 0; count != size && first != last && pos != end;
+	for (std::size_t count = 0; count != size and first != last and pos != end;
 	     ++first, ++pos, ++count) {
 		*pos = *first;
 	}

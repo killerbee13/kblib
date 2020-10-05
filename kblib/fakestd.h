@@ -29,15 +29,16 @@ using decay_t = typename std::decay<T>::type;
 
 namespace detail {
 
-	template <typename F, typename... Args,
-	          enable_if_t<!std::is_member_pointer<decay_t<F>>::value, int> = 0>
+	template <
+	    typename F, typename... Args,
+	    enable_if_t<not std::is_member_pointer<decay_t<F>>::value, int> = 0>
 	constexpr decltype(auto) do_invoke(F&& f, Args&&... args) noexcept(
 	    noexcept(std::forward<F>(f)(std::forward<Args>(args)...))) {
 		return std::forward<F>(f)(std::forward<Args>(args)...);
 	}
 
 	template <typename F, typename Object, typename... Args,
-	          enable_if_t<!std::is_pointer<decay_t<Object>>::value &&
+	          enable_if_t<not std::is_pointer<decay_t<Object>>::value and
 	                          std::is_member_function_pointer<F>::value,
 	                      int> = 0>
 	constexpr decltype(auto)
@@ -47,7 +48,7 @@ namespace detail {
 	}
 
 	template <typename F, typename Pointer, typename... Args,
-	          enable_if_t<std::is_pointer<Pointer>::value &&
+	          enable_if_t<std::is_pointer<Pointer>::value and
 	                          std::is_member_function_pointer<F>::value,
 	                      int> = 0>
 	constexpr decltype(auto)
@@ -57,7 +58,7 @@ namespace detail {
 	}
 
 	template <typename Member, typename Object,
-	          enable_if_t<!std::is_pointer<decay_t<Object>>::value &&
+	          enable_if_t<not std::is_pointer<decay_t<Object>>::value and
 	                          std::is_member_object_pointer<Member>::value,
 	                      int> = 0>
 	constexpr decltype(auto) do_invoke(Member mem, Object&& obj) noexcept {
@@ -65,7 +66,7 @@ namespace detail {
 	}
 
 	template <typename Member, typename Pointer,
-	          enable_if_t<std::is_pointer<Pointer>::value &&
+	          enable_if_t<std::is_pointer<Pointer>::value and
 	                          std::is_member_object_pointer<Member>::value,
 	                      int> = 0>
 	constexpr decltype(auto) do_invoke(Member mem, Pointer ptr) noexcept {
@@ -151,12 +152,12 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 		struct is_referenceable
 		    : std::integral_constant<
 		          bool,
-		          !std::is_same<decltype(is_referenceable_impl::test<Tp>(0)),
-		                        two>::value> {};
+		          not std::is_same<decltype(is_referenceable_impl::test<Tp>(0)),
+		                           two>::value> {};
 
 		template <class Tp, class Up = Tp,
 		          bool NotVoid =
-		              !std::is_void<Tp>::value && !std::is_void<Up>::value>
+		              not std::is_void<Tp>::value and not std::is_void<Up>::value>
 		struct swappable_with {
 			template <class LHS, class RHS>
 			static decltype(swap(std::declval<LHS>(), std::declval<RHS>()))
@@ -168,8 +169,8 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 			typedef decltype((test_swap<Tp, Up>(0))) swap1;
 			typedef decltype((test_swap<Up, Tp>(0))) swap2;
 
-			static const bool value = !std::is_same<swap1, nat>::value &&
-			                          !std::is_same<swap2, nat>::value;
+			static const bool value = not std::is_same<swap1, nat>::value and
+			                          not std::is_same<swap2, nat>::value;
 		};
 
 		template <class Tp, class Up>
@@ -179,7 +180,7 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 		          bool Swappable = swappable_with<Tp, Up>::value>
 		struct nothrow_swappable_with {
 			static const bool value =
-			    noexcept(swap(std::declval<Tp>(), std::declval<Up>()))&& noexcept(
+			    noexcept(swap(std::declval<Tp>(), std::declval<Up>()))and noexcept(
 			        swap(std::declval<Up>(), std::declval<Tp>()));
 		};
 
@@ -252,15 +253,15 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 
 			template <class... Args>
 			auto operator()(Args&&... args) & -> decltype(
-			    !std::declval<invoke_result_t<std::decay_t<F>&, Args...>>()) {
-				return !invoke(fd, std::forward<Args>(args)...);
+			    not std::declval<invoke_result_t<std::decay_t<F>&, Args...>>()) {
+				return not invoke(fd, std::forward<Args>(args)...);
 			}
 
 			template <class... Args>
 			auto operator()(Args&&... args) const& -> decltype(
-			    !std::declval<
+			    not std::declval<
 			        invoke_result_t<std::decay_t<F> const&, Args...>>()) {
-				return !invoke(std::move(fd), std::forward<Args>(args)...);
+				return not invoke(std::move(fd), std::forward<Args>(args)...);
 			}
 
 			std::decay_t<F> fd;
@@ -432,8 +433,8 @@ constexpr std::make_signed_t<I> to_signed(I x) {
  * the template parameter
  */
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value &&
-                                          std::is_integral<F>::value &&
+KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value and
+                                          std::is_integral<F>::value and
                                           std::is_signed<A>::value,
                                       std::make_signed_t<F>>
 signed_cast(F x) {
@@ -445,8 +446,8 @@ signed_cast(F x) {
  * the template parameter
  */
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value &&
-                                          std::is_integral<F>::value &&
+KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value and
+                                          std::is_integral<F>::value and
                                           std::is_unsigned<A>::value,
                                       std::make_unsigned_t<F>>
 signed_cast(F x) {
@@ -481,11 +482,11 @@ struct is_tuple_like<T, void_t<typename std::tuple_element<0, T>::type>> {
  *
  * @param a,b The objects that will be swapped.
  */
-template <typename T,
-          enable_if_t<!has_member_swap<T>::value && !is_tuple_like<T>::value,
-                      int> = 0>
+template <typename T, enable_if_t<not has_member_swap<T>::value and
+                                      not is_tuple_like<T>::value,
+                                  int> = 0>
 constexpr void
-swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value&&
+swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value and
                               std::is_nothrow_move_assignable<T>::value) {
 	auto tmp = std::move(a);
 	a = std::move(b);
@@ -498,9 +499,9 @@ swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value&&
  *
  * @param a,b The objects that will be swapped.
  */
-template <
-    typename T,
-    enable_if_t<has_member_swap<T>::value && !is_tuple_like<T>::value, int> = 0>
+template <typename T,
+          enable_if_t<has_member_swap<T>::value and not is_tuple_like<T>::value,
+                      int> = 0>
 constexpr void swap(T& a, T& b) noexcept(noexcept(a.swap(b))) {
 	a.swap(b);
 	return;
@@ -514,7 +515,7 @@ constexpr void swap(T& a, T& b) noexcept(noexcept(a.swap(b))) {
 template <typename T, std::size_t N>
 constexpr void
 swap(T (&a)[N],
-     T (&b)[N]) noexcept(std::is_nothrow_move_constructible<T>::value&&
+     T (&b)[N]) noexcept(std::is_nothrow_move_constructible<T>::value and
                              std::is_nothrow_move_assignable<T>::value) {
 	for (std::size_t i = 0; i < N; ++i) {
 		swap(a[i], b[i]);
@@ -752,12 +753,12 @@ using value_type_linear_t = typename value_type_linear<Container>::type;
 template <typename Container>
 struct is_linear_container {
 	constexpr static bool value =
-	    value_detected_v<Container> && !key_detected_v<Container>;
+	    value_detected_v<Container> and not key_detected_v<Container>;
 };
 
 template <typename Container>
 constexpr static bool is_linear_container_v =
-    value_detected_v<Container> && !key_detected_v<Container>;
+    value_detected_v<Container> and not key_detected_v<Container>;
 
 template <typename Container, bool = key_detected_v<Container>,
           bool = mapped_detected_v<Container>>
@@ -773,12 +774,12 @@ using key_type_setlike_t = typename key_type_setlike<Container>::type;
 
 template <typename Container>
 constexpr static bool is_setlike_v =
-    key_detected_v<Container> && !mapped_detected_v<Container>;
+    key_detected_v<Container> and not mapped_detected_v<Container>;
 
 template <class InputIt1, class InputIt2>
 constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2) {
 	for (; first1 != last1; ++first1, ++first2) {
-		if (!(*first1 == *first2)) {
+		if (not(*first1 == *first2)) {
 			return false;
 		}
 	}
@@ -799,13 +800,13 @@ template <class InputIt1, class InputIt2>
 KBLIB_NODISCARD constexpr bool
 lexicographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2,
                         InputIt2 last2) {
-	for (; (first1 != last1) && (first2 != last2); ++first1, (void)++first2) {
+	for (; (first1 != last1) and (first2 != last2); ++first1, (void)++first2) {
 		if (*first1 < *first2)
 			return true;
 		if (*first2 < *first1)
 			return false;
 	}
-	return (first1 == last1) && (first2 != last2);
+	return (first1 == last1) and (first2 != last2);
 }
 
 namespace detail {
@@ -849,7 +850,7 @@ class heap_value {
 	heap_value& operator=(const heap_value& u) & {
 		if (this == &u) {
 			return *this;
-		} else if (!u) {
+		} else if (not u) {
 			reset();
 		} else if (p) {
 			*p = *u;

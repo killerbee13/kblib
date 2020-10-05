@@ -19,9 +19,9 @@ struct has_padding {
 
 struct empty_t {};
 
-static_assert(kblib::is_linear_container_v<std::string> &&
-                  kblib::is_contiguous_v<std::string> &&
-                  kblib::is_trivially_hashable_v<std::string::value_type> &&
+static_assert(kblib::is_linear_container_v<std::string> and
+                  kblib::is_contiguous_v<std::string> and
+                  kblib::is_trivially_hashable_v<std::string::value_type> and
                   kblib::is_trivially_hashable_v<int*>,
               "");
 static_assert(kblib::asserts::is_trivial_container<std::vector<char>>, "");
@@ -75,7 +75,7 @@ TEST_CASE("range comparison") {
 		auto r1e = r1.end();
 		auto r2b = r2.begin();
 		auto r2e = r2.end();
-		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) &&
+		return std::distance(r1b, r1e) == std::distance(r2b, r2e) and
 		       kblib::equal(r1b, r1e, r2b);
 	};
 

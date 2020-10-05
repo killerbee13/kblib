@@ -106,25 +106,29 @@ class live_ptr {
 
 	operator bool() const noexcept { return obj; }
 
-	friend bool operator==(const live_ptr& lhs, std::nullptr_t) { return !lhs; }
-	friend bool operator==(std::nullptr_t, const live_ptr& rhs) { return !rhs; }
+	friend bool operator==(const live_ptr& lhs, std::nullptr_t) {
+		return not lhs;
+	}
+	friend bool operator==(std::nullptr_t, const live_ptr& rhs) {
+		return not rhs;
+	}
 
 	friend bool operator==(const live_ptr& lhs, const live_ptr& rhs) {
 		return lhs.obj == rhs.obj;
 	}
 
 	friend bool operator==(const live_ptr& lhs, const T* rhs) {
-		if (!lhs && !rhs) {
+		if (not lhs and not rhs) {
 			return true;
 		} else {
-			return lhs && &lhs.obj->data == rhs;
+			return lhs and &lhs.obj->data == rhs;
 		}
 	}
 	friend bool operator==(const T* lhs, const live_ptr& rhs) {
-		if (!rhs && !lhs) {
+		if (not rhs and not lhs) {
 			return true;
 		} else {
-			return rhs && &rhs.obj->data == lhs;
+			return rhs and &rhs.obj->data == lhs;
 		}
 	}
 
@@ -182,25 +186,29 @@ class live_ptr<const mT> {
 
 	operator bool() const noexcept { return obj; }
 
-	friend bool operator==(const live_ptr& lhs, std::nullptr_t) { return !lhs; }
-	friend bool operator==(std::nullptr_t, const live_ptr& rhs) { return !rhs; }
+	friend bool operator==(const live_ptr& lhs, std::nullptr_t) {
+		return not lhs;
+	}
+	friend bool operator==(std::nullptr_t, const live_ptr& rhs) {
+		return not rhs;
+	}
 
 	friend bool operator==(const live_ptr& lhs, const live_ptr& rhs) {
 		return lhs.obj == rhs.obj;
 	}
 
 	friend bool operator==(const live_ptr& lhs, const T* rhs) {
-		if (!lhs && !rhs) {
+		if (not lhs and not rhs) {
 			return true;
 		} else {
-			return lhs && &lhs.obj->data == rhs;
+			return lhs and &lhs.obj->data == rhs;
 		}
 	}
 	friend bool operator==(const T* lhs, const live_ptr& rhs) {
-		if (!rhs && !lhs) {
+		if (not rhs and not lhs) {
 			return true;
 		} else {
-			return rhs && &rhs.obj->data == lhs;
+			return rhs and &rhs.obj->data == lhs;
 		}
 	}
 
@@ -249,8 +257,8 @@ namespace detail {
 	using filter_deleter_pointer_t = typename filter_deleter_pointer<D, T>::type;
 
 	template <typename T,
-	          bool = std::is_class<T>::value&& std::is_empty<T>::value &&
-	                 !std::is_final<T>::value,
+	          bool = std::is_class<T>::value and std::is_empty<T>::value and
+	                 not std::is_final<T>::value,
 	          bool =
 	              std::is_object<typename std::remove_reference<T>::type>::value>
 	struct as_base_class;
@@ -375,7 +383,7 @@ class cond_ptr : private detail::as_base_class<Deleter> {
 	}
 
 	~cond_ptr() noexcept {
-		if (owns_ && ptr_) {
+		if (owns_ and ptr_) {
 			get_deleter()(ptr_);
 		}
 	}

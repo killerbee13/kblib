@@ -69,7 +69,7 @@ TEST_CASE("buildiota") {
 		auto r1e = r1.end();
 		auto r2b = r2.begin();
 		auto r2e = r2.end();
-		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) &&
+		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) and
 		       kblib::equal(r1b, r1e, r2b);
 	};
 
@@ -81,11 +81,11 @@ TEST_CASE("buildiota") {
 	auto i5 =
 	    kblib::buildiota<kblib::construct_with_size<std::vector<int>, 10>>(0);
 
-	REQUIRE((i1.size() == target.size() && equal(i1, target)));
-	REQUIRE((i2.size() == target.size() && equal(i2, target)));
-	REQUIRE((i3.size() == target.size() && equal(i3, target)));
-	REQUIRE((i4.size() == target.size() && equal(i4, target)));
-	REQUIRE((i5.size() == target.size() && equal(i5, target)));
+	REQUIRE((i1.size() == target.size() and equal(i1, target)));
+	REQUIRE((i2.size() == target.size() and equal(i2, target)));
+	REQUIRE((i3.size() == target.size() and equal(i3, target)));
+	REQUIRE((i4.size() == target.size() and equal(i4, target)));
+	REQUIRE((i5.size() == target.size() and equal(i5, target)));
 }
 
 TEST_CASE("build_copy family") {

@@ -61,7 +61,7 @@ constexpr void erase_if(Container& c, UnaryPredicate p) noexcept(noexcept(
 template <typename Obj>
 KBLIB_NODISCARD constexpr bool equals(const Obj& a,
                                       const Obj& b) noexcept(noexcept(a < b)) {
-	return !(a < b) && !(b < a);
+	return not(a < b) and not(b < a);
 }
 
 /**
@@ -73,7 +73,7 @@ template <typename Obj, typename Compare>
 KBLIB_NODISCARD constexpr bool
 equals(const Obj& a, const Obj& b,
        Compare comp) noexcept(noexcept(comp(a, b))) {
-	return !comp(a, b) && !comp(b, a);
+	return not comp(a, b) and not comp(b, a);
 }
 
 /**
@@ -133,7 +133,7 @@ template <typename ForwardIt, typename EndIt, typename Elem>
 KBLIB_NODISCARD constexpr ForwardIt
 find(ForwardIt begin, EndIt end,
      const Elem& value) noexcept(noexcept(*begin == value)) {
-	while (begin != end && !(*begin == value)) {
+	while (begin != end and *begin != value) {
 		++begin;
 	}
 	return begin;
@@ -152,7 +152,7 @@ template <typename ForwardIt, typename EndIt, typename Elem, typename Comp>
 KBLIB_NODISCARD constexpr ForwardIt
 find(ForwardIt begin, EndIt end, const Elem& value,
      Comp&& comp) noexcept(noexcept(comp(*begin, value))) {
-	while (begin != end && !equals(*begin, value, comp)) {
+	while (begin != end and not equals(*begin, value, comp)) {
 		++begin;
 	}
 	return begin;
@@ -170,7 +170,7 @@ template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr ForwardIt
 find_if(ForwardIt begin, EndIt end,
         UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
-	while (begin != end && !kblib::invoke(pred, *begin)) {
+	while (begin != end and not kblib::invoke(pred, *begin)) {
 		++begin;
 	}
 	return begin;
@@ -188,7 +188,7 @@ template <typename ForwardIt, typename EndIt, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr ForwardIt find_if_not(
     ForwardIt begin, EndIt end,
     UnaryPredicate&& pred) noexcept(noexcept(kblib::invoke(pred, *begin))) {
-	while (begin != end && kblib::invoke(pred, *begin)) {
+	while (begin != end and kblib::invoke(pred, *begin)) {
 		++begin;
 	}
 	return begin;
@@ -903,9 +903,18 @@ rotate(ForwardIt first, ForwardIt n_first,
  */
 template <typename OutputIt, typename EndIt, typename Generator>
 constexpr OutputIt generate(OutputIt first, EndIt last, Generator g) noexcept(
-    noexcept(first != last) && noexcept(*++first = g())) {
+    noexcept(first != last) and noexcept(*++first = g())) {
 	while (first != last) {
 		*first = g();
+		++first;
+	}
+	return first;
+}
+
+template <typename InputIt, typename EndIt, typename... Params>
+constexpr InputIt call_each(InputIt first, EndIt last, Params&&... params) {
+	while (first != last) {
+		(*first)(std::forward<Params>(params)...);
 		++first;
 	}
 	return first;
@@ -1011,7 +1020,7 @@ namespace detail {
 	constexpr void shift_backward(
 	    ForwardIt first, ForwardIt n_first,
 	    ForwardIt last) noexcept(noexcept(*first = std::move(*first))) {
-		if (first == n_first || n_first == last)
+		if (first == n_first or n_first == last)
 			return;
 
 		ForwardIt read = n_first;
@@ -1043,8 +1052,8 @@ constexpr void insertion_sort(
     const RandomAccessIt begin, const RandomAccessIt end,
     Compare&& compare =
         {}) noexcept(noexcept(swap(*begin,
-                                   *begin)) && noexcept(compare(*begin,
-                                                                *begin))) {
+                                   *begin)) and noexcept(compare(*begin,
+                                                                 *begin))) {
 	// Trivial inputs are trivially already sorted.
 	if (end - begin <= 1) {
 		return;
@@ -1083,7 +1092,7 @@ constexpr void insertion_sort_copy(
         {}) noexcept(noexcept(detail::
                                   shift_backward(
                                       d_begin, d_begin,
-                                      d_end)) && noexcept(*d_begin = *begin)) {
+                                      d_end)) and noexcept(*d_begin = *begin)) {
 	const auto dist = end - begin;
 	assert(end - begin == d_end - d_begin);
 	if (dist == 0) {
@@ -1120,7 +1129,7 @@ constexpr void insertion_sort_copy(
 #if 1
 			auto index =
 			    kblib::find_if(write + 1, d_end, [&compare, read](const auto& a) {
-				    return !compare(a, *read);
+				    return not compare(a, *read);
 			    });
 #else
 			auto index =
@@ -1168,7 +1177,7 @@ constexpr void adaptive_insertion_sort_copy(
         {}) noexcept(noexcept(detail::
                                   shift_backward(
                                       d_begin, d_begin,
-                                      d_end)) && noexcept(*d_begin = *begin)) {
+                                      d_end)) and noexcept(*d_begin = *begin)) {
 	const auto dist = end - begin;
 	const auto scan_end = begin + static_cast<std::size_t>(std::sqrt(dist));
 	// For trivial inputs, don't bother doing anything

@@ -58,8 +58,8 @@ constexpr auto flip(BinaryOperation op) {
 template <typename Integral, typename CharT>
 constexpr void to_bytes_le(Integral ival,
                            CharT (&dest)[sizeof(Integral)]) noexcept {
-	static_assert(std::is_integral<CharT>::value && sizeof(CharT) == 1 &&
-	                  !std::is_same<CharT, bool>::value,
+	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
+	                  not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	typename std::make_signed<Integral>::type val = ival;
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
@@ -70,8 +70,8 @@ constexpr void to_bytes_le(Integral ival,
 template <typename Integral, typename CharT>
 constexpr void to_bytes_be(Integral ival,
                            CharT (&dest)[sizeof(Integral)]) noexcept {
-	static_assert(std::is_integral<CharT>::value && sizeof(CharT) == 1 &&
-	                  !std::is_same<CharT, bool>::value,
+	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
+	                  not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	typename std::make_signed<Integral>::type val = ival;
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
@@ -82,8 +82,8 @@ constexpr void to_bytes_be(Integral ival,
 template <typename Integral, typename CharT>
 constexpr void to_bytes(Integral val,
                         CharT (&dest)[sizeof(Integral)]) noexcept {
-	static_assert(std::is_integral<CharT>::value && sizeof(CharT) == 1 &&
-	                  !std::is_same<CharT, bool>::value,
+	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
+	                  not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	if (hash_order == endian::little) {
 		to_bytes_le(val, dest);
@@ -95,13 +95,13 @@ constexpr void to_bytes(Integral val,
 #if KBLIB_USE_CXX17
 
 template <typename... Ts>
-constexpr bool any_void = (std::is_void_v<Ts> || ...);
+constexpr bool any_void = (std::is_void_v<Ts> or ...);
 
 template <typename F, typename... T>
 auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
     kblib::apply(f, std::forward<T>(t))...}))
     -> return_assert_t<
-        !any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>,
+        not any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>,
         decltype(std::tuple{kblib::apply(f, std::forward<T>(t))...})> {
 	return std::tuple{kblib::apply(f, std::forward<T>(t))...};
 }
@@ -420,9 +420,10 @@ struct FNV_hash<T, void_if_t<std::is_empty<T>::value>> {
 
 template <typename T>
 struct is_trivially_hashable {
-	constexpr static bool value = (std::is_trivially_copyable_v<T> &&
-	                               std::has_unique_object_representations_v<T> &&
-	                               !std::is_empty<T>::value);
+	constexpr static bool value =
+	    (std::is_trivially_copyable_v<T> and
+	     std::has_unique_object_representations_v<T> and
+	     not std::is_empty<T>::value);
 };
 
 template <typename T>
@@ -432,8 +433,8 @@ constexpr bool is_trivially_hashable_v = is_trivially_hashable<T>::value;
 
 template <typename T>
 struct is_trivially_hashable
-    : std::integral_constant<bool, (std::is_integral<T>::value &&
-                                    padding_bits<T>::value == 0) ||
+    : std::integral_constant<bool, (std::is_integral<T>::value and
+                                    padding_bits<T>::value == 0) or
                                        std::is_pointer<T>::value> {};
 
 template <typename T>
@@ -445,7 +446,7 @@ constexpr bool is_trivially_hashable_v = is_trivially_hashable<T>::value;
  *
  */
 template <typename T>
-struct FNV_hash<T, void_if_t<std::is_integral<T>::value &&
+struct FNV_hash<T, void_if_t<std::is_integral<T>::value and
                              is_trivially_hashable<T>::value>> {
 	constexpr std::size_t
 	operator()(T key, std::size_t offset =
@@ -478,7 +479,7 @@ namespace asserts {
 
 	template <typename Container>
 	constexpr bool is_trivial_container =
-	    (is_contiguous<Container>::value &&
+	    (is_contiguous<Container>::value and
 	     is_trivially_hashable<typename Container::value_type>::value);
 	static_assert(is_trivial_container<std::string>,
 	              "kblib bug: std::string should be trivially hashable");
@@ -492,7 +493,7 @@ namespace asserts {
 template <typename Container>
 struct FNV_hash<
     Container,
-    void_if_t<(is_contiguous<Container>::value &&
+    void_if_t<(is_contiguous<Container>::value and
                is_trivially_hashable<typename Container::value_type>::value)>> {
 	constexpr std::size_t
 	operator()(const Container& key,
@@ -514,9 +515,9 @@ struct FNV_hash<
  *
  */
 template <typename T>
-struct FNV_hash<
-    T, void_if_t<!std::is_integral<T>::value && !std::is_pointer<T>::value &&
-                 is_trivially_hashable<T>::value>> {
+struct FNV_hash<T, void_if_t<not std::is_integral<T>::value and
+                             not std::is_pointer<T>::value and
+                             is_trivially_hashable<T>::value>> {
 	std::size_t
 	operator()(T key, std::size_t offset =
 	                      fnv::fnv_offset<std::size_t>::value) const noexcept {
@@ -532,12 +533,12 @@ struct FNV_hash<
  */
 template <typename Container>
 struct FNV_hash<Container,
-                void_if_t<value_detected<Container>::value &&
-                          is_hashable<typename Container::value_type>::value &&
-                          !hash_detected<Container>::value &&
-                          !(is_contiguous<Container>::value &&
-                            is_trivially_hashable<
-                                typename Container::value_type>::value)>> {
+                void_if_t<value_detected<Container>::value and
+                          is_hashable<typename Container::value_type>::value and
+                          not hash_detected<Container>::value and
+                          not(is_contiguous<Container>::value and
+                              is_trivially_hashable<
+                                  typename Container::value_type>::value)>> {
 	constexpr std::size_t
 	operator()(const Container& key,
 	           std::size_t offset =
@@ -554,10 +555,10 @@ struct FNV_hash<Container,
  * @brief Container hasher, for contiguously-stored trivial elements
  */
 template <typename Container>
-struct FNV_hash<
-    Container,
-    void_if_t<is_linear_container_v<Container> && is_contiguous_v<Container> &&
-              is_trivially_hashable_v<Container::value_type>>> {
+struct FNV_hash<Container,
+                void_if_t<is_linear_container_v<Container> and
+                          is_contiguous_v<Container> and
+                          is_trivially_hashable_v<Container::value_type>>> {
 	constexpr std::size_t
 	operator()(const Container& key,
 	           std::size_t offset =
@@ -608,7 +609,7 @@ namespace detail {
 #if KBLIB_USE_CXX17
 	template <typename Tuple, std::size_t... Is>
 	constexpr bool all_hashable_impl(std::index_sequence<Is...>) {
-		return (... &&
+		return (... and
 		        is_hashable<typename std::tuple_element<Is, Tuple>::type>::value);
 	}
 #else
@@ -619,7 +620,7 @@ namespace detail {
 	template <typename Tuple, std::size_t I, std::size_t... Is>
 	struct all_hashable_impl_t<Tuple, std::index_sequence<I, Is...>> {
 		constexpr static bool value =
-		    (is_hashable<typename std::tuple_element<I, Tuple>::type>::value &&
+		    (is_hashable<typename std::tuple_element<I, Tuple>::type>::value and
 		     all_hashable_impl_t<Tuple, std::index_sequence<Is...>>::value);
 	};
 
@@ -650,10 +651,10 @@ namespace detail {
  *
  */
 template <typename Tuple>
-struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() &&
-                                 !is_trivially_hashable<Tuple>::value &&
-                                 (std::tuple_size<Tuple>::value > 0u) &&
-                                 !is_linear_container_v<Tuple>>> {
+struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() and
+                                 not is_trivially_hashable<Tuple>::value and
+                                 (std::tuple_size<Tuple>::value > 0u) and
+                                 not is_linear_container_v<Tuple>>> {
 	constexpr std::size_t
 	operator()(const Tuple& key,
 	           std::size_t offset =
@@ -783,7 +784,7 @@ using ignore_t = typename ignore<U, T>::type;
 #if KBLIB_USE_CXX17
 
 template <bool... args>
-constexpr bool conjunction = (args && ...);
+constexpr bool conjunction = (args and ...);
 #endif
 
 #if KBLIB_USE_CXX20

@@ -50,7 +50,7 @@ namespace detail {
 	template <typename Tuple, typename T, typename... Ts>
 	struct contains_types<Tuple, std::tuple<T, Ts...>>
 	    : std::integral_constant<
-	          bool, contains_type<Tuple, T>::value &&
+	          bool, contains_type<Tuple, T>::value and
 	                    contains_types<Tuple, std::tuple<Ts...>>::value> {};
 
 	template <typename Tuple>
@@ -116,7 +116,7 @@ T byte_cast(F v) {
 	static_assert(
 	    sizeof(T) == sizeof(F),
 	    "Source and destination types for byte_cast must be the same size.");
-	static_assert(std::is_trivially_copyable<T>::value &&
+	static_assert(std::is_trivially_copyable<T>::value and
 	                  std::is_trivially_copyable<F>::value,
 	              "Source and destination types for byte_cast must be trivially "
 	              "copyable.");
@@ -188,7 +188,7 @@ void try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) {
  * @param s The requested capacity.
  */
 template <typename C,
-          typename std::enable_if<!detail::has_reserve_v<C>, int>::type = 0>
+          typename std::enable_if<not detail::has_reserve_v<C>, int>::type = 0>
 void try_reserve(C&, std::size_t) noexcept {
 	return;
 }

@@ -54,9 +54,9 @@ struct bad_iterator<0> {
 
 constexpr bool test() noexcept {
 	int i{};
-	return &i == kblib::to_pointer(&i) &&
-	       &i == kblib::to_pointer(bad_iterator<0>{&i}) &&
-	       &i == kblib::to_pointer(bad_iterator<1>{&i}) &&
+	return &i == kblib::to_pointer(&i) and
+	       &i == kblib::to_pointer(bad_iterator<0>{&i}) and
+	       &i == kblib::to_pointer(bad_iterator<1>{&i}) and
 	       &i == kblib::to_pointer(bad_iterator<100>{&i});
 }
 

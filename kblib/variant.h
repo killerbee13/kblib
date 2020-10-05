@@ -178,7 +178,7 @@ namespace detail {
 
 	template <typename F, typename... Ts>
 	constexpr bool invocable_with_all_v =
-	    (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value && ...);
+	    (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value and ...);
 
 	template <typename Callable, typename Variant>
 	constexpr bool v_invocable_with_all_v = false;
@@ -500,7 +500,7 @@ class poly_obj
 	static_assert(
 	    std::has_virtual_destructor_v<Obj>,
 	    "Obj must have a virtual destructor to be used as a base class object.");
-	static_assert(!std::is_array_v<Obj>,
+	static_assert(not std::is_array_v<Obj>,
 	              "poly_obj of array type is disallowed.");
 	/**
 	 * @brief The default constructor does not construct any contained object.
@@ -660,7 +660,7 @@ class poly_obj
 	    std::is_nothrow_constructible_v<U, Args&&...>) {
 		static_assert(sizeof(U) <= Capacity,
 		              "U must fit inside of the inline capacity.");
-		static_assert(std::is_base_of_v<Obj, U> &&
+		static_assert(std::is_base_of_v<Obj, U> and
 		                  std::is_convertible_v<U*, Obj*>,
 		              "Obj must be an accessible base of Obj.");
 		static_assert(std::has_virtual_destructor_v<Obj>,
@@ -694,7 +694,7 @@ class poly_obj
 	    std::is_nothrow_constructible_v<U, Args&&...>) {
 		static_assert(sizeof(U) <= Capacity,
 		              "U must fit inside of the inline capacity.");
-		static_assert(std::is_base_of_v<Obj, U> &&
+		static_assert(std::is_base_of_v<Obj, U> and
 		                  std::is_convertible_v<U*, Obj*>,
 		              "Obj must be an accessible base of Obj.");
 		static_assert(std::has_virtual_destructor_v<Obj>,
@@ -849,7 +849,7 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
+	return_assert_t<not std::is_member_function_pointer_v<member_type(Obj::*)>,
 	                member_type>&
 	operator->*(member_type(Obj::*member)) & noexcept {
 #if __has_builtin(__builtin_assume)
@@ -860,7 +860,7 @@ class poly_obj
 
 	template <typename member_type>
 	const return_assert_t<
-	    !std::is_member_function_pointer_v<member_type(Obj::*)>, member_type>&
+	    not std::is_member_function_pointer_v<member_type(Obj::*)>, member_type>&
 	operator->*(member_type(Obj::*member)) const& noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
@@ -869,7 +869,7 @@ class poly_obj
 	}
 
 	template <typename member_type>
-	return_assert_t<!std::is_member_function_pointer_v<member_type(Obj::*)>,
+	return_assert_t<not std::is_member_function_pointer_v<member_type(Obj::*)>,
 	                member_type>&&
 	operator->*(member_type(Obj::*member)) && noexcept {
 #if __has_builtin(__builtin_assume)
@@ -880,7 +880,8 @@ class poly_obj
 
 	template <typename member_type>
 	const return_assert_t<
-	    !std::is_member_function_pointer_v<member_type(Obj::*)>, member_type>&&
+	    not std::is_member_function_pointer_v<member_type(Obj::*)>,
+	    member_type>&&
 	operator->*(member_type(Obj::*member)) const&& noexcept {
 #if __has_builtin(__builtin_assume)
 		__builtin_assume(value == reinterpret_cast<const Obj*>(data));

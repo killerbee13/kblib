@@ -121,7 +121,7 @@ class compact_bit_trie {
 		size_type node = 1;
 		const bitset_type search = key.prefix;
 		int idx = 0;
-		while (node && idx < key.bits) {
+		while (node and idx < key.bits) {
 			if (auto val = storage[node].val) {
 				return values[val];
 			} else {
@@ -141,7 +141,7 @@ class compact_bit_trie {
 		size_type node = 1;
 		const bitset_type search = key.prefix;
 		int idx = 0;
-		while (node && idx < key.bits) {
+		while (node and idx < key.bits) {
 			if (auto val = storage[node].val) {
 				return values[val];
 			} else {
@@ -163,7 +163,7 @@ class compact_bit_trie {
 		size_type found = 0;
 		const bitset_type search = key.prefix;
 		int idx = 0;
-		while (node && idx < key.bits) {
+		while (node and idx < key.bits) {
 			if (auto val = storage[node].val) {
 				found = val;
 				if (depth--) {
@@ -190,7 +190,7 @@ class compact_bit_trie {
 		size_type found = 0;
 		const bitset_type search = key.prefix;
 		int idx = 0;
-		while (node && idx < key.bits) {
+		while (node and idx < key.bits) {
 			if (auto val = storage[node].val) {
 				found = val;
 				if (depth--) {
@@ -467,7 +467,7 @@ namespace detail {
 
 #endif // KBLIB_BITS_H
 
-#if KBLIB_DEF_MACROS && !defined(BITFIELD)
+#if KBLIB_DEF_MACROS and not defined(BITFIELD)
 /**
  * @def BITFIELD(offset, size, name, raw)
  * Defines appropriate member functions which operate on a bitfield. The

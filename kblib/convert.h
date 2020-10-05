@@ -1,4 +1,4 @@
-#if KBLIB_DEF_MACROS && !defined(pFromStr)
+#if KBLIB_DEF_MACROS and not defined(pFromStr)
 #define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
 #endif
 
@@ -26,7 +26,7 @@ template <typename T>
 T fromStr(const std::string& val, const char* type = typeid(T).name()) {
 	std::stringstream ss(val);
 	T ret;
-	if (!(ss >> ret).fail())
+	if (not(ss >> ret).fail())
 		return ret;
 	else
 		throw std::runtime_error("\"" + val + "\" is not a " + type);
@@ -47,7 +47,7 @@ struct lexical_caster {
 		std::stringstream ss;
 		ss << val;
 		To ret;
-		if (!(ss >> ret).fail())
+		if (not(ss >> ret).fail())
 			return ret;
 		else
 			throw std::runtime_error("Cannot convert \"" + toStr(val) + "\" to " +
@@ -96,7 +96,7 @@ To lexical_cast(const From& val, const char* type = typeid(To).name()) {
     std::stringstream ss;
     ss << val;
     To ret;
-    if (!(ss >> ret).fail())
+    if (not (ss >> ret).fail())
       return ret;
     else
       throw std::runtime_error("Cannot convert \""s + toStr(val) + "\" to " +
@@ -127,7 +127,7 @@ constexpr bool digits_are_ascii_like(char8_t) { return true; }
 
 template <int base, typename Int>
 inline std::string to_string(Int num) {
-	static_assert(base <= 62 && base > 0, "Supported bases are 1 thru 62.");
+	static_assert(base <= 62 and base > 0, "Supported bases are 1 thru 62.");
 	constexpr auto digits = remove_null_terminator(
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 	std::string ret;
@@ -150,7 +150,7 @@ inline std::string to_string(Int num) {
 
 template <typename Int>
 inline std::string to_string(Int num, int base) {
-	assert(base <= 62 && base > 0);
+	assert(base <= 62 and base > 0);
 	constexpr auto digits = remove_null_terminator(
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 	std::string ret;
@@ -195,7 +195,7 @@ inline std::string url_encode(const string& value) {
 
 	for (char c : value) {
 		// Keep alphanumeric and other accepted characters intact
-		if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+		if (std::isalnum(c) or c == '-' or c == '_' or c == '.' or c == '~') {
 			escaped << c;
 		} else {
 			// Any other characters are percent-encoded
@@ -240,7 +240,7 @@ inline std::string html_encode(const string& data) {
 
 inline std::string escapify(char c) {
 	auto value = (unsigned char)c;
-	if (value < ' ' || value == '\x7F' || value & '\x80') {
+	if (value < ' ' or value == '\x7F' or value & '\x80') {
 		constexpr std::array<char, 16> digits{
 		    remove_null_terminator("0123456789ABCDEF")};
 		std::string rc("\\x  ");
@@ -257,7 +257,7 @@ template <typename string>
 std::string escapify(const string& value) {
 	std::ostringstream ret;
 	for (char c : value) {
-		if (c < ' ' || c >= '\x7F') {
+		if (c < ' ' or c >= '\x7F') {
 			ret << escapify(c);
 		} else {
 			ret << c;
@@ -282,7 +282,7 @@ int calculate_translated_index(string&& value, const char* p) {
 
 // template <>
 inline int calculate_translated_index(const char* value, const char* p) {
-	if (!value) {
+	if (not value) {
 		throw std::invalid_argument(
 		    "calculate_translated_index can't take a nullptr");
 	}
@@ -301,7 +301,7 @@ std::string quoted(string&& in) {
 	std::ostringstream ret;
 	ret << '"';
 	for (char c : in) {
-		if (c < ' ' || c >= '\x7F') {
+		if (c < ' ' or c >= '\x7F') {
 			ret << escapify(c);
 		} else if (c == '"') {
 			ret << "\\\"";

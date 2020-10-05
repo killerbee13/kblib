@@ -122,9 +122,9 @@ class direct_map {
 		}
 
 		friend bool operator==(iter l, iter r) {
-			return l.storage == r.storage && l.pos == r.pos;
+			return l.storage == r.storage and l.pos == r.pos;
 		}
-		friend bool operator!=(iter l, iter r) { return !(l == r); }
+		friend bool operator!=(iter l, iter r) { return not(l == r); }
 
 		friend void swap(iter<V>& a, iter<V>& b) {
 			using std::swap;
@@ -229,7 +229,7 @@ class direct_map {
 		return {storage.get(), cbegin().pos};
 	}
 	const_iterator cbegin() const& noexcept {
-		if (!empty()) {
+		if (not empty()) {
 			if (contains(to_key(0))) {
 				return {storage.get(), 0};
 			} else {
@@ -278,7 +278,7 @@ class direct_map {
 	}
 
 	std::pair<iterator, bool> insert(const value_type& value) {
-		if (!contains(value.first)) {
+		if (not contains(value.first)) {
 			construct(value.first, value.second);
 			return {{storage.get(), index(value.first)}, true};
 		} else {
@@ -289,7 +289,7 @@ class direct_map {
 	return_assert_t<std::is_constructible<value_type, U&&>::value,
 	                std::pair<iterator, bool>>
 	insert(U&& value) {
-		if (!contains(value.first)) {
+		if (not contains(value.first)) {
 			construct(value.first, std::forward<U>(value.second));
 			return {{storage.get(), index(value.first)}, true};
 		} else {
@@ -297,7 +297,7 @@ class direct_map {
 		}
 	}
 	std::pair<iterator, bool> insert(value_type&& value) {
-		if (!contains(value.first)) {
+		if (not contains(value.first)) {
 			construct(value.first, std::move(value.second));
 			return {{storage.get(), index(value.first)}, true};
 		} else {
@@ -307,7 +307,7 @@ class direct_map {
 
 	template <typename U>
 	std::pair<iterator, bool> insert_or_assign(Key key, U&& value) {
-		if (!contains(key)) {
+		if (not contains(key)) {
 			construct(key, std::move(value));
 			return {{storage.get(), index(key)}, true};
 		} else {
@@ -317,7 +317,7 @@ class direct_map {
 	}
 	template <typename... Args>
 	std::pair<iterator, bool> try_emplace(Key key, Args&&... args) {
-		if (!contains(key)) {
+		if (not contains(key)) {
 			construct(key, std::forward<Args>(args)...);
 			return {{storage.get(), index(key)}, true};
 		} else {
@@ -367,7 +367,7 @@ class direct_map {
 	}
 
 	bool contains(Key key) const noexcept {
-		return storage && bitmap().test(index(key));
+		return storage and bitmap().test(index(key));
 	}
 	std::size_t count(Key key) const noexcept { return contains(key); }
 
@@ -452,7 +452,7 @@ class direct_map {
 	    const direct_map<Key, T>& l,
 	    const direct_map<Key, T>& r) noexcept(noexcept(std::declval<T&>() ==
 	                                                   std::declval<T&>())) {
-		return !(l == r);
+		return not(l == r);
 	}
 
 	friend bool
@@ -470,13 +470,13 @@ class direct_map {
 	    const direct_map<Key, T>& l,
 	    const direct_map<Key, T>& r) noexcept(noexcept(std::declval<T&>(),
 	                                                   std::declval<T&>())) {
-		return !(r < l);
+		return not(r < l);
 	}
 	friend bool operator>=(
 	    const direct_map<Key, T>& l,
 	    const direct_map<Key, T>& r) noexcept(noexcept(std::declval<T&>(),
 	                                                   std::declval<T&>())) {
-		return !(l < r);
+		return not(l < r);
 	}
 
 	constexpr static std::ptrdiff_t index(Key key) noexcept {
@@ -500,7 +500,7 @@ class direct_map {
 	}
 
 	void allocate() {
-		if (!storage) {
+		if (not storage) {
 			storage.assign();
 		}
 	}
@@ -509,7 +509,7 @@ class direct_map {
 	void construct(Key key, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<value_type, Args&&...>::value) {
 		allocate();
-		if (!storage->first.test(index(key))) {
+		if (not storage->first.test(index(key))) {
 			do_construct(key, std::forward<Args>(args)...);
 			// doing these after construction maintains exception safety.
 			storage->first.set(index(key));

@@ -87,7 +87,7 @@ namespace multi_impl {
 		bool equal(const mulspan_iterator<U>& o) const noexcept {
 			return
 			    // if both *this and o have caches,
-			    /*(pos_cache && o.pos_cache)
+			    /*(pos_cache and o.pos_cache)
 			    //compare them
 			    ? pos_cache.value() == o.pos_cache.value()
 			    //else, compare parent and index

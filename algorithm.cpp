@@ -128,7 +128,7 @@ TEST_CASE("assorted algorithms") {
 		auto r1e = r1.end();
 		auto r2b = r2.begin();
 		auto r2e = r2.end();
-		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) &&
+		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) and
 		       kblib::equal(r1b, r1e, r2b);
 	};
 	std::array<int, 10> haystack{1, 1, 2, 5, 6, 2, 4, 7, 0, 6};
@@ -263,7 +263,7 @@ TEST_CASE("sort") {
 	}
 }
 
-std::ostream& log_location = std::cout;
+static std::ostream& log_location = std::cout;
 
 TEST_CASE("insertion sort performance") {
 	log_location << __FILE__ ":";

@@ -65,8 +65,9 @@ TEST_CASE("magic_enumerate") {
 		for (auto [i, v] : kblib::magic_enumerate(cp)) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
-			static_assert(!std::is_const_v<std::remove_reference_t<decltype(v)>>,
-			              "v must not be const when copied from a const range");
+			static_assert(
+			    not std::is_const_v<std::remove_reference_t<decltype(v)>>,
+			    "v must not be const when copied from a const range");
 		}
 	}
 	SECTION("const copy from non-const") {
@@ -137,7 +138,7 @@ TEST_CASE("magic_enumerate") {
 	SECTION("move-only") {
 		std::vector<std::unique_ptr<int>> ptr_vec(10);
 		for ([[maybe_unused]] auto&& [i, ptr] : kblib::magic_enumerate(ptr_vec)) {
-			REQUIRE(!ptr);
+			REQUIRE(not ptr);
 		}
 	}
 
@@ -218,7 +219,7 @@ TEST_CASE("cry_enumerate") {
 			REQUIRE(&v != &persistent[i]);
 			// This approach can't do this
 			/*static_assert(
-			    !std::is_const<
+			    not std::is_const<
 			        typename std::remove_reference<decltype(v)>::type>::value,
 			    "v must not be const when copied from a const range");*/
 		}

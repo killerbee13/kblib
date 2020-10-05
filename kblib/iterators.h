@@ -120,7 +120,7 @@ class counting_back_insert_iterator {
 	}
 
 	counting_back_insert_iterator& operator++() & noexcept {
-		assert(!dirty);
+		assert(not dirty);
 		++count;
 		dirty = true;
 		return *this;
@@ -259,7 +259,7 @@ class range_t {
 		 * the same step.
 		 */
 		constexpr friend bool operator==(iterator l, iterator r) {
-			return l.val == r.val && l.step == r.step;
+			return l.val == r.val and l.step == r.step;
 		}
 		/**
 		 * @brief Compare two range iterators for inequality.
@@ -268,7 +268,7 @@ class range_t {
 		 * the same step.
 		 */
 		constexpr friend bool operator!=(iterator l, iterator r) {
-			return l.val != r.val || l.step != r.step;
+			return l.val != r.val or l.step != r.step;
 		}
 		/**
 		 * @brief Compare two range iterators.
@@ -289,7 +289,7 @@ class range_t {
 		 * *B) changes sign.
 		 */
 		constexpr friend bool operator<=(iterator l, iterator r) {
-			return !(r < l);
+			return not(r < l);
 		}
 		/**
 		 * @brief Compare two range iterators.
@@ -305,7 +305,7 @@ class range_t {
 		 * *B) changes sign.
 		 */
 		constexpr friend bool operator>=(iterator l, iterator r) {
-			return !(l < r);
+			return not(l < r);
 		}
 	};
 
@@ -329,7 +329,7 @@ class range_t {
 	 * Ranges are equal when they generate identical ranges.
 	 */
 	constexpr friend bool operator==(range_t l, range_t r) {
-		return (l.begin() == r.begin()) && (l.end() == r.end()) &&
+		return (l.begin() == r.begin()) and (l.end() == r.end()) and
 		       (l.step == r.step);
 	}
 	/**
@@ -337,7 +337,9 @@ class range_t {
 	 *
 	 * Ranges are equal when they generate identical ranges.
 	 */
-	constexpr friend bool operator!=(range_t l, range_t r) { return !(l == r); }
+	constexpr friend bool operator!=(range_t l, range_t r) {
+		return not(l == r);
+	}
 
  private:
 	Value min, max;
@@ -650,7 +652,7 @@ class enumeration {
 
 	enumeration(const enumeration& other)
 	    : idx(other.idx), local([&] {
-		      assert(other.source || other.local);
+		      assert(other.source or other.local);
 		      assert(other.source != detail::get_magic_ptr<T>());
 		      return other.copied();
 	      }()),
@@ -822,7 +824,7 @@ class enumerator_iterator {
 	enumerator_iterator(It it) : it_(it) {}
 
 	volatile value_type& operator*() & {
-		if (!captured) {
+		if (not captured) {
 			curr_.set(to_pointer(it_));
 			captured = true;
 		}
@@ -1022,8 +1024,8 @@ namespace detail {
 	};
 
 	template <typename Range>
-	struct value_and_index_base<Range,
-	                            std::enable_if_t<!std::is_reference_v<Range>>> {
+	struct value_and_index_base<
+	    Range, std::enable_if_t<not std::is_reference_v<Range>>> {
 	 public:
 		using iterator_type = decltype(std::begin(std::declval<Range&>()));
 
@@ -1070,7 +1072,7 @@ namespace detail {
 			}
 
 			bool operator!=(const iterator& other) const {
-				return !(other == *this);
+				return not(other == *this);
 			}
 		};
 

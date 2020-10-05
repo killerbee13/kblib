@@ -62,7 +62,7 @@ std::optional<D> get_file_contents(const string& filename) {
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
 template <typename D = std::string, typename string,
-          typename std::enable_if_t<!is_contiguous_v<D>, int> = 0>
+          typename std::enable_if_t<not is_contiguous_v<D>, int> = 0>
 std::optional<D> get_file_contents(const string& filename) {
 	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
 	              "D must be a sequence of trivial types");
@@ -105,7 +105,7 @@ inline std::string getline(std::istream& is) {
 inline std::istream& eatWord(std::istream& is) {
 	do {
 		is.get();
-	} while (is && !isspace(is.peek()));
+	} while (is and not isspace(is.peek()));
 	return is;
 }
 
@@ -119,7 +119,7 @@ inline std::istream& eatWord(std::istream& is) {
  */
 [[deprecated("Use std::ws instead")]] inline std::istream&
 eatSpace(std::istream& is) {
-	while (is && isspace(is.peek())) {
+	while (is and isspace(is.peek())) {
 		is.get();
 	}
 	return is;
@@ -152,8 +152,8 @@ auto nl(std::basic_istream<CharT, Traits>& is)
     -> std::basic_istream<CharT, Traits>& {
 	auto n = static_cast<typename Traits::int_type>(is.widen('\n'));
 	for (typename Traits::int_type c = is.peek();
-	     is && c != kblib::eof<CharT> &&
-	     std::isspace(static_cast<CharT>(c), is.getloc()) && c != n;
+	     is and c != kblib::eof<CharT> and
+	     std::isspace(static_cast<CharT>(c), is.getloc()) and c != n;
 	     c = is.peek()) {
 		is.ignore();
 	}

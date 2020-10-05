@@ -45,7 +45,7 @@
 #define KBLIB_UNUSED [[gnu::unused]]
 #endif
 
-#if defined(_DOXYGEN_) && !defined(KBLIB_DEF_MACROS)
+#if defined(_DOXYGEN_) and not defined(KBLIB_DEF_MACROS)
 /**
  * @def KBLIB_DEF_MACROS
  * @brief If this macro is defined, kblib will define certain macros without the
@@ -99,7 +99,7 @@ constexpr endian system_endian = endian::unknown;
 
 namespace detail {
 	constexpr endian get_hash_order() {
-		if (system_endian == endian::little || system_endian == endian::big) {
+		if (system_endian == endian::little or system_endian == endian::big) {
 			return system_endian;
 		} else {
 			return endian::little;

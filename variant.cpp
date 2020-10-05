@@ -162,7 +162,7 @@ TEST_CASE("poly_obj") {
 		bark_log.clear();
 		{
 			kblib::poly_obj<good_base> o1, o2{std::in_place};
-			REQUIRE(!o1.has_value());
+			REQUIRE(not o1.has_value());
 			REQUIRE(o2.has_value());
 			o2->bark(); // good_base
 			expected.push_back(vgood_base);
@@ -191,7 +191,7 @@ TEST_CASE("poly_obj") {
 			expected.push_back(dgood_derived);
 			expected.push_back(dgood_base);
 			REQUIRE(bark_log == expected);
-			REQUIRE(!o1.has_value());
+			REQUIRE(not o1.has_value());
 			REQUIRE(o2.has_value());
 			// kblib::poly_obj<good_base> o3 =
 			// kblib::poly_obj<good_base>::make<bad_nocopy>();

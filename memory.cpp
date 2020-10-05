@@ -6,7 +6,7 @@
 TEST_CASE("live_ptr<int>") {
 	// default-initialized live_ptrs are null
 	kblib::live_ptr<int> dptr;
-	REQUIRE(!dptr);
+	REQUIRE(not dptr);
 	// can be compared to nullptr
 	REQUIRE(dptr == nullptr);
 
@@ -31,7 +31,7 @@ TEST_CASE("live_ptr<int>") {
 	// move the pointer
 	auto ptr3 = std::move(ptr2);
 	REQUIRE(ptr3 == ptr);
-	REQUIRE(!ptr2);
+	REQUIRE(not ptr2);
 
 	// reassign a pointer
 	ptr2 = ptr3;
@@ -43,22 +43,22 @@ TEST_CASE("live_ptr<int>") {
 	auto cptr2 = cptr;
 	REQUIRE(cptr2 == ptr);
 	auto cptr3 = std::move(cptr2);
-	REQUIRE(!cptr2);
+	REQUIRE(not cptr2);
 
 	// destroy the referenced object
 	obj.reset();
 
 	// all pointers to it are now null
-	REQUIRE(!ptr);
+	REQUIRE(not ptr);
 	REQUIRE(ptr == ptr3);
 	REQUIRE(ptr == dptr);
-	REQUIRE(!cptr);
+	REQUIRE(not cptr);
 }
 
 TEST_CASE("live_ptr<string>") {
 	// default-initialized live_ptrs are null
 	kblib::live_ptr<std::string> dptr;
-	REQUIRE(!dptr);
+	REQUIRE(not dptr);
 	// can be compared to nullptr
 	REQUIRE(dptr == nullptr);
 
@@ -85,7 +85,7 @@ TEST_CASE("live_ptr<string>") {
 	// move the pointer
 	auto ptr3 = std::move(ptr2);
 	REQUIRE(ptr3 == ptr);
-	REQUIRE(!ptr2);
+	REQUIRE(not ptr2);
 
 	// reassign a pointer
 	ptr2 = ptr3;
@@ -97,16 +97,16 @@ TEST_CASE("live_ptr<string>") {
 	auto cptr2 = cptr;
 	REQUIRE(cptr2 == ptr);
 	auto cptr3 = std::move(cptr2);
-	REQUIRE(!cptr2);
+	REQUIRE(not cptr2);
 
 	// destroy the referenced object
 	obj.reset();
 
 	// all pointers to it are now null
-	REQUIRE(!ptr);
+	REQUIRE(not ptr);
 	REQUIRE(ptr == ptr3);
 	REQUIRE(ptr == dptr);
-	REQUIRE(!cptr);
+	REQUIRE(not cptr);
 }
 
 TEST_CASE("cond_ptr") {

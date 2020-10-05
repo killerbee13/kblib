@@ -119,7 +119,7 @@ Container construct_from_range(Range&& r) {
 }
 
 template <typename Container,
-          bool ArrayLike = !detail::is_resizable_v<Container>>
+          bool ArrayLike = not detail::is_resizable_v<Container>>
 class KBLIB_NODISCARD build_iterator {
  public:
 	using value_type = void;
@@ -214,7 +214,7 @@ class KBLIB_NODISCARD build_iterator<Container, true> {
 	}
 
 	decltype(auto) operator*() const noexcept { return (*range)[index]; }
-	auto* operator-> () const noexcept { return &(*range)[index]; }
+	auto* operator->() const noexcept { return &(*range)[index]; }
 
 	/**
 	 * @brief Advance to the next element.
@@ -291,8 +291,8 @@ struct tuple_size<::kblib::construct_with_size<C, size>>
 namespace kblib {
 namespace detail {
 
-   template <typename Container, std::size_t N>
-   struct buildiota_impl<construct_with_size<Container, N>, false> {
+	template <typename Container, std::size_t N>
+	struct buildiota_impl<construct_with_size<Container, N>, false> {
 		template <typename T>
 		constexpr static Container impl(T value) {
 			Container out = construct_with_size<Container, N>::make();
