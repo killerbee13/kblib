@@ -57,6 +57,7 @@ HEADERS += \
     kblib/direct_map.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
+QMAKE_CXXFLAGS += -march=native
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces -Wno-mismatched-tags -Wreturn-std-move
 QMAKE_CXXFLAGS += -I/mnt/Vers1/include
 QMAKE_CXXFLAGS_DEBUG += -glldb
@@ -69,4 +70,5 @@ QMAKE_CXXFLAGS_RELEASE += -flto
 QMAKE_LFLAGS_RELEASE += -flto
 
 DISTFILES += \
-    LICENSE.txt
+    LICENSE.txt \
+    var_timings.log

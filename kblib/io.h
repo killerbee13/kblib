@@ -205,7 +205,7 @@ inline auto get_line(string<CharT, O...>& str) {
 template <typename CharT, typename... O,
           template <typename, typename...> class string>
 inline auto get_line(string<CharT, O...>& str, CharT delim) {
-	auto _f = [&](auto& istream) -> decltype(istream) {
+	auto _f = [&, delim](auto& istream) -> decltype(istream) {
 		std::getline(istream, str, delim);
 		return istream;
 	};
