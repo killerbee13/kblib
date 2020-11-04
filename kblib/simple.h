@@ -63,7 +63,7 @@ constexpr void to_bytes_le(Integral ival,
 	              "CharT must be a char-like type.");
 	typename std::make_signed<Integral>::type val = ival;
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
-		dest[byte] = (CharT)(val >> (CHAR_BIT * byte));
+		dest[byte] = (CharT)(ival >> (CHAR_BIT * byte));
 	}
 }
 
@@ -75,7 +75,7 @@ constexpr void to_bytes_be(Integral ival,
 	              "CharT must be a char-like type.");
 	typename std::make_signed<Integral>::type val = ival;
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
-		dest[(sizeof(Integral) - 1) - byte] = (CharT)(val >> (CHAR_BIT * byte));
+		dest[(sizeof(Integral) - 1) - byte] = (CharT)(ival >> (CHAR_BIT * byte));
 	}
 }
 

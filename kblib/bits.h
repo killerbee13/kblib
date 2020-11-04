@@ -463,6 +463,115 @@ namespace detail {
 	constexpr static decltype(raw) get_##name##_v =                             \
 	    (basis >> offset) & ((decltype(raw)(1) << size) - 1);
 
+namespace detail {
+
+	template <typename Type, typename Storage>
+	struct pun_proxy {
+		Storage& base;
+		pun_proxy& operator=(Type val) noexcept {
+			std::memcpy(&base, &val, sizeof val);
+		}
+		operator Type() const noexcept {
+			Type ret;
+			std::memcpy(&ret, &base, sizeof ret);
+			return ret;
+		}
+	};
+
+	template <typename Type, typename Storage>
+	struct array_pun_proxy {
+		Storage& base;
+		Type data;
+		bool dirty = false;
+		operator Type&() noexcept {
+			if (dirty) {
+				std::memcpy(&base, &data, sizeof data);
+			}
+			dirty = true;
+			return data;
+		}
+		operator const Type&() const noexcept {
+			if (dirty) {
+				std::memcpy(&base, &data, sizeof data);
+			}
+			return data;
+		}
+		~array_pun_proxy() {
+			if (dirty) {
+				std::memcpy(&base, &data, sizeof data);
+			}
+		}
+	};
+
+} // namespace detail
+
+template <typename Type, auto Storage>
+class pun {
+ private:
+	using class_t = kblib::class_t<Storage>;
+	using member_t = kblib::member_t<class_t, Storage>;
+	using proxy_t = detail::pun_proxy<Type, member_t>;
+	using const_proxy_t = detail::pun_proxy<Type, const member_t>;
+
+	static_assert(sizeof(Type) <= sizeof(member_t),
+	              "Type will not fit in the provided storage.");
+	static_assert(std::is_trivially_copyable_v<Type>,
+	              "Type must be trivially copyable.");
+	static_assert(
+	    std::is_trivially_copyable_v<std::remove_all_extents_t<member_t>>,
+	    "Storage type must be trivially copyable.");
+
+	member_t& base() noexcept {
+		return reinterpret_cast<class_t*>(this)->*Storage;
+	}
+	const member_t& base() const noexcept {
+		return reinterpret_cast<const class_t*>(this)->*Storage;
+	}
+
+ public:
+	const_proxy_t operator()() const noexcept { return {base()}; }
+	proxy_t operator()(Type val) noexcept {
+		std::memcpy(&base(), &val, sizeof val);
+		return {base()};
+	}
+	operator Type() const noexcept { return (*this)(); }
+	proxy_t operator=(Type val) noexcept { return (*this)(val); }
+};
+
+template <typename Type, std::size_t N, auto Storage>
+class pun<Type[N], Storage> {
+ private:
+	using class_t = kblib::class_t<Storage>;
+	using member_t = kblib::member_t<class_t, Storage>;
+	using type = std::array<Type, N>;
+	using proxy_t = detail::pun_proxy<type, member_t>;
+	using const_proxy_t = detail::pun_proxy<type, const member_t>;
+
+	static_assert(sizeof(type) <= sizeof(member_t),
+	              "Type will not fit in the provided storage.");
+	static_assert(std::is_trivially_copyable_v<type>,
+	              "Type must be trivially copyable.");
+	static_assert(
+	    std::is_trivially_copyable_v<std::remove_all_extents_t<member_t>>,
+	    "Storage type must be trivially copyable.");
+
+	member_t& base() noexcept {
+		return reinterpret_cast<class_t*>(this)->*Storage;
+	}
+	const member_t& base() const noexcept {
+		return reinterpret_cast<const class_t*>(this)->*Storage;
+	}
+
+ public:
+	const_proxy_t operator()() const noexcept { return {base()}; }
+	proxy_t operator()(const Type (&val)[N]) noexcept {
+		std::memcpy(&base(), &val, sizeof val);
+		return {base()};
+	}
+	operator type() const noexcept { return (*this)(); }
+	proxy_t operator=(const Type (&val)[N]) noexcept { return (*this)(val); }
+};
+
 } // namespace kblib
 
 #endif // KBLIB_BITS_H
@@ -498,4 +607,4 @@ namespace detail {
  */
 #define BITFIELD(offset, size, name, raw) \
 	KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
-#endif
+#endif // KBLIB_DEF_MACROS and not defined(BITFIELD)

@@ -31,230 +31,6 @@
 
 namespace kblib {
 
-// This only uses RTTI because C++ has no other means to get "int" from a
-// template parameter.
-template <typename T>
-T fromStr(const std::string& val, const char* type = typeid(T).name()) {
-	std::stringstream ss(val);
-	T ret;
-	if (not(ss >> std::boolalpha >> ret).fail()) {
-		return ret;
-	} else {
-		std::cerr << "convert.h:" << __LINE__ << ": "
-		          << ("\"" + val + "\" is not a " + type) << '\n';
-		throw std::runtime_error("\"" + val + "\" is not a " + type);
-	}
-}
-template <>
-inline std::string fromStr(const std::string& val, const char*) {
-	return val;
-}
-template <>
-inline bool fromStr(const std::string& val, const char* type) {
-	if (val == "1" or val == "true") {
-		return true;
-	} else if (val == "0" or val == "false") {
-		return false;
-	} else {
-		std::cerr << "convert.h:" << __LINE__ << ": "
-		          << ("\"" + val + "\" is not a " + type);
-		throw std::runtime_error("\"" + val + "\" is not a " + type);
-	}
-}
-
-template <typename T>
-T fromStr(std::string&& val, const char* type = typeid(T).name()) {
-	std::stringstream ss(std::move(val));
-	T ret;
-	if (not(ss >> std::boolalpha >> ret).fail()) {
-		return ret;
-	} else {
-		std::cerr << "convert.h:" << __LINE__ << ": "
-		          << ("\"" + val + "\" is not a " + type);
-		throw std::runtime_error("\"" + val + "\" is not a " + type);
-	}
-}
-template <>
-inline std::string fromStr(std::string&& val, const char*) {
-	return std::move(val);
-}
-template <>
-inline bool fromStr(std::string&& val, const char* type) {
-	if (val == "1" or val == "true") {
-		return true;
-	} else if (val == "0" or val == "false") {
-		return false;
-	} else {
-		std::cerr << "convert.h:" << __LINE__ << ": "
-		          << ("\"" + val + "\" is not a " + type);
-		throw std::runtime_error("\"" + val + "\" is not a " + type);
-	}
-}
-
-#if KBLIB_USE_STRING_VIEW
-
-template <>
-inline std::string_view fromStr(const std::string& val, const char*) {
-	return val;
-}
-template <>
-inline std::string_view fromStr(std::string&&, const char*) = delete;
-
-template <typename T>
-T fromStr(std::string_view val, const char* type = typeid(T).name()) {
-	std::istrstream ss(val.data(), kblib::to_signed(val.size()));
-	T ret;
-	if (not(ss >> std::boolalpha >> ret).fail()) {
-		return ret;
-	} else {
-		std::cerr << "convert.h:" << __LINE__ << ": "
-		          << kblib::concat("\"", val, "\" is not a ", type);
-		throw std::runtime_error(kblib::concat("\"", val, "\" is not a ", type));
-	}
-}
-template <>
-inline std::string_view fromStr(std::string_view val, const char*) {
-	return val;
-}
-template <>
-inline std::string fromStr(std::string_view val, const char*) {
-	return std::string(val);
-}
-template <>
-inline bool fromStr(std::string_view val, const char* type) {
-	if (val == "1" or val == "true") {
-		return true;
-	} else if (val == "0" or val == "false") {
-		return false;
-	} else {
-		std::cerr << "convert.h:" << __LINE__ << ": "
-		          << ("\"" + std::string(val) + "\" is not a " + type);
-		throw std::runtime_error("\"" + std::string(val) + "\" is not a " + type);
-	}
-}
-
-template <typename To, std::size_t N>
-To fromStr(const char (&val)[N], const char* type = typeid(To).name()) {
-	// N - 1: remove null terminator
-	return fromStr<To>(std::string_view(val, N - 1), type);
-}
-
-template <typename To, typename _>
-To fromStr(const char* val, const char* type = typeid(To).name(), _ = 0) {
-	return fromStr<To>(std::string_view(val), type);
-}
-
-#endif
-
-template <typename T>
-std::string toStr(T val) {
-	std::stringstream ss;
-	ss << val;
-	return ss.str();
-}
-inline std::string toStr(std::string val) { return val; }
-
-template <typename To, typename From>
-struct lexical_caster {
-	static To cast(const From& val, const char* type) {
-		std::stringstream ss;
-		ss << val;
-		To ret;
-		if (not(ss >> ret).fail()) {
-			return ret;
-		} else {
-			throw std::runtime_error("Cannot convert \"" + toStr(val) + "\" to " +
-			                         type);
-		}
-	}
-};
-
-template <typename Same>
-struct lexical_caster<Same, Same> {
-	static Same cast(const Same& val, const char*) { return val; }
-};
-
-template <>
-struct lexical_caster<std::string, std::string> {
-	static std::string cast(const std::string& val, const char*) { return val; }
-};
-
-template <typename From>
-struct lexical_caster<std::string, From> {
-	static std::string cast(const From& val, const char*) { return toStr(val); }
-};
-
-template <typename To>
-struct lexical_caster<To, std::string> {
-	static To cast(const std::string& val, const char* type) {
-		return fromStr<To>(val, type);
-	}
-};
-
-#if KBLIB_USE_STRING_VIEW
-
-template <>
-struct lexical_caster<std::string_view, std::string_view> {
-	static std::string_view cast(const std::string_view& val, const char*) {
-		return val;
-	}
-};
-
-template <>
-struct lexical_caster<std::string_view, std::string> {
-	static std::string_view cast(const std::string& val, const char*) {
-		return val;
-	}
-};
-
-template <typename From>
-struct lexical_caster<std::string_view, From> {
-	static std::enable_if_t<std::is_convertible_v<From, std::string_view>,
-	                        std::string_view>
-	cast(const From& val, const char*) {
-		return From(val);
-	}
-
-	std::string_view cast(...) = delete;
-};
-
-template <typename To>
-struct lexical_caster<To, std::string_view> {
-	static To cast(std::string_view val, const char* type) {
-		return fromStr<To>(val, type);
-	}
-};
-
-#endif
-
-template <typename To, typename From>
-To lexical_cast(const From& val, const char* type = typeid(To).name()) {
-	return lexical_caster<To, From>::cast(val, type);
-}
-
-#if 0
-template <typename To, typename From>
-To lexical_cast(const From& val, const char* type = typeid(To).name()) {
-  using namespace std::literals;
-  if constexpr (std::is_same_v<std::decay_t<To>, std::decay_t<From>>) {
-    return val;
-  } else if constexpr (std::is_same_v<std::decay_t<To>, std::string>) {
-    return toStr(val);
-  } else if constexpr (std::is_same_v<std::decay_t<From>, std::string>) {
-    return fromStr<To>(val, type);
-  } else {
-    std::stringstream ss;
-    ss << val;
-    To ret;
-    if (not (ss >> ret).fail())
-      return ret;
-    else
-      throw std::runtime_error("Cannot convert \""s + toStr(val) + "\" to " +
-                               type);
-  }
-}
-#endif
-
 constexpr bool digits_are_ascii_like(char) {
 	return is_consecutive("0123456789");
 }
@@ -464,6 +240,218 @@ std::string quoted(string&& in) {
 	ret << '"';
 	return ret.str();
 }
+
+// This only uses RTTI because C++ has no other means to get "int" from a
+// template parameter.
+template <typename T>
+T fromStr(const std::string& val, const char* type = typeid(T).name()) {
+	std::stringstream ss(val);
+	T ret;
+	if (not(ss >> std::boolalpha >> ret).fail()) {
+		return ret;
+	} else {
+		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+	}
+}
+template <>
+inline std::string fromStr(const std::string& val, const char*) {
+	return val;
+}
+template <>
+inline bool fromStr(const std::string& val, const char* type) {
+	if (val == "1" or val == "true") {
+		return true;
+	} else if (val == "0" or val == "false") {
+		return false;
+	} else {
+		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+	}
+}
+
+template <typename T>
+T fromStr(std::string&& val, const char* type = typeid(T).name()) {
+	std::stringstream ss(std::move(val));
+	T ret;
+	if (not(ss >> std::boolalpha >> ret).fail()) {
+		return ret;
+	} else {
+		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+	}
+}
+template <>
+inline std::string fromStr(std::string&& val, const char*) {
+	return std::move(val);
+}
+template <>
+inline bool fromStr(std::string&& val, const char* type) {
+	if (val == "1" or val == "true") {
+		return true;
+	} else if (val == "0" or val == "false") {
+		return false;
+	} else {
+		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+	}
+}
+
+#if KBLIB_USE_STRING_VIEW
+
+template <>
+inline std::string_view fromStr(const std::string& val, const char*) {
+	return val;
+}
+template <>
+inline std::string_view fromStr(std::string&&, const char*) = delete;
+
+template <typename T>
+T fromStr(std::string_view val, const char* type = typeid(T).name()) {
+	std::istrstream ss(val.data(), kblib::to_signed(val.size()));
+	T ret;
+	if (not(ss >> std::boolalpha >> ret).fail()) {
+		return ret;
+	} else {
+		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+	}
+}
+template <>
+inline std::string_view fromStr(std::string_view val, const char*) {
+	return val;
+}
+template <>
+inline std::string fromStr(std::string_view val, const char*) {
+	return std::string(val);
+}
+template <>
+inline bool fromStr(std::string_view val, const char* type) {
+	if (val == "1" or val == "true") {
+		return true;
+	} else if (val == "0" or val == "false") {
+		return false;
+	} else {
+		throw std::runtime_error("\"" + std::string(val) + "\" is not a " + type);
+	}
+}
+
+template <typename To, std::size_t N>
+To fromStr(const char (&val)[N], const char* type = typeid(To).name()) {
+	// N - 1: remove null terminator
+	return fromStr<To>(std::string_view(val, N - 1), type);
+}
+
+template <typename To, typename _>
+To fromStr(const char* val, const char* type = typeid(To).name(), _ = 0) {
+	return fromStr<To>(std::string_view(val), type);
+}
+
+#endif
+
+template <typename T>
+std::string toStr(T val) {
+	std::stringstream ss;
+	ss << val;
+	return ss.str();
+}
+inline std::string toStr(std::string val) { return val; }
+
+template <typename To, typename From>
+struct lexical_caster {
+	static To cast(const From& val, const char* type) {
+		std::stringstream ss;
+		ss << val;
+		To ret;
+		if (not(ss >> ret).fail()) {
+			return ret;
+		} else {
+			throw std::runtime_error("Cannot convert \"" + toStr(val) + "\" to " +
+			                         type);
+		}
+	}
+};
+
+template <typename Same>
+struct lexical_caster<Same, Same> {
+	static Same cast(const Same& val, const char*) { return val; }
+};
+
+template <>
+struct lexical_caster<std::string, std::string> {
+	static std::string cast(const std::string& val, const char*) { return val; }
+};
+
+template <typename From>
+struct lexical_caster<std::string, From> {
+	static std::string cast(const From& val, const char*) { return toStr(val); }
+};
+
+template <typename To>
+struct lexical_caster<To, std::string> {
+	static To cast(const std::string& val, const char* type) {
+		return fromStr<To>(val, type);
+	}
+};
+
+#if KBLIB_USE_STRING_VIEW
+
+template <>
+struct lexical_caster<std::string_view, std::string_view> {
+	static std::string_view cast(const std::string_view& val, const char*) {
+		return val;
+	}
+};
+
+template <>
+struct lexical_caster<std::string_view, std::string> {
+	static std::string_view cast(const std::string& val, const char*) {
+		return val;
+	}
+};
+
+template <typename From>
+struct lexical_caster<std::string_view, From> {
+	static std::enable_if_t<std::is_convertible_v<From, std::string_view>,
+	                        std::string_view>
+	cast(const From& val, const char*) {
+		return From(val);
+	}
+
+	std::string_view cast(...) = delete;
+};
+
+template <typename To>
+struct lexical_caster<To, std::string_view> {
+	static To cast(std::string_view val, const char* type) {
+		return fromStr<To>(val, type);
+	}
+};
+
+#endif
+
+template <typename To, typename From>
+To lexical_cast(const From& val, const char* type = typeid(To).name()) {
+	return lexical_caster<To, From>::cast(val, type);
+}
+
+#if 0
+template <typename To, typename From>
+To lexical_cast(const From& val, const char* type = typeid(To).name()) {
+  using namespace std::literals;
+  if constexpr (std::is_same_v<std::decay_t<To>, std::decay_t<From>>) {
+    return val;
+  } else if constexpr (std::is_same_v<std::decay_t<To>, std::string>) {
+    return toStr(val);
+  } else if constexpr (std::is_same_v<std::decay_t<From>, std::string>) {
+    return fromStr<To>(val, type);
+  } else {
+    std::stringstream ss;
+    ss << val;
+    To ret;
+    if (not (ss >> ret).fail())
+      return ret;
+    else
+      throw std::runtime_error("Cannot convert \""s + toStr(val) + "\" to " +
+                               type);
+  }
+}
+#endif
 
 } // namespace kblib
 

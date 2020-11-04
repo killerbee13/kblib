@@ -156,3 +156,28 @@ TEST_CASE("bitfields") {
 	static_assert(Addr::get_nt_v<b.raw> == 0b10, "");
 	static_assert(Addr::get_fY_v<b.raw> == 0b001, "");
 }
+
+union punner {
+	char storage[sizeof(char*)]{};
+	kblib::pun<const char*, &punner::storage> ptr;
+	kblib::pun<std::uintptr_t, &punner::storage> val;
+	kblib::pun<char16_t[sizeof(char*) / 2], &punner::storage> s;
+};
+
+TEST_CASE("punning") {
+	punner pun;
+	std::uintptr_t ival = 0xABCD;
+	kblib::to_bytes_le(ival, pun.storage);
+	REQUIRE(std::equal(std::begin(pun.storage), std::begin(pun.storage) + 4,
+	                   "\xCD\xAB\0\0"));
+	REQUIRE(pun.val == ival);
+	std::array<char16_t, sizeof(char*) / 2> ustr{u'\xABCD', u'\0'};
+	decltype(ustr) t = pun.s;
+	REQUIRE(t == ustr);
+	REQUIRE(decltype(ustr)(pun.s) == ustr);
+
+	pun.val = 0;
+	const char* c = "";
+	pun.ptr = c;
+	REQUIRE(pun.val == kblib::byte_cast<std::uintptr_t>(c));
+}

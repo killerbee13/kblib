@@ -207,6 +207,17 @@ struct is_contiguous<C, void_t<decltype(std::declval<C&>().data())>>
 template <typename C>
 constexpr bool is_contiguous_v = is_contiguous<C>::value;
 
+template <typename T>
+struct class_of;
+
+template <typename T, typename M>
+struct class_of<M T::*> {
+	using type = T;
+};
+
+template <typename T>
+using class_of_t = typename class_of<T>::type;
+
 #if KBLIB_USE_CXX17
 
 /**
@@ -216,6 +227,9 @@ constexpr bool is_contiguous_v = is_contiguous<C>::value;
 template <typename T, auto M>
 using member_t =
     typename std::remove_reference<decltype(std::declval<T&>().*M)>::type;
+
+template <auto M>
+using class_t = typename class_of<decltype(M)>::type;
 
 #endif
 
