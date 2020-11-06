@@ -516,15 +516,11 @@ class poly_obj
 	 * This function can only be called if Traits is copy-constructible.
 	 *
 	 * @param other A poly_obj to copy from.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
 	 */
-	constexpr poly_obj(const poly_obj& other) noexcept(
-	    std::is_nothrow_copy_constructible_v<Obj>)
-	    : disabler(other), ops_t(other) {
-		if (other.value) {
-			value = static_cast<Obj*>(this->copy(data, other.get()));
+	constexpr poly_obj(const poly_obj& other)
+	    : disabler(other), ops_t(other), valid(other.valid) {
+		if (valid) {
+			this->copy(data, other.get());
 		}
 	}
 	/**
@@ -533,15 +529,12 @@ class poly_obj
 	 * This function can only be called if Traits is move-constructible.
 	 *
 	 * @param other A poly_obj to move from.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
 	 */
-	constexpr poly_obj(poly_obj&& other) noexcept(
-	    std::is_nothrow_move_constructible_v<Obj>)
-	    : disabler(std::move(other)), ops_t(std::move(other)) {
-		if (other.value) {
-			value = static_cast<Obj*>(this->move(data, other.get()));
+	constexpr poly_obj(poly_obj&& other)
+	    : disabler(std::move(other)), ops_t(std::move(other)),
+	      valid(other.valid) {
+		if (valid) {
+			this->move(data, other.get());
 		}
 	}
 
@@ -551,26 +544,18 @@ class poly_obj
 	 * This function can only be called is Traits is copy-constructible.
 	 *
 	 * @param obj The object to copy.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
 	 */
-	constexpr poly_obj(const Obj& obj) noexcept(
-	    std::is_nothrow_copy_constructible_v<Obj>)
-	    : value(new (data) Obj(obj)) {}
+	constexpr poly_obj(const Obj& obj) : valid(true) { new (data) Obj(obj); }
 	/**
 	 * @brief Move-constructs the contained object from obj.
 	 *
 	 * This function can only be called if Traits is move-constructible.
 	 *
 	 * @param obj The object to move from.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
 	 */
-	constexpr poly_obj(Obj&& obj) noexcept(
-	    std::is_nothrow_move_constructible_v<Obj>)
-	    : value(new (data) Obj(std::move(obj))) {}
+	constexpr poly_obj(Obj&& obj) : valid(true) {
+		new (data) Obj(std::move(obj));
+	}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
@@ -585,8 +570,9 @@ class poly_obj
 	                                    int> = 0>
 	constexpr explicit poly_obj(std::in_place_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible_v<Obj, Args&&...>)
-	    : ops_t(detail::make_ops_t<Obj, Traits>()),
-	      value(new (data) Obj(std::forward<Args>(args)...)) {}
+	    : ops_t(detail::make_ops_t<Obj, Traits>()), valid(true) {
+		new (data) Obj(std::forward<Args>(args)...);
+	}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
@@ -601,8 +587,9 @@ class poly_obj
 	                                    int> = 0>
 	constexpr explicit poly_obj(kblib::in_place_agg_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible_v<Obj, Args&&...>)
-	    : ops_t(detail::make_ops_t<Obj, Traits>()),
-	      value(new (data) Obj{std::forward<Args>(args)...}) {}
+	    : ops_t(detail::make_ops_t<Obj, Traits>()), valid(true) {
+		new (data) Obj{std::forward<Args>(args)...};
+	}
 
 	/**
 	 * @brief Destroys the contained object, if any, and then copies other as in
@@ -617,8 +604,10 @@ class poly_obj
 	poly_obj& operator=(const poly_obj& other) & {
 		clear();
 		static_cast<ops_t&>(*this) = other;
-		value = static_cast<Obj*>(
-		    this->copy(data, static_cast<const void*>(other.value)));
+		if (other.valid) {
+			this->copy(data, static_cast<const void*>(other.data));
+			valid = true;
+		}
 		return *this;
 	}
 
@@ -635,8 +624,10 @@ class poly_obj
 	poly_obj& operator=(poly_obj&& other) & {
 		clear();
 		static_cast<ops_t&>(*this) = other;
-		value =
-		    static_cast<Obj*>(this->move(data, static_cast<void*>(other.value)));
+		if (other.valid) {
+			this->move(data, static_cast<void*>(other.data));
+			valid = true;
+		}
 		return *this;
 	}
 
@@ -651,9 +642,6 @@ class poly_obj
 	 * @tparam U A type publically derived from Obj.
 	 * @param args Arguments to pass to the constructor of U.
 	 * @return poly_obj A poly_obj<Obj> containing an object of type U.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
 	 */
 	template <typename U, typename... Args>
 	static poly_obj make(Args&&... args) noexcept(
@@ -685,9 +673,6 @@ class poly_obj
 	 * @tparam U A type publically derived from Obj.
 	 * @param args Arguments to pass to the constructor of U.
 	 * @return poly_obj A poly_obj<Obj> containing an object of type U.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
 	 */
 	template <typename U, typename... Args>
 	static poly_obj make_aggregate(Args&&... args) noexcept(
@@ -726,12 +711,7 @@ class poly_obj
 	 *
 	 * @return Obj& A reference to the contained object.
 	 */
-	Obj& operator*() & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return *value;
-	}
+	Obj& operator*() & noexcept { return *get(); }
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -742,12 +722,7 @@ class poly_obj
 	 *
 	 * @return const Obj& A reference to the contained object.
 	 */
-	const Obj& operator*() const& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return *value;
-	}
+	const Obj& operator*() const& noexcept { return *get(); }
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -760,10 +735,7 @@ class poly_obj
 	 */
 	Obj&&
 	operator*() && noexcept(std::is_nothrow_move_constructible<Obj>::value) {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return std::move(*value);
+		return std::move(*get());
 	}
 	/**
 	 * @brief Returns a reference to the contained object.
@@ -780,10 +752,7 @@ class poly_obj
 	 */
 	const Obj&& operator*() const&& noexcept(
 	    std::is_nothrow_move_constructible<Obj>::value) {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return std::move(*value);
+		return std::move(*get());
 	}
 
 	/**
@@ -795,12 +764,7 @@ class poly_obj
 	 *
 	 * @return Obj* A pointer to the contained object.
 	 */
-	Obj* get() & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return value;
-	}
+	Obj* get() & noexcept { return std::launder(reinterpret_cast<Obj*>(data)); }
 	/**
 	 * @brief Returns a pointer to the contained object.
 	 *
@@ -811,10 +775,7 @@ class poly_obj
 	 * @return const Obj* A pointer to the contained object.
 	 */
 	const Obj* get() const& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return value;
+		return std::launder(reinterpret_cast<const Obj*>(data));
 	}
 
 	/**
@@ -827,10 +788,7 @@ class poly_obj
 	 * @return Obj* A pointer to the contained object.
 	 */
 	Obj* operator->() & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return value;
+		return std::launder(reinterpret_cast<Obj*>(data));
 	}
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -842,99 +800,68 @@ class poly_obj
 	 * @return const Obj* A pointer to the contained object.
 	 */
 	const Obj* operator->() const& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return value;
+		return std::launder(reinterpret_cast<const Obj*>(data));
 	}
 
 	template <typename member_type>
-	return_assert_t<not std::is_member_function_pointer_v<member_type(Obj::*)>,
+	return_assert_t<not std::is_member_function_pointer_v<member_type Obj::*>,
 	                member_type>&
-	operator->*(member_type(Obj::*member)) & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return value->*member;
+	operator->*(member_type Obj::*member) & noexcept {
+		return get()->*member;
 	}
 
 	template <typename member_type>
 	const return_assert_t<
-	    not std::is_member_function_pointer_v<member_type(Obj::*)>, member_type>&
-	operator->*(member_type(Obj::*member)) const& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return value->*member;
+	    not std::is_member_function_pointer_v<member_type Obj::*>, member_type>&
+	operator->*(member_type Obj::*member) const& noexcept {
+		return get()->*member;
 	}
 
 	template <typename member_type>
-	return_assert_t<not std::is_member_function_pointer_v<member_type(Obj::*)>,
+	return_assert_t<not std::is_member_function_pointer_v<member_type Obj::*>,
 	                member_type>&&
-	operator->*(member_type(Obj::*member)) && noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return std::move(value->*member);
+	operator->*(member_type Obj::*member) && noexcept {
+		return std::move(get()->*member);
 	}
 
 	template <typename member_type>
 	const return_assert_t<
-	    not std::is_member_function_pointer_v<member_type(Obj::*)>,
-	    member_type>&&
-	operator->*(member_type(Obj::*member)) const&& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return std::move(value->*member);
+	    not std::is_member_function_pointer_v<member_type Obj::*>, member_type>&&
+	operator->*(member_type Obj::*member) const&& noexcept {
+		return std::move(get()->*member);
 	}
 
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...)) & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
 	}
 
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...) const) & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
 	}
 
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...) const) const& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
 	}
 
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...) &) & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
 	}
 
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...) const&) & noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
 	}
@@ -942,30 +869,21 @@ class poly_obj
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...)
 	                     const&) const& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
 	}
 
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...) &&) && noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
 		};
 	}
 
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...) const&&) && noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
 		};
 	}
@@ -973,10 +891,7 @@ class poly_obj
 	template <typename member_type, typename... Args>
 	auto operator->*(member_type (Obj::*member)(Args...)
 	                     const&&) const&& noexcept {
-#if __has_builtin(__builtin_assume)
-		__builtin_assume(value == reinterpret_cast<const Obj*>(data));
-#endif
-		return [member, value = value](Args... args) -> decltype(auto) {
+		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
 		};
 	}
@@ -988,14 +903,14 @@ class poly_obj
 	 * behavior is undefined.
 	 *
 	 * @param args The arguments to forward to the function.
-	 * @return std::invoke_result_t<const Obj&, Args&&...> The return value of
+	 * @return std::invoke_result_t<Obj&, Args&&...> The return value of
 	 * the function.
 	 */
 	template <typename... Args>
 	auto operator()(Args&&... args) noexcept(
 	    std::is_nothrow_invocable_v<Obj&, Args&&...>)
 	    -> fakestd::invoke_result_t<Obj&, Args&&...> {
-		return kblib::invoke(**this, std::forward<Args>(args)...);
+		return kblib::invoke(*get(), std::forward<Args>(args)...);
 	}
 	/**
 	 * @brief Invokes the container function object, if Obj is a callable type.
@@ -1011,13 +926,13 @@ class poly_obj
 	auto operator()(Args&&... args) const
 	    noexcept(std::is_nothrow_invocable_v<const Obj&, Args&&...>)
 	        -> fakestd::invoke_result_t<const Obj&, Args&&...> {
-		return kblib::invoke(*value, std::forward<Args>(args)...);
+		return kblib::invoke(*get(), std::forward<Args>(args)...);
 	}
 
 	/**
 	 * @brief Check if the poly_obj contains a value.
 	 */
-	bool has_value() const& noexcept { return value; }
+	bool has_value() const& noexcept { return valid; }
 
 	explicit operator bool() const& noexcept { return has_value(); }
 
@@ -1025,22 +940,22 @@ class poly_obj
 	 * @brief Empties the poly_obj, reverting to a default-constructed state.
 	 */
 	void clear() noexcept {
-		if (value) {
-			value->~Obj();
-			value = nullptr;
+		if (valid) {
+			get()->~Obj();
+			valid = false;
 		}
 		static_cast<ops_t&>(*this) = {};
 	}
 
 	~poly_obj() noexcept {
-		if (value) {
-			value->~Obj();
+		if (valid) {
+			get()->~Obj();
 		}
 	}
 
  private:
 	alignas(Obj) std::byte data[Capacity];
-	Obj* value = nullptr;
+	bool valid{};
 
 	template <typename U, bool = false>
 	struct tag {};
@@ -1048,14 +963,16 @@ class poly_obj
 	template <typename U, typename... Args>
 	poly_obj(tag<U>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible_v<U, Args&&...>)
-	    : ops_t(detail::make_ops_t<U, Traits>()),
-	      value(new (data) U(std::forward<Args>(args)...)) {}
+	    : ops_t(detail::make_ops_t<U, Traits>()), valid(true) {
+		new (data) U(std::forward<Args>(args)...);
+	}
 
 	template <typename U, typename... Args>
 	poly_obj(tag<U, true>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible_v<U, Args&&...>)
-	    : ops_t(detail::make_ops_t<U, Traits>()),
-	      value(new (data) U{std::forward<Args>(args)...}) {}
+	    : ops_t(detail::make_ops_t<U, Traits>()), valid(true) {
+		new (data) U{std::forward<Args>(args)...};
+	}
 };
 
 template <typename T, typename D = T, std::size_t Capacity = sizeof(D),

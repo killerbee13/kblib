@@ -1,3 +1,490 @@
+New implementation for poly_obj, with std::launder:
+
+Release, mtune=native, 110.668 seconds
+
+-------------------------------------------------------------------------------
+poly_obj performance
+-------------------------------------------------------------------------------
+../kblib/variant.cpp:431
+...............................................................................
+
+benchmark name                                  samples       iterations    estimated
+                                                mean          low mean      high mean
+                                                std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+baseline                                                100          111   11.0667 ms
+                                                     957 ns       949 ns       968 ns
+                                                      46 ns        33 ns        63 ns
+
+raw pointer                                             100          108   11.1132 ms
+                                                     987 ns       980 ns     1.001 us
+                                                      49 ns        32 ns        84 ns
+
+unique_ptr                                              100           71   11.2038 ms
+                                                   1.649 us     1.593 us     1.717 us
+                                                     314 ns       268 ns       366 ns
+
+poly_obj                                                100          116   11.1476 ms
+                                                     933 ns       926 ns       957 ns
+                                                      62 ns        25 ns       133 ns
+
+std::function                                           100           58   11.2404 ms
+                                                    2.75 us     2.526 us     2.969 us
+                                                   1.129 us     1.085 us     1.194 us
+
+std::visit(v, f)                                        100           18   11.1582 ms
+                                                   6.052 us     5.926 us     6.236 us
+                                                     769 ns       566 ns     1.003 us
+
+kblib::visit(v, f...)                                   100           16   11.5744 ms
+                                                   6.813 us     6.737 us     6.932 us
+                                                     476 ns       340 ns       661 ns
+
+kblib::visit(v)(f...)                                   100           16   11.2032 ms
+                                                   7.058 us     7.006 us     7.154 us
+                                                     348 ns       216 ns       541 ns
+
+visit_indexed(v, f...)                                  100           21   11.1489 ms
+                                                   5.318 us     5.253 us     5.441 us
+                                                     441 ns       280 ns       714 ns
+
+kblib::visit2(v, f...)                                  100           47   11.2706 ms
+                                                   2.645 us     2.536 us     2.764 us
+                                                     578 ns       528 ns       646 ns
+
+kblib::visit2_nop(v, f...)                              100           47   11.2659 ms
+                                                   2.557 us     2.529 us     2.595 us
+                                                     166 ns       126 ns       217 ns
+
+std::get_if                                             100           52   11.1384 ms
+                                                   2.137 us     2.115 us     2.187 us
+                                                     155 ns        55 ns       277 ns
+
+switch (v.index())                                      100           64   11.0912 ms
+                                                   2.083 us     1.962 us     2.222 us
+                                                     661 ns       587 ns       718 ns
+
+raw pointer, ch                                         100           79     11.06 ms
+                                                   1.382 us     1.378 us     1.389 us
+                                                      28 ns        19 ns        39 ns
+
+unique_ptr, ch                                          100           50      11.1 ms
+                                                   2.134 us     2.095 us     2.197 us
+                                                     249 ns       170 ns       369 ns
+
+poly_obj, ch                                            100           63   11.1132 ms
+                                                   1.765 us     1.722 us     1.919 us
+                                                     367 ns        97 ns       843 ns
+
+std::function, ch                                       100           49   11.0642 ms
+                                                   2.364 us     2.254 us     2.498 us
+                                                     615 ns       527 ns       694 ns
+
+kblib::visit2_nop(v, f...), ch                          100           39   11.1618 ms
+                                                   3.153 us     3.036 us     3.279 us
+                                                     616 ns       565 ns       681 ns
+
+std::get_if, ch                                         100           37   11.3035 ms
+                                                    3.23 us     3.132 us      3.35 us
+                                                     552 ns       469 ns       633 ns
+
+switch (v.index()), ch                                  100           46   11.1044 ms
+                                                   2.351 us     2.343 us     2.365 us
+                                                      54 ns        37 ns        76 ns
+
+std::function, ex                                       100           54   11.2212 ms
+                                                   1.946 us     1.933 us     1.968 us
+                                                      86 ns        58 ns       131 ns
+
+std::visit(v, f), ex                                    100           17   11.4342 ms
+                                                   6.198 us     6.136 us     6.305 us
+                                                     401 ns       281 ns       656 ns
+
+kblib::visit(v, f...), ex                               100           15   11.1825 ms
+                                                   7.361 us     7.268 us     7.513 us
+                                                     596 ns       411 ns       841 ns
+
+kblib::visit(v)(f...), ex                               100           17   11.4291 ms
+                                                   6.741 us     6.664 us     6.896 us
+                                                     536 ns       300 ns       869 ns
+
+visit_indexed(v, f...), ex                              100           23    11.546 ms
+                                                   5.096 us     5.029 us     5.198 us
+                                                     414 ns       302 ns       554 ns
+
+kblib::visit2(v, f...), ex                              100           38   11.3316 ms
+                                                   3.424 us     3.275 us     3.599 us
+                                                     823 ns       731 ns       894 ns
+
+
+Profiling took 110.668 seconds
+
+
+
+Release, march=native, 110.545 seconds
+
+-------------------------------------------------------------------------------
+poly_obj performance
+-------------------------------------------------------------------------------
+../kblib/variant.cpp:431
+...............................................................................
+
+benchmark name                                  samples       iterations    estimated
+                                                mean          low mean      high mean
+                                                std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+baseline                                                100          134   13.4134 ms
+                                                     983 ns       965 ns      1.01 us
+                                                     111 ns        77 ns       158 ns
+
+raw pointer                                             100          133   13.4596 ms
+                                                     985 ns       978 ns       995 ns
+                                                      42 ns        30 ns        57 ns
+
+unique_ptr                                              100           85   13.5405 ms
+                                                   1.474 us     1.458 us     1.503 us
+                                                     106 ns        67 ns       156 ns
+
+poly_obj                                                100          141   13.4373 ms
+                                                     974 ns       955 ns     1.002 us
+                                                     115 ns        87 ns       157 ns
+
+std::function                                           100           84   13.4232 ms
+                                                   1.476 us     1.453 us     1.528 us
+                                                     168 ns        92 ns       311 ns
+
+std::visit(v, f)                                        100           21   13.7508 ms
+                                                   6.882 us     6.597 us     7.205 us
+                                                   1.544 us     1.382 us     1.728 us
+
+kblib::visit(v, f...)                                   100           20    13.588 ms
+                                                   7.202 us     6.994 us     7.515 us
+                                                   1.282 us       951 ns     1.697 us
+
+kblib::visit(v)(f...)                                   100           17    13.464 ms
+                                                   7.291 us     7.161 us     7.498 us
+                                                     823 ns       591 ns     1.175 us
+
+visit_indexed(v, f...)                                  100           26   13.9048 ms
+                                                   5.105 us     5.081 us      5.15 us
+                                                     161 ns       102 ns       257 ns
+
+kblib::visit2(v, f...)                                  100           66   13.4442 ms
+                                                   2.278 us     2.235 us     2.348 us
+                                                     273 ns       193 ns       416 ns
+
+kblib::visit2_nop(v, f...)                              100           56   13.3952 ms
+                                                   2.516 us     2.496 us     2.542 us
+                                                     114 ns        82 ns       185 ns
+
+std::get_if                                             100           62   13.4354 ms
+                                                   2.849 us     2.668 us     3.052 us
+                                                     981 ns       888 ns     1.052 us
+
+switch (v.index())                                      100           80    13.512 ms
+                                                   1.749 us     1.707 us     1.822 us
+                                                     277 ns       177 ns       405 ns
+
+raw pointer, ch                                         100           95    13.433 ms
+                                                   1.425 us     1.402 us     1.477 us
+                                                     166 ns        90 ns       323 ns
+
+unique_ptr, ch                                          100           64   13.4912 ms
+                                                   2.194 us     2.161 us     2.269 us
+                                                     236 ns       125 ns       476 ns
+
+poly_obj, ch                                            100           77   13.4596 ms
+                                                   1.745 us     1.732 us     1.766 us
+                                                      84 ns        60 ns       117 ns
+
+std::function, ch                                       100           66   13.4574 ms
+                                                   2.019 us     2.004 us     2.043 us
+                                                      95 ns        67 ns       151 ns
+
+kblib::visit2_nop(v, f...), ch                          100           48   13.5312 ms
+                                                    2.59 us     2.582 us     2.607 us
+                                                      58 ns        28 ns        97 ns
+
+std::get_if, ch                                         100           44   13.4772 ms
+                                                   2.951 us     2.938 us     2.981 us
+                                                      97 ns        52 ns       165 ns
+
+switch (v.index()), ch                                  100           55    13.629 ms
+                                                   2.366 us     2.349 us     2.395 us
+                                                     112 ns        78 ns       156 ns
+
+std::function, ex                                       100           69   13.4757 ms
+                                                   1.944 us     1.928 us     1.998 us
+                                                     130 ns        39 ns       296 ns
+
+std::visit(v, f), ex                                    100           18   13.5468 ms
+                                                   6.283 us     6.152 us     6.523 us
+                                                     877 ns       571 ns     1.451 us
+
+kblib::visit(v, f...), ex                               100           18    13.752 ms
+                                                   7.273 us     7.213 us      7.39 us
+                                                     412 ns       257 ns       724 ns
+
+kblib::visit(v)(f...), ex                               100           19   14.0619 ms
+                                                   6.657 us     6.637 us     6.695 us
+                                                     137 ns        84 ns       206 ns
+
+visit_indexed(v, f...), ex                              100           26   13.7098 ms
+                                                   4.999 us     4.965 us     5.062 us
+                                                     231 ns       146 ns       364 ns
+
+kblib::visit2(v, f...), ex                              100           47   13.5501 ms
+                                                   2.926 us     2.891 us     2.978 us
+                                                     211 ns       157 ns       280 ns
+
+
+Profiling took 110.545 seconds
+
+
+
+Release, generic, 110.378 seconds
+
+-------------------------------------------------------------------------------
+poly_obj performance
+-------------------------------------------------------------------------------
+../kblib/variant.cpp:431
+...............................................................................
+
+benchmark name                                  samples       iterations    estimated
+                                                mean          low mean      high mean
+                                                std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+baseline                                                100          110    10.912 ms
+                                                     963 ns       953 ns       982 ns
+                                                      69 ns        44 ns       103 ns
+
+raw pointer                                             100           97   10.9416 ms
+                                                   1.032 us     1.007 us     1.066 us
+                                                     147 ns       113 ns       183 ns
+
+unique_ptr                                              100           69   11.0124 ms
+                                                   1.621 us     1.595 us     1.668 us
+                                                     173 ns       105 ns       291 ns
+
+poly_obj                                                100          110    10.945 ms
+                                                     957 ns       938 ns       997 ns
+                                                     132 ns        72 ns       212 ns
+
+std::function                                           100           64     11.04 ms
+                                                    1.58 us     1.511 us     1.712 us
+                                                     470 ns       281 ns       733 ns
+
+std::visit(v, f)                                        100           19   11.3145 ms
+                                                    6.85 us     6.501 us     7.283 us
+                                                   1.972 us     1.646 us     2.265 us
+
+kblib::visit(v, f...)                                   100           16   10.9488 ms
+                                                   6.993 us     6.848 us     7.195 us
+                                                     864 ns       665 ns     1.085 us
+
+kblib::visit(v)(f...)                                   100           15   11.0295 ms
+                                                   6.955 us      6.92 us     7.008 us
+                                                     217 ns       153 ns       300 ns
+
+visit_indexed(v, f...)                                  100           22   11.3982 ms
+                                                   5.137 us     5.094 us     5.216 us
+                                                     290 ns       191 ns       468 ns
+
+kblib::visit2(v, f...)                                  100           56   10.9872 ms
+                                                   2.655 us     2.497 us      2.83 us
+                                                     848 ns       771 ns       911 ns
+
+kblib::visit2_nop(v, f...)                              100           46   10.8974 ms
+                                                   2.512 us     2.499 us     2.526 us
+                                                      69 ns        49 ns        96 ns
+
+std::get_if                                             100           53   11.0346 ms
+                                                   2.136 us     2.123 us     2.152 us
+                                                      72 ns        55 ns       101 ns
+
+switch (v.index())                                      100           64    10.912 ms
+                                                   1.797 us      1.75 us      1.86 us
+                                                     277 ns       223 ns       347 ns
+
+raw pointer, ch                                         100           78   11.0058 ms
+                                                   1.455 us     1.426 us     1.504 us
+                                                     190 ns       128 ns       266 ns
+
+unique_ptr, ch                                          100           43   11.0639 ms
+                                                   2.109 us      2.08 us     2.156 us
+                                                     184 ns       127 ns       273 ns
+
+poly_obj, ch                                            100           61   10.9007 ms
+                                                   1.719 us     1.711 us     1.731 us
+                                                      47 ns        33 ns        74 ns
+
+std::function, ch                                       100           53    10.918 ms
+                                                    2.16 us     2.079 us     2.281 us
+                                                     499 ns       365 ns       635 ns
+
+kblib::visit2_nop(v, f...), ch                          100           41    10.947 ms
+                                                   3.024 us     2.913 us     3.151 us
+                                                     605 ns       543 ns       652 ns
+
+std::get_if, ch                                         100           37   10.9076 ms
+                                                    3.02 us     2.986 us     3.072 us
+                                                     212 ns       152 ns       289 ns
+
+switch (v.index()), ch                                  100           45   11.0925 ms
+                                                   2.358 us     2.341 us     2.386 us
+                                                     111 ns        79 ns       148 ns
+
+std::function, ex                                       100           49   10.9564 ms
+                                                   1.982 us     1.957 us     2.042 us
+                                                     184 ns        58 ns       322 ns
+
+std::visit(v, f), ex                                    100           17   11.0551 ms
+                                                   6.064 us     6.028 us     6.123 us
+                                                     231 ns       161 ns       335 ns
+
+kblib::visit(v, f...), ex                               100           15    11.118 ms
+                                                    7.18 us     7.167 us     7.205 us
+                                                      86 ns        50 ns       136 ns
+
+kblib::visit(v)(f...), ex                               100           16   11.2464 ms
+                                                   6.829 us     6.743 us     6.979 us
+                                                     566 ns       369 ns       840 ns
+
+visit_indexed(v, f...), ex                              100           22   10.9824 ms
+                                                   4.977 us      4.94 us     5.033 us
+                                                     229 ns       169 ns       320 ns
+
+kblib::visit2(v, f...), ex                              100           38   11.0162 ms
+                                                   2.917 us     2.892 us     2.957 us
+                                                     158 ns       111 ns       216 ns
+
+
+Profiling took 110.378 seconds
+
+Debug, 438.762 seconds
+
+-------------------------------------------------------------------------------
+poly_obj performance
+-------------------------------------------------------------------------------
+../../kblib/variant.cpp:431
+...............................................................................
+
+benchmark name                                  samples       iterations    estimated
+                                                mean          low mean      high mean
+                                                std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+baseline                                                100           68   37.4272 ms
+                                                   5.205 us     5.049 us     5.427 us
+                                                     941 ns       713 ns     1.189 us
+
+raw pointer                                             100           54   37.4004 ms
+                                                   7.007 us     6.874 us     7.201 us
+                                                     812 ns       597 ns     1.082 us
+
+unique_ptr                                              100           38   37.1792 ms
+                                                  10.022 us     9.817 us    10.397 us
+                                                   1.369 us       890 ns     2.191 us
+
+poly_obj                                                100           26   38.2564 ms
+                                                  14.737 us    14.559 us    15.016 us
+                                                   1.122 us       797 ns     1.581 us
+
+std::function                                           100           27   37.6137 ms
+                                                  14.229 us    13.926 us    14.758 us
+                                                   1.988 us     1.289 us     3.095 us
+
+std::visit(v, f)                                        100            9    37.035 ms
+                                                  40.378 us    39.778 us    41.412 us
+                                                   3.933 us      2.61 us     5.856 us
+
+kblib::visit(v, f...)                                   100            9   39.9096 ms
+                                                   46.23 us    45.088 us    47.648 us
+                                                   6.473 us     5.379 us     7.718 us
+
+kblib::visit(v)(f...)                                   100            9   41.2128 ms
+                                                  45.895 us    45.591 us    46.436 us
+                                                   2.012 us     1.307 us     3.124 us
+
+visit_indexed(v, f...)                                  100           14   38.7702 ms
+                                                  27.918 us    27.574 us    28.585 us
+                                                   2.366 us     1.381 us     3.696 us
+
+kblib::visit2(v, f...)                                  100           15   38.5665 ms
+                                                  25.962 us    25.517 us    26.652 us
+                                                   2.789 us      1.97 us     3.806 us
+
+kblib::visit2_nop(v, f...)                              100           13   38.1589 ms
+                                                   30.13 us    29.531 us    32.322 us
+                                                   5.178 us     1.408 us    11.883 us
+
+std::get_if                                             100           18   39.0564 ms
+                                                  23.241 us    22.181 us    24.931 us
+                                                    6.71 us     4.616 us     9.293 us
+
+switch (v.index())                                      100           20    38.702 ms
+                                                  19.265 us    19.146 us    19.472 us
+                                                     779 ns       512 ns     1.156 us
+
+raw pointer, ch                                         100           55    37.444 ms
+                                                   6.362 us     6.234 us     6.613 us
+                                                     873 ns       526 ns     1.355 us
+
+unique_ptr, ch                                          100           32   37.1456 ms
+                                                  14.261 us    13.521 us    15.245 us
+                                                   4.317 us      3.48 us     5.512 us
+
+poly_obj, ch                                            100           26   37.0526 ms
+                                                  14.428 us     14.15 us    14.976 us
+                                                   1.913 us      1.19 us     3.392 us
+
+std::function, ch                                       100           23   37.5981 ms
+                                                  13.898 us    13.755 us    14.153 us
+                                                     951 ns       572 ns      1.51 us
+
+kblib::visit2_nop(v, f...), ch                          100           11   37.5749 ms
+                                                  30.295 us    30.013 us    30.732 us
+                                                   1.776 us     1.253 us     2.486 us
+
+std::get_if, ch                                         100           18    38.673 ms
+                                                  21.437 us    21.178 us    21.812 us
+                                                   1.573 us      1.19 us     2.108 us
+
+switch (v.index()), ch                                  100           20     38.21 ms
+                                                  18.656 us    18.556 us    18.845 us
+                                                     677 ns       405 ns     1.089 us
+
+std::function, ex                                       100           28   37.3464 ms
+                                                    13.2 us    13.132 us    13.315 us
+                                                     440 ns       304 ns       746 ns
+
+std::visit(v, f), ex                                    100           10    40.672 ms
+                                                  40.911 us    40.617 us    41.375 us
+                                                   1.857 us     1.297 us     2.766 us
+
+kblib::visit(v, f...), ex                               100            9   39.7836 ms
+                                                  42.544 us     42.05 us     43.77 us
+                                                   3.699 us      1.92 us     7.502 us
+
+kblib::visit(v)(f...), ex                               100            6   44.3952 ms
+                                                  47.174 us    46.837 us    47.693 us
+                                                   2.105 us     1.536 us     3.039 us
+
+visit_indexed(v, f...), ex                              100           14   39.5458 ms
+                                                  28.282 us    27.992 us    28.735 us
+                                                   1.822 us     1.323 us     2.601 us
+
+kblib::visit2(v, f...), ex                              100           14   38.7898 ms
+                                                  29.953 us    29.205 us    30.759 us
+                                                   3.983 us     3.662 us     4.422 us
+
+
+Profiling took 438.762 seconds
+
+
+
+
+Old implementation:
+
 Release, -march=native: 106.104 seconds
 
 -------------------------------------------------------------------------------
