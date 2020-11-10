@@ -101,6 +101,16 @@ constexpr std::array<char, N - 1> remove_null_terminator(const char (&arr)[N]) {
 	return detail::trim_array(arr, Indices{});
 }
 
+template <typename T>
+struct is_unbounded_array : std::false_type {};
+template <typename T>
+struct is_unbounded_array<T[]> : std::true_type {};
+
+template <typename T>
+struct is_bounded_array : std::false_type {};
+template <typename T, std::size_t N>
+struct is_bounded_array<T[N]> : std::true_type {};
+
 /**
  * @brief Creates a T with the same object representation as the given F.
  *
@@ -271,6 +281,15 @@ using remove_reference_t = typename std::remove_reference<T>::type;
  */
 template <typename CharT = char>
 auto eof = std::char_traits<CharT>::eof();
+
+template <typename T>
+inline constexpr bool is_aliasing_type = false;
+template <>
+inline constexpr bool is_aliasing_type<char> = true;
+template <>
+inline constexpr bool is_aliasing_type<unsigned char> = true;
+template <>
+inline constexpr bool is_aliasing_type<std::byte> = true;
 
 } // namespace kblib
 

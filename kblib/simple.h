@@ -61,7 +61,7 @@ constexpr void to_bytes_le(Integral ival,
 	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
 	                  not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
-	typename std::make_signed<Integral>::type val = ival;
+	// typename std::make_signed<Integral>::type val = ival;
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
 		dest[byte] = (CharT)(ival >> (CHAR_BIT * byte));
 	}
@@ -73,7 +73,7 @@ constexpr void to_bytes_be(Integral ival,
 	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
 	                  not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
-	typename std::make_signed<Integral>::type val = ival;
+	// typename std::make_signed<Integral>::type val = ival;
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
 		dest[(sizeof(Integral) - 1) - byte] = (CharT)(ival >> (CHAR_BIT * byte));
 	}

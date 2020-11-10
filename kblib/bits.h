@@ -470,6 +470,7 @@ namespace detail {
 		Storage& base;
 		pun_proxy& operator=(Type val) noexcept {
 			std::memcpy(&base, &val, sizeof val);
+			return *this;
 		}
 		operator Type() const noexcept {
 			Type ret;
@@ -503,10 +504,169 @@ namespace detail {
 		}
 	};
 
+	template <typename T>
+	struct array_filter {
+		using type = T;
+	};
+	template <typename T, std::size_t N>
+	struct array_filter<T[N]> {
+		using type = std::array<T, N>;
+	};
+	template <typename T>
+	struct array_filter<T[]> {
+		using type = std::array<T, 0>;
+	};
+
+	template <typename T, std::size_t S>
+	struct array_filter2 {
+		using type = T;
+	};
+	template <typename T, std::size_t N, std::size_t S>
+	struct array_filter2<T[N], S> {
+		using type = std::array<T, N>;
+	};
+	template <typename T, std::size_t S>
+	struct array_filter2<T[], S> {
+		using type = std::array<T, S / sizeof(T)>;
+	};
+
+	template <typename P, typename Type, std::size_t S, std::size_t,
+	          bool aliases =
+	              is_aliasing_type<typename std::remove_extent<Type>::type>>
+	struct pun_el {
+
+		using type = typename array_filter2<Type, S>::type;
+
+		static_assert(std::is_trivially_copyable<type>::value,
+		              "Type must be trivially copyable");
+
+		auto get() {
+			return pun_proxy<type, decltype(P::raw)>{static_cast<P*>(this)->raw};
+		}
+		auto get() const {
+			return pun_proxy<const type, const decltype(P::raw)>{
+			    static_cast<const P*>(this)->raw};
+		}
+	};
+
+	template <typename P, typename Type, std::size_t S, std::size_t I>
+	struct pun_el<P, Type[S], S, I, true> {
+		using type = Type[S];
+
+		decltype(auto) get() {
+			return reinterpret_cast<type&>(static_cast<P*>(this)->raw);
+		}
+		decltype(auto) get() const {
+			return reinterpret_cast<const type&>(static_cast<const P*>(this)->raw);
+		}
+	};
+
+	template <typename P, typename Type, std::size_t S, std::size_t I>
+	struct pun_el<P, Type[], S, I, true> {
+		using type = Type[S];
+
+		decltype(auto) get() {
+			return reinterpret_cast<type&>(static_cast<P*>(this)->raw);
+		}
+		decltype(auto) get() const {
+			return reinterpret_cast<const type&>(static_cast<const P*>(this)->raw);
+		}
+	};
+
+	template <std::size_t S, typename I_S, typename... Types>
+	struct punner_impl;
+
+	template <std::size_t S, std::size_t... Is, typename... Types>
+	struct punner_impl<S, std::index_sequence<Is...>, Types...>
+	    : pun_el<punner_impl<S, std::index_sequence<Is...>, Types...>, Types, S,
+	             Is>... {
+
+		alignas(std::max(
+		    {alignof(typename array_filter<Types>::type)...})) std::byte raw[S];
+	};
+
+	template <typename... Types>
+	constexpr std::size_t
+	    max_size = std::max({sizeof(typename array_filter<Types>::type)...});
+
 } // namespace detail
 
+template <typename... Types>
+struct punner
+    : private detail::punner_impl<detail::max_size<Types...>,
+                                  std::index_sequence_for<Types...>, Types...> {
+ private:
+	constexpr static std::size_t storage_size = detail::max_size<Types...>;
+	using impl_t =
+	    detail::punner_impl<storage_size, std::index_sequence_for<Types...>,
+	                        Types...>;
+	using tuple_t = std::tuple<Types...>;
+	template <std::size_t I>
+	using r_element_t = typename std::tuple_element<I, tuple_t>::type;
+
+	static_assert(std::is_standard_layout<impl_t>::value);
+
+ public:
+	template <std::size_t I>
+	using base_t = detail::pun_el<impl_t, r_element_t<I>, storage_size, I>;
+	template <std::size_t I>
+	using element_t = typename base_t<I>::type;
+
+	template <std::size_t I>
+	decltype(auto) get() & {
+		static_assert(std::is_base_of<base_t<I>, impl_t>::value);
+		return static_cast<base_t<I>&>(*this).get();
+	}
+	template <std::size_t I>
+	decltype(auto) get() const& {
+		return static_cast<const base_t<I>&>(*this).get();
+	}
+	template <std::size_t I>
+	decltype(auto) get() && {
+		return static_cast<base_t<I>&&>(*this).get();
+	}
+	template <std::size_t I>
+	decltype(auto) get() const&& {
+		return static_cast<const base_t<I>&&>(*this).get();
+	}
+};
+
+} // namespace kblib
+
+namespace std {
+
+template <std::size_t I, typename... Types>
+struct tuple_element<I, kblib::punner<Types...>> {
+	using type = typename kblib::punner<Types...>::template element_t<I>;
+};
+
+template <typename... Types>
+struct tuple_size<kblib::punner<Types...>>
+    : public std::integral_constant<std::size_t, sizeof...(Types)> {};
+
+} // namespace std
+
+namespace kblib {
+
+template <std::size_t I, typename... Types>
+decltype(auto) get(punner<Types...>& p) {
+	return p.template get<I>();
+}
+template <std::size_t I, typename... Types>
+decltype(auto) get(const punner<Types...>& p) {
+	return p.template get<I>();
+}
+template <std::size_t I, typename... Types>
+decltype(auto) get(punner<Types...>&& p) {
+	return p.template get<I>();
+}
+template <std::size_t I, typename... Types>
+decltype(auto) get(const punner<Types...>&& p) {
+	return p.template get<I>();
+}
+
 template <typename Type, auto Storage>
-class pun {
+class union_pun {
  private:
 	using class_t = kblib::class_t<Storage>;
 	using member_t = kblib::member_t<class_t, Storage>;
@@ -539,7 +699,7 @@ class pun {
 };
 
 template <typename Type, std::size_t N, auto Storage>
-class pun<Type[N], Storage> {
+class union_pun<Type[N], Storage> {
  private:
 	using class_t = kblib::class_t<Storage>;
 	using member_t = kblib::member_t<class_t, Storage>;

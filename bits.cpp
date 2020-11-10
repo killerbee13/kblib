@@ -159,12 +159,12 @@ TEST_CASE("bitfields") {
 
 union punner {
 	char storage[sizeof(char*)]{};
-	kblib::pun<const char*, &punner::storage> ptr;
-	kblib::pun<std::uintptr_t, &punner::storage> val;
-	kblib::pun<char16_t[sizeof(char*) / 2], &punner::storage> s;
+	kblib::union_pun<const char*, &punner::storage> ptr;
+	kblib::union_pun<std::uintptr_t, &punner::storage> val;
+	kblib::union_pun<char16_t[sizeof(char*) / 2], &punner::storage> s;
 };
 
-TEST_CASE("punning") {
+TEST_CASE("union_punning") {
 	punner pun;
 	std::uintptr_t ival = 0xABCD;
 	kblib::to_bytes_le(ival, pun.storage);
@@ -180,4 +180,29 @@ TEST_CASE("punning") {
 	const char* c = "";
 	pun.ptr = c;
 	REQUIRE(pun.val == kblib::byte_cast<std::uintptr_t>(c));
+}
+
+TEST_CASE("punning") {
+	kblib::punner<char[], const char*, std::uintptr_t,
+	              char16_t[sizeof(char*) / 2]>
+	    pun{};
+	kblib::get<0>(pun);
+	pun.get<1>();
+
+	std::uintptr_t ival = 0xABCD;
+	kblib::to_bytes_le(ival, pun.get<0>());
+	REQUIRE(std::equal(std::begin(pun.get<0>()), std::begin(pun.get<0>()) + 4,
+	                   "\xCD\xAB\0\0"));
+	REQUIRE(pun.get<2>() == ival);
+	std::array<char16_t, sizeof(char*) / 2> ustr{u'\xABCD', u'\0'};
+	decltype(ustr) t = pun.get<3>();
+	REQUIRE(t == ustr);
+	REQUIRE(decltype(ustr)(pun.get<3>()) == ustr);
+
+	pun.get<2>() = 0;
+	const char* c = "";
+	pun.get<1>() = c;
+	REQUIRE(pun.get<2>() == kblib::byte_cast<std::uintptr_t>(c));
+
+	REQUIRE(&pun);
 }
