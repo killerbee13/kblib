@@ -283,13 +283,13 @@ template <typename CharT = char>
 auto eof = std::char_traits<CharT>::eof();
 
 template <typename T>
-inline constexpr bool is_aliasing_type = false;
+inline constexpr bool is_aliasing_type_v = false;
 template <>
-inline constexpr bool is_aliasing_type<char> = true;
+inline constexpr bool is_aliasing_type_v<char> = true;
 template <>
-inline constexpr bool is_aliasing_type<unsigned char> = true;
+inline constexpr bool is_aliasing_type_v<unsigned char> = true;
 template <>
-inline constexpr bool is_aliasing_type<std::byte> = true;
+inline constexpr bool is_aliasing_type_v<std::byte> = true;
 
 } // namespace kblib
 

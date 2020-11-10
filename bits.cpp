@@ -203,6 +203,4 @@ TEST_CASE("punning") {
 	const char* c = "";
 	pun.get<1>() = c;
 	REQUIRE(pun.get<2>() == kblib::byte_cast<std::uintptr_t>(c));
-
-	REQUIRE(&pun);
 }

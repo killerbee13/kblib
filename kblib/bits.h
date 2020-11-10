@@ -532,7 +532,7 @@ namespace detail {
 
 	template <typename P, typename Type, std::size_t S, std::size_t,
 	          bool aliases =
-	              is_aliasing_type<typename std::remove_extent<Type>::type>>
+	              is_aliasing_type_v<typename std::remove_extent<Type>::type>>
 	struct pun_el {
 
 		using type = typename array_filter2<Type, S>::type;
@@ -581,8 +581,8 @@ namespace detail {
 	    : pun_el<punner_impl<S, std::index_sequence<Is...>, Types...>, Types, S,
 	             Is>... {
 
-		alignas(std::max(
-		    {alignof(typename array_filter<Types>::type)...})) std::byte raw[S];
+		alignas(std::max({alignof(typename std::remove_extent<Types>::type)...}))
+		    std::byte raw[S]{};
 	};
 
 	template <typename... Types>
