@@ -67,6 +67,136 @@ TEST_CASE("nl(wchar_t)") {
 	REQUIRE(is.eof());
 }
 
+TEST_CASE("expect(good)") {
+	std::istringstream is("11/17/2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/') >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(fail)") {
+	std::istringstream is("11-17-2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(wchar_t, good)") {
+	std::wistringstream is(L"11/17/2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect(L'/');
+	REQUIRE(is);
+	is >> day >> kblib::expect(L'/') >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(wchar_t, fail)") {
+	std::wistringstream is(L"11-17-2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect(L'/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect(L'-');
+	REQUIRE(is);
+	is >> day >> kblib::expect(L'/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect(L'-');
+	REQUIRE(is);
+	is >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(widening, good)") {
+	std::wistringstream is(L"11/17/2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/') >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(widening, fail)") {
+	std::wistringstream is(L"11-17-2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+#if 0 // Compile error
+TEST_CASE("expect(narrowing, good)") {
+	std::istringstream is("11/17/2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect(L'/');
+	REQUIRE(is);
+	is >> day >> kblib::expect(L'/') >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(narrowing, fail)") {
+	std::istringstream is("11-17-2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect(L'/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect(L'-');
+	REQUIRE(is);
+	is >> day >> kblib::expect(L'/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect(L'-');
+	REQUIRE(is);
+	is >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+#endif
+
 #if KBLIB_USE_CXX17
 TEST_CASE("get_file_contents") {
 	auto filename = "kblib";

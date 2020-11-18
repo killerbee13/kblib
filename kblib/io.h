@@ -172,6 +172,62 @@ struct get_manip {
 };
 
 /**
+ * @brief Read a character from an input stream only if it equals c. Acts as an
+ * UnformattedInputOperation, that is, it will not ignore any leading
+ * whitespace.
+ */
+template <typename CharT>
+auto unformatted_expect(CharT c) {
+	auto _f = [c](auto& istream) -> decltype(istream) {
+		using SCharT = typename std::decay<decltype(istream)>::type::char_type;
+#if KBLIB_USE_CHAR8_t
+		static_assert(std::is_same_v<CharT, char_type> or
+		                  (not std::is_same_v<CharT, char8_t> and
+		                   not std::is_same_v<char_type, char8_t>),
+		              "No support for char8_t conversions.");
+#endif
+		auto widen_equal = [&](SCharT d) {
+			// Feasible:
+			// CharT == SCharT : c == d
+			// CharT == char   : istream.widen(c) == d
+			// Not currently feasible:
+			// SCharT == char  : read multiple chars and convert to CharT?
+			// ...             :	convert between different wide char types?
+
+			static_assert(
+			    (std::is_same<CharT, SCharT>::value or
+			     std::is_same<CharT, char>::value),
+			    "Stream character type incompatible with argument type.");
+			if constexpr (std::is_same<CharT, SCharT>::value) {
+				return c == d;
+			} else {
+				return istream.widen(c) == d;
+			}
+		};
+
+		if (widen_equal(istream.peek())) {
+			void(istream.get());
+		} else {
+			istream.setstate(std::ios_base::failbit);
+		}
+		return istream;
+	};
+	return get_manip<decltype(_f)>{_f};
+}
+
+/**
+ * @brief Read a character from an input stream only if it equals c. Acts as a
+ * FormattedInputOperation, that is, leading whitespace is ignored.
+ */
+template <typename CharT>
+auto expect(CharT c) {
+	auto _f = [c](auto& istream) -> decltype(istream) {
+		return istream >> std::ws >> unformatted_expect(c);
+	};
+	return get_manip<decltype(_f)>{_f};
+}
+
+/**
  * @brief Read a whole line into a std::basic_string-like class template.
  *
  * When used like
