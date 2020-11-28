@@ -163,6 +163,105 @@ TEST_CASE("expect(widening, fail)") {
 	REQUIRE(year == 2020);
 }
 
+// No locale support for unicode
+#if 0
+TEST_CASE("expect(widening, UFT-16, good)") {
+	std::basic_istringstream<char16_t> is(u"11/17/2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/') >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(widening, UTF-16, fail)") {
+	std::basic_istringstream<char16_t> is(u"11-17-2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(widening, UFT-32, good)") {
+	std::basic_istringstream<char32_t> is(U"11/17/2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/') >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(widening, UTF-32, fail)") {
+	std::basic_istringstream<char32_t> is(U"11-17-2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> day >> kblib::expect('/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect('-');
+	REQUIRE(is);
+	is >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(widening, UTF-16 to UFT-32, good)") {
+	std::basic_istringstream<char32_t> is(U"11/17/2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect(u'/');
+	REQUIRE(is);
+	is >> day >> kblib::expect(u'/') >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+
+TEST_CASE("expect(widening, UTF-16 to UTF-32, fail)") {
+	std::basic_istringstream<char32_t> is(U"11-17-2020");
+	int day{}, month{}, year{};
+	is >> month >> kblib::expect(u'/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect(u'-');
+	REQUIRE(is);
+	is >> day >> kblib::expect(u'/');
+	REQUIRE(is.fail());
+	is.clear();
+	is >> kblib::expect(u'-');
+	REQUIRE(is);
+	is >> year;
+	REQUIRE(is);
+	REQUIRE(month == 11);
+	REQUIRE(day == 17);
+	REQUIRE(year == 2020);
+}
+#endif
+
 #if 0 // Compile error
 TEST_CASE("expect(narrowing, good)") {
 	std::istringstream is("11/17/2020");

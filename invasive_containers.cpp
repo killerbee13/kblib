@@ -12,7 +12,9 @@ struct example {
 	std::string payload;
 };
 
-TEST_CASE("invasive") {
+TEST_CASE("invasive_map") { kblib::invasive_map<example, &example::first> map; }
+
+TEST_CASE("invasive_dual_map") {
 	kblib::invasive_dual_map<example, &example::first, &example::second> map;
 }
 

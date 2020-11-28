@@ -1061,10 +1061,9 @@ constexpr void insertion_sort(
 	for (auto pos = begin + 1; pos != end; ++pos) {
 		// This search is linear, not binary, because insertion_sort is meant
 		// to never be used for arrays large enough for binary search.
-		auto index =
-		    kblib::find_last_if(begin, pos, [&compare, pos](const auto& a) {
-			    return compare(*pos, a);
-		    });
+		auto index = kblib::find_if(begin, pos, [&compare, pos](const auto& a) {
+			return compare(*pos, a);
+		});
 		kblib::rotate(index, pos, pos + 1);
 	}
 	return;

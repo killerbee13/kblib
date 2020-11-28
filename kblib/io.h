@@ -171,6 +171,35 @@ struct get_manip {
 	F _f;
 };
 
+template <typename T, typename U>
+struct unicode_widen : std::false_type {};
+
+template <>
+struct unicode_widen<char16_t, char32_t> : std::true_type {};
+
+#if KBLIB_USE_CHAR8_T
+
+template <>
+struct unicode_widen<char8_t, char16_t> : std::true_type {};
+
+template <>
+struct unicode_widen<char8_t, char32_t> : std::true_type {};
+
+#endif
+
+#if KBLIB_CHAR_IS_UTF8
+
+template <>
+struct unicode_widen<char, char16_t> : std::true_type {};
+
+template <>
+struct unicode_widen<char, char32_t> : std::true_type {};
+
+#endif
+
+template <typename T, typename U>
+constexpr static bool unicode_widen_v = unicode_widen<T, U>::value;
+
 /**
  * @brief Read a character from an input stream only if it equals c. Acts as an
  * UnformattedInputOperation, that is, it will not ignore any leading
@@ -188,8 +217,9 @@ auto unformatted_expect(CharT c) {
 #endif
 		auto widen_equal = [&](SCharT d) {
 			// Feasible:
-			// CharT == SCharT : c == d
-			// CharT == char   : istream.widen(c) == d
+			// T     -> T      : c == d
+			// T     -> char   : istream.widen(c) == d
+			// u32   -> u16    : c == d
 			// Not currently feasible:
 			// SCharT == char  : read multiple chars and convert to CharT?
 			// ...             :	convert between different wide char types?
@@ -199,6 +229,8 @@ auto unformatted_expect(CharT c) {
 			     std::is_same<CharT, char>::value),
 			    "Stream character type incompatible with argument type.");
 			if constexpr (std::is_same<CharT, SCharT>::value) {
+				return c == d;
+			} else if (unicode_widen_v<CharT, SCharT>) {
 				return c == d;
 			} else {
 				return istream.widen(c) == d;

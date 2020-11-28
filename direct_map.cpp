@@ -10,6 +10,7 @@ TEST_CASE("direct_map") {
 	REQUIRE_FALSE(map.contains('a'));
 	map['a'] = 42;
 	REQUIRE(map.contains('a'));
+	REQUIRE_FALSE(map.contains('b'));
 	REQUIRE(map.find('a') == map.begin());
 	REQUIRE_FALSE(map.begin() == map.end());
 	REQUIRE(map.at('a') == 42);
