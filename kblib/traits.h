@@ -243,6 +243,9 @@ using class_t = typename class_of<decltype(M)>::type;
 
 #endif
 
+template <typename T>
+struct exists : std::true_type {};
+
 /**
  * @brief Type trait that determines the iterator type for a range.
  *
@@ -261,6 +264,12 @@ struct iterator_type_for {
 
 template <typename Range>
 using iterator_type_for_t = typename iterator_type_for<Range>::type;
+
+template <typename Range, typename = void>
+struct is_iterable : std::false_type {};
+
+template <typename Range>
+struct is_iterable<Range, void_t<typename Range::iterator>> : std::true_type {};
 
 /**
  * @brief Abbreviated name for std::is_reference<T>::value for C++14.

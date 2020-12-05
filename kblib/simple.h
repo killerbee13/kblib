@@ -18,6 +18,7 @@
 #endif
 
 #if KBLIB_USE_CXX17
+#include <optional>
 #include <string_view>
 #endif
 
@@ -536,6 +537,7 @@ struct FNV_hash<Container,
                 void_if_t<value_detected<Container>::value and
                           is_hashable<typename Container::value_type>::value and
                           not hash_detected<Container>::value and
+                          is_iterable<Container>::value and
                           not(is_contiguous<Container>::value and
                               is_trivially_hashable<
                                   typename Container::value_type>::value)>> {
@@ -664,6 +666,24 @@ struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() and
 		    std::make_index_sequence<std::tuple_size<Tuple>::value>{});
 	}
 };
+
+#if KBLIB_USE_CXX17
+
+template <typename T>
+struct FNV_hash<std::optional<T>, void> {
+	constexpr std::size_t
+	operator()(const std::optional<T>& key,
+	           std::size_t offset =
+	               fnv::fnv_offset<std::size_t>::value) const noexcept {
+		if (key) {
+			return FNV_hash<T>{}(key.value(), offset);
+		} else {
+			return FNV_hash<std::nullopt_t>{}(std::nullopt, offset);
+		}
+	}
+};
+
+#endif
 
 template <typename T, std::size_t N>
 constexpr return_assert_t<std::is_integral<T>::value, bool>
