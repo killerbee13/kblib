@@ -64,7 +64,7 @@ constexpr void to_bytes_le(Integral ival,
 	              "CharT must be a char-like type.");
 	// typename std::make_signed<Integral>::type val = ival;
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
-		dest[byte] = (CharT)(ival >> (CHAR_BIT * byte));
+		dest[byte] = static_cast<CharT>(ival >> (CHAR_BIT * byte));
 	}
 }
 
@@ -75,8 +75,9 @@ constexpr void to_bytes_be(Integral ival,
 	                  not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	// typename std::make_signed<Integral>::type val = ival;
-	for (int byte = 0; byte != sizeof(Integral); ++byte) {
-		dest[(sizeof(Integral) - 1) - byte] = (CharT)(ival >> (CHAR_BIT * byte));
+	for (auto byte : range(sizeof(Integral))) {
+		dest[(sizeof(Integral) - 1) - byte] =
+		    static_cast<CharT>(ival >> (CHAR_BIT * byte));
 	}
 }
 
@@ -715,8 +716,8 @@ namespace detail {
 	constexpr int
 	filg2(const std::bitset<std::numeric_limits<std::uintmax_t>::digits>
 	          val) noexcept {
-		for (int i : range(to_signed(val.size() - 1), std::ptrdiff_t{0}, -1)) {
-			if (val[i])
+		for (auto i : range<int>(to_signed(val.size()) - 1, 0, -1)) {
+			if (val[to_unsigned(i)])
 				return i;
 		}
 		return 0;

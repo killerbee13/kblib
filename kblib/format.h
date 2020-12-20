@@ -16,7 +16,7 @@ namespace kblib {
  * @return int The number of digits needed to represent a number.
  */
 template <typename Number>
-constexpr int digitsOf(Number val) {
+constexpr int count_digits(Number val) {
 	if (val > 0) {
 		return std::ceil(std::log10(val + 1));
 	} else if (val < 0) {
@@ -35,7 +35,7 @@ constexpr int digitsOf(Number val) {
  * @return int The number of digits needed to represent a number.
  */
 template <typename Number>
-constexpr int digitsOf(Number val, int base) {
+constexpr int count_digits(Number val, int base) {
 	return std::ceil(std::log(std::abs(val) + 1) / std::log(base)) +
 	       std::signbit(val);
 }
@@ -50,11 +50,11 @@ constexpr int digitsOf(Number val, int base) {
  * input.
  */
 template <typename ForwardIt>
-int digitsList(ForwardIt first, ForwardIt last) {
+int max_count_digits(ForwardIt first, ForwardIt last) {
 	if (first == last) {
 		return 0;
 	}
-	return digitsOf(*std::max_element(first, last));
+	return count_digits(*std::max_element(first, last));
 }
 
 /**
@@ -68,11 +68,11 @@ int digitsList(ForwardIt first, ForwardIt last) {
  * input.
  */
 template <typename ForwardIt>
-int digitsList(ForwardIt first, ForwardIt last, int base) {
+int max_count_digits(ForwardIt first, ForwardIt last, int base) {
 	if (first == last) {
 		return 0;
 	}
-	return digitsOf(*std::max_element(first, last), base);
+	return count_digits(*std::max_element(first, last), base);
 }
 
 } // namespace kblib

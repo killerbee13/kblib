@@ -291,6 +291,18 @@ using remove_reference_t = typename std::remove_reference<T>::type;
 template <typename CharT = char>
 auto eof = std::char_traits<CharT>::eof();
 
+template <typename T, T V>
+struct type_constant {
+	operator T() const noexcept { return V; }
+};
+
+#if KBLIB_USE_CXX17
+
+template <auto V>
+using type_constant_for = type_constant<decltype(V), V>;
+
+#endif
+
 template <typename T>
 inline constexpr bool is_aliasing_type_v = false;
 template <>

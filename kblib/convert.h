@@ -126,7 +126,7 @@ inline std::string url_encode(const string& value) {
 		} else {
 			// Any other characters are percent-encoded
 			escaped << std::uppercase;
-			escaped << '%' << std::setw(2) << int((unsigned char)c);
+			escaped << '%' << std::setw(2) << int(to_unsigned(c));
 			escaped << std::nouppercase;
 		}
 	}
@@ -165,7 +165,7 @@ inline std::string html_encode(const string& data) {
 }
 
 inline std::string escapify(char c) {
-	auto value = (unsigned char)c;
+	auto value = to_unsigned(c);
 	if (value < ' ' or value == '\x7F' or value & '\x80') {
 		constexpr std::array<char, 16> digits{
 		    remove_null_terminator("0123456789ABCDEF")};
@@ -174,7 +174,7 @@ inline std::string escapify(char c) {
 		rc[3] = digits[value & 15];
 		return rc;
 	} else {
-		return std::string(1, value);
+		return std::string(1, static_cast<char>(value));
 	}
 }
 

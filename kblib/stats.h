@@ -324,7 +324,7 @@ inline namespace nums {
 
 template <typename T>
 constexpr T pi() {
-	return 3.1415926535897932384626433832795028841971693993751;
+	return 3.1415926535897932384626433832795028841971693993751l;
 }
 template <typename T>
 constexpr T tau() {
@@ -332,16 +332,18 @@ constexpr T tau() {
 }
 template <typename T>
 constexpr T e() {
-	return 2.7182818284590452353602874713526624977572470937000;
+	return 2.7182818284590452353602874713526624977572470937000l;
 }
 template <typename T>
 constexpr T root_2() {
-	return 1.4142135623730950488016887242096980785696718753769;
+	return 1.4142135623730950488016887242096980785696718753769l;
 }
 template <typename T>
 constexpr T phi() {
-	return 1.6180339887498948482045868343656381177203091798058;
+	return 1.6180339887498948482045868343656381177203091798058l;
 }
+
+// TODO: write tests and fix style issues for quantization functions
 
 /**
  * @brief Quantize a real-valued value into a discrete integer.

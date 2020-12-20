@@ -102,10 +102,10 @@ inline std::string getline(std::istream& is) {
  * @param is
  * @return std::istream
  */
-inline std::istream& eatWord(std::istream& is) {
+inline std::istream& eat_word(std::istream& is) {
 	do {
 		is.get();
-	} while (is and not isspace(is.peek()));
+	} while (is and not std::isspace(is.peek()));
 	return is;
 }
 
@@ -118,8 +118,8 @@ inline std::istream& eatWord(std::istream& is) {
  * @return std::istream
  */
 [[deprecated("Use std::ws instead")]] inline std::istream&
-eatSpace(std::istream& is) {
-	while (is and isspace(is.peek())) {
+eat_space(std::istream& is) {
+	while (is and std::isspace(is.peek())) {
 		is.get();
 	}
 	return is;

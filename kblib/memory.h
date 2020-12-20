@@ -24,11 +24,6 @@ struct null_construct<T, true> : public T {
 	null_construct() : T{} {}
 };
 
-template <auto T>
-struct type_constant {
-	operator decltype(T)() const noexcept { return T; }
-};
-
 template <auto FunPtr>
 struct fun_ptr_deleter;
 

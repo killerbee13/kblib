@@ -1,9 +1,10 @@
 #ifndef KBLIB_STRINGOPS_H
 #define KBLIB_STRINGOPS_H
 
-#include "kblib/format.h"
-#include "kblib/traits.h"
+#include "algorithm.h"
+#include "format.h"
 #include "tdecl.h"
+#include "traits.h"
 
 #include <algorithm>
 #include <initializer_list>
@@ -264,6 +265,14 @@ string concat(std::initializer_list<str> ins) {
 	return ret;
 }
 
+inline bool isspace(char c) { return std::isspace(to_unsigned(c)); }
+inline bool isspace(wchar_t c) { return iswspace(to_unsigned(c)); }
+
+struct is_space {
+	bool operator()(char c) { return isspace(c); }
+	bool operator()(wchar_t c) { return isspace(c); }
+};
+
 /**
  * @brief Concatenates all elements of a range together with an optional joiner.
  *
@@ -291,6 +300,49 @@ string join(const range& in, const string& joiner = "") {
 #endif // KBLIB_USE_CXX17
 
 /**
+ * @brief Split a string on all condensed delimiters.
+ *
+ * @param in The string to split
+ * @param spacer A predicate which determines whether a character is a
+ * delimiter.
+ * @return Container A sequence container of all substrings in the split input.
+ */
+template <typename Container = std::vector<std::string>, typename Predicate,
+          typename String>
+return_assert_t<
+    is_callable<Predicate, typename Container::value_type::value_type>::value,
+    Container>
+split_tokens(const String& in, Predicate spacer) {
+	Container ret{};
+	bool delim_run = true;
+	const char* begpos{};
+	auto endpos = begpos;
+	for (const auto& c : in) {
+		if (delim_run) {
+			// keep begpos updated as long as in a delimiter run
+			begpos = &c;
+		}
+		if (spacer(c) and not std::exchange(delim_run, true)) {
+			// c is first of a run of delimiters
+			ret.emplace_back(begpos, &c - begpos);
+		} else if (not spacer(c)) {
+			// c is not a delimiter
+			delim_run = false;
+		}
+		endpos = &c;
+	}
+	if (not delim_run and begpos != endpos) {
+		ret.emplace_back(&*begpos, endpos - begpos + 1);
+	}
+	return ret;
+}
+
+template <typename Container = std::vector<std::string>, typename String>
+Container split_tokens(const String& in) {
+	return split_tokens(in, is_space{});
+}
+
+/**
  * @brief Split a string on all instances of a delimiter.
  *
  * @param in The string to split
@@ -298,19 +350,100 @@ string join(const range& in, const string& joiner = "") {
  * @return Container A sequence container of all substrings in the split input.
  */
 template <typename Container = std::vector<std::string>, typename String>
-Container split(const String& in, char delim = ' ') {
+Container split_tokens(const String& in,
+                       typename Container::value_type::value_type delim) {
+	Container ret{};
+	bool delim_run = true;
+	using CharT = typename Container::value_type::value_type;
+	const CharT* begpos{};
+	auto endpos = begpos;
+	for (const CharT& c : in) {
+		if (delim_run) {
+			// keep begpos updated as long as in a delimiter run
+			begpos = &c;
+		}
+		if (c == delim and not std::exchange(delim_run, true)) {
+			// c is first of a run of delimiters
+			ret.emplace_back(begpos, &c - begpos);
+		} else if (c != delim) {
+			// c is not a delimiter
+			delim_run = false;
+		}
+		endpos = &c;
+	}
+	if (not delim_run and begpos != endpos) {
+		ret.emplace_back(&*begpos, endpos - begpos + 1);
+	}
+	return ret;
+}
+
+template <typename Container = std::vector<std::string>, typename String>
+Container kbsplit2(const String& in, char delim = ' ') {
 	Container ret{""};
 	bool delim_run = true;
 	for (char c : in) {
 		if (c == delim and not std::exchange(delim_run, true)) {
+			// c is first of a run of delimiters
 			ret.emplace_back();
-		} else {
+		} else if (c != delim) {
+			// c is not a delimiter
 			delim_run = false;
 			ret.back().push_back(c);
 		}
 	}
+	if (ret.back().empty()) {
+		ret.pop_back();
+	}
 	return ret;
 }
+
+/**
+ * @brief Split a string on all instances of delim.
+ *
+ * @param in The string to split
+ * @param delim The character to split on.
+ * @return Container A sequence container of all substrings in the split input.
+ */
+template <typename Container = std::vector<std::string>, typename String>
+Container split_dsv(const String& str, char delim) {
+	Container ret;
+	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
+		ret.emplace_back(str, pos1, pos2 - pos1);
+		pos1 = std::exchange(pos2, str.find(delim, pos2 + 1));
+		if (pos1 != str.npos) {
+			++pos1;
+		}
+	}
+	return ret;
+}
+
+/**
+ * @brief Split a string on all instances of delim.
+ *
+ * @param in The string to split
+ * @param delim A predicate for delimiters.
+ * @return Container A sequence container of all substrings in the split input.
+ */
+template <typename Container = std::vector<std::string>, typename String,
+          typename Predicate>
+return_assert_t<
+    is_callable<Predicate, typename Container::value_type::value_type>::value,
+    Container>
+split_dsv(const String& str, Predicate delim) {
+	Container ret;
+	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
+		ret.emplace_back(str, pos1, pos2 - pos1);
+		pos1 = std::exchange(
+		    pos2, kblib::find_in_if(str.begin() + pos1 + 1, str.end(), delim));
+		if (pos1 != str.npos) {
+			++pos1;
+		}
+	}
+	return ret;
+}
+
+// TODO: figure out if any uses of reverseStr, toLower, toUpper exist in current
+// projects
 
 /**
  * @brief Reverses all the elements of its input.
@@ -322,7 +455,7 @@ Container split(const String& in, char delim = ' ') {
  * @return string The reversed range.
  */
 template <typename string>
-string reverseStr(string val) {
+string reverse_str(string val) {
 	std::reverse(val.begin(), val.end());
 	return val;
 }
@@ -334,7 +467,7 @@ string reverseStr(string val) {
  * @return string The case-folded string.
  */
 template <typename string>
-string toLower(string str) {
+string tolower(string str) {
 	std::transform(str.begin(), str.end(), str.begin(),
 	               [](auto c) { return std::tolower(c); });
 	return str;
@@ -347,8 +480,9 @@ string toLower(string str) {
  * @return string The case-folded string.
  */
 template <typename string>
-string toUpper(string str) {
-	std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+string toupper(string str) {
+	std::transform(str.begin(), str.end(), str.begin(),
+	               [](auto c) { return std::toupper(c); });
 	return str;
 }
 

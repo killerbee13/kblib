@@ -70,8 +70,8 @@ TEST_CASE("main") {
 	for (int b = 0; b < 62; ++b) {
 		long long i = 1ll << b;
 		std::pair<int, int> lengths[] = {
-		    {std::to_string(i).length(), kblib::digitsOf(i)},
-		    {std::to_string(-i).length(), kblib::digitsOf(-i)},
+		    {std::to_string(i).length(), kblib::count_digits(i)},
+		    {std::to_string(-i).length(), kblib::count_digits(-i)},
 		};
 		for (auto test : lengths) {
 			if (test.first != test.second) {

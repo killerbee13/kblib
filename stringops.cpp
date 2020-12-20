@@ -45,7 +45,80 @@ TEST_CASE("join and split") {
 	std::vector<std::string> vec{"Hello", "world!", "How", "do", "you", "do?"};
 	auto joined = kblib::join(vec, " "s);
 	REQUIRE(joined == "Hello world! How do you do?");
-	auto split = kblib::split(joined);
+	auto split = kblib::split_tokens(joined);
 	REQUIRE(split == vec);
 }
+
+TEST_CASE("split") {
+	std::vector<std::tuple<std::string, std::vector<std::string>>> tests{
+	    {"", {}},
+	    {"test", {"test"}},
+	    {" ", {}},
+	    {"abc def", {"abc", "def"}},
+	    {" abc", {"abc"}},
+	    {"abc ", {"abc"}},
+	    {" abc ", {"abc"}},
+	    {"abc  def", {"abc", "def"}},
+	    {"abc def ", {"abc", "def"}},
+	    {"\fabc", {"abc"}},
+	    {"abc\n", {"abc"}},
+	    {"\tabc\v", {"abc"}},
+	    {"abc\t\tdef", {"abc", "def"}},
+	    {"abc\tdef\t", {"abc", "def"}},
+	    {" \tabc", {"abc"}},
+	    {"abc \f", {"abc"}},
+	    {"\v abc\t ", {"abc"}},
+	    {"abc \t def", {"abc", "def"}},
+	    {"abc\n def ", {"abc", "def"}},
+	    {" abc def ", {"abc", "def"}},
+	    {" abc def", {"abc", "def"}},
+	    {"  abc    def  ", {"abc", "def"}},
+	    {" abc def ghi", {"abc", "def", "ghi"}},
+	};
+	for (const auto& [test, result] : tests) {
+		REQUIRE(kblib::split_tokens(test) == result);
+	}
+}
+TEST_CASE("split2") {
+	std::vector<std::pair<std::string, std::vector<std::string>>> tests{
+	    {"", {}},
+	    {"test", {"test"}},
+	    {" ", {}},
+	    {"abc def", {"abc", "def"}},
+	    {" abc", {"abc"}},
+	    {"abc ", {"abc"}},
+	    {" abc ", {"abc"}},
+	    {"abc  def", {"abc", "def"}},
+	    {"abc def ", {"abc", "def"}},
+	    {" abc  def ", {"abc", "def"}},
+	    {" abc def", {"abc", "def"}},
+	    {"  abc    def  ", {"abc", "def"}},
+	    {" abc def ghi", {"abc", "def", "ghi"}},
+	};
+	for (const auto& [test, result] : tests) {
+		REQUIRE(kblib::kbsplit2(test) == result);
+	}
+}
+
+TEST_CASE("split_dsv") {
+	std::vector<std::pair<std::string, std::vector<std::string>>> tests{
+	    {"", {""}},
+	    {"test", {"test"}},
+	    {",", {"", ""}},
+	    {"abc,def", {"abc", "def"}},
+	    {",abc", {"", "abc"}},
+	    {"abc,", {"abc", ""}},
+	    {",abc,", {"", "abc", ""}},
+	    {"abc,,def", {"abc", "", "def"}},
+	    {"abc,def,", {"abc", "def", ""}},
+	    {",abc,,def,", {"", "abc", "", "def", ""}},
+	    {",abc,def", {"", "abc", "def"}},
+	    {",,abc,,,,def,,", {"", "", "abc", "", "", "", "def", "", ""}},
+	    {",abc,def,ghi", {"", "abc", "def", "ghi"}},
+	};
+	for (const auto& [test, result] : tests) {
+		REQUIRE(kblib::split_dsv(test, ',') == result);
+	}
+}
+
 #endif
