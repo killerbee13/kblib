@@ -26,6 +26,9 @@ struct implies<true, false> : std::integral_constant<bool, false> {};
  */
 template <bool A, bool B>
 constexpr inline bool implies_v = implies<A, B>::value;
+
+template <bool... args>
+constexpr bool conjunction = (args and ...);
 #endif
 
 } // namespace kblib

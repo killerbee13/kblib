@@ -28,7 +28,8 @@ SOURCES += \
     memory.cpp \
     io.cpp \
     trie.cpp \
-    direct_map.cpp
+    direct_map.cpp \
+    hash.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -54,7 +55,8 @@ HEADERS += \
     kblib/delayed_construct.h \
     kblib/memory.h \
     kblib/trie.h \
-    kblib/direct_map.h
+    kblib/direct_map.h \
+    kblib/hash.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -march=native

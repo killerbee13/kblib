@@ -1,7 +1,7 @@
 #include "kblib/io.h"
 #include "catch.hpp"
 
-#include "kblib/simple.h"
+#include "kblib/hash.h"
 
 #include <deque>
 #include <iostream>

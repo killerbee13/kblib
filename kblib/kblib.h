@@ -22,6 +22,7 @@
 #include "kblib/convert.h"
 #include "kblib/fakestd.h"
 #include "kblib/format.h"
+#include "kblib/hash.h"
 #include "kblib/io.h"
 #include "kblib/logic.h"
 #include "kblib/simple.h"

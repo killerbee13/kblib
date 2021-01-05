@@ -269,7 +269,12 @@ template <typename Range, typename = void>
 struct is_iterable : std::false_type {};
 
 template <typename Range>
-struct is_iterable<Range, void_t<typename Range::iterator>> : std::true_type {};
+struct is_iterable<
+    Range, void_if_t<std::is_base_of<
+               std::forward_iterator_tag,
+               typename std::iterator_traits<
+                   typename Range::iterator>::iterator_category>::value>>
+    : std::true_type {};
 
 /**
  * @brief Abbreviated name for std::is_reference<T>::value for C++14.

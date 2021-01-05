@@ -14,6 +14,7 @@
 #include "simple.h"
 #include "stats.h"
 #include "tdecl.h"
+#include "traits.h"
 
 namespace kblib {
 

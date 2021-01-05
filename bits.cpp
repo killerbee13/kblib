@@ -1,6 +1,7 @@
 #define KBLIB_DEF_MACROS 1
 #include "kblib/bits.h"
 #include "catch.hpp"
+#include "kblib/hash.h"
 
 template <typename T>
 struct print;

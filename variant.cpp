@@ -7,6 +7,8 @@
 
 #include "kblib/variant.h"
 
+#include "kblib/hash.h"
+
 //#define FAST_TEST
 
 #if KBLIB_USE_CXX17
