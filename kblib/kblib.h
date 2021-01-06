@@ -26,6 +26,7 @@
 #include "kblib/io.h"
 #include "kblib/logic.h"
 #include "kblib/simple.h"
+#include "kblib/sort.h"
 #include "kblib/stats.h"
 #include "kblib/stringops.h"
 #include "kblib/variant.h"

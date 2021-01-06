@@ -3,6 +3,8 @@
 
 #include <array>
 #include <cassert>
+#include <cinttypes>
+#include <cstdlib>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -11,6 +13,14 @@
 #include "tdecl.h"
 
 namespace kblib {
+
+template <typename T, typename U>
+constexpr auto div(T num, U den) noexcept -> decltype(std::div(num, den)) {
+	decltype(std::div(num, den)) ret{};
+	ret.quot = num / den;
+	ret.rem = num % den;
+	return ret;
+}
 
 /**
  * @brief Given a categorical distribution cats, selects one category

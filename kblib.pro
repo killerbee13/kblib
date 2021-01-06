@@ -29,7 +29,8 @@ SOURCES += \
     io.cpp \
     trie.cpp \
     direct_map.cpp \
-    hash.cpp
+    hash.cpp \
+    sort.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -56,7 +57,8 @@ HEADERS += \
     kblib/memory.h \
     kblib/trie.h \
     kblib/direct_map.h \
-    kblib/hash.h
+    kblib/hash.h \
+    kblib/sort.h
 
 QMAKE_CXXFLAGS += -stdlib=libc++ -std=c++17
 QMAKE_CXXFLAGS += -march=native

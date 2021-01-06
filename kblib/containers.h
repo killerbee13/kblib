@@ -65,7 +65,8 @@ auto get_check(M&& m, const K& key) noexcept(noexcept(m.find(key) != m.end()))
  * @brief std::vector::shrink_to_fit is non-binding, which means that there is
  * no guaranteed way to shrink a vector via its API. This function is a
  * roundabout way of doing that without relying on the sanity of the
- * implementation.
+ * implementation (except that it assumes that a vector won't significantly
+ * over-allocate on sized construction).
  *
  * This function explicitly constructs a new vector and moves into it, before
  * overwriting the old vector with the new one, meaning that the vector is
