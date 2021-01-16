@@ -276,6 +276,11 @@ struct is_iterable<
                    typename Range::iterator>::iterator_category>::value>>
     : std::true_type {};
 
+template <typename T, std::size_t N>
+struct is_iterable<T[N], void> : std::true_type {};
+template <typename T, std::size_t N>
+struct is_iterable<T (&)[N], void> : std::true_type {};
+
 /**
  * @brief Abbreviated name for std::is_reference<T>::value for C++14.
  *

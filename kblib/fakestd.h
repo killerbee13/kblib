@@ -468,14 +468,11 @@ struct has_member_swap {
 };
 
 template <typename T, typename = void>
-struct is_tuple_like {
-	constexpr static bool value = false;
-};
+struct is_tuple_like : std::false_type {};
 
 template <typename T>
-struct is_tuple_like<T, void_t<typename std::tuple_element<0, T>::type>> {
-	constexpr static bool value = true;
-};
+struct is_tuple_like<T, void_t<typename std::tuple_element<0, T>::type>>
+    : std::true_type {};
 
 /**
  * @brief Swaps two objects, using move operations.
@@ -499,9 +496,7 @@ swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value and
  *
  * @param a,b The objects that will be swapped.
  */
-template <typename T,
-          enable_if_t<has_member_swap<T>::value and not is_tuple_like<T>::value,
-                      int> = 0>
+template <typename T, enable_if_t<has_member_swap<T>::value, int> = 0>
 constexpr void swap(T& a, T& b) noexcept(noexcept(a.swap(b))) {
 	a.swap(b);
 	return;
@@ -540,7 +535,10 @@ namespace detail {
  *
  * @param a,b The tuples that will be swapped.
  */
-template <typename T, std::size_t N = std::tuple_size<T>::value>
+template <typename T,
+          enable_if_t<is_tuple_like<T>::value and not has_member_swap<T>::value,
+                      std::size_t>
+              N = std::tuple_size<T>::value>
 constexpr void swap(T& a, T& b) noexcept(
     noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) {
 	detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
