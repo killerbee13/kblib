@@ -318,6 +318,114 @@ std::basic_ostream<CharT, Tr>& operator<<(std::basic_ostream<CharT, Tr>& is,
 	return func._f(is);
 }
 
+namespace detail {
+
+	template <typename SB1_t, typename SB2_t>
+	class basic_teestreambuf
+	    : public std::basic_streambuf<typename SB1_t::char_type,
+	                                  typename SB2_t::traits_type> {
+	 public:
+		using base_type = std::basic_streambuf<typename SB1_t::char_type,
+		                                       typename SB2_t::traits_type>;
+		static_assert(std::is_same<typename SB1_t::char_type,
+		                           typename SB2_t::char_type>::value,
+		              "Backing streams must be compatible.");
+		static_assert(std::is_same<typename SB1_t::traits_type,
+		                           typename SB2_t::traits_type>::value,
+		              "Backing streams must be compatible.");
+
+		using typename base_type::char_type;
+		using typename base_type::traits_type;
+
+		using typename base_type::int_type;
+		using typename base_type::off_type;
+		using typename base_type::pos_type;
+
+		basic_teestreambuf() = delete;
+		basic_teestreambuf(SB1_t* a, SB2_t* b) : buffer(1024), a(a), b(b) {
+			this->setp(buffer.data(), buffer.data() + buffer.size() - 1);
+		}
+
+	 private:
+		bool flush() {
+			std::streamsize count = this->pptr() - this->pbase();
+			auto a_ct = a->sputn(this->pbase(), count);
+			auto b_ct = b->sputn(this->pbase(), count);
+
+			std::streamsize successful = std::min(a_ct, b_ct);
+
+			if (successful == count) {
+				this->pbump(-count);
+				return true;
+			} else {
+				fail();
+				return false;
+			}
+		}
+
+		int_type bool_to_failure(bool b) const noexcept {
+			return b ? traits_type::to_int_type(char_type{}) : traits_type::eof();
+		}
+
+		void fail() noexcept {
+			this->setp(buffer.data(), buffer.data() + buffer.size() - 1);
+			this->pbump(buffer.size() - 1);
+			return;
+		}
+
+	 protected:
+		void imbue(const std::locale& loc) override {
+			a->pubimbue(loc);
+			b->pubimbue(loc);
+			return;
+		}
+
+		int sync() override { return a->pubsync() | b->pubsync(); }
+
+		int_type uflow() override { return traits_type::eof(); }
+
+		std::streamsize xsgetn(char_type*, std::streamsize) override { return 0; }
+
+		std::streamsize xsputn(const char_type* s,
+		                       std::streamsize count) override {
+			bool success = flush();
+			auto a_ct = a->sputn(s, count);
+			auto b_ct = b->sputn(s, count);
+
+			std::streamsize successful = success ? std::min(a_ct, b_ct) : 0;
+
+			if (successful == count) {
+				return count;
+			} else {
+				fail();
+				return 0;
+			}
+		}
+
+		int_type overflow(int_type ch = traits_type::eof()) override {
+			if (not traits_type::eq_int_type(ch, traits_type::eof())) {
+				traits_type::assign(*this->pptr(), traits_type::to_char_type(ch));
+				this->pbump(1);
+			}
+			return bool_to_failure(flush());
+		}
+
+	 private:
+		std::vector<char_type> buffer;
+		SB1_t* a;
+		SB2_t* b;
+	};
+
+} // namespace detail
+
+template <typename StreamA, typename StreamB>
+class tee_stream {};
+
+template <typename StreamA, typename StreamB>
+tee_stream<StreamA, StreamB> tee(StreamA& a, StreamB& b);
+
+using test = tee_stream<decltype(std::cout), std::ofstream>;
+
 } // namespace kblib
 
 #endif // KBLIB_IO_H

@@ -123,8 +123,8 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / 30;
 		double time_slow = time_per(10000) / 10000;
 		double error = time_slow / time_fast;
-		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		             << error << '\t' << time_slow * 10000 << '\t'
+		log_location << __LINE__ << ":\t" << time_fast << "\t " << time_slow
+		             << '\t' << error << '\t' << time_slow * 10000 << '\t'
 		             << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
@@ -147,8 +147,8 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / (30 * 30);
 		auto time_slow = time_per(1000) / (1000 * 1000);
 		auto error = time_slow / time_fast;
-		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		             << error << '\t' << time_slow * 1000 * 1000 << '\t'
+		log_location << __LINE__ << ":\t" << time_fast << "\t " << time_slow
+		             << '\t' << error << '\t' << time_slow * 1000 * 1000 << '\t'
 		             << time_fast * 30 * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
@@ -171,8 +171,8 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / (30);
 		auto time_slow = time_per(10'000) / (10'000);
 		double error = time_slow / time_fast;
-		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		             << error << '\t' << time_slow * 10'000 << '\t'
+		log_location << __LINE__ << ":\t" << time_fast << "\t " << time_slow
+		             << '\t' << error << '\t' << time_slow * 10'000 << '\t'
 		             << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
@@ -195,8 +195,8 @@ TEST_CASE("insertion sort performance") {
 		auto time_fast = time_per(30) / (30);
 		auto time_slow = time_per(10'000) / (10'000);
 		double error = time_slow / time_fast;
-		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		             << error << '\t' << time_slow * 10'000 << '\t'
+		log_location << __LINE__ << ":\t" << time_fast << "\t " << time_slow
+		             << '\t' << error << '\t' << time_slow * 10'000 << '\t'
 		             << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
@@ -226,9 +226,9 @@ TEST_CASE("insertion sort performance") {
 		auto time_slow = time_per(n, v) / (n);
 		auto ratio = time_slow / time_fast;
 		auto error = ratio / (n / v);
-		log_location << __LINE__ << ": " << time_fast << '\t' << time_slow << '\t'
-		             << error << '\t' << time_slow * n << '\t' << time_fast * n
-		             << "\n";
+		log_location << __LINE__ << ":\t" << time_fast << "\t " << time_slow
+		             << '\t' << error << '\t' << time_slow * n << '\t'
+		             << time_fast * n << "\n";
 
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);

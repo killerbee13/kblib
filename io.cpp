@@ -321,3 +321,46 @@ TEST_CASE("get_file_contents") {
 	auto fileerror = kblib::get_file_contents<std::deque<char>>(filename);
 }
 #endif
+
+TEST_CASE("tee_stream") {
+	std::ostringstream a, b;
+	using buf_t = std::remove_pointer<decltype(a.rdbuf())>::type;
+	auto tbuf =
+	    kblib::detail::basic_teestreambuf<buf_t, buf_t>(a.rdbuf(), b.rdbuf());
+	auto os = std::ostream(&tbuf);
+
+	os << "test" << std::flush;
+	REQUIRE(os);
+	REQUIRE(a.str() == "test");
+	REQUIRE(a.str() == b.str());
+
+	os << 's' << std::flush;
+	REQUIRE(os);
+	REQUIRE(a.str() == "tests");
+	REQUIRE(a.str() == b.str());
+
+	os << std::setw(8) << 42 << std::flush;
+	REQUIRE(os);
+	REQUIRE(a.str() == "tests      42");
+	REQUIRE(a.str() == b.str());
+
+	{
+		auto len = a.str().length();
+		for (KBLIB_UNUSED auto _ : kblib::range(2048)) {
+			os << '.' << std::flush;
+			REQUIRE(a.str() == b.str());
+			REQUIRE(a.str().length() == ++len);
+			REQUIRE(a.str().back() == '.');
+		}
+		a.str("");
+		b.str("");
+	}
+
+	{
+		auto big_str = std::string(2048, '?');
+		os << big_str << std::flush;
+		REQUIRE(os);
+		REQUIRE(a.str() == big_str);
+		REQUIRE(a.str() == b.str());
+	}
+}
