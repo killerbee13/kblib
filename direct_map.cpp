@@ -80,9 +80,10 @@ TEST_CASE("direct_map") {
 	}
 }
 
-static constexpr auto l(kblib::direct_map<char, int>& map,
-                        kblib::direct_map<char, int>& map2,
-                        kblib::direct_map<char, int>& map3) -> bool {
+KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,
+                                     kblib::direct_map<char, int>& map2,
+                                     kblib::direct_map<char, int>& map3)
+    -> bool {
 	map['a'] = 42;
 	static_cast<void>(map.contains('a'));
 	static_cast<void>(not map.contains('b'));
