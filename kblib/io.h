@@ -16,73 +16,82 @@
 
 namespace kblib {
 
+template <typename D = std::string,
+          typename std::enable_if_t<is_contiguous_v<D>, int> = 0>
+auto get_contents(std::istream& in, D& out) {
+	in.seekg(0, std::ios::end);
+	auto size = in.tellg();
+	out.resize(size);
+	in.seekg(0, std::ios::beg);
+	in.read(reinterpret_cast<char*>(out.data()), size);
+	return size;
+}
+
+template <typename D = std::string,
+          typename std::enable_if_t<not is_contiguous_v<D>, int> = 0>
+auto get_contents(std::istream& in, D& out) {
+	in.seekg(0, std::ios::end);
+	auto size = in.tellg();
+	out.resize(size);
+	in.seekg(0, std::ios::beg);
+	std::copy((std::istreambuf_iterator<char>(in)),
+	          std::istreambuf_iterator<char>(), out.begin());
+	return size;
+}
+
 #if KBLIB_USE_CXX17
 /**
  * @brief Read the entire contents of a file into a container, such as
- * std::string or std::vector<char>.
+ * std::string or std::vector<char>. Note that it will be most efficient to read
+ * into contiguous containers, as opposed to non-contiguous containers.
  *
  * @param filename The filename to open.
  * @tparam D A contiguous sequence container, which will be created and filled
  * with the contents of the file to be read.
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
-template <typename D = std::string, typename string,
-          typename std::enable_if_t<is_contiguous_v<D>, int> = 0>
+template <typename D = std::string, typename string>
 std::optional<D> get_file_contents(const string& filename) {
 	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
 	              "D must be a sequence of char-sized objects.");
-	std::ifstream in(filename, std::ios::in | std::ios::binary);
-	if (in) {
-		D contents;
-		in.seekg(0, std::ios::end);
-		auto size = in.tellg();
-		contents.resize(size);
-		in.seekg(0, std::ios::beg);
-		in.read(reinterpret_cast<char*>(contents.data()), size);
-		in.close();
-		return contents;
-	} else {
-		return std::nullopt;
+	std::optional<D> out;
+	if (std::ifstream in(filename, std::ios::in | std::ios::binary); in) {
+		const auto fsize = get_contents(in, out.emplace());
+		if (fsize != out->size()) {
+		}
 	}
+	return out;
 }
+#endif
 
 /**
  * @brief Read the entire contents of a file into a container, such as
- * std::string or std::vector<char>.
- *
- * This overload implements support for non-contiguous containers, such as
- * std::deque<char>. Note that it will be less efficient than for contiguous
- * containers.
+ * std::string or std::vector<char>. Note that it will be most efficient to read
+ * into contiguous containers, as opposed to non-contiguous containers.
  *
  * @param filename The filename to open.
- * @tparam D A non-contiguous sequence container, which will be created and
- * filled with the contents of the file to be read.
+ * @tparam D A contiguous sequence container, which will be created and filled
+ * with the contents of the file to be read.
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
-template <typename D = std::string, typename string,
-          typename std::enable_if_t<not is_contiguous_v<D>, int> = 0>
-std::optional<D> get_file_contents(const string& filename) {
+template <typename D = std::string, typename string>
+std::optional<D> try_get_file_contents(const string& filename) {
 	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
 	              "D must be a sequence of char-sized objects.");
-	std::ifstream in(filename, std::ios::in | std::ios::binary);
-	if (in) {
-		D contents;
-		in.seekg(0, std::ios::end);
-		try_reserve(contents, in.tellg());
-		in.seekg(0, std::ios::beg);
-		std::copy((std::istreambuf_iterator<char>(in)),
-		          std::istreambuf_iterator<char>(), std::back_inserter(contents));
-		in.close();
-		return contents;
+	D out;
+	if (std::ifstream in(filename, std::ios::in | std::ios::binary); in) {
+		in.exceptions(std::ios_base::failbit | std::ios_base::badbit);
+		get_contents(in, out);
 	} else {
-		return std::nullopt;
+		throw std::system_error(std::make_error_code(std::errc::io_error),
+		                        "could not open file " + std::string(filename));
 	}
+	return out;
 }
-#endif
 
 /**
  * @brief By-value std::getline wrapper.
@@ -126,6 +135,14 @@ eat_space(std::istream& is) {
 }
 
 /**
+ * @brief A helper class for wrapping stream manipulators.
+ */
+template <typename F>
+struct get_manip {
+	F _f;
+};
+
+/**
  * @brief Read in spaces until the end of the line is found.
  *
  * nl may be used to consume whitespace left over after a formatted
@@ -162,14 +179,6 @@ auto nl(std::basic_istream<CharT, Traits>& is)
 	}
 	return is;
 }
-
-/**
- * @brief A helper class for wrapping stream manipulators.
- */
-template <typename F>
-struct get_manip {
-	F _f;
-};
 
 template <typename T, typename U>
 struct unicode_widen : std::false_type {};
@@ -323,10 +332,10 @@ namespace detail {
 	template <typename SB1_t, typename SB2_t>
 	class basic_teestreambuf
 	    : public std::basic_streambuf<typename SB1_t::char_type,
-	                                  typename SB2_t::traits_type> {
+	                                  typename SB1_t::traits_type> {
 	 public:
 		using base_type = std::basic_streambuf<typename SB1_t::char_type,
-		                                       typename SB2_t::traits_type>;
+		                                       typename SB1_t::traits_type>;
 		static_assert(std::is_same<typename SB1_t::char_type,
 		                           typename SB2_t::char_type>::value,
 		              "Backing streams must be compatible.");
@@ -416,15 +425,41 @@ namespace detail {
 		SB2_t* b;
 	};
 
+	template <typename Stream>
+	using buf_for =
+	    std::remove_pointer_t<decltype(std::declval<Stream&>().rdbuf())>;
+
+	template <typename StreamA, typename StreamB>
+	class basic_teestream
+	    : public std::basic_ostream<typename StreamA::char_type,
+	                                typename StreamA::traits_type> {
+	 private:
+		using buf_type = detail::basic_teestreambuf<detail::buf_for<StreamA>,
+		                                            detail::buf_for<StreamB>>;
+		buf_type buf;
+		using ostream_type = std::basic_ostream<typename StreamA::char_type,
+		                                        typename StreamA::traits_type>;
+
+	 public:
+		using typename ostream_type::char_type;
+		using typename ostream_type::traits_type;
+
+		using typename ostream_type::int_type;
+		using typename ostream_type::off_type;
+		using typename ostream_type::pos_type;
+
+		basic_teestream(StreamA& a, StreamB& b)
+		    : ostream_type(&buf), buf(a.rdbuf(), b.rdbuf()) {}
+
+		buf_type* rdbuf() const { return &buf; }
+	};
+
 } // namespace detail
 
 template <typename StreamA, typename StreamB>
-class tee_stream {};
-
-template <typename StreamA, typename StreamB>
-tee_stream<StreamA, StreamB> tee(StreamA& a, StreamB& b);
-
-using test = tee_stream<decltype(std::cout), std::ofstream>;
+detail::basic_teestream<StreamA, StreamB> tee(StreamA& a, StreamB& b) {
+	return detail::basic_teestream(a, b);
+}
 
 } // namespace kblib
 

@@ -298,7 +298,7 @@ TEST_CASE("expect(narrowing, fail)") {
 
 #if KBLIB_USE_CXX17
 TEST_CASE("get_file_contents") {
-	auto filename = "kblib";
+	auto filename = "medfile";
 	auto filestr = kblib::get_file_contents(filename);
 	if (filestr) {
 		std::cout << "FNV32a(" << filename << "): " << kblib::FNV32a(*filestr)
@@ -324,10 +324,7 @@ TEST_CASE("get_file_contents") {
 
 TEST_CASE("tee_stream") {
 	std::ostringstream a, b;
-	using buf_t = std::remove_pointer<decltype(a.rdbuf())>::type;
-	auto tbuf =
-	    kblib::detail::basic_teestreambuf<buf_t, buf_t>(a.rdbuf(), b.rdbuf());
-	auto os = std::ostream(&tbuf);
+	auto os = kblib::tee(a, b);
 
 	os << "test" << std::flush;
 	REQUIRE(os);

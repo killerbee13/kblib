@@ -9,6 +9,7 @@
 #include <numeric>
 #include <random>
 
+#include "fakestd.h"
 #include "logic.h"
 #include "tdecl.h"
 
@@ -298,6 +299,15 @@ inline namespace nums {
 		return t != T(max);
 	}
 
+	template <typename T>
+	bool operator<(T t, max_t) {
+		return t < T(max);
+	}
+	template <typename T>
+	bool operator>(max_t, T t) {
+		return T(max) > t;
+	}
+
 	/**
 	 * @brief Shorthand for std::numeric_limits::min()
 	 *
@@ -330,6 +340,15 @@ inline namespace nums {
 		return t != T(min);
 	}
 
+	template <typename T>
+	bool operator<(min_t, T t) {
+		return T(min) < t;
+	}
+	template <typename T>
+	bool operator>(T t, min_t) {
+		return t > T(min);
+	}
+
 } // namespace nums
 
 template <typename T>
@@ -354,6 +373,51 @@ constexpr T phi() {
 }
 
 // TODO: write tests and fix style issues for quantization functions
+
+// saturating to_unsigned
+template <typename A, typename F>
+KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value and
+                                          std::is_integral<F>::value and
+                                          std::is_unsigned<A>::value,
+                                      A>
+saturating_cast(F x) {
+	if (x < 0) {
+		return 0;
+	} else if (to_unsigned(x) > A(max)) {
+		return max;
+	} else {
+		return x;
+	}
+}
+
+// saturating to_signed(signed)
+template <typename A, typename F>
+KBLIB_NODISCARD constexpr enable_if_t<
+    std::is_integral<A>::value and std::is_integral<F>::value and
+        std::is_signed<A>::value and std::is_signed<F>::value,
+    A>
+saturating_cast(F x) {
+	if (x < A(min)) {
+		return min;
+	} else if (to_unsigned(x) > A(max)) {
+		return max;
+	} else {
+		return x;
+	}
+}
+// saturating to_signed(unsigned)
+template <typename A, typename F>
+KBLIB_NODISCARD constexpr enable_if_t<
+    std::is_integral<A>::value and std::is_integral<F>::value and
+        std::is_signed<A>::value and std::is_unsigned<F>::value,
+    A>
+saturating_cast(F x) {
+	if (x > to_unsigned(A(max))) {
+		return max;
+	} else {
+		return x;
+	}
+}
 
 /**
  * @brief Quantize a real-valued value into a discrete integer.

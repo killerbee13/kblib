@@ -3,11 +3,14 @@
 
 #include "iterators.h"
 #include "simple.h"
+#include "stats.h"
 #include "tdecl.h"
 
 #include <limits>
 #include <random>
 #include <vector>
+
+#include <iostream>
 
 namespace kblib {
 
@@ -15,7 +18,10 @@ class trivial_seed_seq {
  public:
 	trivial_seed_seq() = default;
 	template <typename InputIt>
-	trivial_seed_seq(InputIt begin, InputIt end) : data(begin, end) {}
+	trivial_seed_seq(InputIt begin, InputIt end) : data(begin, end) {
+		assert(data.size() * sizeof(std::uint32_t) <=
+		       static_cast<std::make_signed<std::size_t>::type>(max));
+	}
 	template <typename T>
 	trivial_seed_seq(std::initializer_list<T> il)
 	    : trivial_seed_seq(il.begin(), il.end()) {}
@@ -32,8 +38,46 @@ class trivial_seed_seq {
 			}
 		} else {
 			std::size_t index{};
+			bool wrapped = false;
 			for (auto& i : indirect(begin, end)) {
-				i = data[index++ % data.size()];
+				if (index == data.size()) {
+					std::clog << "trivial_seed_seq: unexpectedly wrapping, size:  "
+					          << data.size() << '\n';
+					wrapped = true;
+					index = 0;
+				}
+				i = data[index++];
+			}
+			if (wrapped) {
+				std::clog << "final index: " << index << '\n';
+			}
+		}
+		return;
+	}
+
+	template <typename T>
+	enable_if_t<std::is_integral_v<T>> generate(T* begin, T* end) const {
+		auto r_begin = reinterpret_cast<char*>(begin);
+		auto r_end = reinterpret_cast<char*>(end);
+		auto r_size = r_end - r_begin;
+		auto d_size = kblib::to_signed(data.size() * sizeof(std::uint32_t));
+		if (data.empty()) {
+			std::memset(r_begin, 0x8b, saturating_cast<std::size_t>(r_size));
+		} else {
+			auto dr_begin = reinterpret_cast<const char*>(data.data());
+			if (r_size > d_size) {
+				std::clog << "trivial_seed_seq: unexpectedly wrapping, output size "
+				          << r_size << " greater than data size " << d_size << '\n';
+			}
+			auto dpos = r_begin;
+			do {
+				auto blk_size =
+				    saturating_cast<std::size_t>(std::min(d_size, r_size));
+				dpos = std::copy_n(dr_begin, blk_size, dpos);
+			} while ((r_size -= d_size) > 0);
+			if (r_size != 0) {
+				std::clog << "trivial_seed_seq: odd output size, last block size = "
+				          << r_size + d_size << '\n';
 			}
 		}
 		return;

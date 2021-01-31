@@ -182,7 +182,7 @@ std::size_t strsize(Str&& str) {
 	} else if constexpr (is_character_v<std::decay_t<Str>>) {
 		return 1;
 	} else if constexpr (std::is_integral_v<std::decay_t<Str>>) {
-		return digitsOf(str);
+		return count_digits(str);
 	} else {
 		return std::size(str);
 	}
