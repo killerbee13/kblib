@@ -19,6 +19,8 @@ TEST_CASE("bases") {
 	                                      "00000000");
 }
 
+using namespace std::literals;
+
 TEST_CASE("fromStr") {
 	using namespace std::literals;
 	const std::string str = "100";
@@ -29,6 +31,7 @@ TEST_CASE("fromStr") {
 	REQUIRE(kblib::fromStr<bool>("0") == false);
 	REQUIRE(kblib::fromStr<bool>("false") == false);
 
+#if KBLIB_USE_STRING_VIEW
 	const std::string_view strv = str;
 	REQUIRE(kblib::fromStr<std::string>(strv) == strv);
 	REQUIRE(kblib::fromStr<int>(strv) == 100);
@@ -36,4 +39,5 @@ TEST_CASE("fromStr") {
 	REQUIRE(kblib::fromStr<bool>("true"sv) == true);
 	REQUIRE(kblib::fromStr<bool>("0"sv) == false);
 	REQUIRE(kblib::fromStr<bool>("false"sv) == false);
+#endif
 }

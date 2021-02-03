@@ -430,7 +430,7 @@ struct FNV_hash<T, void_if_t<std::is_base_of<std::forward_iterator_tag,
                                                  iterator_category>::value and
                              not std::is_pointer<T>::value and
                              not is_trivially_hashable_v<T> and
-                             std::is_pointer<typename std::invoke_result<
+                             std::is_pointer<typename fakestd::invoke_result<
                                  decltype(&T::operator->), T>::type>::value>> {
 	std::size_t
 	operator()(T key_in,
@@ -505,12 +505,13 @@ struct FNV_hash<T, void_if_t<not std::is_integral<T>::value and
 template <typename Container>
 struct FNV_hash<Container,
                 void_if_t<value_detected<Container>::value and
-                          is_hashable<typename Container::value_type>::value and
+                          is_hashable<value_detected_t<Container>>::value and
                           not hash_detected<Container>::value and
                           is_iterable<Container>::value and
                           not(is_contiguous<Container>::value and
                               is_trivially_hashable<
-                                  typename Container::value_type>::value)>> {
+                                  typename Container::value_type>::value) and
+                          not is_iterator_v<Container>>> {
 	constexpr std::size_t
 	operator()(const Container& key,
 	           std::size_t offset =

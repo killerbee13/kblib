@@ -158,6 +158,7 @@ TEST_CASE("bitfields") {
 	static_assert(Addr::get_fY_v<b.raw> == 0b001, "");
 }
 
+#if KBLIB_USE_CXX17
 union punner {
 	char storage[sizeof(char*)]{};
 	kblib::union_pun<const char*, &punner::storage> ptr;
@@ -205,3 +206,4 @@ TEST_CASE("punning") {
 	pun.get<1>() = c;
 	REQUIRE(pun.get<2>() == kblib::byte_cast<std::uintptr_t>(c));
 }
+#endif

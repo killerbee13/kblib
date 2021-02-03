@@ -324,6 +324,30 @@ class range_t {
 	constexpr std::size_t size() const { return (max - min) / step; }
 
 	/**
+	 \brief Returns a linear container whose elements are this range
+	*/
+	template <typename Container,
+	          enable_if_t<is_linear_container_v<Container> and
+	                      std::is_constructible<Container, iterator,
+	                                            iterator>::value>* = nullptr>
+	explicit operator Container() const
+	    noexcept(noexcept(Container(begin(), end()))) {
+		return Container(begin(), end());
+	}
+
+	/**
+	 \brief Returns a setlike container whose elements are this range
+	*/
+	template <typename Container,
+	          enable_if_t<is_setlike_v<Container> and
+	                      std::is_constructible<Container, iterator,
+	                                            iterator>::value>* = nullptr>
+	explicit operator Container() const
+	    noexcept(noexcept(Container(begin(), end()))) {
+		return Container(begin(), end());
+	}
+
+	/**
 	 * @brief Compare l and r for equality.
 	 *
 	 * Ranges are equal when they generate identical ranges.

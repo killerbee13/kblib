@@ -5,7 +5,7 @@ template <class... Args>
 struct Ref {
 
 	auto operator->() {
-		return kblib::unary_identity_t<Args...>{};
+		return kblib::meta_type_t<Args...>{};
 	} // present only if sizeof...(Args) == 1
 };
 
@@ -53,6 +53,7 @@ TEST_CASE("signed_cast") {
 	//  auto _2 = kblib::signed_cast<double>(0);
 }
 
+#if KBLIB_USE_CXX17
 template <class T>
 constexpr std::string_view type_name_f() {
 	using namespace std;
@@ -71,6 +72,7 @@ constexpr std::string_view type_name_f() {
 	return string_view(p.data() + 84, p.size() - 84 - 7);
 #endif
 }
+#endif
 
 #if KBLIB_USE_CXX17
 TEST_CASE("next_larger") {

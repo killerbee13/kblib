@@ -24,6 +24,7 @@ struct null_construct<T, true> : public T {
 	null_construct() : T{} {}
 };
 
+#if KBLIB_USE_CXX17
 template <auto FunPtr>
 struct fun_ptr_deleter;
 
@@ -31,6 +32,7 @@ template <typename Arg, void (*FunPtr)(Arg)>
 struct fun_ptr_deleter<FunPtr> {
 	void operator()(Arg arg) const { return FunPtr(arg); }
 };
+#endif
 
 template <typename T>
 class live_ptr;
@@ -267,16 +269,30 @@ namespace detail {
 
 	template <typename T>
 	struct as_base_class<T, true, true> : T {
+		as_base_class(const T& x) noexcept(
+		    std::is_nothrow_copy_constructible<T>::value)
+		    : T(x) {}
+		as_base_class(T&& x) noexcept(
+		    std::is_nothrow_move_constructible<T>::value)
+		    : T(std::move(x)) {}
 		T& base() noexcept { return *this; }
 		const T& base() const noexcept { return *this; }
 	};
-
+#if KBLIB_USE_CXX17
 	template <typename R, typename A, bool E>
 	struct as_base_class<R (&)(A) noexcept(E), false, false> {
 		using type = R(A) noexcept(E);
 		type* base_;
 		type& base() const noexcept { return *base_; }
 	};
+#else
+	template <typename R, typename A>
+	struct as_base_class<R (&)(A), false, false> {
+		using type = R(A);
+		type* base_;
+		type& base() const noexcept { return *base_; }
+	};
+#endif
 
 	template <typename T, bool B>
 	struct as_base_class<T&, B, true> {
@@ -612,6 +628,26 @@ class cond_ptr<T[], Deleter> : private detail::as_base_class<Deleter> {
 	T* ptr_ = nullptr;
 	bool owns_ = false;
 };
+
+template <typename T, typename Deleter>
+cond_ptr<T, Deleter> make_cond_ptr(std::unique_ptr<T, Deleter>&& arg) {
+	return cond_ptr<T>(std::move(arg));
+}
+
+template <typename T>
+cond_ptr<T> make_cond_ptr(T* arg, bool owner = false) {
+	return cond_ptr<T>(arg, owner);
+}
+
+template <typename T, typename Deleter>
+cond_ptr<T, Deleter> make_cond_ptr(T* arg, Deleter del) {
+	return cond_ptr<T, Deleter>(arg, del);
+}
+
+template <typename T, typename Deleter>
+cond_ptr<T, Deleter> make_cond_ptr(T* arg, bool owner, Deleter del) {
+	return cond_ptr<T, Deleter>(arg, owner, del);
+}
 
 } // namespace kblib
 

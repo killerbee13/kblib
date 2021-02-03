@@ -206,9 +206,14 @@ namespace detail {
 	template <typename T>
 	constexpr bool is_radix_sortable_v = is_radix_sortable<T>::value;
 
+#if KBLIB_USE_CXX17
 	template <typename T>
 	constexpr bool is_byte_v =
 	    std::is_same<typename std::remove_cv<T>::type, std::byte>::value;
+#else
+	template <typename T>
+	constexpr bool is_byte_v = false;
+#endif
 
 	template <typename T>
 	constexpr auto byte_count(T) noexcept
@@ -240,7 +245,7 @@ namespace detail {
 	                        is_byte_v<T>) and
 	                       sizeof(typename T::value_type) == 1,
 	                   std::size_t> {
-		return std::size(x);
+		return fakestd::size(x);
 	}
 	template <typename T>
 	constexpr auto byte_count(const T& x) noexcept
@@ -249,7 +254,7 @@ namespace detail {
 	                       (sizeof(typename T::value_type) > 1),
 	                   std::size_t> {
 		using value_type = typename T::value_type;
-		return std::size(x) * byte_count(value_type{});
+		return fakestd::size(x) * byte_count(value_type{});
 	}
 
 	// Can be used to detect unsupported types with overload resolution.

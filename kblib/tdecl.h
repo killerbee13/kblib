@@ -8,7 +8,7 @@
  * @brief Contains basic declarations needed by other files.
  */
 
-#if __cplusplus <= 201402L
+#if __cplusplus < 201402L
 #error kblib requires C++14 or higher
 #endif
 

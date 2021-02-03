@@ -248,11 +248,11 @@ TEST_CASE("byte extraction") {
 	              "these checks assume uint32_t does not have padding.");
 	static_assert(CHAR_BIT == 8, "these checks assume 8-bit bytes");
 
-	static_assert(detail::byte_count(x) == sizeof(x));
-	static_assert(+detail::get_byte_index(x, 0) == 0x67);
-	static_assert(+detail::get_byte_index(x, 1) == 0xCD);
-	static_assert(+detail::get_byte_index(x, 2) == 0x23);
-	static_assert(+detail::get_byte_index(x, 3) == 0xAB);
+	static_assert(detail::byte_count(x) == sizeof(x), "");
+	static_assert(+detail::get_byte_index(x, 0) == 0x67, "");
+	static_assert(+detail::get_byte_index(x, 1) == 0xCD, "");
+	static_assert(+detail::get_byte_index(x, 2) == 0x23, "");
+	static_assert(+detail::get_byte_index(x, 3) == 0xAB, "");
 
 	std::string str{"0123456789"};
 	REQUIRE(detail::byte_count(str) == str.length());
@@ -262,13 +262,13 @@ TEST_CASE("byte extraction") {
 
 	constexpr std::array<std::int32_t, 2> arr{0x10325476,
 	                                          std::int32_t(0x98BADCFE)};
-	static_assert(detail::byte_count(arr) == 8);
-	static_assert(+detail::get_byte_index(arr, 0) == 0x76);
-	static_assert(+detail::get_byte_index(arr, 1) == 0x54);
-	static_assert(+detail::get_byte_index(arr, 2) == 0x32);
-	static_assert(+detail::get_byte_index(arr, 3) == 0x10);
-	static_assert(+detail::get_byte_index(arr, 4) == 0xFE);
-	static_assert(+detail::get_byte_index(arr, 5) == 0xDC);
-	static_assert(+detail::get_byte_index(arr, 6) == 0xBA);
-	static_assert(+detail::get_byte_index(arr, 7) == 0x98);
+	static_assert(detail::byte_count(arr) == 8, "");
+	static_assert(+detail::get_byte_index(arr, 0) == 0x76, "");
+	static_assert(+detail::get_byte_index(arr, 1) == 0x54, "");
+	static_assert(+detail::get_byte_index(arr, 2) == 0x32, "");
+	static_assert(+detail::get_byte_index(arr, 3) == 0x10, "");
+	static_assert(+detail::get_byte_index(arr, 4) == 0xFE, "");
+	static_assert(+detail::get_byte_index(arr, 5) == 0xDC, "");
+	static_assert(+detail::get_byte_index(arr, 6) == 0xBA, "");
+	static_assert(+detail::get_byte_index(arr, 7) == 0x98, "");
 }

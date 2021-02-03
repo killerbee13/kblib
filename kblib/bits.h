@@ -1,6 +1,7 @@
 #ifndef KBLIB_BITS_H
 #define KBLIB_BITS_H
 
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <limits>
@@ -582,8 +583,8 @@ namespace detail {
 	    : pun_el<punner_impl<S, std::index_sequence<Is...>, Types...>, Types, S,
 	             Is>... {
 
-		alignas(std::max({alignof(typename std::remove_extent<Types>::type)...}))
-		    std::byte raw[S]{};
+		alignas(std::max({alignof(typename std::remove_extent<
+		                          Types>::type)...})) unsigned char raw[S]{};
 	};
 
 	template <typename... Types>
@@ -605,7 +606,7 @@ struct punner
 	template <std::size_t I>
 	using r_element_t = typename std::tuple_element<I, tuple_t>::type;
 
-	static_assert(std::is_standard_layout<impl_t>::value);
+	static_assert(std::is_standard_layout<impl_t>::value, "");
 
  public:
 	template <std::size_t I>
@@ -615,7 +616,7 @@ struct punner
 
 	template <std::size_t I>
 	decltype(auto) get() & {
-		static_assert(std::is_base_of<base_t<I>, impl_t>::value);
+		static_assert(std::is_base_of<base_t<I>, impl_t>::value, "");
 		return static_cast<base_t<I>&>(*this).get();
 	}
 	template <std::size_t I>
@@ -666,11 +667,13 @@ decltype(auto) get(const punner<Types...>&& p) {
 	return p.template get<I>();
 }
 
+#if KBLIB_USE_CXX17
 template <typename Type, auto Storage>
 class union_pun {
  private:
+	using sptr_t = decltype(Storage);
 	using class_t = kblib::class_t<Storage>;
-	using member_t = kblib::member_t<class_t, Storage>;
+	using member_t = kblib::member_of_t<sptr_t>;
 	using proxy_t = detail::pun_proxy<Type, member_t>;
 	using const_proxy_t = detail::pun_proxy<Type, const member_t>;
 
@@ -732,6 +735,7 @@ class union_pun<Type[N], Storage> {
 	operator type() const noexcept { return (*this)(); }
 	proxy_t operator=(const Type (&val)[N]) noexcept { return (*this)(val); }
 };
+#endif
 
 } // namespace kblib
 

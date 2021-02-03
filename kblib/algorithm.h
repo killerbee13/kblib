@@ -19,7 +19,7 @@ namespace kblib {
  * @param func The function to invoke.
  */
 template <typename Callable>
-constexpr return_assert_t<std::is_invocable<Callable>::value, void>
+constexpr return_assert_t<is_invocable<Callable>::value, void>
 repeat(std::size_t N, Callable func) noexcept(noexcept(func())) {
 	for (std::size_t I = 0; I != N; ++I) {
 		func();
@@ -907,6 +907,24 @@ constexpr OutputIt generate(OutputIt first, EndIt last, Generator g) noexcept(
 	while (first != last) {
 		*first = g();
 		++first;
+	}
+	return first;
+}
+
+/**
+ * @brief Like std::generate_n except that it is constexpr.
+ *
+ * @param first The beginning of the ouput range.
+ * @param count The number of elements to generate.
+ * @param g A generator to repeatedly call and assign the return values to the
+ * elements of the output range.
+ * @return ForwardIt The iterator pointing past the last element written.
+ */
+template <typename OutputIt, typename Size, typename Generator>
+constexpr OutputIt generate_n(OutputIt first, Size count,
+                              Generator g) noexcept(noexcept(*first++ = g())) {
+	for (Size i = 0; i < count; i++) {
+		*first++ = g();
 	}
 	return first;
 }

@@ -324,7 +324,11 @@ TEST_CASE("get_file_contents") {
 
 TEST_CASE("tee_stream") {
 	std::ostringstream a, b;
+#if KBLIB_USE_CXX17
 	auto os = kblib::tee(a, b);
+#else
+	kblib::basic_teestream<std::ostringstream, std::ostringstream> os(a, b);
+#endif
 
 	os << "test" << std::flush;
 	REQUIRE(os);

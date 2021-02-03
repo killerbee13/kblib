@@ -10,6 +10,7 @@
 #include <cinttypes>
 #include <climits>
 #include <limits>
+#include <new>
 #include <optional>
 
 namespace kblib {
@@ -39,12 +40,18 @@ namespace detail {
 
 		constexpr void destroy() noexcept { get()->~T(); }
 
+#if KBLIB_USE_CXX17
+#define LAUNDER(x) std::launder(x)
+#else
+#define LAUNDER(x) (x)
+#endif
 		KBLIB_NODISCARD constexpr T* get() & noexcept {
-			return std::launder(reinterpret_cast<T*>(this->data()));
+			return LAUNDER(reinterpret_cast<T*>(this->data()));
 		}
 		KBLIB_NODISCARD constexpr const T* get() const& noexcept {
-			return std::launder(reinterpret_cast<const T*>(this->data()));
+			return LAUNDER(reinterpret_cast<const T*>(this->data()));
 		}
+#undef LAUNDER
 	};
 	template <typename T>
 	struct alignas(T) storage_for<T, true> {
@@ -70,6 +77,7 @@ namespace detail {
 
 template <typename Key, typename T, typename allocator = void>
 class direct_map {
+	// Allocating direct_map
  public:
 	using key_type = Key;
 	using mapped_type = T;
@@ -163,10 +171,9 @@ class direct_map {
 		DECL_OP(<=)
 #undef DECL_OP
 
-		friend constexpr void swap(iter<V>& a, iter<V>& b) {
-			using std::swap;
-			swap(a.storage, b.storage);
-			swap(a.pos, b.pos);
+		constexpr void swap(iter& other) noexcept {
+			kblib::swap(storage, other.storage);
+			kblib::swap(pos, other.pos);
 		}
 	};
 
@@ -191,7 +198,6 @@ class direct_map {
 			if (contains(k)) { // the bitmap is already copied from other
 				do_construct(k, other.at(k));
 				++_size;
-				bitmap().set(index(k));
 			}
 		}
 	}
@@ -469,7 +475,8 @@ class direct_map {
 
 	KBLIB_NODISCARD constexpr iterator upper_bound(Key key) & noexcept {
 		// if the key exists, upper_bound is the next one
-		if (auto l = lower_bound(key); l.pos == index(key)) {
+		auto l = lower_bound(key);
+		if (l.pos == index(key)) {
 			return ++l;
 			// otherwise upper_bound == lower_bound
 		} else {
@@ -479,7 +486,8 @@ class direct_map {
 	KBLIB_NODISCARD constexpr const_iterator
 	upper_bound(Key key) const& noexcept {
 		// if the key exists, upper_bound is the next one
-		if (auto l = lower_bound(key); l.pos == index(key)) {
+		auto l = lower_bound(key);
+		if (l.pos == index(key)) {
 			return ++l;
 			// otherwise upper_bound == lower_bound
 		} else {
@@ -609,6 +617,7 @@ class direct_map {
 
 template <typename Key, typename T>
 class direct_map<Key, T, void> {
+	// Non-allocating direct_map
  public:
 	using key_type = Key;
 	using mapped_type = T;
@@ -700,10 +709,9 @@ class direct_map<Key, T, void> {
 		DECL_OP(<=)
 #undef DECL_OP
 
-		friend constexpr void swap(iter<V>& a, iter<V>& b) {
-			using std::swap;
-			swap(a.map, b.map);
-			swap(a.pos, b.pos);
+		constexpr void swap(iter& other) noexcept {
+			kblib::swap(map, other.map);
+			kblib::swap(pos, other.pos);
 		}
 	};
 
@@ -972,7 +980,7 @@ class direct_map<Key, T, void> {
 
 	constexpr void swap(direct_map& other) noexcept(
 	    std::is_nothrow_move_constructible<value_type>::value and
-	        std::is_nothrow_swappable<T>::value) {
+	        fakestd::is_nothrow_swappable<T>::value) {
 		using std::swap;
 		for (auto k : range(+min(), max() + 1)) {
 			if (contains(k)) {
@@ -1038,7 +1046,8 @@ class direct_map<Key, T, void> {
 
 	KBLIB_NODISCARD constexpr iterator upper_bound(Key key) & noexcept {
 		// if the key exists, upper_bound is the next one
-		if (auto l = lower_bound(key); l.pos == index(key)) {
+		auto l = lower_bound(key);
+		if (l.pos == index(key)) {
 			return ++l;
 			// otherwise upper_bound == lower_bound
 		} else {
@@ -1048,7 +1057,8 @@ class direct_map<Key, T, void> {
 	KBLIB_NODISCARD constexpr const_iterator
 	upper_bound(Key key) const& noexcept {
 		// if the key exists, upper_bound is the next one
-		if (auto l = lower_bound(key); l.pos == index(key)) {
+		auto l = lower_bound(key);
+		if (l.pos == index(key)) {
 			return ++l;
 			// otherwise upper_bound == lower_bound
 		} else {

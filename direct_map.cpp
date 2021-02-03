@@ -26,9 +26,9 @@ TEST_CASE("direct_map") {
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
-	for (auto [i, v] : map) {
-		REQUIRE(i == 'a');
-		REQUIRE(v == "42");
+	for (auto el : map) {
+		REQUIRE(el.first == 'a');
+		REQUIRE(el.second == "42");
 	}
 
 	const auto ZERO_V = "4567854";
@@ -94,7 +94,8 @@ KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,
 	{
 		auto b = map.begin();
 		auto e = map.end();
-		auto n = std::next(map.begin());
+		auto n = b;
+		++n;
 		static_cast<void>(b != n);
 		static_cast<void>(b->second == 42);
 		static_cast<void>(n == e);
@@ -102,9 +103,9 @@ KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,
 	static_cast<void>(map.begin() == --map.end());
 	static_cast<void>(map.lower_bound('a') == map.find('a'));
 	static_cast<void>(map.upper_bound('a') == map.end());
-	for (auto [i, v] : map) {
-		static_cast<void>(i == 'a');
-		static_cast<void>(v == 42);
+	for (auto el : map) {
+		static_cast<void>(el.first == 'a');
+		static_cast<void>(el.second == 42);
 	}
 
 	const auto ZERO_V = 4567854;
@@ -181,9 +182,9 @@ TEST_CASE("direct_map<trivial>") {
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
-	for (auto [i, v] : map) {
-		REQUIRE(i == 'a');
-		REQUIRE(v == 42);
+	for (auto el : map) {
+		REQUIRE(el.first == 'a');
+		REQUIRE(el.second == 42);
 	}
 
 	const auto ZERO_V = 4567854;
@@ -261,9 +262,9 @@ TEST_CASE("direct_map (heap)") {
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
-	for (auto [i, v] : map) {
-		REQUIRE(i == 'a');
-		REQUIRE(v == "42");
+	for (auto el : map) {
+		REQUIRE(el.first == 'a');
+		REQUIRE(el.second == "42");
 	}
 
 	const auto ZERO_V = "4567854";
@@ -342,9 +343,9 @@ TEST_CASE("direct_map<trivial> (heap)") {
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
-	for (auto [i, v] : map) {
-		REQUIRE(i == 'a');
-		REQUIRE(v == 42);
+	for (auto el : map) {
+		REQUIRE(el.first == 'a');
+		REQUIRE(el.second == 42);
 	}
 
 	const auto ZERO_V = 4567854;

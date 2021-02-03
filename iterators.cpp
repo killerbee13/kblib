@@ -1,6 +1,7 @@
 #include "kblib/iterators.h"
 #include "catch.hpp"
 #include <iterator>
+#include <set>
 #include <sstream>
 
 TEST_CASE("to_pointer") {
@@ -20,7 +21,25 @@ TEST_CASE("range") {
 
 	std::vector<int> r{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 	auto r2 = kblib::range(10);
+	REQUIRE(r.size() == r2.size());
 	REQUIRE(std::equal(r.begin(), r.end(), r2.begin()));
+}
+
+TEST_CASE("range conversion") {
+	SECTION("vector") {
+		auto r = kblib::range(2, 5);
+		auto v = std::vector<int>(r);
+		REQUIRE(v.size() == r.size());
+		REQUIRE(std::equal(v.begin(), v.end(), r.begin()));
+	}
+	SECTION("string") {
+		auto r = kblib::range(+'a', 'z' + 1);
+		auto v = std::string(r);
+		REQUIRE(v == "abcdefghijklmnopqrstuvwxyz");
+		REQUIRE(v.size() == r.size());
+		REQUIRE(std::equal(v.begin(), v.end(), r.begin()));
+	}
+	auto x = std::set<int>(kblib::range(0, 10));
 }
 
 #if KBLIB_USE_CXX17
@@ -74,7 +93,7 @@ TEST_CASE("magic_enumerate") {
 #if defined(__clang__)
 		// Suppress warning for intentional behavior
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wrange-loop-construct"
+#pragma clang diagnostic ignored "-Wrange-loop-analysis"
 #endif
 		for (const auto [i, v] : kblib::magic_enumerate(persistent)) {
 			REQUIRE(v == persistent[i]);
@@ -225,6 +244,11 @@ TEST_CASE("cry_enumerate") {
 		}
 	}
 	SECTION("const copy from non-const") {
+#if defined(__clang__)
+		// Suppress warning for intentional behavior
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wrange-loop-analysis"
+#endif
 		for (const auto [i, v] : kblib::cry_enumerate(persistent)) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
@@ -233,6 +257,9 @@ TEST_CASE("cry_enumerate") {
 			        typename std::remove_reference<decltype(v)>::type>::value,
 			    "v must refer to const in a const copy");
 		}
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 	}
 
 	SECTION("iterators") {

@@ -111,8 +111,8 @@ TEST_CASE("live_ptr<string>") {
 
 TEST_CASE("cond_ptr") {
 	int a{42};
-	auto op = kblib::cond_ptr(std::make_unique<int>(42));
-	auto rp = kblib::cond_ptr(&a);
+	auto op = kblib::make_cond_ptr(std::make_unique<int>(42));
+	auto rp = kblib::make_cond_ptr(&a);
 	REQUIRE(op);
 	REQUIRE(rp);
 	REQUIRE(*op == *rp);
@@ -136,7 +136,7 @@ TEST_CASE("cond_ptr") {
 }
 
 TEST_CASE("cond_ptr fptr") {
-	constexpr auto del = [](int* p) noexcept { delete p; };
+	auto del = [](int* p) noexcept { delete p; };
 	int a{42};
 	auto op = kblib::cond_ptr<int, decltype(+del)>(
 	    std::unique_ptr<int, decltype(+del)>(new int{42}, del));
@@ -164,7 +164,7 @@ TEST_CASE("cond_ptr fptr") {
 }
 
 TEST_CASE("cond_ptr rfptr") {
-	constexpr auto del = [](int* p) noexcept { delete p; };
+	auto del = [](int* p) noexcept { delete p; };
 	int a{42};
 	auto op = kblib::cond_ptr<int, decltype(*+del)>(
 	    std::unique_ptr<int, decltype(*+del)>(new int{42}, *del));
@@ -185,7 +185,7 @@ TEST_CASE("cond_ptr rfptr") {
 
 TEST_CASE("cond_ptr array") {
 	int a[10]{42};
-	auto op = kblib::cond_ptr(std::make_unique<int[]>(42));
+	auto op = kblib::make_cond_ptr(std::make_unique<int[]>(42));
 	auto rp = kblib::cond_ptr<int[]>(a);
 	REQUIRE(op);
 	REQUIRE(rp);

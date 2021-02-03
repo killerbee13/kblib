@@ -27,6 +27,9 @@ using enable_if_t = typename std::enable_if<B, T>::type;
 template <typename T>
 using decay_t = typename std::decay<T>::type;
 
+template <bool v>
+using bool_constant = std::integral_constant<bool, v>;
+
 namespace detail {
 
 	template <
@@ -229,36 +232,35 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 	          false_type>::type {};
 
 	template <class Tp, class Up>
-	inline constexpr bool is_swappable_with_v = is_swappable_with<Tp, Up>::value;
+	constexpr bool is_swappable_with_v = is_swappable_with<Tp, Up>::value;
 
 	template <class Tp>
-	inline constexpr bool is_swappable_v = is_swappable<Tp>::value;
+	constexpr bool is_swappable_v = is_swappable<Tp>::value;
 
 	template <class Tp, class Up>
-	inline constexpr bool is_nothrow_swappable_with_v =
+	constexpr bool is_nothrow_swappable_with_v =
 	    is_nothrow_swappable_with<Tp, Up>::value;
 
 	template <class Tp>
-	inline constexpr bool is_nothrow_swappable_v =
-	    is_nothrow_swappable<Tp>::value;
+	constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<Tp>::value;
 
 #endif
 
 	namespace detail {
 		template <typename F>
 		struct not_fn_t {
-			explicit not_fn_t(F&& f) : fd(std::forward<F>(f)) {}
-			not_fn_t(const not_fn_t&) = default;
-			not_fn_t(not_fn_t&&) = default;
+			constexpr explicit not_fn_t(F&& f) : fd(std::forward<F>(f)) {}
+			constexpr not_fn_t(const not_fn_t&) = default;
+			constexpr not_fn_t(not_fn_t&&) = default;
 
 			template <class... Args>
-			auto operator()(Args&&... args) & -> decltype(
+			constexpr auto operator()(Args&&... args) & -> decltype(
 			    not std::declval<invoke_result_t<std::decay_t<F>&, Args...>>()) {
 				return not invoke(fd, std::forward<Args>(args)...);
 			}
 
 			template <class... Args>
-			auto operator()(Args&&... args) const& -> decltype(
+			constexpr auto operator()(Args&&... args) const& -> decltype(
 			    not std::declval<
 			        invoke_result_t<std::decay_t<F> const&, Args...>>()) {
 				return not invoke(std::move(fd), std::forward<Args>(args)...);
@@ -319,33 +321,147 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 		return N;
 	}
 
+	// Adapted from libstdc++ code, licensed under GPL
+
+	namespace detail {
+		// invokable
+		template <class Ret, class Fp, class... Args>
+		struct invokable_r {
+			template <class XFp, class... XArgs>
+			static auto try_call(int)
+			    -> decltype(kblib::invoke(std::declval<XFp>(),
+			                              std::declval<XArgs>()...));
+			template <class XFp, class... XArgs>
+			static detail::nat try_call(...);
+
+			using Result = decltype(try_call<Fp, Args...>(0));
+
+			using type = typename std::conditional<
+			    not std::is_same<Result, detail::nat>::value,
+			    typename std::conditional<std::is_void<Ret>::value, std::true_type,
+			                              std::is_convertible<Result, Ret>>::type,
+			    std::false_type>::type;
+			static const bool value = type::value;
+		};
+		template <class Fp, class... Args>
+		using invokable = invokable_r<void, Fp, Args...>;
+
+		template <bool IsInvokable, bool IsCVVoid, class Ret, class Fp,
+		          class... Args>
+		struct nothrow_invokable_r_imp {
+			static const bool value = false;
+		};
+
+		template <class Ret, class Fp, class... Args>
+		struct nothrow_invokable_r_imp<true, false, Ret, Fp, Args...> {
+			typedef nothrow_invokable_r_imp ThisT;
+
+			template <class Tp>
+			static void test_noexcept(Tp) noexcept;
+
+			static const bool value = noexcept(ThisT::test_noexcept<Ret>(
+			    kblib::invoke(std::declval<Fp>(), std::declval<Args>()...)));
+		};
+
+		template <class Ret, class Fp, class... Args>
+		struct nothrow_invokable_r_imp<true, true, Ret, Fp, Args...> {
+			static const bool value = noexcept(
+			    kblib::invoke(std::declval<Fp>(), std::declval<Args>()...));
+		};
+
+		template <class Ret, class Fp, class... Args>
+		using nothrow_invokable_r =
+		    nothrow_invokable_r_imp<invokable_r<Ret, Fp, Args...>::value,
+		                            std::is_void<Ret>::value, Ret, Fp, Args...>;
+
+		template <class Fp, class... Args>
+		using nothrow_invokable =
+		    nothrow_invokable_r_imp<invokable<Fp, Args...>::value, true, void, Fp,
+		                            Args...>;
+
+		template <class Fp, class... Args>
+		struct invoke_of : public std::enable_if<
+		                       invokable<Fp, Args...>::value,
+		                       typename invokable_r<void, Fp, Args...>::Result> {
+		};
+	} // namespace detail
+
+	// is_invocable
+
+	template <class Fn, class... Args>
+	struct is_invocable
+	    : std::integral_constant<bool, detail::invokable<Fn, Args...>::value> {};
+
+	template <class Ret, class Fn, class... Args>
+	struct is_invocable_r
+	    : std::integral_constant<bool,
+	                             detail::invokable_r<Ret, Fn, Args...>::value> {
+	};
+
+	template <class Fn, class... Args>
+	constexpr bool is_invocable_v = is_invocable<Fn, Args...>::value;
+
+	template <class Ret, class Fn, class... Args>
+	constexpr bool is_invocable_r_v = is_invocable_r<Ret, Fn, Args...>::value;
+
+	// is_nothrow_invocable
+
+	template <class Fn, class... Args>
+	struct is_nothrow_invocable
+	    : std::integral_constant<bool,
+	                             detail::nothrow_invokable<Fn, Args...>::value> {
+	};
+
+	template <class Ret, class Fn, class... Args>
+	struct is_nothrow_invocable_r
+	    : std::integral_constant<
+	          bool, detail::nothrow_invokable_r<Ret, Fn, Args...>::value> {};
+
+	template <class Fn, class... Args>
+	constexpr bool is_nothrow_invocable_v =
+	    is_nothrow_invocable<Fn, Args...>::value;
+
+	template <class Ret, class Fn, class... Args>
+	constexpr bool is_nothrow_invocable_r_v =
+	    is_nothrow_invocable_r<Ret, Fn, Args...>::value;
+
 } // namespace fakestd
 #else
 namespace fakestd = std;
 #endif
 
-template <bool>
-struct void_if {};
+using fakestd::is_invocable;
+using fakestd::is_invocable_v;
 
-template <>
-struct void_if<true> {
-	using type = void;
-};
-template <bool b>
-using void_if_t = typename void_if<b>::type;
+using fakestd::is_invocable_r;
+using fakestd::is_invocable_r_v;
 
-using fakestd::void_t;
+using fakestd::is_nothrow_invocable;
+using fakestd::is_nothrow_invocable_v;
+
+using fakestd::is_nothrow_invocable_r;
+using fakestd::is_nothrow_invocable_r_v;
 
 template <typename... Ts>
-struct unary_identity {};
+struct meta_type {};
 
 template <typename T>
-struct unary_identity<T> {
+struct meta_type<T> {
 	using type = T;
 };
 
 template <typename... Ts>
-using unary_identity_t = typename unary_identity<Ts...>::type;
+using meta_type_t = typename meta_type<Ts...>::type;
+
+template <bool>
+struct void_if {};
+
+template <>
+struct void_if<true> : meta_type<void> {};
+template <bool b>
+using void_if_t = typename void_if<b>::type;
+
+using fakestd::void_t;
 
 // metafunction_success:
 // SFINAE detector for a ::type member type
@@ -366,9 +482,7 @@ template <bool V, typename T>
 struct return_assert {};
 
 template <typename T>
-struct return_assert<true, T> {
-	using type = T;
-};
+struct return_assert<true, T> : meta_type<T> {};
 
 template <bool V, typename T>
 using return_assert_t = typename return_assert<V, T>::type;
@@ -377,31 +491,26 @@ namespace detail {
 
 	template <typename F, typename Arg, typename = void>
 	struct apply_impl {
-		static auto do_apply(F&& f, Arg&& arg) noexcept(
-		    noexcept(kblib::invoke(std::forward<F>(f), std::forward<Arg>(arg))))
+		template <std::size_t... Is>
+		constexpr static auto do_apply(F&& f, Arg&& arg) noexcept(
+		    noexcept(kblib::invoke(std::forward<F>(f),
+		                           std::get<Is>(std::forward<Arg>(arg))...)))
 		    -> decltype(auto) {
-			return kblib::invoke(std::forward<F>(f), std::forward<Arg>(arg));
-		}
-	};
-
-	template <typename F, typename Arg>
-	struct apply_impl<F, Arg, void_if<true or std::tuple_size<Arg>::value>> {
-		static auto do_apply(F&& f, Arg&& arg) noexcept(
-		    noexcept(std::apply(std::forward<F>(f), std::forward<Arg>(arg))))
-		    -> decltype(auto) {
-			return std::apply(std::forward<F>(f), std::forward<Arg>(arg));
+			return kblib::invoke(std::forward<F>(f),
+			                     std::get<Is>(std::forward<Arg>(arg))...);
 		}
 	};
 
 } // namespace detail
 
 template <typename F, typename Arg>
-auto apply(F&& f, Arg&& arg) noexcept(
-    noexcept(detail::apply_impl<F, Arg>::do_apply(std::forward<F>(f),
-                                                  std::forward<Arg>(arg))))
-    -> decltype(auto) {
-	return detail::apply_impl<F, Arg>::do_apply(std::forward<F>(f),
-	                                            std::forward<Arg>(arg));
+constexpr auto
+apply(F&& f, Arg&& arg) noexcept(noexcept(detail::apply_impl<F, Arg>::do_apply(
+    std::forward<F>(f), std::forward<Arg>(arg),
+    std::index_sequence<std::tuple_size<Arg>::value>{}))) -> decltype(auto) {
+	return detail::apply_impl<F, Arg>::do_apply(
+	    std::forward<F>(f), std::forward<Arg>(arg),
+	    std::index_sequence<std::tuple_size<Arg>::value>{});
 }
 
 template <typename T>
@@ -474,48 +583,6 @@ template <typename T>
 struct is_tuple_like<T, void_t<typename std::tuple_element<0, T>::type>>
     : std::true_type {};
 
-/**
- * @brief Swaps two objects, using move operations.
- *
- * @param a,b The objects that will be swapped.
- */
-template <typename T, enable_if_t<not has_member_swap<T>::value and
-                                      not is_tuple_like<T>::value,
-                                  int> = 0>
-constexpr void
-swap(T& a, T& b) noexcept(std::is_nothrow_move_constructible<T>::value and
-                              std::is_nothrow_move_assignable<T>::value) {
-	auto tmp = std::move(a);
-	a = std::move(b);
-	b = std::move(tmp);
-	return;
-}
-
-/**
- * @brief Swaps two objects, using a member swap function, if detected.
- *
- * @param a,b The objects that will be swapped.
- */
-template <typename T, enable_if_t<has_member_swap<T>::value, int> = 0>
-constexpr void swap(T& a, T& b) noexcept(noexcept(a.swap(b))) {
-	a.swap(b);
-	return;
-}
-
-/**
- * @brief Swaps two arrays elementwise.
- *
- * @param a,b The arrays that will be swapped.
- */
-template <typename T, std::size_t N>
-constexpr void
-swap(T (&a)[N],
-     T (&b)[N]) noexcept(std::is_nothrow_move_constructible<T>::value and
-                             std::is_nothrow_move_assignable<T>::value) {
-	for (std::size_t i = 0; i < N; ++i) {
-		swap(a[i], b[i]);
-	}
-}
 namespace detail {
 
 	template <typename... Ts>
@@ -530,19 +597,64 @@ namespace detail {
 
 } // namespace detail
 
-/**
- * @brief Swaps two tuples elementwise.
- *
- * @param a,b The tuples that will be swapped.
- */
-template <typename T,
-          enable_if_t<is_tuple_like<T>::value and not has_member_swap<T>::value,
-                      std::size_t>
-              N = std::tuple_size<T>::value>
-constexpr void swap(T& a, T& b) noexcept(
-    noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) {
-	detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
-}
+struct {
+	/**
+	 * @brief Swaps two objects, using move operations.
+	 *
+	 * @param a,b The objects that will be swapped.
+	 */
+	template <typename T, enable_if_t<not has_member_swap<T>::value and
+	                                      not is_tuple_like<T>::value,
+	                                  int> = 0>
+	constexpr void
+	operator()(T& a,
+	           T& b) noexcept(std::is_nothrow_move_constructible<T>::value and
+	                              std::is_nothrow_move_assignable<T>::value) {
+		auto tmp = std::move(a);
+		a = std::move(b);
+		b = std::move(tmp);
+		return;
+	}
+
+	/**
+	 * @brief Swaps two objects, using a member swap function, if detected.
+	 *
+	 * @param a,b The objects that will be swapped.
+	 */
+	template <typename T, enable_if_t<has_member_swap<T>::value, int> = 0>
+	constexpr void operator()(T& a, T& b) noexcept(noexcept(a.swap(b))) {
+		a.swap(b);
+		return;
+	}
+
+	/**
+	 * @brief Swaps two arrays elementwise.
+	 *
+	 * @param a,b The arrays that will be swapped.
+	 */
+	template <typename T, std::size_t N>
+	constexpr void operator()(T (&a)[N], T (&b)[N]) noexcept(
+	    std::is_nothrow_move_constructible<T>::value and
+	        std::is_nothrow_move_assignable<T>::value) {
+		for (std::size_t i = 0; i < N; ++i) {
+			swap(a[i], b[i]);
+		}
+	}
+
+	/**
+	 * @brief Swaps two tuples elementwise.
+	 *
+	 * @param a,b The tuples that will be swapped.
+	 */
+	template <typename T, enable_if_t<is_tuple_like<T>::value and
+	                                      not has_member_swap<T>::value,
+	                                  std::size_t>
+	                          N = std::tuple_size<T>::value>
+	constexpr void operator()(T& a, T& b) noexcept(
+	    noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) {
+		detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
+	}
+} swap;
 
 #if KBLIB_USE_CXX17
 
@@ -678,24 +790,16 @@ KBLIB_NODISCARD constexpr safe_signed_t<N> signed_promote(N x) noexcept {
 
 template <typename C, typename T,
           bool = std::is_const<typename std::remove_reference<C>::type>::value>
-struct copy_const {
-	using type = T;
-};
+struct copy_const : meta_type<T> {};
 
 template <typename C, typename T>
-struct copy_const<C, T, true> {
-	using type = const T;
-};
+struct copy_const<C, T, true> : meta_type<const T> {};
 
 template <typename C, typename T>
-struct copy_const<C, T&, true> {
-	using type = const T&;
-};
+struct copy_const<C, T&, true> : meta_type<const T&> {};
 
 template <typename C, typename T>
-struct copy_const<C, T&&, true> {
-	using type = const T&&;
-};
+struct copy_const<C, T&&, true> : meta_type<const T&&> {};
 
 template <typename C, typename V>
 using copy_const_t = typename copy_const<C, V>::type;
@@ -704,75 +808,90 @@ template <typename T, typename = void>
 struct value_detected : std::false_type {};
 
 template <typename T>
-struct value_detected<T, void_t<typename T::value_type>> : std::true_type {};
+struct value_detected<T, void_t<typename T::value_type>> : std::true_type {
+	using type = typename T::value_type;
+};
 
 template <typename T>
 constexpr bool value_detected_v = value_detected<T>::value;
+template <typename T>
+using value_detected_t = typename value_detected<T>::type;
 
 template <typename T, typename = void>
 struct key_detected : std::false_type {};
 
 template <typename T>
-struct key_detected<T, void_t<typename T::key_type>> : std::true_type {};
+struct key_detected<T, void_t<typename T::key_type>> : std::true_type {
+	using type = typename T::key_type;
+};
 
 template <typename T>
 constexpr bool key_detected_v = key_detected<T>::value;
+template <typename T>
+using key_detected_t = typename key_detected<T>::type;
 
 template <typename T, typename = void>
 struct mapped_detected : std::false_type {};
 
 template <typename T>
-struct mapped_detected<T, void_t<typename T::mapped_type>> : std::true_type {};
+struct mapped_detected<T, void_t<typename T::mapped_type>> : std::true_type {
+	using type = typename T::mapped_type;
+};
 
 template <typename T>
 constexpr bool mapped_detected_v = mapped_detected<T>::value;
+template <typename T>
+using mapped_detected_t = typename mapped_detected<T>::type;
 
 template <typename T, typename = void>
 struct hash_detected : std::false_type {};
 
 template <typename T>
-struct hash_detected<T, void_t<typename T::hasher>> : std::true_type {};
+struct hash_detected<T, void_t<typename T::hasher>> : std::true_type {
+	using type = typename T::hasher;
+};
 
 template <typename T>
 constexpr bool hash_detected_v = hash_detected<T>::value;
+template <typename T>
+using hash_detected_t = typename hash_detected<T>::type;
 
 template <typename Container, bool = key_detected_v<Container>,
           typename T = typename Container::value_type>
 struct value_type_linear {};
 
 template <typename Container>
-struct value_type_linear<Container, false, typename Container::value_type> {
-	using type = typename Container::value_type;
-};
+struct value_type_linear<Container, false, typename Container::value_type>
+    : meta_type<typename Container::value_type> {};
 
 template <typename Container>
 using value_type_linear_t = typename value_type_linear<Container>::type;
 
 template <typename Container>
-struct is_linear_container {
-	constexpr static bool value =
-	    value_detected_v<Container> and not key_detected_v<Container>;
-};
-
-template <typename Container>
 constexpr static bool is_linear_container_v =
     value_detected_v<Container> and not key_detected_v<Container>;
+
+template <typename Container>
+struct is_linear_container : bool_constant<is_linear_container_v<Container>> {};
 
 template <typename Container, bool = key_detected_v<Container>,
           bool = mapped_detected_v<Container>>
 struct key_type_setlike {};
 
 template <typename Container>
-struct key_type_setlike<Container, true, false> {
-	using type = typename Container::key_type;
-};
+struct key_type_setlike<Container, true, false>
+    : meta_type<typename Container::key_type> {};
 
 template <typename Container>
 using key_type_setlike_t = typename key_type_setlike<Container>::type;
 
 template <typename Container>
-constexpr static bool is_setlike_v =
-    key_detected_v<Container> and not mapped_detected_v<Container>;
+constexpr static bool
+    is_setlike_v = (key_detected_v<Container> and
+                    value_detected_v<Container> and
+                    not mapped_detected_v<Container> and
+                    std::is_same<key_detected_t<Container>,
+                                 value_detected_t<Container>>::value);
 
 template <class InputIt1, class InputIt2>
 constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2) {
@@ -843,7 +962,7 @@ class heap_value {
 	heap_value(in_place_agg_t, Args&&... args) : p{new T{args...}} {}
 
 	heap_value(const heap_value& u) : p{(u.p ? (new T(*u.p)) : nullptr)} {}
-	heap_value(heap_value&& u) : p{std::exchange(u.p, nullptr)} {}
+	heap_value(heap_value&& u) noexcept : p{std::exchange(u.p, nullptr)} {}
 
 	heap_value& operator=(const heap_value& u) & {
 		if (this == &u) {
@@ -858,7 +977,7 @@ class heap_value {
 		return *this;
 	}
 
-	heap_value& operator=(heap_value&& u) & {
+	heap_value& operator=(heap_value&& u) & noexcept {
 		if (this == &u) {
 			return *this;
 		}
@@ -915,9 +1034,7 @@ class heap_value {
 		return p != nullptr;
 	}
 
-	friend void swap(heap_value<T> l, heap_value<T> r) noexcept {
-		std::swap(l.p, r.p);
-	}
+	constexpr void swap(heap_value& other) noexcept { kblib::swap(p, other.p); }
 
 	KBLIB_NODISCARD pointer get() & noexcept { return p; }
 	KBLIB_NODISCARD const_pointer get() const& noexcept { return p; }

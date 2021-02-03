@@ -176,7 +176,7 @@ namespace detail {
 template <typename Str>
 std::size_t strsize(Str&& str) {
 	if constexpr (std::is_array_v<std::remove_reference_t<Str>>) {
-		return std::size(str);
+		return fakestd::size(str);
 	} else if constexpr (std::is_pointer_v<std::decay_t<Str>>) {
 		return std::char_traits<std::decay_t<decltype(*str)>>::length(str);
 	} else if constexpr (is_character_v<std::decay_t<Str>>) {
@@ -184,7 +184,7 @@ std::size_t strsize(Str&& str) {
 	} else if constexpr (std::is_integral_v<std::decay_t<Str>>) {
 		return count_digits(str);
 	} else {
-		return std::size(str);
+		return fakestd::size(str);
 	}
 }
 
@@ -264,6 +264,7 @@ string concat(std::initializer_list<str> ins) {
 	}
 	return ret;
 }
+#endif
 
 inline bool isspace(char c) { return std::isspace(to_unsigned(c)); }
 inline bool isspace(wchar_t c) { return iswspace(to_unsigned(c)); }
@@ -276,7 +277,7 @@ struct is_space {
 /**
  * @brief Concatenates all elements of a range together with an optional joiner.
  *
- * range must support iteration and be supported by std::size().
+ * range must support iteration and be supported by fakestd::size().
  *
  * @param in A sequence of strings to concatenate.
  * @param joiner A string which will be inserted between every element of in.
@@ -296,7 +297,6 @@ string join(const range& in, const string& joiner = "") {
 		    });
 	}
 }
-#endif
 #endif // KBLIB_USE_CXX17
 
 /**

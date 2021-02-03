@@ -151,30 +151,28 @@ namespace detail {
 
 	// Note that when a type that is not resizable, but also doesn't have a
 	// constexpr size, is passed, there is a hard error.
-	template <typename C>
-	struct is_resizable {
-		constexpr static bool value = calc_resizable<C>();
-	};
 	/**
 	 * True if and only if C is a resizable container.
 	 */
 	template <typename C>
-	constexpr bool is_resizable_v = is_resizable<C>::value;
-
-	template <typename C, typename = void>
-	struct has_reserve {
-		constexpr static bool value = false;
-	};
+	constexpr bool is_resizable_v = calc_resizable<C>();
 
 	template <typename C>
-	struct has_reserve<C, void_t<decltype(std::declval<C&>().reserve(0))>> {
-		constexpr static bool value = true;
+	struct is_resizable {
+		constexpr static bool value = is_resizable_v<C>;
 	};
+
+	template <typename C, typename = void>
+	constexpr bool has_reserve_v = false;
+
+	template <typename C>
+	constexpr bool
+	    has_reserve_v<C, void_t<decltype(std::declval<C&>().reserve(0))>> = true;
 	/**
 	 * @brief True if and only if C contains an accessible reserve() member.
 	 */
 	template <typename C>
-	constexpr bool has_reserve_v = has_reserve<C>::value;
+	struct has_reserve : bool_constant<has_reserve_v<C>> {};
 
 } // namespace detail
 
@@ -208,14 +206,14 @@ void try_reserve(C&, std::size_t) noexcept {
  *
  */
 template <typename C, typename = void>
-struct is_contiguous : std::false_type {};
+constexpr bool is_contiguous_v = false;
 
 template <typename C>
-struct is_contiguous<C, void_t<decltype(std::declval<C&>().data())>>
-    : std::true_type {};
+constexpr bool is_contiguous_v<C, void_t<decltype(std::declval<C&>().data())>> =
+    true;
 
 template <typename C>
-constexpr bool is_contiguous_v = is_contiguous<C>::value;
+struct is_contiguous : bool_constant<is_contiguous_v<C>> {};
 
 template <typename T>
 struct class_of;
@@ -234,14 +232,44 @@ using class_of_t = typename class_of<T>::type;
  * @brief The type of data member pointed to by M.
  *
  */
-template <typename T, auto M>
-using member_t =
-    typename std::remove_reference<decltype(std::declval<T&>().*M)>::type;
+/*template <typename T, auto M>
+using member_t = std::remove_reference_t<decltype(std::declval<T&>().*M)>;*/
 
 template <auto M>
 using class_t = typename class_of<decltype(M)>::type;
 
 #endif
+
+template <typename T>
+struct member_of;
+
+template <typename T, typename M>
+struct member_of<M T::*> {
+	using type = M;
+};
+
+template <typename T>
+using member_of_t = typename member_of<T>::type;
+
+#if KBLIB_USE_CXX17
+template <typename, auto M>
+using member_t = member_of_t<decltype(M)>;
+#endif
+
+template <typename F>
+struct return_type;
+
+template <typename R, typename... Args>
+struct return_type<R(Args...)> : meta_type<R> {};
+
+template <typename R, typename... Args>
+struct return_type<R(Args...) const> : meta_type<R> {};
+
+template <typename R, typename... Args>
+struct return_type<R(Args...) volatile> : meta_type<R> {};
+
+template <typename R, typename... Args>
+struct return_type<R(Args...) const volatile> : meta_type<R> {};
 
 template <typename T>
 struct exists : std::true_type {};
@@ -281,6 +309,23 @@ struct is_iterable<T[N], void> : std::true_type {};
 template <typename T, std::size_t N>
 struct is_iterable<T (&)[N], void> : std::true_type {};
 
+template <typename T, typename = void>
+struct is_iterator : std::false_type {};
+
+template <typename T>
+struct is_iterator<
+    T,
+    void_if_t<std::is_base_of<
+                  std::input_iterator_tag,
+                  typename std::iterator_traits<T>::iterator_category>::value or
+              std::is_base_of<
+                  std::output_iterator_tag,
+                  typename std::iterator_traits<T>::iterator_category>::value>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool is_iterator_v = is_iterator<T>::value;
+
 /**
  * @brief Abbreviated name for std::is_reference<T>::value for C++14.
  *
@@ -314,13 +359,18 @@ using type_constant_for = type_constant<decltype(V), V>;
 #endif
 
 template <typename T>
-inline constexpr bool is_aliasing_type_v = false;
+struct is_aliasing_type : std::false_type {};
 template <>
-inline constexpr bool is_aliasing_type_v<char> = true;
+struct is_aliasing_type<char> : std::true_type {};
 template <>
-inline constexpr bool is_aliasing_type_v<unsigned char> = true;
+struct is_aliasing_type<unsigned char> : std::true_type {};
+#if KBLIB_USE_CXX17
 template <>
-inline constexpr bool is_aliasing_type_v<std::byte> = true;
+struct is_aliasing_type<std::byte> : std::true_type {};
+#endif
+
+template <typename T>
+constexpr bool is_aliasing_type_v = is_aliasing_type<T>::value;
 
 } // namespace kblib
 

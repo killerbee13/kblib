@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <string>
+#include <vector>
 
 #if KBLIB_USE_CXX17
 #include <optional>
@@ -59,7 +60,7 @@ std::optional<D> get_file_contents(const string& filename) {
 	std::optional<D> out;
 	if (std::ifstream in(filename, std::ios::in | std::ios::binary); in) {
 		const auto fsize = get_contents(in, out.emplace());
-		if (fsize != out->size()) {
+		if (fsize != to_signed(out->size())) {
 		}
 	}
 	return out;
@@ -77,13 +78,14 @@ std::optional<D> get_file_contents(const string& filename) {
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
 template <typename D = std::string, typename string>
-std::optional<D> try_get_file_contents(const string& filename) {
-	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
+D try_get_file_contents(const string& filename) {
+	static_assert(std::is_trivially_copyable<typename D::value_type>::value,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
 	              "D must be a sequence of char-sized objects.");
 	D out;
-	if (std::ifstream in(filename, std::ios::in | std::ios::binary); in) {
+	std::ifstream in(filename, std::ios::in | std::ios::binary);
+	if (in) {
 		in.exceptions(std::ios_base::failbit | std::ios_base::badbit);
 		get_contents(in, out);
 	} else {
@@ -237,7 +239,11 @@ auto unformatted_expect(CharT c) {
 			    (std::is_same<CharT, SCharT>::value or
 			     std::is_same<CharT, char>::value),
 			    "Stream character type incompatible with argument type.");
+#if KBLIB_USE_CXX17
 			if constexpr (std::is_same<CharT, SCharT>::value) {
+#else
+			if (std::is_same<CharT, SCharT>::value) {
+#endif
 				return c == d;
 			} else if (unicode_widen_v<CharT, SCharT>) {
 				return c == d;
@@ -429,37 +435,39 @@ namespace detail {
 	using buf_for =
 	    std::remove_pointer_t<decltype(std::declval<Stream&>().rdbuf())>;
 
-	template <typename StreamA, typename StreamB>
-	class basic_teestream
-	    : public std::basic_ostream<typename StreamA::char_type,
-	                                typename StreamA::traits_type> {
-	 private:
-		using buf_type = detail::basic_teestreambuf<detail::buf_for<StreamA>,
-		                                            detail::buf_for<StreamB>>;
-		buf_type buf;
-		using ostream_type = std::basic_ostream<typename StreamA::char_type,
-		                                        typename StreamA::traits_type>;
-
-	 public:
-		using typename ostream_type::char_type;
-		using typename ostream_type::traits_type;
-
-		using typename ostream_type::int_type;
-		using typename ostream_type::off_type;
-		using typename ostream_type::pos_type;
-
-		basic_teestream(StreamA& a, StreamB& b)
-		    : ostream_type(&buf), buf(a.rdbuf(), b.rdbuf()) {}
-
-		buf_type* rdbuf() const { return &buf; }
-	};
-
 } // namespace detail
 
 template <typename StreamA, typename StreamB>
-detail::basic_teestream<StreamA, StreamB> tee(StreamA& a, StreamB& b) {
-	return detail::basic_teestream(a, b);
+class basic_teestream
+    : public std::basic_ostream<typename StreamA::char_type,
+                                typename StreamA::traits_type> {
+ private:
+	using buf_type = detail::basic_teestreambuf<detail::buf_for<StreamA>,
+	                                            detail::buf_for<StreamB>>;
+	buf_type buf;
+	using ostream_type = std::basic_ostream<typename StreamA::char_type,
+	                                        typename StreamA::traits_type>;
+
+ public:
+	using typename ostream_type::char_type;
+	using typename ostream_type::traits_type;
+
+	using typename ostream_type::int_type;
+	using typename ostream_type::off_type;
+	using typename ostream_type::pos_type;
+
+	basic_teestream(StreamA& a, StreamB& b)
+	    : ostream_type(&buf), buf(a.rdbuf(), b.rdbuf()) {}
+
+	buf_type* rdbuf() const { return &buf; }
+};
+
+#if KBLIB_USE_CXX17
+template <typename StreamA, typename StreamB>
+basic_teestream<StreamA, StreamB> tee(StreamA& a, StreamB& b) {
+	return basic_teestream<StreamA, StreamB>(a, b);
 }
+#endif
 
 } // namespace kblib
 

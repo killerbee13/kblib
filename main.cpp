@@ -11,6 +11,7 @@
 
 #include "catch.hpp"
 
+#if KBLIB_USE_CXX17
 template <class T>
 constexpr std::string_view type_name_f() {
 	using namespace std;
@@ -29,6 +30,7 @@ constexpr std::string_view type_name_f() {
 	return string_view(p.data() + 84, p.size() - 84 - 7);
 #endif
 }
+#endif
 
 template <typename C>
 constexpr const char type_name[] = "unknown";

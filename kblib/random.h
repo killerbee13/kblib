@@ -1,6 +1,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
+#include "algorithm.h"
 #include "iterators.h"
 #include "simple.h"
 #include "stats.h"
@@ -27,7 +28,7 @@ class trivial_seed_seq {
 	    : trivial_seed_seq(il.begin(), il.end()) {}
 	template <typename Generator>
 	trivial_seed_seq(Generator gen, std::size_t count) : data(count) {
-		std::generate_n(data.begin(), count, gen);
+		kblib::generate_n(data.begin(), count, gen);
 	}
 
 	template <typename RandomAccessIt>
@@ -56,7 +57,8 @@ class trivial_seed_seq {
 	}
 
 	template <typename T>
-	enable_if_t<std::is_integral_v<T>> generate(T* begin, T* end) const {
+	enable_if_t<std::is_integral<T>::value, void> generate(T* begin,
+	                                                       T* end) const {
 		auto r_begin = reinterpret_cast<char*>(begin);
 		auto r_end = reinterpret_cast<char*>(end);
 		auto r_size = r_end - r_begin;
