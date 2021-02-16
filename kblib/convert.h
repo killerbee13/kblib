@@ -15,7 +15,6 @@
 #include <string>
 #include <typeinfo>
 
-#include "simple.h"
 #include "traits.h"
 
 #if KBLIB_USE_STRING_VIEW
@@ -30,26 +29,6 @@
 #include <iostream>
 
 namespace kblib {
-
-constexpr bool digits_are_ascii_like(char) {
-	return is_consecutive("0123456789");
-}
-
-constexpr bool digits_are_ascii_like(wchar_t) {
-	return is_consecutive(L"0123456789");
-}
-
-constexpr bool digits_are_ascii_like(char16_t) {
-	return is_consecutive(u"0123456789");
-}
-
-constexpr bool digits_are_ascii_like(char32_t) {
-	return is_consecutive(U"0123456789");
-}
-
-#if defined(__cpp_char8_t)
-constexpr bool digits_are_ascii_like(char8_t) { return true; }
-#endif
 
 template <int base, typename Int>
 inline std::string to_string(Int num) {
@@ -96,6 +75,109 @@ inline std::string to_string(Int num, int base) {
 	std::reverse(ret.begin(), ret.end());
 	return ret;
 }
+
+namespace detail {
+
+	template <typename Result, std::size_t N, const char (&digits)[N],
+	          int variants>
+	constexpr Result read_digits(const char* begin, const char* end, int base) {
+		if (begin == end) {
+			throw std::invalid_argument("\"\" is not an integer");
+		}
+		Result result{};
+		for (auto c : indirect(begin, end)) {
+			if (c != '\'') {
+				result *= base;
+				if (auto pos = find_in(std::begin(digits),
+				                       std::begin(digits) + base * variants, c);
+				    pos != std::size(digits)) {
+					result += pos / variants;
+				} else {
+					throw std::invalid_argument("invalid character in integer");
+				}
+			}
+		}
+	}
+
+} // namespace detail
+
+template <typename Result>
+constexpr Result parse_integer(const char* begin, const char* end,
+                               int base = 0) {
+	if (base == 0) {
+		if (*begin == '0') {
+			if (begin + 1 == end) {
+				return 0;
+			} else {
+				switch (begin[1]) {
+				case 'x':
+					return parse_integer<Result>(begin + 2, end, 16);
+				case 'b':
+					return parse_integer<Result>(begin + 2, end, 2);
+				default:
+					return parse_integer<Result>(begin + 1, end, 8);
+				}
+			}
+		} else {
+			return parse_integer<Result>(begin, end, 10);
+		}
+	} else {
+		if (base < 2 or base > 62) {
+			throw std::invalid_argument(
+			    "base must be either 0 or a positive number between 2 and 62");
+		} else if (base <= 36) {
+			return detail::read_digits<
+			    Result,
+			    "00112233445566778899AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRr"
+			    "SsTtUuVvWwXxYyZz",
+			    2>(begin, end, base);
+		} else if (base <= 62) {
+			return detail::read_digits<
+			    Result,
+			    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+			    1>(begin, end, base);
+		}
+	}
+}
+
+template <typename Result, std::size_t N>
+constexpr Result parse_integer(const char (&in)[N], int base = 0) {
+	return parse_integer<Result>(std::begin(in), std::end(in), base);
+}
+
+template <typename Result>
+constexpr Result parse_integer(const std::string& in, int base = 0) {
+	return parse_integer<Result>(begin(in), end(in), base);
+}
+
+#if KBLIB_USE_STRING_VIEW
+
+template <typename Result>
+constexpr Result parse_integer(std::string_view in, int base = 0) {
+	return parse_integer<Result>(begin(in), end(in), base);
+}
+
+#endif
+
+template <auto V>
+struct constant : std::integral_constant<decltype(V), V> {
+	constexpr constant<-V> operator-() { return {}; }
+};
+
+inline namespace literals {
+
+	template <char... Cs>
+	constexpr auto operator""_c() {
+		constexpr char arr[] = {Cs...};
+		return constant<parse_integer<std::intmax_t>(arr)>{};
+	}
+	template <char... Cs>
+	constexpr auto operator""_cu() {
+		constexpr char arr[] = {Cs...};
+		return constant<parse_integer<std::uintmax_t>(arr)>{};
+	}
+
+} // namespace literals
 
 template <typename E,
           typename = typename std::enable_if<std::is_enum<E>::value>::type>

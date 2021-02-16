@@ -76,19 +76,18 @@ namespace detail {
 
 } // namespace detail
 
-template <int trim, typename T, int N,
-          typename Indices = std::make_integer_sequence<int, N - trim>>
 /**
  * @brief Truncates the last trim elements from an array.
  *
  * @param arr The array to trim.
  * @return std::array<T, N - trim> The trimmed array.
  */
+template <int trim, typename T, int N,
+          typename Indices = std::make_integer_sequence<int, N - trim>>
 constexpr std::array<T, N - trim> trim_array(const T (&arr)[N]) {
 	return detail::trim_array(arr, Indices{});
 }
 
-template <int N, typename Indices = std::make_integer_sequence<int, N - 1>>
 /**
  * @brief Creates an array of only the meaningful characters in a string
  * literal, and not the null terminator.
@@ -97,6 +96,7 @@ template <int N, typename Indices = std::make_integer_sequence<int, N - 1>>
  * @return std::array<char, N - 1> A std::array of the meaningful characters of
  * the string literal.
  */
+template <int N, typename Indices = std::make_integer_sequence<int, N - 1>>
 constexpr std::array<char, N - 1> remove_null_terminator(const char (&arr)[N]) {
 	return detail::trim_array(arr, Indices{});
 }
@@ -110,6 +110,27 @@ template <typename T>
 struct is_bounded_array : std::false_type {};
 template <typename T, std::size_t N>
 struct is_bounded_array<T[N]> : std::true_type {};
+
+template <typename T>
+/**
+ * @brief A simple identity alias for simplifying some compound type
+ * declarations, such as function pointers.
+ */
+using alias = T;
+
+/**
+ * @brief Ignores its first template argument entirely, and returns its second
+ */
+template <typename, typename T>
+struct ignore {
+	using type = T;
+};
+/**
+ * @brief An alias for ignore<U, T>::type
+ *
+ */
+template <typename U, typename T>
+using ignore_t = typename ignore<U, T>::type;
 
 /**
  * @brief Creates a T with the same object representation as the given F.

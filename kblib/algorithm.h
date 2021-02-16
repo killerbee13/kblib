@@ -383,11 +383,11 @@ KBLIB_NODISCARD constexpr size_t find_last_in_if_not(
 /**
  * @brief Find the first element in c equal to v and return the position.
  *
- * Equivalent to find_in(std::begin(c), std::end(c), v)
+ * Equivalent to find_in(begin(c), end(c), v)
  *
  * @param c The container to search.
  * @param value The value to search for.
- * @return size_t The position of the element found, or c.size() if not.
+ * @return size_t The position of the element found, or size(c) if not.
  */
 template <typename Container, typename T>
 KBLIB_NODISCARD constexpr size_t
@@ -409,11 +409,11 @@ KBLIB_NODISCARD constexpr size_t find_in(ExecutionPolicy&& policy,
  * @brief Find the first element in c for which p returns true and return the
  * position.
  *
- * Equivalent to find_in_if(std::begin(c), std::end(c), p)
+ * Equivalent to find_in_if(begin(c), end(c), p)
  *
  * @param c The container to search in.
  * @param pred The predicate to check.
- * @return size_t The position of the element found, or c.size() if not.
+ * @return size_t The position of the element found, or size(c) if not.
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t
@@ -428,11 +428,11 @@ find_in_if(const Container& c, UnaryPredicate pred) noexcept(noexcept(
  * @brief Find the first element in c for which p returns false and return the
  * position.
  *
- * Equivalent to find_in_if_not(std::begin(c), std::end(c), p)
+ * Equivalent to find_in_if_not(begin(c), end(c), p)
  *
  * @param c The container to search in.
  * @param pred The predicate to check.
- * @return size_t The position of the element found, or c.size() if not.
+ * @return size_t The position of the element found, or size(c) if not.
  */
 template <typename Container, typename UnaryPredicate>
 KBLIB_NODISCARD constexpr size_t

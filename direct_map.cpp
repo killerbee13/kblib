@@ -70,6 +70,7 @@ TEST_CASE("direct_map") {
 	REQUIRE(std::next(map.begin(), 3) == map.end());
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
 	REQUIRE(std::distance(map.begin(), map.end()) == 3);
+#if 0
 	{
 		auto map2 = map;
 		REQUIRE(map == map2);
@@ -78,6 +79,7 @@ TEST_CASE("direct_map") {
 		map2.swap(map);
 		REQUIRE(map == map3);
 	}
+#endif
 }
 
 KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,

@@ -2,7 +2,6 @@
 #define KBLIB_SIMPLE_H
 
 #include "iterators.h"
-#include "tdecl.h"
 
 #include <bitset>
 #include <climits>
@@ -168,27 +167,6 @@ constexpr auto a(const std::initializer_list<T>& a) {
 }
 // use like:
 // auto v = a({2, 3, 5, 7, 9, 11})[2];
-
-template <typename T>
-/**
- * @brief A simple identity alias for simplifying some compound type
- * declarations, such as function pointers.
- */
-using alias = T;
-
-/**
- * @brief Ignores its first template argument entirely, and returns its second
- */
-template <typename, typename T>
-struct ignore {
-	using type = T;
-};
-/**
- * @brief An alias for ignore<U, T>::type
- *
- */
-template <typename U, typename T>
-using ignore_t = typename ignore<U, T>::type;
 
 #if KBLIB_USE_CXX20
 
