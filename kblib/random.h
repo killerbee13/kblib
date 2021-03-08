@@ -17,6 +17,8 @@ namespace kblib {
 
 class trivial_seed_seq {
  public:
+	using result_type = std::uint32_t;
+
 	trivial_seed_seq() = default;
 	template <typename InputIt>
 	trivial_seed_seq(InputIt begin, InputIt end) : data(begin, end) {

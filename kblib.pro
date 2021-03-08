@@ -66,13 +66,14 @@ QMAKE_CXXFLAGS += -std=c++17
 QMAKE_CXXFLAGS += -march=native
 QMAKE_CXXFLAGS += -Wall -Wextra -pedantic-errors -Wno-missing-braces
 QMAKE_CXXFLAGS += -I/mnt/Vers1/include
-QMAKE_CXXFLAGS_DEBUG += -g
 
 #QMAKE_CXXFLAGS += -stdlib=libc++ -Wreturn-std-move -Wno-mismatched-tags -fstandalone-debug
 #QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib
 
-QMAKE_CXXFLAGS += -fsanitize=address,undefined
-QMAKE_LFLAGS += -fsanitize=address,undefined
+CONFIG(debug, debug|release)|CONFIG(sanitize) {
+	QMAKE_CXXFLAGS += -fsanitize=address,undefined
+	QMAKE_LFLAGS += -fsanitize=address,undefined
+}
 
 QMAKE_CXXFLAGS_RELEASE += -flto
 QMAKE_LFLAGS_RELEASE += -flto
