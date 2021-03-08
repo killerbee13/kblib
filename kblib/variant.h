@@ -440,6 +440,13 @@ namespace detail {
 		}
 	}
 
+	template <typename T, typename = void>
+	struct extract_derived_size
+	    : std::integral_constant<std::size_t, sizeof(T)> {};
+	template <typename T>
+	struct extract_derived_size<T, void_if_t<(T::max_derived_size > sizeof(T))>>
+	    : std::integral_constant<std::size_t, T::max_derived_size> {};
+
 } // namespace detail
 
 /**
@@ -484,7 +491,8 @@ struct no_move_t {
  * of the poly_obj on. poly_obj will not create objects of type Traits, this
  * template parameter is only used in type traits.
  */
-template <typename Obj, std::size_t Capacity = sizeof(Obj),
+template <typename Obj,
+          std::size_t Capacity = detail::extract_derived_size<Obj>::value,
           typename Traits = Obj>
 class poly_obj
     : detail::disable_conditional<Traits>,
@@ -502,6 +510,10 @@ class poly_obj
 	    "Obj must have a virtual destructor to be used as a base class object.");
 	static_assert(not std::is_array_v<Obj>,
 	              "poly_obj of array type is disallowed.");
+
+	static constexpr std::size_t capacity = Capacity;
+	using base_type = Obj;
+
 	/**
 	 * @brief The default constructor does not construct any contained object.
 	 */

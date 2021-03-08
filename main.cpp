@@ -15,21 +15,30 @@
 template <class T>
 constexpr std::string_view type_name_f() {
 	using namespace std;
+	auto sz = sizeof("type_name_f") - 1;
 #ifdef __clang__
 	string_view p = __PRETTY_FUNCTION__;
-	return string_view(p.data() + 36, p.size() - 36 - 1);
+	auto begin = 25 + sz;
+	return string_view(p.data() + begin, p.size() - begin - 1);
 #elif defined(__GNUC__)
 	string_view p = __PRETTY_FUNCTION__;
-#if __cplusplus < 201402
-	return string_view(p.data() + 36, p.size() - 36 - 1);
+#ifdef __INTEL_COMPILER
+	auto begin = 76 + sz;
+	return string_view(p.data() + begin, p.size() - begin - 1);
+#elif __cplusplus < 201402
+	auto begin = 17 + sz;
+	return string_view(p.data() + begin, p.size() - begin - 1);
 #else
-	return string_view(p.data() + 49, p.find(';', 49) - 49);
+	auto begin = 40 + sz;
+	return string_view(p.data() + begin, p.find(';', begin) - begin);
 #endif
 #elif defined(_MSC_VER)
 	string_view p = __FUNCSIG__;
-	return string_view(p.data() + 84, p.size() - 84 - 7);
+	auto begin = 75 + sz;
+	return string_view(p.data() + begin, p.size() - begin - 7);
 #endif
 }
+static_assert(type_name_f<char>() == "char");
 #endif
 
 template <typename C>

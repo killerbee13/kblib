@@ -474,6 +474,10 @@ struct metafunction_success<T, void_t<typename T::type>> : std::true_type {};
 template <typename... T>
 struct is_callable : metafunction_success<fakestd::invoke_result<T...>> {};
 
+template <typename T>
+using metafunction_value_t =
+    std::integral_constant<decltype(T::value), T::value>;
+
 /**
  * @brief Essentially just like std::enable_if, but with a different name that
  * makes it clearer what it does in the context of return type SFINAE.

@@ -73,16 +73,16 @@ TEST_CASE("enumerate") {
 	std::vector<unsigned long long> persistent{0, 1, 1, 2, 3, 5, 8};
 	SECTION("lvalue") {
 		for (auto t : kblib::enumerate(persistent)) {
-			[[gnu::unused]] auto& v = std::get<0>(t);
-			[[gnu::unused]] auto& i = std::get<1>(t);
+			auto& v = std::get<0>(t);
+			auto i = static_cast<int>(std::get<1>(t));
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("const lvalue") {
 		const auto& cp = persistent;
 		for (auto t : kblib::enumerate(cp)) {
-			[[gnu::unused]] auto& v = std::get<0>(t);
-			[[gnu::unused]] auto& i = std::get<1>(t);
+			auto& v = std::get<0>(t);
+			auto i = static_cast<int>(std::get<1>(t));
 			REQUIRE(v == kblib::fibonacci(i));
 			static_assert(
 			    std::is_const<
@@ -93,15 +93,15 @@ TEST_CASE("enumerate") {
 
 	SECTION("iterators") {
 		for (auto t : kblib::enumerate(persistent.cbegin(), persistent.cend())) {
-			[[gnu::unused]] auto& v = std::get<0>(t);
-			[[gnu::unused]] auto& i = std::get<1>(t);
+			auto& v = std::get<0>(t);
+			auto i = static_cast<int>(std::get<1>(t));
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("mutable iterators") {
 		std::vector<int> range{0, 1, 2, 3, 4, 5, 6, 7};
 		for (auto t : kblib::enumerate(range.begin(), range.end())) {
-			[[gnu::unused]] auto& v = std::get<0>(t);
+			auto& v = std::get<0>(t);
 			[[gnu::unused]] auto& i = std::get<1>(t);
 			v = 0;
 		}
@@ -111,8 +111,8 @@ TEST_CASE("enumerate") {
 	SECTION("reverse iterators") {
 		std::vector<std::size_t> reversed{7, 6, 5, 4, 3, 2, 1, 0};
 		for (auto t : kblib::enumerate(reversed.rbegin(), reversed.rend())) {
-			[[gnu::unused]] auto& v = std::get<0>(t);
-			[[gnu::unused]] auto& i = std::get<1>(t);
+			auto& v = std::get<0>(t);
+			auto& i = std::get<1>(t);
 			REQUIRE(v == i);
 		}
 	}
@@ -120,16 +120,16 @@ TEST_CASE("enumerate") {
 	SECTION("temporary") {
 		for (auto t : kblib::enumerate(
 		         std::vector<unsigned long long>{0, 1, 1, 2, 3, 5, 8})) {
-			[[gnu::unused]] auto& v = std::get<0>(t);
-			[[gnu::unused]] auto& i = std::get<1>(t);
+			auto& v = std::get<0>(t);
+			auto i = static_cast<int>(std::get<1>(t));
 			REQUIRE(v == kblib::fibonacci(i));
 		}
 	}
 	SECTION("vector<bool>") {
 		for (auto t : kblib::enumerate(
 		         std::vector<bool>{false, true, false, true, false})) {
-			[[gnu::unused]] auto& v = std::get<0>(t);
-			[[gnu::unused]] auto& i = std::get<1>(t);
+			auto& v = std::get<0>(t);
+			auto& i = std::get<1>(t);
 			REQUIRE(v == i % 2);
 			// print<decltype(v)>{};
 		}

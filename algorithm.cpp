@@ -51,6 +51,17 @@ TEST_CASE("find family") {
 	REQUIRE(kblib::find_last_if(begin, end, [](int) { return false; }) == end);
 	REQUIRE(kblib::find_last_if_not(begin, end, [](int) { return true; }) ==
 	        end);
+
+	REQUIRE(kblib::contains(vec, 0));
+	REQUIRE(kblib::contains(vec, 1));
+	REQUIRE(kblib::contains(vec, 2));
+	REQUIRE(kblib::contains(vec, 3));
+	REQUIRE(kblib::contains(vec, 4));
+	REQUIRE(kblib::contains(vec, 5));
+	REQUIRE(kblib::contains(vec, 6));
+	REQUIRE(not kblib::contains(vec, 7));
+	REQUIRE(not kblib::contains(vec, 8));
+	REQUIRE(not kblib::contains(vec, -1));
 }
 TEST_CASE("find_in") {
 	//           0  1  2  3  4  5  6  7  8  9  e

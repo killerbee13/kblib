@@ -204,12 +204,13 @@ TEST_CASE("insertion sort performance") {
 	}
 	SECTION("insertion_sort_copy on mostly sorted data is fast") {
 		std::minstd_rand rng;
-		auto time_per = [&](std::size_t size, int noise) {
+		auto time_per = [&](int ssize, int noise) {
+			auto size = static_cast<std::size_t>(ssize);
 			std::uniform_int_distribution<int> dist(-noise, noise);
 			std::vector<int> input(size);
 			decltype(input) output(size);
-			for (auto i : kblib::range(size)) {
-				input[i] = i + dist(rng);
+			for (auto i : kblib::range(ssize)) {
+				input[kblib::to_unsigned(i)] = i + dist(rng);
 			}
 
 			auto start = std::chrono::high_resolution_clock::now();

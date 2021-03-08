@@ -156,6 +156,19 @@ struct noncopyable_derived : copyable_base {
 	noncopyable_derived(const noncopyable_derived&) = delete;
 	KBLIB_UNUSED noncopyable_derived(noncopyable_derived&&) = default;
 };
+
+struct hinted_base {
+	constexpr static std::size_t max_derived_size = sizeof(big_derived);
+	virtual ~hinted_base() = default;
+};
+
+struct hinted_derived : hinted_base {
+	int member;
+};
+
+template <typename T>
+struct print;
+
 } // namespace
 
 TEST_CASE("poly_obj") {
@@ -305,6 +318,14 @@ TEST_CASE("poly_obj") {
 		    std::is_same_v<decltype(o),
 		                   kblib::poly_obj<small_base, sizeof(big_derived)>>,
 		    "make_poly_obj must return the correct type.");
+	}
+	SECTION("hinted") {
+		static_assert(kblib::detail::extract_derived_size<hinted_base>::value ==
+		              hinted_base::max_derived_size);
+		kblib::poly_obj<hinted_base> o;
+		static_assert(decltype(o)::capacity ==
+		              decltype(o)::base_type::max_derived_size);
+		o = decltype(o)::make<hinted_derived>();
 	}
 }
 
