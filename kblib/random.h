@@ -22,10 +22,7 @@ class trivial_seed_seq {
 
 	trivial_seed_seq() = default;
 	template <typename InputIt>
-	trivial_seed_seq(InputIt begin, InputIt end) : data(begin, end) {
-		assert(data.size() * sizeof(std::uint32_t) <=
-		       static_cast<std::make_signed<std::size_t>::type>(max));
-	}
+	trivial_seed_seq(InputIt begin, InputIt end) : data(begin, end) {}
 	template <typename T>
 	trivial_seed_seq(std::initializer_list<T> il)
 	    : trivial_seed_seq(il.begin(), il.end()) {}
@@ -36,57 +33,21 @@ class trivial_seed_seq {
 
 	template <typename RandomAccessIt>
 	void generate(RandomAccessIt begin, RandomAccessIt end) const {
-		if (end - begin > kblib::to_signed(data.size())) {
-			std::clog << "trivial_seed_seq: unexpectedly wrapping, output size "
-			          << end - begin << " greater than data size " << data.size()
-			          << '\n';
-		}
+		auto o_size = end - begin;
+		auto d_size = to_signed(data.size());
 		if (data.empty()) {
-			for (auto& i : indirect(begin, end)) {
-				i = 0x8b8b8b8b; // copied from std::seed_seq
-			}
+			std::fill(begin, end, 0x8b8b8b8bu); // copied from std::seed_seq
 		} else {
-			std::size_t index{};
-			bool wrapped = false;
-			for (auto& i : indirect(begin, end)) {
-				if (index == data.size()) {
-					wrapped = true;
-					index = 0;
-				}
-				i = data[index++];
-			}
-			if (wrapped) {
-				std::clog << "final index: " << index << '\n';
-			}
-		}
-		return;
-	}
-
-	template <typename T>
-	enable_if_t<std::is_integral<T>::value, void> generate(T* begin,
-	                                                       T* end) const {
-		auto r_begin = reinterpret_cast<char*>(begin);
-		auto r_end = reinterpret_cast<char*>(end);
-		auto r_size = r_end - r_begin;
-		auto d_size = kblib::to_signed(data.size() * sizeof(std::uint32_t));
-		if (data.empty()) {
-			std::memset(r_begin, 0x8b, saturating_cast<std::size_t>(r_size));
-		} else {
-			auto dr_begin = reinterpret_cast<const char*>(data.data());
-			if (r_size > d_size) {
+			if (o_size > d_size) {
 				std::clog << "trivial_seed_seq: unexpectedly wrapping, output size "
-				          << r_size << " greater than data size " << d_size << '\n';
+				          << o_size << " greater than data size " << d_size << '\n';
 			}
-			auto dpos = r_begin;
+			auto dpos = begin;
 			do {
 				auto blk_size =
-				    saturating_cast<std::size_t>(std::min(d_size, r_size));
-				dpos = std::copy_n(dr_begin, blk_size, dpos);
-			} while ((r_size -= d_size) > 0);
-			if (r_size != 0) {
-				std::clog << "trivial_seed_seq: odd output size, last block size = "
-				          << r_size + d_size << '\n';
-			}
+				    saturating_cast<std::size_t>(std::min(d_size, o_size));
+				dpos = std::copy_n(data.begin(), blk_size, dpos);
+			} while ((o_size -= d_size) > 0);
 		}
 		return;
 	}
@@ -157,16 +118,20 @@ class transform_engine : URBG {
 	const E& engine() const { return static_cast<const E&>(*this); }
 
  public:
-	using result_type = typename E::result_type;
+	using result_type = typename Transform::result_type;
 
 	transform_engine() = default;
-	transform_engine(const transform_engine&) = default;
+	transform_engine(const transform_engine&) noexcept(
+	    std::is_nothrow_copy_constructible<URBG>::value) = default;
+	transform_engine(transform_engine&&) noexcept(
+	    std::is_nothrow_move_constructible<URBG>::value) = default;
 	transform_engine(result_type s) : E(s) {}
 	template <typename SSeq, typename = enable_if_t<
 	                             !std::is_same<SSeq, transform_engine>::value>>
 	transform_engine(SSeq& s) : E(s) {}
 
 	transform_engine& operator=(const transform_engine&) = delete;
+	transform_engine& operator=(transform_engine&&) = delete;
 
 	~transform_engine() = default;
 
@@ -179,10 +144,10 @@ class transform_engine : URBG {
 	using E::discard;
 
 	static constexpr result_type min() noexcept {
-		return Transform::min(URBG::min());
+		return Transform::min(URBG::min(), URBG::max());
 	}
 	static constexpr result_type max() noexcept {
-		return Transform::max(URBG::max());
+		return Transform::max(URBG::min(), URBG::max());
 	}
 
 	friend bool operator==(const transform_engine& lhs,
@@ -202,21 +167,67 @@ class transform_engine : URBG {
 		return is >> e.engine();
 	}
 };
+
 template <typename Engine, typename Transform>
 struct state_size<transform_engine<Engine, Transform>> : state_size<Engine> {};
 
 template <typename UIntType, UIntType shift, UIntType mask = max>
 struct shift_mask {
-	static constexpr auto g(UIntType in) noexcept -> UIntType {
-		return (in >> shift) & mask;
+	using result_type = UIntType;
+
+	template <typename UIntInput>
+	static constexpr auto g(UIntInput in) noexcept -> UIntType {
+		return static_cast<UIntType>(in >> shift) & mask;
 	}
 	KBLIB_NODISCARD constexpr auto operator()(UIntType in) const noexcept
 	    -> UIntType {
 		return g(in);
 	}
-	static constexpr auto min(UIntType in) noexcept -> UIntType { return g(in); }
-	static constexpr auto max(UIntType in) noexcept -> UIntType { return g(in); }
+	static constexpr auto min(UIntType min,
+	                          [[maybe_unused]] UIntType max) noexcept
+	    -> UIntType {
+		return g(min);
+	}
+	static constexpr auto max([[maybe_unused]] UIntType min,
+	                          UIntType max) noexcept -> UIntType {
+		return g(max);
+	}
 };
+
+template <typename UIntType>
+constexpr auto ipow2(UIntType b) noexcept -> UIntType {
+	if (b == std::numeric_limits<UIntType>::digits) {
+		return 0u;
+	} else {
+		return UIntType{1} << b;
+	}
+}
+
+inline namespace lcgs {
+	template <typename UIntType, UIntType a, UIntType c, UIntType b>
+	using lcg_p2 = std::linear_congruential_engine<UIntType, a, c, ipow2(b)>;
+
+	inline namespace common_lcgs {
+		using rand48 =
+		    transform_engine<lcg_p2<std::uint_fast64_t, 25214903917u, 11u, 48u>,
+		                     shift_mask<std::uint_fast32_t, 16u>>;
+
+	} // namespace common_lcgs
+
+	inline namespace best_lcgs {
+
+		using lcg32 = lcg_p2<std::uint_fast32_t, 0xa13fc965u, 1u, 32u>;
+		using mcg32 = lcg_p2<std::uint_fast32_t, 0x93d765ddu, 0u, 32u>;
+
+		using lcg48 = lcg_p2<std::uint_fast64_t, 0xb67a49a5466du, 1u, 48u>;
+		using mcg48 = lcg_p2<std::uint_fast64_t, 0xbdcdbb079f8du, 0u, 48u>;
+
+		using lcg64 = lcg_p2<std::uint_fast64_t, 0xaf251af3b0f025b5u, 1u, 64u>;
+		using mcg64 = lcg_p2<std::uint_fast64_t, 0xf1357aea2e62a9c5u, 0u, 64u>;
+
+	} // namespace best_lcgs
+
+} // namespace lcgs
 
 } // namespace kblib
 
