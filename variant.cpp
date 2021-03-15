@@ -9,7 +9,7 @@
 
 #include "kblib/hash.h"
 
-#define FAST_TEST
+//#define FAST_TEST
 
 #if KBLIB_USE_CXX17
 

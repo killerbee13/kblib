@@ -195,41 +195,34 @@ std::string time_to_str(std::chrono::time_point<clock, duration>& tp,
 	return ret;
 }
 
-// std::chrono::nanoseconds
-// duration</*signed integer type of at least 64 bits*/, std::nano>
+namespace detail {
 
-// std::chrono::microseconds
-// duration</*signed integer type of at least 55 bits*/, std::micro>
+	constexpr auto unit_of(std::chrono::nanoseconds) noexcept { return "ns"; }
+	constexpr auto unit_of(std::chrono::microseconds) noexcept { return "us"; }
+	constexpr auto unit_of(std::chrono::milliseconds) noexcept { return "ms"; }
 
-// std::chrono::milliseconds
-// duration</*signed integer type of at least 45 bits*/, std::milli>
+	constexpr auto unit_of(std::chrono::seconds) noexcept { return "s"; }
+	constexpr auto unit_of(std::chrono::minutes) noexcept { return "min"; }
+	constexpr auto unit_of(std::chrono::hours) noexcept { return "hr"; }
 
-// std::chrono::seconds
-// duration</*signed integer type of at least 35 bits*/>
+#if KBLIB_USE_CXX20
 
-// std::chrono::minutes
-// duration</*signed integer type of at least 29 bits*/, std::ratio<60>>
+	constexpr auto unit_of(std::chrono::days) noexcept { return "ns"; }
+	constexpr auto unit_of(std::chrono::weeks) noexcept { return "ns"; }
+	constexpr auto unit_of(std::chrono::months) noexcept { return "ns"; }
+	constexpr auto unit_of(std::chrono::years) noexcept { return "ns"; }
 
-// std::chrono::hours
-// duration</*signed integer type of at least 23 bits*/, std::ratio<3600>>
+#endif
 
-// std::chrono::days (since C++20)
-// duration</*signed integer type of at least 25 bits*/, std::ratio<86400>>
+	struct unit_conversion {
+		char name[4];
+		int multiplier;
+	};
 
-// std::chrono::weeks (since C++20)
-// duration</*signed integer type of at least 22 bits*/, std::ratio<604800>>
+} // namespace detail
 
-// std::chrono::months (since C++20)
-// duration</*signed integer type of at least 20 bits*/, std::ratio<2629746>>
-
-// std::chrono::years (since C++20)
-// duration</*signed integer type of at least 17 bits*/, std::ratio<31556952>>
-
-// template <int maxBufLen = 4096, typename Rep, typename Ratio>
-// std::string duration_to_str(std::chrono::duration<Rep, Ratio>& d,
-//                        const std::string& fmt = "%T") {
-
-//}
+template <typename Rep, typename Ratio>
+std::string duration_to_str(std::chrono::duration<Rep, Ratio>& d) {}
 
 template <typename string>
 inline std::string url_encode(const string& value) {
