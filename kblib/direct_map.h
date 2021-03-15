@@ -21,7 +21,7 @@ namespace detail {
 	constexpr std::uintmax_t
 	    range_of = static_cast<std::uintmax_t>(std::numeric_limits<T>::max()) -
 	               std::numeric_limits<T>::min() + 1;
-	static_assert(range_of<unsigned char> == 1 << CHAR_BIT, "");
+	static_assert(range_of<unsigned char> == 1u << to_unsigned(CHAR_BIT), "");
 
 	template <typename T,
 	          bool = std::is_trivially_default_constructible<T>::value and
@@ -37,6 +37,11 @@ namespace detail {
 		storage_for() = default;
 		storage_for(const storage_for&) = delete;
 		storage_for(storage_for&&) = delete;
+
+		storage_for& operator=(const storage_for&) = delete;
+		storage_for& operator=(storage_for&&) = delete;
+
+		~storage_for() = default;
 
 		constexpr void destroy() noexcept { get()->~T(); }
 
@@ -191,7 +196,7 @@ class direct_map {
 			construct(v.first, v.second);
 		}
 	}
-	// TODO: copy construction for allocating direct_map
+	// TODO(killerbee13): copy construction for allocating direct_map
 	constexpr direct_map(const direct_map& other)
 	    : storage(in_place_agg, other.storage->first), _size(other._size) {
 		for (auto k : range(+min(), max() + 1)) {
@@ -609,8 +614,8 @@ class direct_map {
 		    std::forward_as_tuple(std::forward<Args>(args)...));
 	}
 
-	// TODO: Implement, test, and document direct_map
-	// TODO: allocator support for direct_map
+	// TODO(killerbee13): Implement, test, and document direct_map
+	// TODO(killerbee13): allocator support for direct_map
 	kblib::heap_value<held_type> storage;
 	std::size_t _size{};
 };
@@ -757,8 +762,8 @@ class direct_map<Key, T, void> {
 	constexpr direct_map(std::initializer_list<value_type> init)
 	    : direct_map(init.begin(), init.end()) {}
 
-	// TODO: Remove this and allow it to be trivially destructible for trivial
-	// Key and T
+	// TODO(killerbee13): Remove this and allow it to be trivially destructible
+	// for trivial Key and T
 	KBLIB_CXX20(constexpr) ~direct_map() { clear(); }
 
 	constexpr direct_map& operator=(const direct_map& other) {
@@ -1181,7 +1186,7 @@ class direct_map<Key, T, void> {
 		--_size;
 	}
 
-	// TODO: Implement, test, and document direct_map
+	// TODO(killerbee13): Implement, test, and document direct_map
 
 	std::bitset<key_range> active_elems;
 	std::array<storage_type, key_range> elems;

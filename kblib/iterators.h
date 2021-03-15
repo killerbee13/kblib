@@ -684,6 +684,8 @@ class enumeration {
 	enumeration(volatile enumeration& other)
 	    : enumeration(const_cast<const enumeration&>(other)) {}
 
+	~enumeration() = default;
+
  private:
 	enumeration(detail::force_copy_tag, std::size_t i) : idx(i) {}
 
@@ -846,6 +848,8 @@ class enumerator_iterator {
 	    : enumerator_iterator(detail::force_copy_tag{}, other.curr_.idx,
 	                          other.it_) {}
 	enumerator_iterator(It it) : it_(it) {}
+
+	~enumerator_iterator() = default;
 
 	volatile value_type& operator*() & {
 		if (not captured) {
@@ -1109,7 +1113,7 @@ namespace detail {
 		iterator end_;
 	};
 } // namespace detail
-}
+} // namespace kblib
 namespace std {
 #if defined(__clang__)
 // Fix from: https://github.com/nlohmann/json/issues/1401
@@ -1268,8 +1272,7 @@ class transform_iterator {
 	using difference_type = std::ptrdiff_t;
 	using result_type = decltype(kblib::invoke(*op, *it));
 	using const_result_type =
-	    decltype(kblib::invoke(const_cast<const operation&>(*op),
-	                           *const_cast<const base_iterator&>(it)));
+	    decltype(kblib::invoke(*std::as_const(op), *std::as_const(it)));
 	using value_type = result_type;
 	using pointer = void;
 	using reference = value_type;

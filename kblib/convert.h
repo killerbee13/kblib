@@ -195,6 +195,42 @@ std::string time_to_str(std::chrono::time_point<clock, duration>& tp,
 	return ret;
 }
 
+// std::chrono::nanoseconds
+// duration</*signed integer type of at least 64 bits*/, std::nano>
+
+// std::chrono::microseconds
+// duration</*signed integer type of at least 55 bits*/, std::micro>
+
+// std::chrono::milliseconds
+// duration</*signed integer type of at least 45 bits*/, std::milli>
+
+// std::chrono::seconds
+// duration</*signed integer type of at least 35 bits*/>
+
+// std::chrono::minutes
+// duration</*signed integer type of at least 29 bits*/, std::ratio<60>>
+
+// std::chrono::hours
+// duration</*signed integer type of at least 23 bits*/, std::ratio<3600>>
+
+// std::chrono::days (since C++20)
+// duration</*signed integer type of at least 25 bits*/, std::ratio<86400>>
+
+// std::chrono::weeks (since C++20)
+// duration</*signed integer type of at least 22 bits*/, std::ratio<604800>>
+
+// std::chrono::months (since C++20)
+// duration</*signed integer type of at least 20 bits*/, std::ratio<2629746>>
+
+// std::chrono::years (since C++20)
+// duration</*signed integer type of at least 17 bits*/, std::ratio<31556952>>
+
+// template <int maxBufLen = 4096, typename Rep, typename Ratio>
+// std::string duration_to_str(std::chrono::duration<Rep, Ratio>& d,
+//                        const std::string& fmt = "%T") {
+
+//}
+
 template <typename string>
 inline std::string url_encode(const string& value) {
 	std::ostringstream escaped;
@@ -248,12 +284,12 @@ inline std::string html_encode(const string& data) {
 
 inline std::string escapify(char c) {
 	auto value = to_unsigned(c);
-	if (value < ' ' or value == '\x7F' or value & '\x80') {
+	if (value < ' ' or value == '\x7F' or value & to_unsigned('\x80')) {
 		constexpr std::array<char, 16> digits{
 		    remove_null_terminator("0123456789ABCDEF")};
 		std::string rc("\\x  ");
-		rc[2] = digits[value >> 4];
-		rc[3] = digits[value & 15];
+		rc[2] = digits[value >> 4u];
+		rc[3] = digits[value & 15u];
 		return rc;
 	} else {
 		return std::string(1, static_cast<char>(value));
@@ -352,7 +388,7 @@ inline bool fromStr(const std::string& val, const char* type) {
 
 template <typename T>
 T fromStr(std::string&& val, const char* type = typeid(T).name()) {
-	std::stringstream ss(std::move(val));
+	std::stringstream ss(val);
 	T ret;
 	if (not(ss >> std::boolalpha >> ret).fail()) {
 		return ret;
@@ -495,6 +531,9 @@ struct lexical_caster<std::string_view, From> {
 		return From(val);
 	}
 
+	// DCL50-CPP-EX2:
+	// As stated in the normative text, C-style variadic functions that are
+	// declared but never defined are permitted.
 	std::string_view cast(...) = delete;
 };
 

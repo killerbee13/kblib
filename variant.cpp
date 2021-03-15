@@ -9,7 +9,7 @@
 
 #include "kblib/hash.h"
 
-//#define FAST_TEST
+#define FAST_TEST
 
 #if KBLIB_USE_CXX17
 
@@ -106,7 +106,7 @@ struct bad_base1 {
 	~bad_base1() noexcept { bark_log.push_back(dbad_base1); }
 };
 struct bad_derived1 : bad_base1 {
-	virtual void bark() const { bark_log.push_back(vbad_derived1); }
+	void bark() const override { bark_log.push_back(vbad_derived1); }
 	KBLIB_UNUSED ~bad_derived1() noexcept { bark_log.push_back(dbad_derived1); }
 };
 
@@ -116,8 +116,8 @@ struct bad_base2 {
 	virtual void bark() const { bark_log.push_back(vbad_base2); }
 };
 struct bad_derived2 : protected bad_base2 {
-	virtual void bark() const { bark_log.push_back(vbad_derived2); }
-	virtual ~bad_derived2() noexcept { bark_log.push_back(dbad_derived2); }
+	void bark() const override { bark_log.push_back(vbad_derived2); }
+	~bad_derived2() noexcept override { bark_log.push_back(dbad_derived2); }
 };
 struct small_base {
 	small_base() = default;
@@ -138,13 +138,14 @@ struct big_derived : small_base {
 struct not_copyable {
 	not_copyable() = default;
 	not_copyable(const not_copyable&) = delete;
-	KBLIB_UNUSED not_copyable(not_copyable&&) = default;
+	KBLIB_UNUSED not_copyable(not_copyable&&) noexcept = default;
 	virtual ~not_copyable() = default;
 };
 
 struct copyable_derived : not_copyable {
 	KBLIB_UNUSED copyable_derived() = default;
-	copyable_derived(const copyable_derived&) : not_copyable() {}
+	copyable_derived(const copyable_derived&) {}
+	copyable_derived(copyable_derived&&) noexcept = default;
 };
 
 struct copyable_base {
@@ -242,7 +243,7 @@ TEST_CASE("poly_obj") {
 		// illegal - unrelated types
 		// kblib::poly_obj<good_base>::make<unrelated>();
 		// illegal - derived too big
-		// kblib::poly_obj<bad_base3>::make<bad_derived3>();
+		// kblib::poly_obj<small_base>::make<big_derived>();
 		// fine
 		kblib::poly_obj<small_base, sizeof(big_derived)> o7, o8{std::in_place};
 		o8->bark();
@@ -278,8 +279,8 @@ TEST_CASE("poly_obj") {
 	}
 
 	SECTION("mixed vector") {
-		auto r = [n = static_cast<unsigned short>(16127)]() mutable {
-			n ^= 19937;
+		auto r = [n = std::uint16_t{16127}]() mutable {
+			n ^= 19937u;
 			n *= 4889;
 			return kblib::FNV32a({reinterpret_cast<char*>(&n), sizeof(n)});
 		};
@@ -399,7 +400,7 @@ namespace {
 struct Base {
 	virtual unsigned operator()() const noexcept = 0;
 	Base() = default;
-	Base(const Base&) {}
+	Base(const Base&) = default;
 	virtual ~Base() = default;
 };
 
@@ -428,7 +429,7 @@ struct Derived4 final : Base {
 };
 
 struct thrower final : Base {
-	unsigned operator()() const noexcept { return member; }
+	unsigned operator()() const noexcept override { return member; }
 
 	unsigned member;
 
@@ -443,7 +444,7 @@ struct thrower final : Base {
 
  private:
 	static void check_throw(unsigned v) {
-		if ((v & 7) == 0) {
+		if ((v & 7u) == 0) {
 			throw 0;
 		}
 	}
@@ -548,16 +549,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
-				d1.push_back(v);
+				d1.emplace_back(v);
 				break;
 			case 1:
-				d2.push_back(v);
+				d2.emplace_back(v);
 				break;
 			case 2:
-				d3.push_back(v);
+				d3.emplace_back(v);
 				break;
 			case 3:
-				d4.push_back(v);
+				d4.emplace_back(v);
 			}
 		}
 
@@ -678,16 +679,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
-				d.push_back(Derived1(v));
+				d.emplace_back(Derived1(v));
 				break;
 			case 1:
-				d.push_back(Derived2(v));
+				d.emplace_back(Derived2(v));
 				break;
 			case 2:
-				d.push_back(Derived3(v));
+				d.emplace_back(Derived3(v));
 				break;
 			case 3:
-				d.push_back(Derived4(v));
+				d.emplace_back(Derived4(v));
 			}
 		}
 
@@ -707,16 +708,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
-				d.push_back(Derived1(v));
+				d.emplace_back(Derived1(v));
 				break;
 			case 1:
-				d.push_back(Derived2(v));
+				d.emplace_back(Derived2(v));
 				break;
 			case 2:
-				d.push_back(Derived3(v));
+				d.emplace_back(Derived3(v));
 				break;
 			case 3:
-				d.push_back(Derived4(v));
+				d.emplace_back(Derived4(v));
 				break;
 			}
 		}
@@ -937,7 +938,7 @@ TEST_CASE("poly_obj performance") {
 					try {
 						d.push_back(poly_t::make<thrower>(v));
 					} catch (int) {
-						d.push_back(nullptr);
+						d.emplace_back(nullptr);
 					}
 				}
 			}
@@ -960,27 +961,27 @@ TEST_CASE("poly_obj performance") {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 5) {
 			case 0:
-				df.push_back(Derived1(v));
-				d.push_back(Derived1(v));
+				df.emplace_back(Derived1(v));
+				d.emplace_back(Derived1(v));
 				break;
 			case 1:
-				df.push_back(Derived2(v));
-				d.push_back(Derived2(v));
+				df.emplace_back(Derived2(v));
+				d.emplace_back(Derived2(v));
 				break;
 			case 2:
-				df.push_back(Derived3(v));
-				d.push_back(Derived3(v));
+				df.emplace_back(Derived3(v));
+				d.emplace_back(Derived3(v));
 				break;
 			case 3:
-				df.push_back(Derived4(v));
-				d.push_back(Derived4(v));
+				df.emplace_back(Derived4(v));
+				d.emplace_back(Derived4(v));
 				break;
 				// Test speed of exception throwing and catching
 			case 4:
 				try {
-					df.push_back(thrower(v));
+					df.emplace_back(thrower(v));
 				} catch (int) {
-					d.push_back(thrower());
+					d.emplace_back(thrower());
 				}
 				// These have to be done in separate try blocks because otherwise
 				// df would throw and d wouldn't get pushed

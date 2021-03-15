@@ -50,7 +50,8 @@ string toUTF32(const icu::UnicodeString& s) {
 	UErrorCode ec{U_ZERO_ERROR};
 	s.toUTF32(&res[0], res.size(), ec);
 	if (U_FAILURE(ec)) {
-		throw ec;
+		// silence warnings about ec not being a temporary
+		throw UErrorCode{ec};
 	}
 	return res;
 }
@@ -71,7 +72,7 @@ icu::UnicodeString fromUTF32(string s) {
 
 namespace icu_str_ops {
 
-   /**
+	/**
 	 * @brief Provides a transcoding stream insertion operator for
 	 * UnicodeStrings.
 	 *
@@ -79,7 +80,7 @@ namespace icu_str_ops {
 	 * @param str The string to output.
 	 * @return std::ostream& A reference to os.
 	 */
-   inline std::ostream& operator<<(std::ostream& os,
+	inline std::ostream& operator<<(std::ostream& os,
 	                                const icu::UnicodeString& str) {
 		return os << toUTF8(str);
 	}

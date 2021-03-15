@@ -89,9 +89,9 @@ TEST_CASE("buildiota") {
 }
 
 TEST_CASE("build_copy family") {
-	/// TODO: tests for build_copy
+	/// TODO(killerbee13): tests for build_copy
 }
 
 TEST_CASE("build.h iterators") {
-	/// TODO: tests for iterators
+	/// TODO(killerbee13): tests for iterators
 }

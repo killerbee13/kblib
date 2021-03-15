@@ -417,7 +417,7 @@ namespace detail {
 			}
 		}
 
-		int_type overflow(int_type ch = traits_type::eof()) override {
+		int_type overflow(int_type ch) override {
 			if (not traits_type::eq_int_type(ch, traits_type::eof())) {
 				traits_type::assign(*this->pptr(), traits_type::to_char_type(ch));
 				this->pbump(1);

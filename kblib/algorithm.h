@@ -523,7 +523,8 @@ find_last_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
  * @param val The value to search for.
  */
 template <typename Set, typename Value>
-KBLIB_NODISCARD constexpr bool contains(const Set& set, const Value& val) noexcept(
+KBLIB_NODISCARD constexpr bool
+contains(const Set& set, const Value& val) noexcept(
     noexcept(*std::declval<iterator_type_for_t<const Set>&>() == val)) {
 	using std::begin;
 	using std::end;
@@ -1063,7 +1064,7 @@ struct zip_iterator {
 		++pos2;
 		return *this;
 	}
-	zip_iterator operator++(int) {
+	const zip_iterator operator++(int) {
 		auto tmp = *this;
 		++pos1;
 		++pos2;
@@ -1102,7 +1103,7 @@ struct zip_iterator<It1, It1, It2> {
 		++pos2;
 		return *this;
 	}
-	zip_iterator operator++(int) {
+	const zip_iterator operator++(int) {
 		auto tmp = *this;
 		++pos1;
 		++pos2;

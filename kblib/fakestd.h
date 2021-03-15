@@ -9,6 +9,10 @@
 #include <type_traits>
 #include <utility>
 
+#if __has_include("gsl/pointers")
+#include "gsl/pointers"
+#endif
+
 #ifndef KBLIB_FAKESTD
 #define KBLIB_FAKESTD (__cplusplus < 201703L)
 #endif
@@ -518,11 +522,11 @@ apply(F&& f, Arg&& arg) noexcept(noexcept(detail::apply_impl<F, Arg>::do_apply(
 }
 
 template <typename T>
-std::unique_ptr<T> to_unique(T* p) {
+std::unique_ptr<T> to_unique(gsl::owner<T*> p) {
 	return std::unique_ptr<T>(p);
 }
 template <typename T, typename D>
-std::unique_ptr<T, D> to_unique(T* p, D&& d) {
+std::unique_ptr<T, D> to_unique(gsl::owner<T*> p, D&& d) {
 	return std::unique_ptr<T, D>(p, d);
 }
 
@@ -601,7 +605,7 @@ namespace detail {
 
 } // namespace detail
 
-struct {
+[[maybe_unused]] constexpr inline struct {
 	/**
 	 * @brief Swaps two objects, using move operations.
 	 *
@@ -610,10 +614,9 @@ struct {
 	template <typename T, enable_if_t<not has_member_swap<T>::value and
 	                                      not is_tuple_like<T>::value,
 	                                  int> = 0>
-	constexpr void
-	operator()(T& a,
-	           T& b) noexcept(std::is_nothrow_move_constructible<T>::value and
-	                              std::is_nothrow_move_assignable<T>::value) {
+	constexpr void operator()(T& a, T& b) const
+	    noexcept(std::is_nothrow_move_constructible<T>::value and
+	                 std::is_nothrow_move_assignable<T>::value) {
 		auto tmp = std::move(a);
 		a = std::move(b);
 		b = std::move(tmp);
@@ -626,7 +629,7 @@ struct {
 	 * @param a,b The objects that will be swapped.
 	 */
 	template <typename T, enable_if_t<has_member_swap<T>::value, int> = 0>
-	constexpr void operator()(T& a, T& b) noexcept(noexcept(a.swap(b))) {
+	constexpr void operator()(T& a, T& b) const noexcept(noexcept(a.swap(b))) {
 		a.swap(b);
 		return;
 	}
@@ -637,9 +640,9 @@ struct {
 	 * @param a,b The arrays that will be swapped.
 	 */
 	template <typename T, std::size_t N>
-	constexpr void operator()(T (&a)[N], T (&b)[N]) noexcept(
-	    std::is_nothrow_move_constructible<T>::value and
-	        std::is_nothrow_move_assignable<T>::value) {
+	constexpr void operator()(T (&a)[N], T (&b)[N]) const
+	    noexcept(std::is_nothrow_move_constructible<T>::value and
+	                 std::is_nothrow_move_assignable<T>::value) {
 		for (std::size_t i = 0; i < N; ++i) {
 			swap(a[i], b[i]);
 		}
@@ -654,7 +657,7 @@ struct {
 	                                      not has_member_swap<T>::value,
 	                                  std::size_t>
 	                          N = std::tuple_size<T>::value>
-	constexpr void operator()(T& a, T& b) noexcept(
+	constexpr void operator()(T& a, T& b) const noexcept(
 	    noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) {
 		detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
 	}
@@ -667,7 +670,7 @@ namespace detail {
 	template <typename T>
 	constexpr std::intmax_t max_val = std::numeric_limits<T>::max();
 
-	constexpr unsigned long long msb(unsigned long long x) {
+	constexpr std::uintmax_t msb(std::uintmax_t x) {
 		x |= (x >> 1u);
 		x |= (x >> 2u);
 		x |= (x >> 4u);
@@ -679,8 +682,8 @@ namespace detail {
 
 	template <typename Num>
 	constexpr Num msb_possible() {
-		return std::numeric_limits<Num>::max() ^
-		       (std::numeric_limits<Num>::max() >> 1u);
+		return static_cast<Num>(typename std::make_unsigned<Num>::type{1}
+		                        << (std::numeric_limits<Num>::digits - 1u));
 	}
 
 	template <class... Args>
@@ -739,10 +742,9 @@ namespace detail {
 		};
 
 		using ints_map = type_map<
-		    std::intmax_t, std::less<std::intmax_t>,
-		    make_smap_el<std::int_least8_t>, make_smap_el<std::int_least16_t>,
-		    make_smap_el<std::int_least32_t>, make_smap_el<std::int_least64_t>,
-		    make_smap_el<std::intmax_t>>;
+		    std::intmax_t, std::less<>, make_smap_el<std::int_least8_t>,
+		    make_smap_el<std::int_least16_t>, make_smap_el<std::int_least32_t>,
+		    make_smap_el<std::int_least64_t>, make_smap_el<std::intmax_t>>;
 
 		using type = typename decltype(
 		    ints_map::template get_default<max_val<T> + 1>())::type;

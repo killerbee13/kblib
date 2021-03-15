@@ -95,7 +95,7 @@ TEST_CASE("find_in") {
 }
 
 TEST_CASE("get_max family") {
-	/// TODO: tests for get_max_*
+	/// TODO(killerbee13): tests for get_max_*
 	std::array<int, 11> arr{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 	{
 		auto max_two =
@@ -127,7 +127,7 @@ TEST_CASE("get_max family") {
 }
 
 TEST_CASE("general algorithms") {
-	/// TODO: tests for other algorithms
+	/// TODO(killerbee13): tests for other algorithms
 }
 
 TEST_CASE("assorted algorithms") {

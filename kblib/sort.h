@@ -258,7 +258,7 @@ namespace detail {
 	}
 
 	// Can be used to detect unsupported types with overload resolution.
-	constexpr void byte_count(...) noexcept { return; }
+	constexpr void byte_count(...) = delete;
 
 	template <typename T>
 	constexpr auto get_byte_index(T x, std::size_t idx) noexcept
@@ -272,12 +272,12 @@ namespace detail {
 	}
 	template <typename T>
 	auto get_byte_index(T* x, std::size_t idx) noexcept -> unsigned char {
-		return get_byte_index(reinterpret_cast<std::uintptr_t>(x), idx);
+		return get_byte_index(byte_cast<std::uintptr_t>(x), idx);
 	}
 	template <typename T>
 	auto get_byte_index(const std::unique_ptr<T>& x, std::size_t idx) noexcept
 	    -> unsigned char {
-		return get_byte_index(reinterpret_cast<std::uintptr_t>(x.get()), idx);
+		return get_byte_index(byte_cast<std::uintptr_t>(x.get()), idx);
 	}
 	template <typename T>
 	constexpr auto get_byte_index(const T& x, std::size_t idx) noexcept
@@ -334,7 +334,7 @@ namespace detail {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
-				/// TODO: write efficient inplace sort_transform
+				/// TODO(killerbee13): write efficient inplace sort_transform
 			}
 		}
 
@@ -351,7 +351,7 @@ namespace detail {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
-				/// TODO: write efficient inplace sort_transform
+				/// TODO(killerbee13): write efficient inplace sort_transform
 			}
 		}
 
@@ -369,7 +369,7 @@ namespace detail {
 				insertion_sort_copy(begin, end, d_begin, d_end, comp);
 				return;
 			} else {
-				/// TODO: write efficent sort_transform_copy
+				/// TODO(killerbee13): write efficent sort_transform_copy
 			}
 		}
 	};
@@ -409,7 +409,7 @@ namespace detail {
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
 		                              KBLIB_UNUSED std::less<LessT>&& compare) {
-			/// TODO: write efficient inplace sort
+			/// TODO(killerbee13): write efficient inplace sort
 		}
 	};
 	/**
@@ -426,7 +426,7 @@ namespace detail {
 		        KBLIB_UNUSED const RandomAccessIt end,
 		        KBLIB_UNUSED UnaryOperation&& transform,
 		        KBLIB_UNUSED std::greater<LessT>&& compare) {
-			/// TODO: write efficient inplace sort_transform
+			/// TODO(killerbee13): write efficient inplace sort_transform
 		}
 	};
 
@@ -442,7 +442,7 @@ namespace detail {
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
 		                              KBLIB_UNUSED std::less<LessT>&& compare) {
-			/// TODO: write efficient inplace sort_transform
+			/// TODO(killerbee13): write efficient inplace sort_transform
 		}
 	};
 	/**
@@ -458,7 +458,7 @@ namespace detail {
 		        KBLIB_UNUSED const RandomAccessIt end,
 		        KBLIB_UNUSED UnaryOperation&& transform,
 		        KBLIB_UNUSED std::greater<LessT>&& compare) {
-			/// TODO: write efficient sort_transform
+			/// TODO(killerbee13): write efficient sort_transform
 		}
 	};
 
@@ -475,7 +475,7 @@ namespace detail {
 		                              const RandomAccessIt end,
 		                              UnaryOperation&& transform,
 		           BinaryPredicate&& compare) {
-			//TODO
+			//TODO(killerbee13)
 		}
 	};
 	/**
@@ -491,7 +491,7 @@ namespace detail {
 		                              const RandomAccessIt end,
 		                              UnaryOperation&& transform,
 		           BinaryPredicate&& compare) {
-			//TODO
+			//TODO(killerbee13)
 		}
 	};
 #endif

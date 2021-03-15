@@ -27,7 +27,8 @@ constexpr void to_bytes_le(Integral ival,
 	                  not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
-		dest[byte] = static_cast<CharT>(ival >> (CHAR_BIT * byte));
+		dest[byte] =
+		    static_cast<CharT>(to_unsigned(ival) >> to_unsigned(CHAR_BIT * byte));
 	}
 }
 
@@ -233,6 +234,7 @@ inline namespace literals {
 		return FNVa_s<std::uint64_t>(str, length);
 	}
 
+	// google-runtime-int not relevant here due to standard requirements
 	constexpr std::uint32_t operator""_fnv32(unsigned long long val) {
 		unsigned char bytes[sizeof(unsigned long long)]{};
 		to_bytes(val, bytes);
@@ -268,7 +270,9 @@ constexpr int padding_bits_v = padding_bits<T>::value;
 template <typename Key, typename = void>
 struct FNV_hash {
 	FNV_hash() = delete;
+	FNV_hash(const FNV_hash&) = delete;
 	FNV_hash(FNV_hash&&) = delete;
+	FNV_hash& operator=(const FNV_hash&) = delete;
 	FNV_hash& operator=(FNV_hash&&) = delete;
 	~FNV_hash() = delete;
 };
@@ -402,8 +406,7 @@ struct FNV_hash<T, void_if_t<std::is_integral<T>::value and
 /**
  * @brief Hasher for any pointer type.
  *
- * @note Unfortunately, this specialization cannot be constexpr until C++20
- * brings std::bit_cast.
+ * @note Unfortunately, this specialization cannot be constexpr
  *
  */
 template <typename T>
@@ -412,8 +415,8 @@ struct FNV_hash<T, void_if_t<std::is_pointer<T>::value>> {
 	operator()(T key_in,
 	           std::size_t offset =
 	               fnv::fnv_offset<std::size_t>::value) const noexcept {
-		return FNV_hash<std::uintptr_t>{}(
-		    reinterpret_cast<std::uintptr_t>(key_in), offset);
+		return FNV_hash<std::uintptr_t>{}(byte_cast<std::uintptr_t>(key_in),
+		                                  offset);
 	}
 };
 #endif
@@ -441,7 +444,7 @@ struct FNV_hash<T, void_if_t<std::is_base_of<std::forward_iterator_tag,
 			return FNV_hash<std::uintptr_t>{}(0, offset);
 		} else {
 			return FNV_hash<std::uintptr_t>{}(
-			    reinterpret_cast<std::uintptr_t>(to_pointer(key_in)), offset);
+			    byte_cast<std::uintptr_t>(to_pointer(key_in)), offset);
 		}
 	}
 };
@@ -470,7 +473,7 @@ struct FNV_hash<
 	operator()(const Container& key,
 	           std::size_t offset =
 	               fnv::fnv_offset<std::size_t>::value) const noexcept {
-		return FNVa_s(reinterpret_cast<const char*>(key.data()),
+		return FNVa_s(byte_cast<const char*>(key.data()),
 		              key.size() * sizeof(*key.begin()), offset);
 	}
 };
@@ -536,7 +539,7 @@ struct FNV_hash<Container,
 	operator()(const Container& key,
 	           std::size_t offset =
 	               fnv::fnv_offset<std::size_t>::value) const noexcept {
-		return FNVa_s(reinterpret_cast<const char*>(key.data()),
+		return FNVa_s(byte_cast<const char*>(key.data()),
 		              key.size() * sizeof(*key.begin()), offset);
 	}
 };

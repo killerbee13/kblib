@@ -86,7 +86,7 @@ class compact_bit_trie {
  public:
 	struct key_type {
 		Key prefix;
-		unsigned short bits : detail::filg2(key_range);
+		std::uint16_t bits : detail::filg2(key_range);
 	};
 
 	using value_type = Value;
@@ -379,16 +379,16 @@ inline void memswap(void* A, void* B, std::size_t size) {
  * @tparam size The number of bits constituting this bitfield.
  * @tparam Storage The underlying type which stores the bits.
  */
-template <int offset, int size, typename Storage>
+template <unsigned offset, unsigned size, typename Storage>
 struct bitfield {
 	Storage operator()() const noexcept {
-		return (raw >> offset) & ((1 << size) - 1);
+		return (raw >> offset) & ((1u << size) - 1);
 	}
 	Storage operator()(Storage val) noexcept {
 		// Clear the bits for this field
-		raw &= ~(((1 << size) - 1) << offset);
+		raw &= ~(((1u << size) - 1) << offset);
 		// Set the field
-		raw |= (val & ((1 << size) - 1)) << offset;
+		raw |= (val & ((1u << size) - 1)) << offset;
 		return val;
 	}
 	operator Storage() const noexcept { return (*this)(); }

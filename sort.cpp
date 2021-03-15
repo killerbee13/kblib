@@ -58,7 +58,7 @@ TEST_CASE("sort") {
 		REQUIRE(output == goal);
 	}
 	SECTION("insertion_sort is stable") {
-		std::minstd_rand rng;
+		std::minstd_rand rng{std::random_device{}()};
 		std::uniform_int_distribution<int> dist(0, 8);
 		for ([[gnu::unused]] auto _i : kblib::range(100)) {
 			// sort based on first key, second is used to distinguish between equal
@@ -70,7 +70,7 @@ TEST_CASE("sort") {
 				std::map<int, int> counts;
 				for ([[gnu::unused]] auto _j : kblib::range(100)) {
 					auto r = dist(rng);
-					inputs.push_back({r, counts[r]++});
+					inputs.emplace_back(r, counts[r]++);
 				}
 			}
 
@@ -85,7 +85,7 @@ TEST_CASE("sort") {
 		}
 	}
 	SECTION("insertion_sort on random data") {
-		std::minstd_rand rng;
+		std::minstd_rand rng{std::random_device{}()};
 		std::uniform_int_distribution<int> dist(0, 65535);
 		for ([[gnu::unused]] auto _i : kblib::range(100)) {
 			std::vector<int> input;
@@ -203,7 +203,7 @@ TEST_CASE("insertion sort performance") {
 		REQUIRE(error < 1.05);
 	}
 	SECTION("insertion_sort_copy on mostly sorted data is fast") {
-		std::minstd_rand rng;
+		std::minstd_rand rng{std::random_device{}()};
 		auto time_per = [&](int ssize, int noise) {
 			auto size = static_cast<std::size_t>(ssize);
 			std::uniform_int_distribution<int> dist(-noise, noise);

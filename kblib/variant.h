@@ -285,12 +285,13 @@ KBLIB_NODISCARD constexpr auto visit(V& v) {
 }
 
 namespace detail {
-	enum class construct_type {
+	enum class construct_type : unsigned {
 		none = 0,
 		copy = 1,
 		move = 2,
 		both = 3,
-
+		throw_move = 4,
+		both_throw = 5,
 	};
 	constexpr construct_type operator|(construct_type l, construct_type r) {
 		return static_cast<construct_type>(etoi(l) | etoi(r));
@@ -328,6 +329,19 @@ namespace detail {
 
 	template <>
 	struct construct_conditional<construct_type::both> {};
+
+	template <>
+	struct construct_conditional<construct_type::throw_move> {
+		construct_conditional() noexcept = default;
+		construct_conditional(construct_conditional&&) noexcept(false) {}
+	};
+
+	template <>
+	struct construct_conditional<construct_type::both_throw> {
+		construct_conditional() noexcept = default;
+		construct_conditional(const construct_conditional&) = default;
+		construct_conditional(construct_conditional&&) noexcept(false) {}
+	};
 
 	template <typename T>
 	constexpr construct_type construct_traits =
@@ -376,8 +390,9 @@ namespace detail {
 	struct disable_conditional : construct_conditional<construct_traits<T>>,
 	                             assign_conditional<assign_traits<T>> {};
 
-	inline void* noop(void*, void*) { return nullptr; }
+	inline void* noop(void*, void*) noexcept { return nullptr; }
 	inline void* noop(void*, const void*) { return nullptr; }
+	inline void* throw_noop(void*, void*) noexcept(false) { return nullptr; }
 
 	template <construct_type traits>
 	struct erased_construct_helper {};
@@ -389,7 +404,12 @@ namespace detail {
 
 	template <>
 	struct erased_construct_helper<construct_type::move> {
-		alias<void* (*)(void*, void*)> move = &noop;
+		alias<void* (*)(void*, void*) noexcept> move = &noop;
+	};
+
+	template <>
+	struct erased_construct_helper<construct_type::throw_move> {
+		alias<void* (*)(void*, void*) noexcept(false)> move = &throw_noop;
 	};
 
 	template <>
@@ -413,19 +433,24 @@ namespace detail {
 		return static_cast<void*>(new (dest) T(*static_cast<const T*>(from)));
 	}
 	template <typename T>
-	void* default_move(void* dest, void* from) {
+	void*
+	default_move(void* dest,
+	             void* from) noexcept(std::is_nothrow_move_constructible_v<T>) {
 		return static_cast<void*>(new (dest)
 		                              T(std::move(*static_cast<T*>(from))));
 	}
 
 	template <typename T, typename Traits, bool noop = false>
-	erased_construct_helper<construct_traits<Traits>> make_ops_t() {
+	erased_construct_helper<construct_traits<Traits>> make_ops_t() noexcept {
 		if constexpr (noop) {
 			return {};
 		}
 		static_assert(implies_v<std::is_copy_constructible_v<Traits>,
 		                        std::is_copy_constructible_v<T>>,
 		              "T must be copy constructible if Traits is.");
+		static_assert(implies_v<std::is_nothrow_move_constructible_v<Traits>,
+		                        std::is_nothrow_move_constructible_v<T>>,
+		              "T must be nothrow move constructible if Traits is.");
 		static_assert(implies_v<std::is_move_constructible_v<Traits>,
 		                        std::is_move_constructible_v<T>>,
 		              "T must be move constructible if Traits is.");
@@ -433,7 +458,9 @@ namespace detail {
 			return {};
 		} else if constexpr (construct_traits<Traits> == construct_type::copy) {
 			return {{&default_copy<T>}};
-		} else if constexpr (construct_traits<Traits> == construct_type::move) {
+		} else if constexpr (construct_traits<Traits> == construct_type::move or
+		                     construct_traits<Traits> ==
+		                         construct_type::throw_move) {
 			return {{&default_move<T>}};
 		} else {
 			return {{&default_copy<T>}, {&default_move<T>}};
@@ -454,13 +481,15 @@ namespace detail {
  * copying.
  */
 struct move_only_t {
-	move_only_t() = default;
+	move_only_t() noexcept = default;
 
-	move_only_t(move_only_t&&) = default;
+	move_only_t(move_only_t&&) noexcept = default;
 	move_only_t(const move_only_t&) = delete;
 
-	move_only_t& operator=(move_only_t&&) = default;
+	move_only_t& operator=(move_only_t&&) noexcept = default;
 	move_only_t& operator=(const move_only_t&) = delete;
+
+	~move_only_t() = default;
 };
 
 /**
@@ -468,11 +497,13 @@ struct move_only_t {
  * copying and moving.
  */
 struct no_move_t {
-	no_move_t() = default;
+	no_move_t() noexcept = default;
 
 	no_move_t(const no_move_t&) = delete;
 
 	no_move_t& operator=(const no_move_t&) = delete;
+
+	~no_move_t() = default;
 };
 
 /**
@@ -542,7 +573,8 @@ class poly_obj
 	 *
 	 * @param other A poly_obj to move from.
 	 */
-	constexpr poly_obj(poly_obj&& other)
+	constexpr poly_obj(poly_obj&& other) noexcept(
+	    std::is_nothrow_move_constructible_v<Traits>)
 	    : disabler(std::move(other)), ops_t(std::move(other)),
 	      valid(other.valid) {
 		if (valid) {
@@ -565,7 +597,9 @@ class poly_obj
 	 *
 	 * @param obj The object to move from.
 	 */
-	constexpr poly_obj(Obj&& obj) : valid(true) {
+	constexpr poly_obj(Obj&& obj) noexcept(
+	    std::is_nothrow_move_constructible_v<Traits>)
+	    : valid(true) {
 		new (data) Obj(std::move(obj));
 	}
 
@@ -633,7 +667,8 @@ class poly_obj
 	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
 	 * is cleared and the exception rethrown.
 	 */
-	poly_obj& operator=(poly_obj&& other) & {
+	poly_obj& operator=(poly_obj&& other) & noexcept(
+	    std::is_nothrow_move_assignable_v<Traits>) {
 		clear();
 		static_cast<ops_t&>(*this) = other;
 		if (other.valid) {
@@ -966,7 +1001,7 @@ class poly_obj
 	}
 
  private:
-	alignas(Obj) std::byte data[Capacity];
+	alignas(Obj) std::byte data[Capacity]{};
 	bool valid{};
 
 	template <typename U, bool = false>

@@ -20,7 +20,8 @@ class delayed_construct : protected std::optional<T> {
 	template <typename U,
 	          std::enable_if_t<std::is_assignable_v<T&, U&&>, int> = 0>
 	delayed_construct& operator=(U&& t) {
-		return Base::operator=(std::forward<U>(t));
+		Base::operator=(std::forward<U>(t));
+		return *this;
 	}
 
 	using Base::operator->;
@@ -41,32 +42,32 @@ class delayed_construct : protected std::optional<T> {
 #define OVERLOAD_DEFER_OP(op)                                                \
 	friend constexpr bool operator op(const delayed_construct& lhs,           \
 	                                  const delayed_construct& rhs) {         \
-	   return static_cast<const Base&>(lhs) op static_cast<const Base&>(rhs); \
-   }                                                                         \
+		return static_cast<const Base&>(lhs) op static_cast<const Base&>(rhs); \
+	}                                                                         \
 	template <typename U>                                                     \
 	friend constexpr bool operator op(const delayed_construct& lhs,           \
 	                                  const delayed_construct<U>& rhs) {      \
-	   return static_cast<const Base&>(lhs)                                   \
-	       op static_cast<const std::optional<U>&>(rhs);                      \
-   }                                                                         \
+		return static_cast<const Base&>(lhs)                                   \
+		    op static_cast<const std::optional<U>&>(rhs);                      \
+	}                                                                         \
 	friend constexpr bool operator op(const delayed_construct& lhs,           \
 	                                  std::nullopt_t rhs) {                   \
-	   return static_cast<const Base&>(lhs) op rhs;                           \
-   }                                                                         \
+		return static_cast<const Base&>(lhs) op rhs;                           \
+	}                                                                         \
 	friend constexpr bool operator op(std::nullopt_t lhs,                     \
 	                                  const delayed_construct& rhs) {         \
-	   return lhs op static_cast<const Base&>(rhs);                           \
-   }                                                                         \
+		return lhs op static_cast<const Base&>(rhs);                           \
+	}                                                                         \
 	template <typename U>                                                     \
 	friend constexpr bool operator op(const delayed_construct& opt,           \
 	                                  const U& value) {                       \
-	   return static_cast<const Base&>(opt) op value;                         \
-   }                                                                         \
+		return static_cast<const Base&>(opt) op value;                         \
+	}                                                                         \
 	template <typename U>                                                     \
 	friend constexpr bool operator op(const U& value,                         \
 	                                  const delayed_construct& opt) {         \
-	   return value op static_cast<const Base&>(opt);                         \
-   }
+		return value op static_cast<const Base&>(opt);                         \
+	}
 
 	OVERLOAD_DEFER_OP(==)
 	OVERLOAD_DEFER_OP(!=)

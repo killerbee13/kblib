@@ -442,8 +442,8 @@ split_dsv(const String& str, Predicate delim) {
 	return ret;
 }
 
-// TODO: figure out if any uses of reverseStr, toLower, toUpper exist in current
-// projects
+// TODO(killerbee13): figure out if any uses of reverseStr, toLower, toUpper
+// exist in current projects
 
 /**
  * @brief Reverses all the elements of its input.
@@ -540,7 +540,7 @@ inline bool ends_with(std::string_view haystack, std::string_view needle) {
  * @return bool If haystack ends with needle.
  */
 inline bool ends_with(std::string_view haystack, char needle) {
-	return haystack.size() >= 1 and haystack.back() == needle;
+	return !haystack.empty() and haystack.back() == needle;
 }
 
 /**
@@ -561,7 +561,7 @@ inline bool starts_with(std::string_view haystack, std::string_view needle) {
  * @return bool If haystack starts with needle.
  */
 inline bool starts_with(std::string_view haystack, char needle) {
-	return haystack.size() >= 1 and haystack.front() == needle;
+	return !haystack.empty() and haystack.front() == needle;
 }
 
 #endif

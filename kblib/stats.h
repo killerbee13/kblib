@@ -169,7 +169,7 @@ constexpr trivial_array<U, N> make_fib_arr() {
  *
  * @return The nth fibonacci number.
  */
-template <typename U = unsigned long long>
+template <typename U = std::uintmax_t>
 constexpr U fibonacci(int n) {
 	constexpr auto arr = make_fib_arr<U>();
 	assert(n >= 0 and static_cast<std::size_t>(n) < arr.size());
@@ -372,7 +372,8 @@ constexpr T phi() {
 	return 1.6180339887498948482045868343656381177203091798058l;
 }
 
-// TODO: write tests and fix style issues for quantization functions
+// TODO(killerbee13): write tests and fix style issues for quantization
+// functions
 
 // saturating to_unsigned
 template <typename A, typename F>

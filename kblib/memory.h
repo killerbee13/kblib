@@ -11,17 +11,19 @@ namespace kblib {
 
 template <typename T, bool = std::is_class<T>::value>
 struct null_construct {
-	null_construct() : t{} {}
+	null_construct() noexcept(std::is_nothrow_default_constructible<T>::value)
+	    : t{} {}
 
 	T t;
 
-	operator T&() { return t; }
-	operator const T&() const { return t; }
+	operator T&() noexcept { return t; }
+	operator const T&() const noexcept { return t; }
 };
 
 template <typename T>
 struct null_construct<T, true> : public T {
-	null_construct() : T{} {}
+	null_construct() noexcept(std::is_nothrow_default_constructible<T>::value)
+	    : T{} {}
 };
 
 #if KBLIB_USE_CXX17
@@ -50,8 +52,7 @@ namespace detail {
 	using filter_deleter_pointer_t = typename filter_deleter_pointer<D, T>::type;
 
 	template <typename T,
-	          bool = std::is_class<T>::value and std::is_empty<T>::value and
-	                 not std::is_final<T>::value,
+	          bool = std::is_class<T>::value and not std::is_final<T>::value,
 	          bool =
 	              std::is_object<typename std::remove_reference<T>::type>::value>
 	struct as_base_class;
@@ -61,6 +62,8 @@ namespace detail {
 		T base_;
 		T& base() noexcept { return base_; }
 		const T& base() const noexcept { return base_; }
+		explicit operator T&() noexcept { return base(); }
+		explicit operator const T&() const noexcept { return base(); }
 	};
 
 	template <typename T>
@@ -82,6 +85,7 @@ namespace detail {
 		using type = R(A) noexcept(E);
 		type* base_;
 		type& base() const noexcept { return *base_; }
+		explicit operator type&() const noexcept { return base(); }
 	};
 #else
 	template <typename R, typename A>
@@ -89,14 +93,19 @@ namespace detail {
 		using type = R(A);
 		type* base_;
 		type& base() const noexcept { return *base_; }
+		explicit operator type&() const noexcept { return base(); }
 	};
 #endif
 
-	template <typename T, bool B>
-	struct as_base_class<T&, B, true> {
+	template <typename T>
+	struct as_base_class<T&, false, true> {
 		std::reference_wrapper<T> base_;
+
 		T& base() noexcept { return base_; }
 		const T& base() const noexcept { return base_; }
+
+		explicit operator T&() noexcept { return base(); }
+		explicit operator const T&() const noexcept { return base(); }
 	};
 
 	struct noop {
@@ -113,7 +122,27 @@ namespace detail {
 
 	template <typename T, typename D>
 	struct on_destroy : as_base_class<T>, as_base_class<D> {
-		~on_destroy() { static_cast<D&> (*this)(static_cast<T&>(*this)); }
+		on_destroy() noexcept = default;
+		on_destroy(const on_destroy&) noexcept(
+		    std::is_nothrow_copy_constructible<T>::value and
+		        std::is_nothrow_copy_constructible<D>::value) = default;
+		on_destroy(on_destroy&&) noexcept(
+		    std::is_nothrow_move_constructible<T>::value and
+		        std::is_nothrow_move_constructible<D>::value) = default;
+		on_destroy& operator=(const on_destroy&) noexcept(
+		    std::is_nothrow_copy_assignable<T>::value and
+		        std::is_nothrow_copy_assignable<D>::value) = default;
+		on_destroy& operator=(on_destroy&&) noexcept(
+		    std::is_nothrow_move_assignable<T>::value and
+		        std::is_nothrow_move_assignable<D>::value) = default;
+
+		using as_base_class<T>::base;
+		operator T&() noexcept { return base(); }
+		operator const T&() const noexcept { return base(); }
+
+		~on_destroy() {
+			(invoke)(static_cast<D&&>(*this), static_cast<T&&>(*this));
+		}
 	};
 
 } // namespace detail
@@ -124,22 +153,24 @@ class live_ptr;
 template <typename T>
 class live_wrapper {
  public:
-	// no constructors to make it an aggregate
-	~live_wrapper() {
-		for (auto p : _observers) {
-			if (p) {
-				*p = nullptr;
-			}
-		}
-	}
-
 	live_ptr<T> ref();
 	live_ptr<const T> ref() const;
 	live_ptr<const T> cref() const;
 
 	T data;
 
-	kblib::null_construct<std::vector<live_wrapper**>> _observers{};
+	struct _destroy {
+		void operator()(std::vector<live_wrapper**>&& self) const noexcept {
+			for (auto p : self) {
+				if (p) {
+					*p = nullptr;
+				}
+			}
+		}
+	};
+
+	null_construct<detail::on_destroy<std::vector<live_wrapper**>, _destroy>>
+	    _observers{};
 };
 
 template <typename T>
@@ -222,16 +253,16 @@ namespace detail {
 		}
 
 	 protected:
-		void add() { obj->_observers.push_back(&obj); }
+		void add() { obj->_observers.base().push_back(&obj); }
 		void rem() {
 			if (obj) {
-				erase(obj->_observers, &obj);
+				erase(obj->_observers.base(), &obj);
 			}
 		}
 		void move(D& o) {
 			if ((obj = std::exchange(o.obj, nullptr))) {
-				std::replace(obj->_observers.begin(), obj->_observers.end(), &o.obj,
-				             &obj);
+				std::replace(obj->_observers.base().begin(),
+				             obj->_observers.base().end(), &o.obj, &obj);
 			}
 		}
 		mutable live_wrapper<mT>* obj = nullptr;
@@ -262,6 +293,8 @@ class live_ptr : public detail::live_ptr_base<live_ptr<T>> {
 		this->add();
 		return *this;
 	}
+
+	~live_ptr() = default;
 
  private:
 	friend class live_ptr<const T>;
@@ -300,6 +333,8 @@ class live_ptr<const mT> : public detail::live_ptr_base<live_ptr<const mT>> {
 		this->add();
 		return *this;
 	}
+
+	~live_ptr() = default;
 };
 
 template <typename T>
@@ -456,7 +491,7 @@ class cond_ptr : private detail::as_base_class<Deleter> {
 
 	KBLIB_NODISCARD const T* get() const& noexcept { return ptr_; }
 
-	explicit operator bool() const noexcept { return ptr_; }
+	KBLIB_NODISCARD explicit operator bool() const noexcept { return ptr_; }
 
 	KBLIB_NODISCARD T& operator*() & noexcept { return *ptr_; }
 

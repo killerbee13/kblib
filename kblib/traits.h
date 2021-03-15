@@ -159,16 +159,13 @@ T byte_cast(F v) {
 namespace detail {
 
 	template <typename C, typename = decltype(std::declval<C&>().resize(0))>
-	constexpr bool calc_resizable() noexcept {
-		return true;
-	}
+	auto calc_resizable(int) noexcept -> std::true_type;
 
 	template <typename C, int = std::tuple_size<C>::value>
-	constexpr bool calc_resizable() noexcept {
-		return false;
-	}
+	auto calc_resizable(int) noexcept -> std::false_type;
 
-	constexpr bool calc_resizable(...) noexcept { return false; }
+	template <typename>
+	auto calc_resizable(...) noexcept -> std::false_type;
 
 	// Note that when a type that is not resizable, but also doesn't have a
 	// constexpr size, is passed, there is a hard error.
@@ -176,7 +173,7 @@ namespace detail {
 	 * True if and only if C is a resizable container.
 	 */
 	template <typename C>
-	constexpr bool is_resizable_v = calc_resizable<C>();
+	constexpr bool is_resizable_v = decltype(calc_resizable<C>(0))::value;
 
 	template <typename C>
 	struct is_resizable {
@@ -365,7 +362,7 @@ using remove_reference_t = typename std::remove_reference<T>::type;
  * @brief Names the EOF value for the given character type in std::char_traits.
  */
 template <typename CharT = char>
-auto eof = std::char_traits<CharT>::eof();
+constexpr auto eof = std::char_traits<CharT>::eof();
 
 template <typename T, T V>
 struct type_constant {

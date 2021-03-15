@@ -31,7 +31,7 @@ namespace multi_impl {
 	                                    std::bidirectional_iterator_tag> {
 	 public:
 		mulspan_iterator() = default;
-		mulspan_iterator(const multi_span<T>& s) : parent(&s), index(0) {
+		mulspan_iterator(const multi_span<T>& s) : parent(&s) {
 			recalculate_cache();
 		}
 		mulspan_iterator(const multi_span<T>& s, std::ptrdiff_t i)
@@ -127,8 +127,8 @@ namespace multi_impl {
 			return index - o.index;
 		}
 
-		const multi_span<T>* parent;
-		std::ptrdiff_t index;
+		const multi_span<T>* parent{};
+		std::ptrdiff_t index{};
 		struct cached_iterator {
 			typename std::vector<multi_impl::subspan_t<T>>::const_iterator subs;
 			typename gsl::span<T>::iterator pos;
@@ -188,11 +188,13 @@ class multi_span {
 	                          std::is_convertible_v<U (*)[], T (*)[]>>>
 	multi_span(const multi_span<U>&);
 
-	multi_span(const multi_span<T>&) = default;
-	multi_span(multi_span<T>&&) = default;
+	multi_span(const multi_span&) = default;
+	multi_span(multi_span&&) noexcept = default;
 
-	multi_span<T>& operator=(const multi_span<T>&) = default;
-	multi_span<T>& operator=(multi_span<T>&&) = default;
+	multi_span& operator=(const multi_span&) = default;
+	multi_span& operator=(multi_span&&) noexcept = default;
+
+	~multi_span() = default;
 
 	iterator begin() noexcept { return {*this}; }
 	const_iterator begin() const noexcept { return {*this}; }
