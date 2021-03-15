@@ -3,6 +3,7 @@
 
 #include "algorithm.h"
 #include "iterators.h"
+#include "memory.h"
 #include "simple.h"
 #include "stats.h"
 #include "tdecl.h"
@@ -30,11 +31,16 @@ class trivial_seed_seq {
 	    : trivial_seed_seq(il.begin(), il.end()) {}
 	template <typename Generator>
 	trivial_seed_seq(Generator gen, std::size_t count) : data(count) {
-		kblib::generate_n(data.begin(), count, gen);
+		kblib::generate_n(data.begin(), count, std::ref(gen));
 	}
 
 	template <typename RandomAccessIt>
 	void generate(RandomAccessIt begin, RandomAccessIt end) const {
+		if (end - begin > kblib::to_signed(data.size())) {
+			std::clog << "trivial_seed_seq: unexpectedly wrapping, output size "
+			          << end - begin << " greater than data size " << data.size()
+			          << '\n';
+		}
 		if (data.empty()) {
 			for (auto& i : indirect(begin, end)) {
 				i = 0x8b8b8b8b; // copied from std::seed_seq
@@ -44,8 +50,6 @@ class trivial_seed_seq {
 			bool wrapped = false;
 			for (auto& i : indirect(begin, end)) {
 				if (index == data.size()) {
-					std::clog << "trivial_seed_seq: unexpectedly wrapping, size:  "
-					          << data.size() << '\n';
 					wrapped = true;
 					index = 0;
 				}
@@ -115,7 +119,7 @@ struct state_size<std::linear_congruential_engine<UIntType, a, c, m>>
 
 template <typename UIntType, std::size_t w, std::size_t s, std::size_t r>
 struct state_size<std::subtract_with_carry_engine<UIntType, w, s, r>>
-    : std::integral_constant<std::size_t, (w + 31) / 32> {};
+    : std::integral_constant<std::size_t, r*((w + 31) / 32)> {};
 
 template <typename Engine, std::size_t P, std::size_t R>
 struct state_size<std::discard_block_engine<Engine, P, R>>
@@ -132,10 +136,87 @@ template <typename T>
 constexpr std::size_t state_size_v = state_size<T>::value;
 
 template <typename Gen, typename Source>
-Gen seed_with(Source&& s) {
+Gen seeded(Source&& s) {
 	auto seed = trivial_seed_seq(std::ref(s), state_size_v<Gen>);
 	return Gen{seed};
 }
+
+template <typename Gen>
+Gen seeded() {
+	auto seed = trivial_seed_seq(std::random_device{}, state_size_v<Gen>);
+	return Gen{seed};
+}
+
+template <typename URBG, typename Transform>
+class transform_engine : URBG {
+ private:
+	using E = URBG;
+	static_assert(std::is_default_constructible<Transform>::value, "");
+
+	E& engine() { return static_cast<E&>(*this); }
+	const E& engine() const { return static_cast<const E&>(*this); }
+
+ public:
+	using result_type = typename E::result_type;
+
+	transform_engine() = default;
+	transform_engine(const transform_engine&) = default;
+	transform_engine(result_type s) : E(s) {}
+	template <typename SSeq, typename = enable_if_t<
+	                             !std::is_same<SSeq, transform_engine>::value>>
+	transform_engine(SSeq& s) : E(s) {}
+
+	transform_engine& operator=(const transform_engine&) = delete;
+
+	~transform_engine() = default;
+
+	constexpr result_type operator()() noexcept {
+		return Transform{}(engine()());
+	}
+
+	using E::seed;
+
+	using E::discard;
+
+	static constexpr result_type min() noexcept {
+		return Transform::min(URBG::min());
+	}
+	static constexpr result_type max() noexcept {
+		return Transform::max(URBG::max());
+	}
+
+	friend bool operator==(const transform_engine& lhs,
+	                       const transform_engine& rhs) noexcept {
+		return lhs.engine() == rhs.engine();
+	}
+	friend bool operator!=(const transform_engine& lhs,
+	                       const transform_engine& rhs) noexcept {
+		return !(lhs == rhs);
+	}
+
+	friend std::ostream& operator<<(std::ostream& os,
+	                                const transform_engine& e) {
+		return os << e.engine();
+	}
+	friend std::istream& operator>>(std::istream& is, transform_engine& e) {
+		return is >> e.engine();
+	}
+};
+template <typename Engine, typename Transform>
+struct state_size<transform_engine<Engine, Transform>> : state_size<Engine> {};
+
+template <typename UIntType, UIntType shift, UIntType mask = max>
+struct shift_mask {
+	static constexpr auto g(UIntType in) noexcept -> UIntType {
+		return (in >> shift) & mask;
+	}
+	KBLIB_NODISCARD constexpr auto operator()(UIntType in) const noexcept
+	    -> UIntType {
+		return g(in);
+	}
+	static constexpr auto min(UIntType in) noexcept -> UIntType { return g(in); }
+	static constexpr auto max(UIntType in) noexcept -> UIntType { return g(in); }
+};
 
 } // namespace kblib
 

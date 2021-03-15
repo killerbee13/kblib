@@ -65,6 +65,7 @@ namespace detail {
 
 	template <typename T>
 	struct as_base_class<T, true, true> : T {
+		as_base_class() = default;
 		as_base_class(const T& x) noexcept(
 		    std::is_nothrow_copy_constructible<T>::value)
 		    : T(x) {}
@@ -74,6 +75,7 @@ namespace detail {
 		T& base() noexcept { return *this; }
 		const T& base() const noexcept { return *this; }
 	};
+
 #if KBLIB_USE_CXX17
 	template <typename R, typename A, bool E>
 	struct as_base_class<R (&)(A) noexcept(E), false, false> {
