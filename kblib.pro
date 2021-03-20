@@ -80,4 +80,13 @@ QMAKE_LFLAGS_RELEASE += -flto
 
 DISTFILES += \
     LICENSE.txt \
-    var_timings.log
+    var_timings.log \
+    medfile
+
+medfile.target = medfile
+medfile.commands = rm $$medfile.target; \
+    ln -s /mnt/Vers1/assets/medfile $$medfile.target
+
+QMAKE_EXTRA_TARGETS += medfile
+
+PRE_TARGETDEPS += medfile

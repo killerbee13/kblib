@@ -78,9 +78,9 @@ inline std::string to_string(Int num, int base) {
 
 namespace detail {
 
-	template <typename Result, std::size_t N, const char (&digits)[N],
-	          int variants>
-	constexpr Result read_digits(const char* begin, const char* end, int base) {
+	template <typename Result, unsigned variants, std::size_t N>
+	constexpr Result read_digits(const char* begin, const char* end, int base,
+	                             const char (&digits)[N]) {
 		if (begin == end) {
 			throw std::invalid_argument("\"\" is not an integer");
 		}
@@ -90,13 +90,14 @@ namespace detail {
 				result *= base;
 				if (auto pos = find_in(std::begin(digits),
 				                       std::begin(digits) + base * variants, c);
-				    pos != std::size(digits)) {
+				    pos != base * variants) {
 					result += pos / variants;
 				} else {
 					throw std::invalid_argument("invalid character in integer");
 				}
 			}
 		}
+		return result;
 	}
 
 } // namespace detail
@@ -104,10 +105,16 @@ namespace detail {
 template <typename Result>
 constexpr Result parse_integer(const char* begin, const char* end,
                                int base = 0) {
-	if (base == 0) {
+	if (begin == end) {
+		throw std::invalid_argument("\"\" is not an integer");
+	} else if (*begin == '-') {
+		return -parse_integer<Result>(begin + 1, end, base);
+	} else if (base == 0) {
 		if (*begin == '0') {
 			if (begin + 1 == end) {
 				return 0;
+			} else if (begin[1] == '-' or (begin + 2 != end and begin[2] == '-')) {
+				throw std::invalid_argument("unexpected - in integer");
 			} else {
 				switch (begin[1]) {
 				case 'x':
@@ -126,40 +133,45 @@ constexpr Result parse_integer(const char* begin, const char* end,
 			throw std::invalid_argument(
 			    "base must be either 0 or a positive number between 2 and 62");
 		} else if (base <= 36) {
-			return detail::read_digits<
-			    Result,
+			return detail::read_digits<Result, 2>(
+			    begin, end, base,
 			    "00112233445566778899AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRr"
-			    "SsTtUuVvWwXxYyZz",
-			    2>(begin, end, base);
+			    "SsTtUuVvWwXxYyZz");
 		} else if (base <= 62) {
-			return detail::read_digits<
-			    Result,
-			    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-			    1>(begin, end, base);
+			return detail::read_digits<Result, 1>(
+			    begin, end, base,
+			    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 		}
 	}
+	// silence warning that control may flow off the end even though all paths
+	// return or throw
+	throw "unreachable";
 }
 
 template <typename Result, std::size_t N>
 constexpr Result parse_integer(const char (&in)[N], int base = 0) {
-	return parse_integer<Result>(std::begin(in), std::end(in), base);
+	char t = in[N - 1];
+	return parse_integer<Result>(std::begin(in), std::end(in) - +(t == '\0'),
+	                             base);
 }
 
 template <typename Result>
 constexpr Result parse_integer(const std::string& in, int base = 0) {
-	return parse_integer<Result>(begin(in), end(in), base);
+	return parse_integer<Result>(to_pointer(begin(in)), to_pointer(end(in)),
+	                             base);
 }
 
 #if KBLIB_USE_STRING_VIEW
 
 template <typename Result>
 constexpr Result parse_integer(std::string_view in, int base = 0) {
-	return parse_integer<Result>(begin(in), end(in), base);
+	return parse_integer<Result>(to_pointer(begin(in)), to_pointer(end(in)),
+	                             base);
 }
 
 #endif
 
-template <auto V>
+template <std::intmax_t V>
 struct constant : std::integral_constant<decltype(V), V> {
 	constexpr constant<-V> operator-() { return {}; }
 };
@@ -214,15 +226,189 @@ namespace detail {
 
 #endif
 
-	struct unit_conversion {
-		char name[4];
-		int multiplier;
+	struct prefix {
+		char name[16];
+		char abbr[4];
 	};
+// if std::intmax_t can represent the denominator
+#if (-1U >> 63) > (1U << 18)
+	constexpr auto name_of(std::yocto) -> prefix { return {"yocto", "y"}; }
+#endif
+#if (-1U >> 63) > (1U << 8)
+	constexpr auto name_of(std::zepto) -> prefix { return {"zepto", "z"}; }
+#endif
+	constexpr auto name_of(std::atto) -> prefix { return {"atto", "a"}; }
+	constexpr auto name_of(std::femto) -> prefix { return {"femto", "f"}; }
+	constexpr auto name_of(std::pico) -> prefix { return {"pico", "p"}; }
+	constexpr auto name_of(std::nano) -> prefix { return {"nano", "n"}; }
+	constexpr auto name_of(std::micro) -> prefix { return {"micro", "u"}; }
+	constexpr auto name_of(std::milli) -> prefix { return {"milli", "m"}; }
+	constexpr auto name_of(std::centi) -> prefix { return {"centi", "c"}; }
+	constexpr auto name_of(std::deci) -> prefix { return {"deci", "d"}; }
+
+	constexpr auto name_of(std::ratio<1, 1>) -> prefix { return {"", ""}; }
+
+	constexpr auto name_of(std::deca) -> prefix { return {"deca", "da"}; }
+	constexpr auto name_of(std::hecto) -> prefix { return {"hecto", "h"}; }
+	constexpr auto name_of(std::kilo) -> prefix { return {"kilo", "k"}; }
+	constexpr auto name_of(std::mega) -> prefix { return {"mega", "M"}; }
+	constexpr auto name_of(std::giga) -> prefix { return {"giga", "G"}; }
+	constexpr auto name_of(std::tera) -> prefix { return {"tera", "T"}; }
+	constexpr auto name_of(std::peta) -> prefix { return {"peta", "P"}; }
+	constexpr auto name_of(std::exa) -> prefix { return {"exa", "E"}; }
+// if std::intmax_t can represent the numerator
+#if (-1U >> 63) > (1U << 8)
+	constexpr auto name_of(std::zetta) -> prefix { return {"zetta", "Z"}; }
+#endif
+#if (-1U >> 63) > (1U << 18)
+	constexpr auto name_of(std::yotta) -> prefix { return {"yotta", "Y"}; }
+#endif
+
+	constexpr int largest_power_1000(std::intmax_t in) {
+		if (in % 1000 == 0) {
+			return 1 + largest_power_1000(in / 1000);
+		} else {
+			return 0;
+		}
+	}
+
+	constexpr int largest_power_1000_p(double in) {
+		if (in / 1000 >= 1) {
+			return 1 + largest_power_1000_p(in / 1000.);
+		} else {
+			return 0;
+		}
+	}
+	constexpr int largest_power_1000(double in) {
+		if (in < 1) {
+			return -largest_power_1000_p(1 / in);
+		}
+		if (in / 1000 >= 1) {
+			return 1 + largest_power_1000_p(in / 1000.);
+		} else {
+			return 0;
+		}
+	}
+
+	constexpr double pow1000(int p) {
+		auto r = 1.0;
+		if (p >= 0) {
+			while (p--) {
+				r *= 1000.;
+			}
+		} else {
+			while (p++) {
+				r /= 1000.;
+			}
+		}
+		return r;
+	}
+
+	template <typename R>
+	struct is_si_ratio : std::false_type {};
+// if std::intmax_t can represent the denominator
+#if (-1U >> 63) > (1U << 18)
+	template <>
+	struct is_si_ratio<std::yocto> : std::true_type {};
+#endif
+#if (-1U >> 63) > (1U << 8)
+	template <>
+	struct is_si_ratio<std::zepto> : std::true_type {};
+#endif
+	template <>
+	struct is_si_ratio<std::atto> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::femto> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::pico> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::nano> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::micro> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::milli> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::centi> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::deci> : std::true_type {};
+
+	template <>
+	struct is_si_ratio<std::ratio<1>> : std::true_type {};
+
+	template <>
+	struct is_si_ratio<std::deca> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::hecto> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::kilo> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::mega> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::giga> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::tera> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::peta> : std::true_type {};
+	template <>
+	struct is_si_ratio<std::exa> : std::true_type {};
+// if std::intmax_t can represent the numerator
+#if (-1U >> 63) > (1U << 8)
+	template <>
+	struct is_si_ratio<std::zetta> : std::true_type {};
+#endif
+#if (-1U >> 63) > (1U << 18)
+	template <>
+	struct is_si_ratio<std::yotta> : std::true_type {};
+#endif
+
+	template <typename M>
+	struct unit_conversion {
+		const char* scale_prefix;
+		char abbr[6];
+		M multiplier;
+	};
+
+	template <std::intmax_t Num, std::intmax_t Den>
+	auto ratio_to_SI() noexcept -> unit_conversion<std::intmax_t> {}
+
+	template <std::intmax_t Num, std::intmax_t Den>
+	struct nearest_ratio {};
+
+	template <std::intmax_t Num, std::intmax_t Den>
+	using nearest_ratio_t = typename nearest_ratio<Num, Den>::type;
 
 } // namespace detail
 
-template <typename Rep, typename Ratio>
-std::string duration_to_str(std::chrono::duration<Rep, Ratio>& d) {}
+template <typename Rep, typename Ratio,
+          enable_if_t<detail::is_si_ratio<typename Ratio::type>::value>* = 0>
+std::string duration_to_str(std::chrono::duration<Rep, Ratio>& d) {
+	using ratio = typename Ratio::type;
+	auto cv = detail::ratio_to_SI<ratio::num, ratio::den>();
+	return concat(d.count() * cv.multiplier, ' ', cv.abbr, 's');
+}
+
+template <typename Rep, typename Ratio,
+          enable_if_t<std::is_floating_point<Rep>::value>* = 0>
+std::string duration_to_str(std::chrono::duration<Rep, Ratio>& d) {
+	using ratio = typename Ratio::type;
+	using n_r = detail::nearest_ratio_t<ratio::num, ratio::den>;
+	auto u = detail::name_of(n_r{});
+
+	// require an implicit cast
+	std::chrono::duration<Rep, n_r> n_d = d;
+	return concat(n_d.count(), ' ', u.abbr, 's');
+}
+
+template <typename Rep>
+inline std::string
+duration_to_str(std::chrono::duration<Rep, std::ratio<60>> d) {
+	return concat(d.count(), " min");
+}
+template <typename Rep>
+inline std::string
+duration_to_str(std::chrono::duration<Rep, std::ratio<3600>> d) {
+	return concat(d.count(), " hr");
+}
 
 template <typename string>
 inline std::string url_encode(const string& value) {

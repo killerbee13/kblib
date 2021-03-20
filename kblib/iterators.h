@@ -1161,10 +1161,14 @@ struct indirect_range {
 	Iter1 begin_;
 	Iter2 end_;
 
-	Iter1 begin() const noexcept { return begin_; }
-	Iter2 end() const noexcept { return end_; }
-	auto rbegin() const noexcept { return std::make_reverse_iterator(begin_); }
-	auto rend() const noexcept { return std::make_reverse_iterator(end_); }
+	constexpr Iter1 begin() const noexcept { return begin_; }
+	constexpr Iter2 end() const noexcept { return end_; }
+	constexpr auto rbegin() const noexcept {
+		return std::make_reverse_iterator(begin_);
+	}
+	constexpr auto rend() const noexcept {
+		return std::make_reverse_iterator(end_);
+	}
 };
 
 /**
@@ -1174,8 +1178,10 @@ struct indirect_range {
  * @param begin,end The range to wrap.
  */
 template <typename Iter1, typename Iter2>
-indirect_range<Iter1, Iter2> indirect(Iter1 begin, Iter2 end) noexcept(
-    noexcept(indirect_range<Iter1, Iter2>{begin, end})) {
+constexpr auto
+indirect(Iter1 begin,
+         Iter2 end) noexcept(noexcept(indirect_range<Iter1, Iter2>{begin, end}))
+    -> indirect_range<Iter1, Iter2> {
 	return {begin, end};
 }
 
