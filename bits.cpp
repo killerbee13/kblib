@@ -29,16 +29,16 @@ static_assert(
 static_assert(std::is_same<kblib::uint_smallest_t<65536>, unsigned int>::value,
               "uint_smallest_t");
 static_assert(
-    std::is_same<kblib::uint_smallest_t<1u << 31>, unsigned int>::value,
+    std::is_same<kblib::uint_smallest_t<1u << 31u>, unsigned int>::value,
     "uint_smallest_t");
 static_assert(
     std::is_same<kblib::uint_smallest_t<UINT_MAX>, unsigned int>::value,
     "uint_smallest_t");
 static_assert(
-    std::is_same<kblib::uint_smallest_t<1ul << 32>, unsigned long>::value,
+    std::is_same<kblib::uint_smallest_t<1ul << 32u>, unsigned long>::value,
     "uint_smallest_t");
 static_assert(
-    std::is_same<kblib::uint_smallest_t<1ul << 63>, unsigned long>::value,
+    std::is_same<kblib::uint_smallest_t<1ul << 63u>, unsigned long>::value,
     "uint_smallest_t");
 
 // print<kblib::int_smallest_t<1>> t{};
@@ -83,7 +83,9 @@ struct buffer {
 		}
 	};
 	std::vector<char> buf;
-	ret_proxy operator[](std::size_t p) { return {&buf[p]}; }
+	KBLIB_NODISCARD auto operator[](std::size_t p) -> ret_proxy {
+		return {&buf[p]};
+	}
 };
 
 using kblib::bitfield;
@@ -129,7 +131,7 @@ struct Addr {
 	BITFIELD(0, 14, addr, raw)
 };
 
-constexpr Addr test_bitfield() {
+KBLIB_NODISCARD constexpr auto test_bitfield() -> Addr {
 	Addr a;
 	a.l() = 0b1100'1100;
 	a.h(0b001'1001);
@@ -188,8 +190,8 @@ TEST_CASE("punning") {
 	kblib::punner<char[], const char*, std::uintptr_t,
 	              char16_t[sizeof(char*) / 2]>
 	    pun{};
-	kblib::get<0>(pun);
-	pun.get<1>();
+	void(kblib::get<0>(pun));
+	void(pun.get<1>());
 
 	std::uintptr_t ival = 0xABCD;
 	kblib::to_bytes_le(ival, pun.get<0>());

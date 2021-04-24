@@ -21,17 +21,17 @@ namespace kblib {
 
 template <typename ptr>
 struct to_pointer_impl {
-	constexpr auto operator()(ptr&& p) const noexcept {
+	constexpr auto operator()(ptr&& p) const noexcept -> auto {
 		return to_pointer_impl<decltype(p.operator->())>{}(p.operator->());
 	}
-	constexpr auto operator()(const ptr& p) const noexcept {
+	constexpr auto operator()(const ptr& p) const noexcept -> auto {
 		return to_pointer_impl<decltype(p.operator->())>{}(p.operator->());
 	}
 };
 
 template <typename T>
 struct to_pointer_impl<T*> {
-	constexpr T* operator()(T* p) const noexcept { return p; }
+	constexpr auto operator()(T* p) const noexcept -> T* { return p; }
 };
 
 /**
@@ -41,13 +41,13 @@ struct to_pointer_impl<T*> {
  * @param p A smart pointer to extract from.
  */
 template <typename P>
-constexpr auto to_pointer(P&& p) noexcept {
+constexpr auto to_pointer(P&& p) noexcept -> auto* {
 	return to_pointer_impl<std::decay_t<P>>{}(p);
 }
 
 template <typename Container,
           typename Comp = std::less<value_type_linear_t<Container>>>
-value_type_linear_t<Container>* max_element(Container& c, Comp comp) {
+auto max_element(Container& c, Comp comp) -> value_type_linear_t<Container>* {
 	auto it = max_element(std::begin(c), std::end(c), comp);
 	if (it != std::end(c)) {
 		return to_pointer(it);
@@ -92,7 +92,7 @@ class counting_back_insert_iterator {
 	struct proxy_iterator {
 		using value_type = typename Container::value_type;
 
-		proxy_iterator& operator=(const value_type& value) & {
+		auto operator=(const value_type& value) & -> proxy_iterator& {
 			assert(container);
 			// Multiple assignments for a single dereference are not allowed
 			assert(*dirty);
@@ -101,7 +101,7 @@ class counting_back_insert_iterator {
 			return *this;
 		}
 
-		proxy_iterator& operator=(value_type&& value) & {
+		auto operator=(value_type&& value) & -> proxy_iterator& {
 			assert(container);
 			// Multiple assignments for a single dereference are not allowed
 			assert(*dirty);
@@ -114,45 +114,52 @@ class counting_back_insert_iterator {
 		bool* dirty;
 	};
 
-	proxy_iterator operator*() noexcept {
+	auto operator*() noexcept -> proxy_iterator {
 		assert(dirty);
 		return {container, &dirty};
 	}
 
-	counting_back_insert_iterator& operator++() & noexcept {
+	auto operator++() & noexcept -> counting_back_insert_iterator& {
 		assert(not dirty);
 		++count;
 		dirty = true;
 		return *this;
 	}
-	counting_back_insert_iterator operator++(int) noexcept = delete;
+	auto operator++(int) noexcept -> counting_back_insert_iterator = delete;
 
-	friend bool operator==(const counting_back_insert_iterator& a,
-	                       const counting_back_insert_iterator& b) {
+	friend auto operator==(const counting_back_insert_iterator& a,
+	                       const counting_back_insert_iterator& b) noexcept
+	    -> bool {
 		return a.count == b.count;
 	}
-	friend bool operator!=(const counting_back_insert_iterator& a,
-	                       const counting_back_insert_iterator& b) {
+	friend auto operator!=(const counting_back_insert_iterator& a,
+	                       const counting_back_insert_iterator& b) noexcept
+	    -> bool {
 		return a.count != b.count;
 	}
-	friend bool operator<(const counting_back_insert_iterator& a,
-	                      const counting_back_insert_iterator& b) {
+	friend auto operator<(const counting_back_insert_iterator& a,
+	                      const counting_back_insert_iterator& b) noexcept
+	    -> bool {
 		return a.count < b.count;
 	}
-	friend bool operator<=(const counting_back_insert_iterator& a,
-	                       const counting_back_insert_iterator& b) {
+	friend auto operator<=(const counting_back_insert_iterator& a,
+	                       const counting_back_insert_iterator& b) noexcept
+	    -> bool {
 		return a.count <= b.count;
 	}
-	friend bool operator>(const counting_back_insert_iterator& a,
-	                      const counting_back_insert_iterator& b) {
+	friend auto operator>(const counting_back_insert_iterator& a,
+	                      const counting_back_insert_iterator& b) noexcept
+	    -> bool {
 		return a.count > b.count;
 	}
-	friend bool operator>=(const counting_back_insert_iterator& a,
-	                       const counting_back_insert_iterator& b) {
+	friend auto operator>=(const counting_back_insert_iterator& a,
+	                       const counting_back_insert_iterator& b) noexcept
+	    -> bool {
 		return a.count >= b.count;
 	}
-	friend std::ptrdiff_t operator-(const counting_back_insert_iterator& a,
-	                                const counting_back_insert_iterator& b) {
+	friend auto operator-(const counting_back_insert_iterator& a,
+	                      const counting_back_insert_iterator& b) noexcept
+	    -> std::ptrdiff_t {
 		return std::ptrdiff_t(a.count) - ptrdiff_t(b.count);
 	}
 
@@ -224,20 +231,20 @@ class range_t {
 		 *
 		 * @return Value The value in the range this iterator corresponds to.
 		 */
-		constexpr Value operator*() const { return val; }
+		constexpr auto operator*() const -> Value { return val; }
 		/**
 		 * @brief Return a pointer to the value.
 		 *
 		 * @return pointer A pointer to a value equivalent to *(*this). Valid
 		 * until the iterator is modified in any way or destroyed.
 		 */
-		constexpr pointer operator->() const { return &val; }
+		constexpr auto operator->() const -> pointer { return &val; }
 		/**
 		 * @brief Prefix increment. Advance to the next value in the range.
 		 *
 		 * @return iterator& *this.
 		 */
-		constexpr iterator& operator++() & {
+		constexpr auto operator++() & -> iterator& {
 			val = val + step;
 			return *this;
 		}
@@ -247,7 +254,7 @@ class range_t {
 		 *
 		 * @return iterator A copy of the pre-incrementing value of *this.
 		 */
-		constexpr iterator operator++(int) {
+		constexpr auto operator++(int) -> iterator {
 			auto ret = *this;
 			val = val + step;
 			return ret;
@@ -258,7 +265,7 @@ class range_t {
 		 * Range iterators compare equal if they point to the same value and have
 		 * the same step.
 		 */
-		constexpr friend bool operator==(iterator l, iterator r) {
+		constexpr friend auto operator==(iterator l, iterator r) -> bool {
 			return l.val == r.val and l.step == r.step;
 		}
 		/**
@@ -267,7 +274,7 @@ class range_t {
 		 * Range iterators compare equal if they point to the same value and have
 		 * the same step.
 		 */
-		constexpr friend bool operator!=(iterator l, iterator r) {
+		constexpr friend auto operator!=(iterator l, iterator r) -> bool {
 			return l.val != r.val or l.step != r.step;
 		}
 		/**
@@ -276,7 +283,7 @@ class range_t {
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend bool operator<(iterator l, iterator r) {
+		constexpr friend auto operator<(iterator l, iterator r) -> bool {
 			if (l.step > 0)
 				return l.val < r.val;
 			else
@@ -288,7 +295,7 @@ class range_t {
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend bool operator<=(iterator l, iterator r) {
+		constexpr friend auto operator<=(iterator l, iterator r) -> bool {
 			return not(r < l);
 		}
 		/**
@@ -297,14 +304,16 @@ class range_t {
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend bool operator>(iterator l, iterator r) { return r < l; }
+		constexpr friend auto operator>(iterator l, iterator r) -> bool {
+			return r < l;
+		}
 		/**
 		 * @brief Compare two range iterators.
 		 *
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend bool operator>=(iterator l, iterator r) {
+		constexpr friend auto operator>=(iterator l, iterator r) -> bool {
 			return not(l < r);
 		}
 	};
@@ -312,16 +321,16 @@ class range_t {
 	/**
 	 * @brief Returns an iterator to the beginning of the range.
 	 */
-	constexpr iterator begin() const { return {min, step}; }
+	constexpr auto begin() const -> iterator { return {min, step}; }
 	/**
 	 * @brief Return an iterator to the end of the range.
 	 */
-	constexpr iterator end() const { return {max, step}; }
+	constexpr auto end() const -> iterator { return {max, step}; }
 
 	/**
 	 * @brief Returns the distance between start() and stop().
 	 */
-	constexpr std::size_t size() const { return (max - min) / step; }
+	constexpr auto size() const -> std::size_t { return (max - min) / step; }
 
 	/**
 	 \brief Returns a linear container whose elements are this range
@@ -352,7 +361,7 @@ class range_t {
 	 *
 	 * Ranges are equal when they generate identical ranges.
 	 */
-	constexpr friend bool operator==(range_t l, range_t r) {
+	constexpr friend auto operator==(range_t l, range_t r) -> bool {
 		return (l.begin() == r.begin()) and (l.end() == r.end()) and
 		       (l.step == r.step);
 	}
@@ -361,7 +370,7 @@ class range_t {
 	 *
 	 * Ranges are equal when they generate identical ranges.
 	 */
-	constexpr friend bool operator!=(range_t l, range_t r) {
+	constexpr friend auto operator!=(range_t l, range_t r) -> bool {
 		return not(l == r);
 	}
 
@@ -369,7 +378,7 @@ class range_t {
 	Value min, max;
 	Delta step;
 
-	constexpr void normalize() {
+	constexpr auto normalize() -> void {
 		if (min == max) {
 			min = Value{};
 			max = Value{};
@@ -411,7 +420,7 @@ struct incrementer {
  * @brief Increments val.
  */
 template <typename T>
-constexpr T operator+(T val, incrementer) {
+constexpr auto operator+(T val, incrementer) -> T {
 	return ++val;
 }
 
@@ -429,7 +438,7 @@ struct decrementer {
  * @brief Decrements val.
  */
 template <typename T>
-constexpr T operator+(T val, decrementer) {
+constexpr auto operator+(T val, decrementer) -> T {
 	return --val;
 }
 
@@ -444,7 +453,8 @@ constexpr T operator+(T val, decrementer) {
  * @return range_t<Value, Delta> An iterable range [min, max).
  */
 template <typename Value, typename Delta = int>
-constexpr range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
+constexpr auto range(Value min, Value max, Delta step = 0)
+    -> range_t<Value, Delta> {
 	if (step == 0) {
 		if (min <= max) {
 			return {min, max, 1};
@@ -464,7 +474,7 @@ constexpr range_t<Value, Delta> range(Value min, Value max, Delta step = 0) {
  * @return range_t<Value, int> An iterable range [0, max).
  */
 template <typename Value>
-constexpr range_t<Value, incrementer> range(Value max) {
+constexpr auto range(Value max) -> range_t<Value, incrementer> {
 	return {max};
 }
 
@@ -531,14 +541,14 @@ struct enumerate_iterator {
 	using reference = value_type;
 	using iterator_category = std::input_iterator_tag;
 
-	value_type operator*() { return {*it, idx}; }
+	auto operator*() -> value_type { return {*it, idx}; }
 
-	enumerate_iterator& operator++() & {
+	auto operator++() & -> enumerate_iterator& {
 		++it;
 		++idx;
 		return *this;
 	}
-	enumerate_iterator operator++(int) {
+	auto operator++(int) -> enumerate_iterator {
 		auto tmp = *this;
 		++(*this);
 		return tmp;
@@ -555,10 +565,12 @@ struct enumerate_iterator {
 		return it != rhs;
 	}
 
-	friend bool operator==(enumerate_iterator lhs, enumerate_iterator rhs) {
+	friend auto operator==(enumerate_iterator lhs, enumerate_iterator rhs)
+	    -> bool {
 		return lhs.it == rhs.it;
 	}
-	friend bool operator!=(enumerate_iterator lhs, enumerate_iterator rhs) {
+	friend auto operator!=(enumerate_iterator lhs, enumerate_iterator rhs)
+	    -> bool {
 		return lhs.it != rhs.it;
 	}
 };
@@ -586,15 +598,17 @@ struct enumerate_t<Range, void> {
 	using nested_const_iterator = typename range_t::const_iterator;
 	using const_iterator = enumerate_iterator<nested_const_iterator>;
 
-	const_iterator begin() const& noexcept(noexcept(r.cbegin())) {
+	auto begin() const& noexcept(noexcept(r.cbegin())) -> const_iterator {
 		return {r.cbegin(), 0};
 	}
-	iterator begin() & noexcept(noexcept(r.begin())) { return {r.begin(), 0}; }
+	auto begin() & noexcept(noexcept(r.begin())) -> iterator {
+		return {r.begin(), 0};
+	}
 
-	const_iterator end() const& noexcept(noexcept(r.cend())) {
+	auto end() const& noexcept(noexcept(r.cend())) -> const_iterator {
 		return {r.cend(), -std::size_t{1}};
 	}
-	end_iterator end() & noexcept(noexcept(r.end())) {
+	auto end() & noexcept(noexcept(r.end())) -> end_iterator {
 		return {r.end(), -std::size_t{1}};
 	}
 };
@@ -612,9 +626,11 @@ struct enumerate_t {
 	using iterator = enumerate_iterator<nested_iterator>;
 	using end_iterator = enumerate_iterator<EndIt>;
 
-	iterator begin() const& noexcept { return {r_begin, 0}; }
+	auto begin() const& noexcept -> iterator { return {r_begin, 0}; }
 
-	end_iterator end() const& noexcept { return {r_end, -std::size_t{1}}; }
+	auto end() const& noexcept -> end_iterator {
+		return {r_end, -std::size_t{1}};
+	}
 
 	It r_begin;
 	EndIt r_end;
@@ -627,7 +643,7 @@ struct enumerate_t {
  * @param r A range to iterate over.
  */
 template <typename Range>
-enumerate_t<Range&&> enumerate(Range&& r) {
+auto enumerate(Range&& r) -> enumerate_t<Range&&> {
 	return {std::forward<Range>(r)};
 }
 
@@ -637,7 +653,7 @@ enumerate_t<Range&&> enumerate(Range&& r) {
  * @param begin,end The input range.
  */
 template <typename It, typename EIt>
-enumerate_t<It, EIt> enumerate(It begin, EIt end) {
+auto enumerate(It begin, EIt end) -> enumerate_t<It, EIt> {
 	return {begin, end};
 }
 
@@ -653,7 +669,7 @@ class enumerator_iterator;
 namespace detail {
 
 	template <typename T1, typename T2>
-	decltype(auto) get_or(T1&& t1, T2&& t2) {
+	auto get_or(T1&& t1, T2&& t2) -> decltype(auto) {
 		return t1 ? *t1 : *t2;
 	}
 
@@ -661,7 +677,7 @@ namespace detail {
 	// Get a pointer which is guaranteed to be invalid to use (but not UB to
 	// merely store)
 	template <typename T>
-	T* get_magic_ptr() {
+	auto get_magic_ptr() -> T* {
 		static const char enumeration_magic_pointer = '\0';
 		return reinterpret_cast<T*>(
 		    const_cast<char*>(&enumeration_magic_pointer));
@@ -690,31 +706,31 @@ class enumeration {
 	enumeration(detail::force_copy_tag, std::size_t i) : idx(i) {}
 
  public:
-	std::size_t index() const noexcept { return idx; }
+	auto index() const noexcept -> std::size_t { return idx; }
 
-	std::remove_const_t<T>& copied() & noexcept {
+	auto copied() & noexcept -> std::remove_const_t<T>& {
 		assert(source != detail::get_magic_ptr<T>());
 		assert(local);
 		return *local;
 	}
-	const T& copied() const& noexcept {
+	auto copied() const& noexcept -> const T& {
 		assert(source != detail::get_magic_ptr<T>());
 		return detail::get_or(local, source);
 	}
 
-	T& reffed() & noexcept {
+	auto reffed() & noexcept -> T& {
 		assert(source != detail::get_magic_ptr<T>());
 		return detail::get_or(local, source);
 	}
-	const T& reffed() const& noexcept {
+	auto reffed() const& noexcept -> const T& {
 		assert(source != detail::get_magic_ptr<T>());
 		return detail::get_or(local, source);
 	}
 
  private:
-	void set(T* t) & { source = t; }
+	auto set(T* t) & -> void { source = t; }
 
-	void advance() & noexcept {
+	auto advance() & noexcept -> void {
 		++idx;
 		source = detail::get_magic_ptr<T>();
 		local = std::nullopt;
@@ -791,7 +807,7 @@ namespace kblib {
 // by get<i>(std::move(e)), so it does not call the lvalue reference function.
 // I have no idea why it's implicitly moved, but it works for my purposes.
 template <std::size_t I, typename T>
-decltype(auto) get(enumeration<T>&& e) {
+auto get(enumeration<T>&& e) -> decltype(auto) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
 		return e.index();
@@ -800,7 +816,7 @@ decltype(auto) get(enumeration<T>&& e) {
 	}
 }
 template <std::size_t I, typename T>
-decltype(auto) get(const enumeration<T>&& e) {
+auto get(const enumeration<T>&& e) -> decltype(auto) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
 		return e.index();
@@ -811,7 +827,7 @@ decltype(auto) get(const enumeration<T>&& e) {
 // When captured by reference, the volatile qualifier is added, which allows
 // std::tuple_element to detect the copying-nonconst-from-const case.
 template <std::size_t I, typename T>
-decltype(auto) get(volatile enumeration<T>& e) {
+auto get(volatile enumeration<T>& e) -> decltype(auto) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
 		return const_cast<enumeration<T>&>(e).index();
@@ -821,7 +837,7 @@ decltype(auto) get(volatile enumeration<T>& e) {
 }
 
 template <std::size_t I, typename T>
-decltype(auto) get(const volatile enumeration<T>& e) {
+auto get(const volatile enumeration<T>& e) -> decltype(auto) {
 	static_assert(I <= 1, "enumeration only has two elements");
 	if constexpr (I == 0) {
 		return const_cast<const enumeration<T>&>(e).index();
@@ -851,26 +867,26 @@ class enumerator_iterator {
 
 	~enumerator_iterator() = default;
 
-	volatile value_type& operator*() & {
+	auto operator*() & -> volatile value_type& {
 		if (not captured) {
 			curr_.set(to_pointer(it_));
 			captured = true;
 		}
 		return curr_;
 	}
-	enumerator_iterator& operator++() & {
+	auto operator++() & -> enumerator_iterator& {
 		curr_.advance();
 		captured = false;
 		++it_;
 		return *this;
 	}
 
-	friend bool operator==(const enumerator_iterator& lhs,
-	                       const enumerator_iterator& rhs) {
+	friend auto operator==(const enumerator_iterator& lhs,
+	                       const enumerator_iterator& rhs) noexcept -> bool {
 		return lhs.it_ == rhs.it_;
 	}
-	friend bool operator!=(const enumerator_iterator& lhs,
-	                       const enumerator_iterator& rhs) {
+	friend auto operator!=(const enumerator_iterator& lhs,
+	                       const enumerator_iterator& rhs) noexcept -> bool {
 		return lhs.it_ != rhs.it_;
 	}
 
@@ -900,13 +916,17 @@ class enumerator_t<Range, void> {
 	using nested_const_iterator = typename range_t::const_iterator;
 	using const_iterator = enumerator_iterator<nested_const_iterator>;
 
-	const_iterator begin() const& noexcept(noexcept(r.cbegin())) {
+	auto begin() const& noexcept(noexcept(r.cbegin())) -> const_iterator {
 		return r.cbegin();
 	}
-	iterator begin() & noexcept(noexcept(r.begin())) { return r.begin(); }
+	auto begin() & noexcept(noexcept(r.begin())) -> iterator {
+		return r.begin();
+	}
 
-	const_iterator end() const& noexcept(noexcept(r.cend())) { return r.cend(); }
-	end_iterator end() & noexcept(noexcept(r.end())) { return r.end(); }
+	auto end() const& noexcept(noexcept(r.cend())) -> const_iterator {
+		return r.cend();
+	}
+	auto end() & noexcept(noexcept(r.end())) -> end_iterator { return r.end(); }
 };
 
 template <typename It, typename EndIt>
@@ -916,9 +936,9 @@ class enumerator_t {
 	using iterator = enumerator_iterator<nested_iterator>;
 	using end_iterator = enumerator_iterator<EndIt>;
 
-	iterator begin() const& noexcept { return {r_begin}; }
+	auto begin() const& noexcept -> iterator { return {r_begin}; }
 
-	end_iterator end() const& noexcept { return {r_end}; }
+	auto end() const& noexcept -> end_iterator { return {r_end}; }
 
 	It r_begin;
 	EndIt r_end;
@@ -944,7 +964,7 @@ class enumerator_t {
  * @param begin,end The input range.
  */
 template <typename It, typename EIt>
-enumerator_t<It, EIt> magic_enumerate(It begin, EIt end) {
+auto magic_enumerate(It begin, EIt end) -> enumerator_t<It, EIt> {
 	return {begin, end};
 }
 
@@ -969,7 +989,7 @@ enumerator_t<It, EIt> magic_enumerate(It begin, EIt end) {
  * @param r A range to iterate over.
  */
 template <typename Range>
-auto magic_enumerate(Range&& r) {
+auto magic_enumerate(Range&& r) -> auto {
 	if constexpr (std::is_lvalue_reference_v<Range&&>) {
 		using std::begin;
 		using std::end;
@@ -997,6 +1017,7 @@ auto magic_enumerate(Range&& r) {
  * - Change name from value_and_index() to cry_enumerate()
  * - Silenced Clang warnings about std::tuple_element specializations with
  *   mismatched tags.
+ * - Formatting
  *
  * All credit for everything else goes to Krystian.
  *
@@ -1043,9 +1064,9 @@ namespace detail {
 		value_and_index_base(Range& range)
 		    : range_begin_(std::begin(range)), range_end_(std::end(range)) {}
 
-		iterator_type range_begin() { return range_begin_; }
+		auto range_begin() -> iterator_type { return range_begin_; }
 
-		iterator_type range_end() { return range_end_; }
+		auto range_end() -> iterator_type { return range_end_; }
 
 		iterator_type range_begin_;
 		iterator_type range_end_;
@@ -1059,9 +1080,9 @@ namespace detail {
 
 		value_and_index_base(Range& range) : range_(std::move(range)) {}
 
-		iterator_type range_begin() { return std::begin(range_); }
+		auto range_begin() -> iterator_type { return std::begin(range_); }
 
-		iterator_type range_end() { return std::end(range_); }
+		auto range_end() -> iterator_type { return std::end(range_); }
 
 		Range range_;
 	};
@@ -1082,31 +1103,31 @@ namespace detail {
 			iterator(iterator_type iter, std::size_t index = 0)
 			    : pair_{index, iter} {}
 
-			value_index_pair<iterator_type>& operator*() { return pair_; }
+			auto operator*() -> value_index_pair<iterator_type>& { return pair_; }
 
-			iterator operator++(int) {
+			auto operator++(int) -> iterator {
 				iterator copy(pair_.iter, pair_.index);
 				++pair_.iter, ++pair_.index;
 				return copy;
 			}
 
-			iterator& operator++() {
+			auto operator++() -> iterator& {
 				++pair_.iter, ++pair_.index;
 				return *this;
 			}
 
-			bool operator==(const iterator& other) const {
+			auto operator==(const iterator& other) const -> bool {
 				return other.pair_.iter == pair_.iter;
 			}
 
-			bool operator!=(const iterator& other) const {
+			auto operator!=(const iterator& other) const -> bool {
 				return not(other == *this);
 			}
 		};
 
-		iterator begin() { return begin_; }
+		auto begin() -> iterator { return begin_; }
 
-		iterator end() { return end_; }
+		auto end() -> iterator { return end_; }
 
 	 private:
 		iterator begin_;
@@ -1143,7 +1164,7 @@ struct tuple_element<1, kblib::detail::value_index_pair<T>> {
 namespace kblib {
 
 template <typename Range>
-auto cry_enumerate(Range&& range) {
+auto cry_enumerate(Range&& range) -> auto {
 	return detail::value_and_index_impl<Range>(range);
 }
 
@@ -1161,12 +1182,12 @@ struct indirect_range {
 	Iter1 begin_;
 	Iter2 end_;
 
-	constexpr Iter1 begin() const noexcept { return begin_; }
-	constexpr Iter2 end() const noexcept { return end_; }
-	constexpr auto rbegin() const noexcept {
+	constexpr auto begin() const noexcept -> Iter1 { return begin_; }
+	constexpr auto end() const noexcept -> Iter2 { return end_; }
+	constexpr auto rbegin() const noexcept -> auto {
 		return std::make_reverse_iterator(begin_);
 	}
-	constexpr auto rend() const noexcept {
+	constexpr auto rend() const noexcept -> auto {
 		return std::make_reverse_iterator(end_);
 	}
 };
@@ -1191,7 +1212,7 @@ template <typename Iter1, typename Iter2>
 indirect_range(Iter1, Iter2) -> indirect_range<Iter1, Iter2>;
 
 template <typename Iter1, typename Iter2>
-auto cry_enumerate(Iter1 begin, Iter2 end) {
+auto cry_enumerate(Iter1 begin, Iter2 end) -> auto {
 	return cry_enumerate(indirect_range{begin, end});
 }
 
@@ -1233,29 +1254,29 @@ struct containing_ptr {
 	/**
 	 * @brief Returns the contained object.
 	 */
-	constexpr T& operator*() noexcept { return val; }
+	constexpr auto operator*() noexcept -> T& { return val; }
 	/**
 	 * @brief Returns the contained object.
 	 */
-	constexpr const T& operator*() const noexcept { return val; }
+	constexpr auto operator*() const noexcept -> const T& { return val; }
 
 	/**
 	 * @brief Return the address of the contained object.
 	 */
-	constexpr T* operator->() noexcept { return &val; }
+	constexpr auto operator->() noexcept -> T* { return &val; }
 	/**
 	 * @brief Return the address of the contained object.
 	 */
-	constexpr const T* operator->() const noexcept { return &val; }
+	constexpr auto operator->() const noexcept -> const T* { return &val; }
 
 	/**
 	 * @brief Returns the address of the contained object.
 	 */
-	constexpr T* get() noexcept { return &val; }
+	constexpr auto get() noexcept -> T* { return &val; }
 	/**
 	 * @brief Returns the address of the contained object.
 	 */
-	constexpr const T* get() const noexcept { return &val; }
+	constexpr auto get() const noexcept -> const T* { return &val; }
 
 	T val;
 };
@@ -1309,7 +1330,8 @@ class transform_iterator {
 	 *
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
-	decltype(auto) operator*() noexcept(noexcept(kblib::invoke(*op, *it))) {
+	auto operator*() noexcept(noexcept(kblib::invoke(*op, *it)))
+	    -> decltype(auto) {
 		return kblib::invoke(*op, *it);
 	}
 	/**
@@ -1326,21 +1348,21 @@ class transform_iterator {
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator->() noexcept(noexcept(kblib::invoke(*op, *it))) {
+	auto operator->() noexcept(noexcept(kblib::invoke(*op, *it))) -> auto {
 		return containing_ptr<result_type>{{kblib::invoke(*op, *it)}};
 	}
 	/**
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator->() const noexcept(noexcept(kblib::invoke(*op, *it))) {
+	auto operator->() const noexcept(noexcept(kblib::invoke(*op, *it))) -> auto {
 		return containing_ptr<const_result_type>{{kblib::invoke(*op, *it)}};
 	}
 
 	/**
 	 * @brief Increments the underlying iterator and returns *this.
 	 */
-	transform_iterator& operator++() noexcept(noexcept(++it)) {
+	auto operator++() noexcept(noexcept(++it)) -> transform_iterator& {
 		++it;
 		return *this;
 	}
@@ -1349,55 +1371,49 @@ class transform_iterator {
 	 * @brief Increments the underlying iterator and returns a copy of the
 	 * current value.
 	 */
-	[[deprecated(
-	    "Needlessly copies op. Use preincrement instead.")]] transform_iterator
-	operator++(int) noexcept(noexcept(transform_iterator{it++, op})) {
+	[[deprecated("Needlessly copies op. Use preincrement instead.")]] auto
+	operator++(int) noexcept(noexcept(transform_iterator{it++, op}))
+	    -> transform_iterator {
 		return {it++, op};
 	}
 
-	base_iterator base() const noexcept { return it; }
+	auto base() const noexcept -> base_iterator { return it; }
 
 	/**
 	 * @brief Compares the base iterators of lhs and rhs.
 	 */
-	friend bool operator==(
-	    const transform_iterator<base_iterator, operation>& lhs,
-	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
+	friend auto operator==(const transform_iterator& lhs,
+	                       const transform_iterator& rhs) noexcept -> bool {
 		return lhs.it == rhs.it;
 	}
 
 	/**
 	 * @brief Compares the base iterators of lhs and rhs.
 	 */
-	friend bool operator!=(
-	    const transform_iterator<base_iterator, operation>& lhs,
-	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
+	friend auto operator!=(const transform_iterator& lhs,
+	                       const transform_iterator& rhs) noexcept -> bool {
 		return lhs.it != rhs.it;
 	}
 
 	template <typename OIt>
-	friend bool
-	operator==(const transform_iterator<base_iterator, operation>& lhs,
-	           const OIt& rhs) noexcept {
+	friend auto operator==(const transform_iterator& lhs,
+	                       const OIt& rhs) noexcept -> bool {
 		return lhs.base() == rhs;
 	}
 	template <typename OIt>
-	friend bool operator==(
-	    const OIt& lhs,
-	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
+	friend auto operator==(const OIt& lhs,
+	                       const transform_iterator& rhs) noexcept -> bool {
 		return lhs == rhs.base();
 	}
 
 	template <typename OIt>
-	friend bool
-	operator!=(const transform_iterator<base_iterator, operation>& lhs,
-	           const OIt& rhs) noexcept {
+	friend auto operator!=(const transform_iterator& lhs,
+	                       const OIt& rhs) noexcept -> bool {
 		return lhs.base() != rhs;
 	}
 	template <typename OIt>
-	friend bool operator!=(
-	    const OIt& lhs,
-	    const transform_iterator<base_iterator, operation>& rhs) noexcept {
+	friend auto operator!=(const OIt& lhs,
+	                       const transform_iterator& rhs) noexcept -> bool {
 		return lhs != rhs.base();
 	}
 };
@@ -1415,10 +1431,10 @@ transform_iterator(It, operation) -> transform_iterator<It, operation>;
  * @deprecated Use transformer instead
  */
 template <typename base_iterator, typename operation>
-[[deprecated(
-    "use transformer instead")]] transform_iterator<base_iterator, operation>
+[[deprecated("use transformer instead")]] auto
 make_transform_iterator(base_iterator it, operation op) noexcept(
-    noexcept(transform_iterator<base_iterator, operation>{it, std::move(op)})) {
+    noexcept(transform_iterator<base_iterator, operation>{it, std::move(op)}))
+    -> transform_iterator<base_iterator, operation> {
 	return {it, std::move(op)};
 }
 
@@ -1430,15 +1446,15 @@ make_transform_iterator(base_iterator it, operation op) noexcept(
  * @return transform_iterator<base_iterator, operation>
  */
 template <typename base_iterator, typename operation>
-transform_iterator<base_iterator, operation>
-transformer(base_iterator it, operation op) noexcept(
-    noexcept(transform_iterator<base_iterator, operation>{it, std::move(op)})) {
+auto transformer(base_iterator it, operation op) noexcept(
+    noexcept(transform_iterator<base_iterator, operation>{it, std::move(op)}))
+    -> transform_iterator<base_iterator, operation> {
 	return {it, std::move(op)};
 }
 
 template <typename It, typename EndIt, typename operation>
 auto transform_range(It begin, EndIt end, operation op) noexcept(
-    noexcept(indirect(transform_iterator{begin, op}, end))) {
+    noexcept(indirect(transform_iterator{begin, op}, end))) -> auto {
 	return indirect(transform_iterator{begin, op}, end);
 }
 #endif
@@ -1475,7 +1491,7 @@ class back_insert_iterator_F {
 	 * @param value The value to transform and insert.
 	 * @return back_insert_iterator& *this.
 	 */
-	back_insert_iterator_F& operator=(V&& value) {
+	auto operator=(V&& value) -> back_insert_iterator_F& {
 		container.push_back(invoke(fun, std::forward<V>(value)));
 		return *this;
 	}
@@ -1483,11 +1499,11 @@ class back_insert_iterator_F {
 	/**
 	 * @brief A no-op.
 	 */
-	back_insert_iterator_F& operator*() { return *this; }
+	auto operator*() -> back_insert_iterator_F& { return *this; }
 	/**
 	 * @brief A no-op.
 	 */
-	back_insert_iterator_F& operator++() { return *this; }
+	auto operator++() -> back_insert_iterator_F& { return *this; }
 
  private:
 	Container& container;
@@ -1524,8 +1540,8 @@ class consume_iterator {
 	 * @return consume_iterator& *this.
 	 */
 	template <typename V>
-	consume_iterator& operator=(V&& value) noexcept(
-	    noexcept(kblib::invoke(fun, std::forward<V>(value)))) {
+	auto operator=(V&& value) noexcept(noexcept(
+	    kblib::invoke(fun, std::forward<V>(value)))) -> consume_iterator& {
 		kblib::invoke(fun, std::forward<V>(value));
 		return *this;
 	}
@@ -1533,11 +1549,11 @@ class consume_iterator {
 	/**
 	 * @brief A no-op.
 	 */
-	consume_iterator& operator*() { return *this; }
+	auto operator*() -> consume_iterator& { return *this; }
 	/**
 	 * @brief A no-op.
 	 */
-	consume_iterator& operator++() { return *this; }
+	auto operator++() -> consume_iterator& { return *this; }
 };
 
 /**
@@ -1550,7 +1566,7 @@ class consume_iterator {
  * @return consume_iterator<F>
  */
 template <typename F>
-consume_iterator<F> consumer(F f) {
+auto consumer(F f) -> consume_iterator<F> {
 	return consume_iterator<F>{std::move(f)};
 }
 

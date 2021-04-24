@@ -68,8 +68,8 @@ namespace detail {
 	 * elements of arr.
 	 */
 	template <typename T, int N, int... I>
-	constexpr auto trim_array(const T (&arr)[N],
-	                          std::integer_sequence<int, I...>)
+	KBLIB_NODISCARD constexpr auto trim_array(const T (&arr)[N],
+	                                          std::integer_sequence<int, I...>)
 	    -> std::array<T, std::integer_sequence<int, I...>::size()> {
 		return {arr[I]...};
 	}
@@ -84,7 +84,8 @@ namespace detail {
  */
 template <int trim, typename T, int N,
           typename Indices = std::make_integer_sequence<int, N - trim>>
-constexpr std::array<T, N - trim> trim_array(const T (&arr)[N]) {
+KBLIB_NODISCARD constexpr auto trim_array(const T (&arr)[N])
+    -> std::array<T, N - trim> {
 	return detail::trim_array(arr, Indices{});
 }
 
@@ -97,7 +98,8 @@ constexpr std::array<T, N - trim> trim_array(const T (&arr)[N]) {
  * the string literal.
  */
 template <int N, typename Indices = std::make_integer_sequence<int, N - 1>>
-constexpr std::array<char, N - 1> remove_null_terminator(const char (&arr)[N]) {
+KBLIB_NODISCARD constexpr auto remove_null_terminator(const char (&arr)[N])
+    -> std::array<char, N - 1> {
 	return detail::trim_array(arr, Indices{});
 }
 
@@ -143,7 +145,7 @@ using ignore_t = typename ignore<U, T>::type;
  * @return T The reinterpreted value.
  */
 template <typename T, typename F>
-T byte_cast(F v) {
+KBLIB_NODISCARD auto byte_cast(F v) noexcept -> T {
 	static_assert(
 	    sizeof(T) == sizeof(F),
 	    "Source and destination types for byte_cast must be the same size.");
@@ -202,7 +204,7 @@ namespace detail {
  */
 template <typename C,
           typename std::enable_if<detail::has_reserve_v<C>, int>::type = 0>
-void try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) {
+auto try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) -> void {
 	c.reserve(s);
 	return;
 }
@@ -215,7 +217,7 @@ void try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) {
  */
 template <typename C,
           typename std::enable_if<not detail::has_reserve_v<C>, int>::type = 0>
-void try_reserve(C&, std::size_t) noexcept {
+auto try_reserve(C&, std::size_t) noexcept -> void {
 	return;
 }
 
@@ -299,7 +301,7 @@ struct exists : std::true_type {};
 template <typename Range>
 struct iterator_type_for {
  private:
-	static decltype(auto) begin(Range& c) {
+	static auto begin(Range& c) -> decltype(auto) {
 		using std::begin;
 		return begin(c);
 	}

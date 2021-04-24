@@ -4,7 +4,7 @@
 template <class... Args>
 struct Ref {
 
-	auto operator->() {
+	auto operator->() -> auto {
 		return kblib::meta_type_t<Args...>{};
 	} // present only if sizeof...(Args) == 1
 };
@@ -15,7 +15,7 @@ struct Ref {
 static Ref<int> r;
 KBLIB_UNUSED static Ref<int, int> r2;
 
-KBLIB_UNUSED static void blah() {
+KBLIB_UNUSED static auto blah() -> void {
 	r.operator->();
 	// r2.operator->();
 	std::tuple<int, int> a{0, 0}, b{0, 1};
@@ -55,7 +55,7 @@ TEST_CASE("signed_cast") {
 
 #if KBLIB_USE_CXX17
 template <class T>
-constexpr std::string_view type_name_f() {
+KBLIB_UNUSED constexpr auto type_name_f() -> std::string_view {
 	using namespace std;
 #ifdef __clang__
 	string_view p = __PRETTY_FUNCTION__;

@@ -31,7 +31,8 @@ SOURCES += \
     direct_map.cpp \
     hash.cpp \
     sort.cpp \
-    random.cpp
+    random.cpp \
+    poly_obj.cpp
 
 HEADERS += \
     kblib/bits.h \
@@ -60,7 +61,8 @@ HEADERS += \
     kblib/direct_map.h \
     kblib/hash.h \
     kblib/sort.h \
-    kblib/random.h
+    kblib/random.h \
+    kblib/poly_obj.h
 
 QMAKE_CXXFLAGS += -std=c++17
 QMAKE_CXXFLAGS += -march=native

@@ -19,7 +19,7 @@ namespace kblib {
 
 template <typename D = std::string,
           typename std::enable_if_t<is_contiguous_v<D>, int> = 0>
-auto get_contents(std::istream& in, D& out) {
+auto get_contents(std::istream& in, D& out) -> auto {
 	in.seekg(0, std::ios::end);
 	auto size = in.tellg();
 	out.resize(size);
@@ -30,7 +30,7 @@ auto get_contents(std::istream& in, D& out) {
 
 template <typename D = std::string,
           typename std::enable_if_t<not is_contiguous_v<D>, int> = 0>
-auto get_contents(std::istream& in, D& out) {
+auto get_contents(std::istream& in, D& out) -> auto {
 	in.seekg(0, std::ios::end);
 	auto size = in.tellg();
 	out.resize(size);
@@ -52,7 +52,7 @@ auto get_contents(std::istream& in, D& out) {
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
 template <typename D = std::string, typename string>
-std::optional<D> get_file_contents(const string& filename) {
+auto get_file_contents(const string& filename) -> std::optional<D> {
 	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
@@ -78,7 +78,7 @@ std::optional<D> get_file_contents(const string& filename) {
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
 template <typename D = std::string, typename string>
-D try_get_file_contents(const string& filename) {
+auto try_get_file_contents(const string& filename) -> D {
 	static_assert(std::is_trivially_copyable<typename D::value_type>::value,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
@@ -101,7 +101,7 @@ D try_get_file_contents(const string& filename) {
  * @param is The stream to extract from.
  * @return std::string A single line of text from the stream.
  */
-inline std::string getline(std::istream& is) {
+inline auto getline(std::istream& is) -> std::string {
 	std::string ret;
 	std::getline(is, ret);
 	return ret;
@@ -113,7 +113,7 @@ inline std::string getline(std::istream& is) {
  * @param is
  * @return std::istream
  */
-inline std::istream& eat_word(std::istream& is) {
+inline auto eat_word(std::istream& is) -> std::istream& {
 	do {
 		is.get();
 	} while (is and not std::isspace(is.peek()));
@@ -217,7 +217,7 @@ constexpr static bool unicode_widen_v = unicode_widen<T, U>::value;
  * whitespace.
  */
 template <typename CharT>
-auto unformatted_expect(CharT c) {
+auto unformatted_expect(CharT c) -> auto {
 	auto _f = [c](auto& istream) -> decltype(istream) {
 		using SCharT = typename std::decay<decltype(istream)>::type::char_type;
 #if KBLIB_USE_CHAR8_t
@@ -267,7 +267,7 @@ auto unformatted_expect(CharT c) {
  * FormattedInputOperation, that is, leading whitespace is ignored.
  */
 template <typename CharT>
-auto expect(CharT c) {
+auto expect(CharT c) -> auto {
 	auto _f = [c](auto& istream) -> decltype(istream) {
 		return istream >> std::ws >> unformatted_expect(c);
 	};
@@ -286,7 +286,7 @@ auto expect(CharT c) {
  */
 template <typename CharT, typename... O,
           template <typename, typename...> class string>
-inline auto get_line(string<CharT, O...>& str) {
+inline auto get_line(string<CharT, O...>& str) -> auto {
 	auto _f = [&](auto& istream) -> decltype(istream) {
 		std::getline(istream, str);
 		return istream;
@@ -307,7 +307,7 @@ inline auto get_line(string<CharT, O...>& str) {
  */
 template <typename CharT, typename... O,
           template <typename, typename...> class string>
-inline auto get_line(string<CharT, O...>& str, CharT delim) {
+inline auto get_line(string<CharT, O...>& str, CharT delim) -> auto {
 	auto _f = [&, delim](auto& istream) -> decltype(istream) {
 		std::getline(istream, str, delim);
 		return istream;
@@ -362,7 +362,7 @@ namespace detail {
 		}
 
 	 private:
-		bool flush() {
+		auto flush() -> bool {
 			std::streamsize count = this->pptr() - this->pbase();
 			auto a_ct = a->sputn(this->pbase(), count);
 			auto b_ct = b->sputn(this->pbase(), count);
@@ -378,28 +378,30 @@ namespace detail {
 			}
 		}
 
-		int_type bool_to_failure(bool b) const noexcept {
+		auto bool_to_failure(bool b) const noexcept -> int_type {
 			return b ? traits_type::to_int_type(char_type{}) : traits_type::eof();
 		}
 
-		void fail() noexcept {
+		auto fail() noexcept -> void {
 			this->setp(buffer.data(), buffer.data() + buffer.size() - 1);
 			this->pbump(buffer.size() - 1);
 			return;
 		}
 
 	 protected:
-		void imbue(const std::locale& loc) override {
+		auto imbue(const std::locale& loc) -> void override {
 			a->pubimbue(loc);
 			b->pubimbue(loc);
 			return;
 		}
 
-		int sync() override { return a->pubsync() | b->pubsync(); }
+		auto sync() -> int override { return a->pubsync() | b->pubsync(); }
 
-		int_type uflow() override { return traits_type::eof(); }
+		auto uflow() -> int_type override { return traits_type::eof(); }
 
-		std::streamsize xsgetn(char_type*, std::streamsize) override { return 0; }
+		auto xsgetn(char_type*, std::streamsize) -> std::streamsize override {
+			return 0;
+		}
 
 		std::streamsize xsputn(const char_type* s,
 		                       std::streamsize count) override {
@@ -417,7 +419,7 @@ namespace detail {
 			}
 		}
 
-		int_type overflow(int_type ch) override {
+		auto overflow(int_type ch) -> int_type override {
 			if (not traits_type::eq_int_type(ch, traits_type::eof())) {
 				traits_type::assign(*this->pptr(), traits_type::to_char_type(ch));
 				this->pbump(1);
@@ -459,12 +461,12 @@ class basic_teestream
 	basic_teestream(StreamA& a, StreamB& b)
 	    : ostream_type(&buf), buf(a.rdbuf(), b.rdbuf()) {}
 
-	buf_type* rdbuf() const { return &buf; }
+	auto rdbuf() const -> buf_type* { return &buf; }
 };
 
 #if KBLIB_USE_CXX17
 template <typename StreamA, typename StreamB>
-basic_teestream<StreamA, StreamB> tee(StreamA& a, StreamB& b) {
+auto tee(StreamA& a, StreamB& b) -> basic_teestream<StreamA, StreamB> {
 	return basic_teestream<StreamA, StreamB>(a, b);
 }
 #endif

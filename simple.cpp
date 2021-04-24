@@ -135,3 +135,14 @@ TEST_CASE("enumerate") {
 		}
 	}
 }
+
+TEST_CASE("safe_auto") {
+	{
+		KBLIB_UNUSED decltype(auto) dangling = kblib::min(1, 2);
+		static_assert(std::is_same<decltype(dangling), int&&>::value, "");
+	}
+	{
+		KBLIB_UNUSED decltype(auto) safe = kblib::safe_auto(kblib::min(1, 2));
+		static_assert(std::is_same<decltype(safe), int>::value, "");
+	}
+}

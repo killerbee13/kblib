@@ -18,7 +18,7 @@ namespace kblib {
 namespace detail {
 
 	template <typename T>
-	constexpr std::uintmax_t
+	constexpr auto
 	    range_of = static_cast<std::uintmax_t>(std::numeric_limits<T>::max()) -
 	               std::numeric_limits<T>::min() + 1;
 	static_assert(range_of<unsigned char> == 1u << to_unsigned(CHAR_BIT), "");
@@ -30,30 +30,30 @@ namespace detail {
 		template <
 		    typename... Args,
 		    enable_if_t<std::is_constructible<T, Args&&...>::value, int> = 0>
-		constexpr T& construct(Args&&... args) noexcept(
-		    std::is_nothrow_constructible<T, Args&&...>::value) {
+		constexpr auto construct(Args&&... args) noexcept(
+		    std::is_nothrow_constructible<T, Args&&...>::value) -> T& {
 			return *new (this->data()) T(std::forward<Args>(args)...);
 		}
 		storage_for() = default;
 		storage_for(const storage_for&) = delete;
 		storage_for(storage_for&&) = delete;
 
-		storage_for& operator=(const storage_for&) = delete;
-		storage_for& operator=(storage_for&&) = delete;
+		auto operator=(const storage_for&) -> storage_for& = delete;
+		auto operator=(storage_for &&) -> storage_for& = delete;
 
 		~storage_for() = default;
 
-		constexpr void destroy() noexcept { get()->~T(); }
+		constexpr auto destroy() noexcept -> void { get()->~T(); }
 
 #if KBLIB_USE_CXX17
 #define LAUNDER(x) std::launder(x)
 #else
 #define LAUNDER(x) (x)
 #endif
-		KBLIB_NODISCARD constexpr T* get() & noexcept {
+		KBLIB_NODISCARD constexpr auto get() & noexcept -> T* {
 			return LAUNDER(reinterpret_cast<T*>(this->data()));
 		}
-		KBLIB_NODISCARD constexpr const T* get() const& noexcept {
+		KBLIB_NODISCARD constexpr auto get() const& noexcept -> const T* {
 			return LAUNDER(reinterpret_cast<const T*>(this->data()));
 		}
 #undef LAUNDER
@@ -67,15 +67,17 @@ namespace detail {
 		template <
 		    typename... Args,
 		    enable_if_t<std::is_constructible<T, Args&&...>::value, int> = 0>
-		constexpr T& construct(Args&&... args) noexcept(
-		    std::is_nothrow_constructible<T, Args&&...>::value) {
+		constexpr auto construct(Args&&... args) noexcept(
+		    std::is_nothrow_constructible<T, Args&&...>::value) -> T& {
 			return *new (&t) T(std::forward<Args>(args)...);
 		}
 
-		constexpr void destroy() noexcept {}
+		constexpr auto destroy() noexcept -> void {}
 
-		KBLIB_NODISCARD constexpr T* get() & noexcept { return &t; }
-		KBLIB_NODISCARD constexpr const T* get() const& noexcept { return &t; }
+		KBLIB_NODISCARD constexpr auto get() & noexcept -> T* { return &t; }
+		KBLIB_NODISCARD constexpr auto get() const& noexcept -> const T* {
+			return &t;
+		}
 	};
 
 } // namespace detail
@@ -114,14 +116,14 @@ class direct_map {
 		using pointer = copy_const_t<V, value_type>*;
 		using iterator_category = std::bidirectional_iterator_tag;
 
-		KBLIB_NODISCARD constexpr reference operator*() const {
+		KBLIB_NODISCARD constexpr auto operator*() const noexcept -> reference {
 			return *storage->second[pos].get();
 		}
-		KBLIB_NODISCARD constexpr pointer operator->() const {
+		KBLIB_NODISCARD constexpr auto operator->() const noexcept -> pointer {
 			return storage->second[pos].get();
 		}
 
-		constexpr iter& operator++() {
+		constexpr auto operator++() noexcept -> iter& {
 			if (pos == key_range) {
 				// not required in general, but direct_map::iterator guarantees that
 				// ++end() == end() because it simplifies the implementation and is
@@ -137,13 +139,13 @@ class direct_map {
 			pos = key_range;
 			return *this;
 		}
-		constexpr iter operator++(int) {
+		constexpr auto operator++(int) noexcept -> iter {
 			iter it = *this;
 			++*this;
 			return it;
 		}
 
-		constexpr iter& operator--() {
+		constexpr auto operator--() noexcept -> iter& {
 			for (auto i : range(pos - 1, std::ptrdiff_t(-1))) {
 				if (storage->first.test(i)) {
 					pos = i;
@@ -153,22 +155,25 @@ class direct_map {
 			// going past the beginning is UB
 			__builtin_unreachable();
 		}
-		constexpr iter operator--(int) {
+		constexpr auto operator--(int) noexcept -> iter {
 			iter it = *this;
 			--*this;
 			return it;
 		}
 
-		KBLIB_NODISCARD friend constexpr bool operator==(iter l, iter r) {
+		KBLIB_NODISCARD friend constexpr auto operator==(iter l, iter r) noexcept
+		    -> bool {
 			return l.storage == r.storage and l.pos == r.pos;
 		}
-		KBLIB_NODISCARD friend constexpr bool operator!=(iter l, iter r) {
+		KBLIB_NODISCARD friend constexpr auto operator!=(iter l, iter r) noexcept
+		    -> bool {
 			return not(l == r);
 		}
-#define DECL_OP(op)                                                    \
-	KBLIB_NODISCARD friend constexpr bool operator op(iter l, iter r) { \
-		assert(l.storage == r.storage);                                  \
-		return l.pos op r.pos;                                           \
+#define DECL_OP(op)                                                           \
+	KBLIB_NODISCARD friend constexpr auto operator op(iter l,                  \
+	                                                  iter r) noexcept->bool { \
+		assert(l.storage == r.storage);                                         \
+		return l.pos op r.pos;                                                  \
 	}
 		DECL_OP(<)
 		DECL_OP(>)
@@ -176,7 +181,7 @@ class direct_map {
 		DECL_OP(<=)
 #undef DECL_OP
 
-		constexpr void swap(iter& other) noexcept {
+		constexpr auto swap(iter& other) noexcept -> void {
 			kblib::swap(storage, other.storage);
 			kblib::swap(pos, other.pos);
 		}
@@ -219,7 +224,7 @@ class direct_map {
 	 */
 	KBLIB_CXX20(constexpr) ~direct_map() { clear(); }
 
-	constexpr direct_map& operator=(const direct_map& other) {
+	constexpr auto operator=(const direct_map& other) -> direct_map& {
 		if (this == &other) {
 			return *this;
 		}
@@ -234,8 +239,10 @@ class direct_map {
 		}
 		return *this;
 	}
-	constexpr direct_map& operator=(direct_map&& other) noexcept = default;
-	constexpr direct_map& operator=(std::initializer_list<value_type> init) {
+	constexpr auto operator=(direct_map&& other) noexcept
+	    -> direct_map& = default;
+	constexpr auto operator=(std::initializer_list<value_type> init)
+	    -> direct_map& {
 		clear();
 		for (auto it : init) {
 			construct(it->first, it->second);
@@ -243,28 +250,28 @@ class direct_map {
 		return *this;
 	}
 
-	KBLIB_NODISCARD constexpr T& at(Key key) & {
+	KBLIB_NODISCARD constexpr auto at(Key key) & -> T& {
 		if (contains(key)) {
 			return unsafe_at(key).get()->second;
 		} else {
 			throw std::out_of_range("direct_map: key out of range");
 		}
 	}
-	KBLIB_NODISCARD constexpr T&& at(Key key) && {
+	KBLIB_NODISCARD constexpr auto at(Key key) && -> T&& {
 		if (contains(key)) {
 			return std::move(unsafe_at(key).get()->second);
 		} else {
 			throw std::out_of_range("direct_map: key out of range");
 		}
 	}
-	KBLIB_NODISCARD constexpr const T& at(Key key) const& {
+	KBLIB_NODISCARD constexpr auto at(Key key) const& -> const T& {
 		if (contains(key)) {
 			return unsafe_at(key).get()->second;
 		} else {
 			throw std::out_of_range("direct_map: key out of range");
 		}
 	}
-	KBLIB_NODISCARD constexpr const T&& at(Key key) const&& {
+	KBLIB_NODISCARD constexpr auto at(Key key) const&& -> const T&& {
 		if (contains(key)) {
 			return std::move(unsafe_at(key).get()->second);
 		} else {
@@ -277,13 +284,13 @@ class direct_map {
 		return try_emplace(key).first->second;
 	}
 
-	KBLIB_NODISCARD constexpr iterator begin() & noexcept {
+	KBLIB_NODISCARD constexpr auto begin() & noexcept -> iterator {
 		return {storage.get(), cbegin().pos};
 	}
-	KBLIB_NODISCARD constexpr const_iterator begin() const& noexcept {
+	KBLIB_NODISCARD constexpr auto begin() const& noexcept -> const_iterator {
 		return {storage.get(), cbegin().pos};
 	}
-	KBLIB_NODISCARD constexpr const_iterator cbegin() const& noexcept {
+	KBLIB_NODISCARD constexpr auto cbegin() const& noexcept -> const_iterator {
 		if (not empty()) {
 			if (contains(to_key(0))) {
 				return {storage.get(), 0};
@@ -295,50 +302,52 @@ class direct_map {
 		}
 	}
 
-	KBLIB_NODISCARD constexpr iterator end() & noexcept {
+	KBLIB_NODISCARD constexpr auto end() & noexcept -> iterator {
 		return {storage.get(), key_range};
 	}
-	KBLIB_NODISCARD constexpr const_iterator end() const& noexcept {
+	KBLIB_NODISCARD constexpr auto end() const& noexcept -> const_iterator {
 		return {storage.get(), key_range};
 	}
-	KBLIB_NODISCARD constexpr const_iterator cend() const& noexcept {
+	KBLIB_NODISCARD constexpr auto cend() const& noexcept -> const_iterator {
 		return {storage.get(), key_range};
 	}
 
-	KBLIB_NODISCARD constexpr iterator rbegin() & noexcept {
+	KBLIB_NODISCARD constexpr auto rbegin() & noexcept -> auto {
 		return std::make_reverse_iterator(end());
 	}
-	KBLIB_NODISCARD constexpr const_iterator rbegin() const& noexcept {
+	KBLIB_NODISCARD constexpr auto rbegin() const& noexcept -> auto {
 		return std::make_reverse_iterator(end());
 	}
-	KBLIB_NODISCARD constexpr const_iterator crbegin() const& noexcept {
-		return std::make_reverse_iterator(crend());
+	KBLIB_NODISCARD constexpr auto crbegin() const& noexcept -> auto {
+		return std::make_reverse_iterator(cend());
 	}
 
-	KBLIB_NODISCARD constexpr iterator rend() & noexcept {
+	KBLIB_NODISCARD constexpr auto rend() & noexcept -> auto {
 		return std::make_reverse_iterator(begin());
 	}
-	KBLIB_NODISCARD constexpr const_iterator rend() const& noexcept {
+	KBLIB_NODISCARD constexpr auto rend() const& noexcept -> auto {
 		return std::make_reverse_iterator(begin());
 	}
-	KBLIB_NODISCARD constexpr const_iterator crend() const& noexcept {
+	KBLIB_NODISCARD constexpr auto crend() const& noexcept -> auto {
 		return std::make_reverse_iterator(cbegin());
 	}
 
-	KBLIB_NODISCARD constexpr bool empty() const& noexcept { return _size == 0; }
-
-	KBLIB_NODISCARD constexpr std::size_t size() const& noexcept {
-		return _size;
-	}
-	KBLIB_NODISCARD constexpr std::ptrdiff_t ssize() const& noexcept {
-		return _size;
+	KBLIB_NODISCARD constexpr auto empty() const& noexcept -> bool {
+		return _size == 0;
 	}
 
-	KBLIB_NODISCARD constexpr static std::size_t max_size() noexcept {
+	KBLIB_NODISCARD constexpr auto size() const& noexcept -> std::size_t {
+		return _size;
+	}
+	KBLIB_NODISCARD constexpr auto ssize() const& noexcept -> std::ptrdiff_t {
+		return _size;
+	}
+
+	KBLIB_NODISCARD constexpr static auto max_size() noexcept -> std::size_t {
 		return key_range;
 	}
 
-	constexpr void clear() noexcept {
+	constexpr auto clear() noexcept -> void {
 		for (auto i : range(+min(), max() + 1)) {
 			if (contains(i)) {
 				unsafe_at(i).destroy();
@@ -348,7 +357,7 @@ class direct_map {
 		_size = 0;
 	}
 
-	constexpr std::pair<iterator, bool> insert(const value_type& value) {
+	constexpr auto insert(const value_type& value) -> std::pair<iterator, bool> {
 		if (not contains(value.first)) {
 			construct(value.first, value.second);
 			return {{storage.get(), index(value.first)}, true};
@@ -357,9 +366,9 @@ class direct_map {
 		}
 	}
 	template <typename U>
-	constexpr return_assert_t<std::is_constructible<value_type, U&&>::value,
-	                          std::pair<iterator, bool>>
-	insert(U&& value) {
+	constexpr auto insert(U&& value)
+	    -> enable_if_t<std::is_constructible<value_type, U&&>::value,
+	                   std::pair<iterator, bool>> {
 		if (not contains(value.first)) {
 			construct(value.first, std::forward<U>(value.second));
 			return {{storage.get(), index(value.first)}, true};
@@ -367,7 +376,7 @@ class direct_map {
 			return {{storage.get(), index(value.first)}, false};
 		}
 	}
-	constexpr std::pair<iterator, bool> insert(value_type&& value) {
+	constexpr auto insert(value_type&& value) -> std::pair<iterator, bool> {
 		if (not contains(value.first)) {
 			construct(value.first, std::move(value.second));
 			return {{storage.get(), index(value.first)}, true};
@@ -377,7 +386,8 @@ class direct_map {
 	}
 
 	template <typename U>
-	constexpr std::pair<iterator, bool> insert_or_assign(Key key, U&& value) {
+	constexpr auto insert_or_assign(Key key, U&& value)
+	    -> std::pair<iterator, bool> {
 		if (not contains(key)) {
 			construct(key, std::forward<U>(value));
 			return {{storage.get(), index(key)}, true};
@@ -387,7 +397,8 @@ class direct_map {
 		}
 	}
 	template <typename... Args>
-	constexpr std::pair<iterator, bool> try_emplace(Key key, Args&&... args) {
+	constexpr auto try_emplace(Key key, Args&&... args)
+	    -> std::pair<iterator, bool> {
 		if (not contains(key)) {
 			construct(key, std::forward<Args>(args)...);
 			return {{storage.get(), index(key)}, true};
@@ -396,20 +407,20 @@ class direct_map {
 		}
 	}
 
-	constexpr iterator erase(iterator pos) noexcept {
+	constexpr auto erase(iterator pos) noexcept -> iterator {
 		bitmap().reset(pos.pos);
 		unsafe_at(to_key(pos.pos)).destroy();
 		--_size;
 		return ++pos;
 	}
-	constexpr iterator erase(const_iterator pos) noexcept {
+	constexpr auto erase(const_iterator pos) noexcept -> iterator {
 		bitmap().reset(pos.pos);
 		unsafe_at(to_key(pos.pos)).destroy();
 		--_size;
 		return ++pos;
 	}
 
-	constexpr iterator erase(iterator first, iterator last) noexcept {
+	constexpr auto erase(iterator first, iterator last) noexcept -> iterator {
 		for (auto i : range(first.pos, last.pos)) {
 			if (contains(to_key(i))) {
 				bitmap().reset(i);
@@ -420,7 +431,7 @@ class direct_map {
 		return ++last;
 	}
 
-	constexpr std::size_t erase(Key key) noexcept {
+	constexpr auto erase(Key key) noexcept -> std::size_t {
 		if (contains(key)) {
 			bitmap().reset(index(key));
 			unsafe_at(key).destroy();
@@ -431,46 +442,47 @@ class direct_map {
 		}
 	}
 
-	constexpr void swap(direct_map& other) noexcept {
+	constexpr auto swap(direct_map& other) noexcept -> void {
 		using std::swap;
 		swap(storage, other.storage);
 		swap(_size, other._size);
 	}
 
-	KBLIB_NODISCARD constexpr bool contains(Key key) const noexcept {
+	KBLIB_NODISCARD constexpr auto contains(Key key) const noexcept -> bool {
 		return storage and bitmap().test(index(key));
 	}
-	KBLIB_NODISCARD constexpr std::size_t count(Key key) const noexcept {
+	KBLIB_NODISCARD constexpr auto count(Key key) const noexcept -> std::size_t {
 		return contains(key);
 	}
 
-	KBLIB_NODISCARD constexpr iterator find(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto find(Key key) & noexcept -> iterator {
 		return contains(key) ? iterator{storage.get(), index(key)}
 		                     : iterator{storage.get(), key_range};
 	}
-	KBLIB_NODISCARD constexpr const_iterator find(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto find(Key key) const& noexcept
+	    -> const_iterator {
 		return contains(key) ? iterator{storage.get(), index(key)}
 		                     : iterator{storage.get(), key_range};
 	}
 
-	KBLIB_NODISCARD constexpr std::pair<iterator, iterator>
-	equal_range(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto equal_range(Key key) & noexcept
+	    -> std::pair<iterator, iterator> {
 		return {lower_bound(key), upper_bound(key)};
 	}
-	KBLIB_NODISCARD constexpr std::pair<const_iterator, const_iterator>
-	equal_range(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto equal_range(Key key) const& noexcept
+	    -> std::pair<const_iterator, const_iterator> {
 		return {lower_bound(key), upper_bound(key)};
 	}
 
-	KBLIB_NODISCARD constexpr iterator lower_bound(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto lower_bound(Key key) & noexcept -> iterator {
 		if (contains(key)) {
 			return find(key);
 		} else {
 			return ++iterator{storage.get(), index(key)};
 		}
 	}
-	KBLIB_NODISCARD constexpr const_iterator
-	lower_bound(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto lower_bound(Key key) const& noexcept
+	    -> const_iterator {
 		if (contains(key)) {
 			return find(key);
 		} else {
@@ -478,7 +490,7 @@ class direct_map {
 		}
 	}
 
-	KBLIB_NODISCARD constexpr iterator upper_bound(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto upper_bound(Key key) & noexcept -> iterator {
 		// if the key exists, upper_bound is the next one
 		auto l = lower_bound(key);
 		if (l.pos == index(key)) {
@@ -488,8 +500,8 @@ class direct_map {
 			return l;
 		}
 	}
-	KBLIB_NODISCARD constexpr const_iterator
-	upper_bound(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto upper_bound(Key key) const& noexcept
+	    -> const_iterator {
 		// if the key exists, upper_bound is the next one
 		auto l = lower_bound(key);
 		if (l.pos == index(key)) {
@@ -500,17 +512,16 @@ class direct_map {
 		}
 	}
 
-	KBLIB_NODISCARD constexpr static Key min() noexcept {
+	KBLIB_NODISCARD constexpr static auto min() noexcept -> Key {
 		return std::numeric_limits<Key>::min();
 	}
-	KBLIB_NODISCARD constexpr static Key max() noexcept {
+	KBLIB_NODISCARD constexpr static auto max() noexcept -> Key {
 		return std::numeric_limits<Key>::max();
 	}
 
-	KBLIB_NODISCARD friend constexpr bool
-	operator==(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>() ==
-	                                                  std::declval<T&>())) {
+	KBLIB_NODISCARD friend constexpr auto
+	operator==(const direct_map& l, const direct_map& r) noexcept(
+	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
 		if (l.size() != r.size()) {
 			return false;
 		}
@@ -526,48 +537,53 @@ class direct_map {
 		return true;
 	}
 
-	KBLIB_NODISCARD friend constexpr bool
-	operator!=(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>() ==
-	                                                  std::declval<T&>())) {
+	KBLIB_NODISCARD friend constexpr auto
+	operator!=(const direct_map& l, const direct_map& r) noexcept(
+	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
 		return not(l == r);
 	}
 
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator<(const direct_map& l,
 	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>())) {
+	                                                 std::declval<T&>()))
+	    -> bool {
 		return kblib::lexicographical_compare(l.begin(), l.end(), r.begin(),
 		                                      r.end());
 	}
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator>(const direct_map& l,
 	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>())) {
+	                                                 std::declval<T&>()))
+	    -> bool {
 		return r < l;
 	}
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator<=(const direct_map& l,
 	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>())) {
+	                                                  std::declval<T&>()))
+	    -> bool {
 		return not(r < l);
 	}
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator>=(const direct_map& l,
 	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>())) {
+	                                                  std::declval<T&>()))
+	    -> bool {
 		return not(l < r);
 	}
 
-	KBLIB_NODISCARD constexpr static std::ptrdiff_t index(Key key) noexcept {
+	KBLIB_NODISCARD constexpr static auto index(Key key) noexcept
+	    -> std::ptrdiff_t {
 		return to_unsigned(key);
 	}
-	KBLIB_NODISCARD constexpr static Key to_key(std::ptrdiff_t i) noexcept {
+	KBLIB_NODISCARD constexpr static auto to_key(std::ptrdiff_t i) noexcept
+	    -> Key {
 		return Key(i);
 	}
 
  private:
-	KBLIB_NODISCARD constexpr std::bitset<key_range>& bitmap() noexcept {
+	KBLIB_NODISCARD constexpr auto bitmap() noexcept -> std::bitset<key_range>& {
 		return storage->first;
 	}
 	KBLIB_NODISCARD constexpr const std::bitset<key_range>&
@@ -575,20 +591,22 @@ class direct_map {
 		return storage->first;
 	}
 
-	KBLIB_NODISCARD constexpr storage_type& unsafe_at(Key key) & {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) & -> storage_type& {
 		return storage->second[index(key)];
 	}
-	KBLIB_NODISCARD constexpr storage_type&& unsafe_at(Key key) && {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) && -> storage_type&& {
 		return storage->second[index(key)];
 	}
-	KBLIB_NODISCARD constexpr const storage_type& unsafe_at(Key key) const& {
+	KBLIB_NODISCARD constexpr auto
+	unsafe_at(Key key) const& -> const storage_type& {
 		return storage->second[index(key)];
 	}
-	KBLIB_NODISCARD constexpr const storage_type&& unsafe_at(Key key) const&& {
+	KBLIB_NODISCARD constexpr auto
+	unsafe_at(Key key) const&& -> const storage_type&& {
 		return storage->second[index(key)];
 	}
 
-	void allocate() {
+	auto allocate() -> void {
 		if (not storage) {
 			storage.assign();
 		}
@@ -651,14 +669,14 @@ class direct_map<Key, T, void> {
 		using pointer = copy_const_t<V, value_type>*;
 		using iterator_category = std::bidirectional_iterator_tag;
 
-		KBLIB_NODISCARD constexpr reference operator*() const {
+		KBLIB_NODISCARD constexpr auto operator*() const -> reference {
 			return *map->elems[pos].get();
 		}
-		KBLIB_NODISCARD constexpr pointer operator->() const {
+		KBLIB_NODISCARD constexpr auto operator->() const -> pointer {
 			return map->elems[pos].get();
 		}
 
-		constexpr iter& operator++() {
+		constexpr auto operator++() -> iter& {
 			if (pos == key_range) {
 				// not required in general, but direct_map::iterator guarantees that
 				// ++end() == end() because it simplifies the implementation and is
@@ -674,13 +692,13 @@ class direct_map<Key, T, void> {
 			pos = key_range;
 			return *this;
 		}
-		constexpr iter operator++(int) {
+		constexpr auto operator++(int) -> iter {
 			iter it = *this;
 			++*this;
 			return it;
 		}
 
-		constexpr iter& operator--() {
+		constexpr auto operator--() -> iter& {
 			for (auto i : range(pos - 1, std::ptrdiff_t(-1))) {
 				if (map->active_elems.test(i)) {
 					pos = i;
@@ -690,23 +708,26 @@ class direct_map<Key, T, void> {
 			// going past the beginning is UB
 			__builtin_unreachable();
 		}
-		constexpr iter operator--(int) {
+		constexpr auto operator--(int) -> iter {
 			iter it = *this;
 			--*this;
 			return it;
 		}
 
-		KBLIB_NODISCARD friend constexpr bool operator==(iter l, iter r) {
+		KBLIB_NODISCARD friend constexpr auto operator==(iter l, iter r) noexcept
+		    -> bool {
 			return l.map == r.map and l.pos == r.pos;
 		}
-		KBLIB_NODISCARD friend constexpr bool operator!=(iter l, iter r) {
+		KBLIB_NODISCARD friend constexpr auto operator!=(iter l, iter r) noexcept
+		    -> bool {
 			return not(l == r);
 		}
 
-#define DECL_OP(op)                                                    \
-	KBLIB_NODISCARD friend constexpr bool operator op(iter l, iter r) { \
-		assert(l.map == r.map);                                          \
-		return l.pos op r.pos;                                           \
+#define DECL_OP(op)                                                           \
+	KBLIB_NODISCARD friend constexpr auto operator op(iter l,                  \
+	                                                  iter r) noexcept->bool { \
+		assert(l.map == r.map);                                                 \
+		return l.pos op r.pos;                                                  \
 	}
 		DECL_OP(<)
 		DECL_OP(>)
@@ -714,7 +735,7 @@ class direct_map<Key, T, void> {
 		DECL_OP(<=)
 #undef DECL_OP
 
-		constexpr void swap(iter& other) noexcept {
+		constexpr auto swap(iter& other) noexcept -> void {
 			kblib::swap(map, other.map);
 			kblib::swap(pos, other.pos);
 		}
@@ -766,7 +787,7 @@ class direct_map<Key, T, void> {
 	// for trivial Key and T
 	KBLIB_CXX20(constexpr) ~direct_map() { clear(); }
 
-	constexpr direct_map& operator=(const direct_map& other) {
+	constexpr auto operator=(const direct_map& other) -> direct_map& {
 		if (this == &other) {
 			return *this;
 		}
@@ -781,8 +802,8 @@ class direct_map<Key, T, void> {
 		}
 		return *this;
 	}
-	constexpr direct_map& operator=(direct_map&& other) noexcept(
-	    std::is_nothrow_move_constructible<T>::value) {
+	constexpr auto operator=(direct_map&& other) noexcept(
+	    std::is_nothrow_move_constructible<T>::value) -> direct_map& {
 		if (this == &other) {
 			return *this;
 		}
@@ -796,7 +817,8 @@ class direct_map<Key, T, void> {
 		}
 		return *this;
 	}
-	constexpr direct_map& operator=(std::initializer_list<value_type> init) {
+	constexpr auto operator=(std::initializer_list<value_type> init)
+	    -> direct_map& {
 		clear();
 		for (auto it : init) {
 			construct(it->first, it->second);
@@ -804,28 +826,28 @@ class direct_map<Key, T, void> {
 		return *this;
 	}
 
-	KBLIB_NODISCARD constexpr T& at(Key key) & {
+	KBLIB_NODISCARD constexpr auto at(Key key) & -> T& {
 		if (contains(key)) {
 			return unsafe_at(key).get()->second;
 		} else {
 			throw std::out_of_range("direct_map: key out of range");
 		}
 	}
-	KBLIB_NODISCARD constexpr T&& at(Key key) && {
+	KBLIB_NODISCARD constexpr auto at(Key key) && -> T&& {
 		if (contains(key)) {
 			return std::move(unsafe_at(key).get()->second);
 		} else {
 			throw std::out_of_range("direct_map: key out of range");
 		}
 	}
-	KBLIB_NODISCARD constexpr const T& at(Key key) const& {
+	KBLIB_NODISCARD constexpr auto at(Key key) const& -> const T& {
 		if (contains(key)) {
 			return unsafe_at(key).get()->second;
 		} else {
 			throw std::out_of_range("direct_map: key out of range");
 		}
 	}
-	KBLIB_NODISCARD constexpr const T&& at(Key key) const&& {
+	KBLIB_NODISCARD constexpr auto at(Key key) const&& -> const T&& {
 		if (contains(key)) {
 			return std::move(unsafe_at(key).get()->second);
 		} else {
@@ -838,13 +860,13 @@ class direct_map<Key, T, void> {
 		return try_emplace(key).first->second;
 	}
 
-	KBLIB_NODISCARD constexpr iterator begin() & noexcept {
+	KBLIB_NODISCARD constexpr auto begin() & noexcept -> iterator {
 		return {this, cbegin().pos};
 	}
-	KBLIB_NODISCARD constexpr const_iterator begin() const& noexcept {
+	KBLIB_NODISCARD constexpr auto begin() const& noexcept -> const_iterator {
 		return {this, cbegin().pos};
 	}
-	KBLIB_NODISCARD constexpr const_iterator cbegin() const& noexcept {
+	KBLIB_NODISCARD constexpr auto cbegin() const& noexcept -> const_iterator {
 		if (not empty()) {
 			if (contains(to_key(0))) {
 				return {this, 0};
@@ -856,50 +878,56 @@ class direct_map<Key, T, void> {
 		}
 	}
 
-	KBLIB_NODISCARD constexpr iterator end() & noexcept {
+	KBLIB_NODISCARD constexpr auto end() & noexcept -> iterator {
 		return {this, key_range};
 	}
-	KBLIB_NODISCARD constexpr const_iterator end() const& noexcept {
+	KBLIB_NODISCARD constexpr auto end() const& noexcept -> const_iterator {
 		return {this, key_range};
 	}
-	KBLIB_NODISCARD constexpr const_iterator cend() const& noexcept {
+	KBLIB_NODISCARD constexpr auto cend() const& noexcept -> const_iterator {
 		return {this, key_range};
 	}
 
-	KBLIB_NODISCARD constexpr iterator rbegin() & noexcept {
+	KBLIB_NODISCARD constexpr auto rbegin() & noexcept -> reverse_iterator {
 		return std::make_reverse_iterator(end());
 	}
-	KBLIB_NODISCARD constexpr const_iterator rbegin() const& noexcept {
+	KBLIB_NODISCARD constexpr auto rbegin() const& noexcept
+	    -> const_reverse_iterator {
 		return std::make_reverse_iterator(end());
 	}
-	KBLIB_NODISCARD constexpr const_iterator crbegin() const& noexcept {
+	KBLIB_NODISCARD constexpr auto crbegin() const& noexcept
+	    -> const_reverse_iterator {
 		return std::make_reverse_iterator(crend());
 	}
 
-	KBLIB_NODISCARD constexpr iterator rend() & noexcept {
+	KBLIB_NODISCARD constexpr auto rend() & noexcept -> reverse_iterator {
 		return std::make_reverse_iterator(begin());
 	}
-	KBLIB_NODISCARD constexpr const_iterator rend() const& noexcept {
+	KBLIB_NODISCARD constexpr auto rend() const& noexcept
+	    -> const_reverse_iterator {
 		return std::make_reverse_iterator(begin());
 	}
-	KBLIB_NODISCARD constexpr const_iterator crend() const& noexcept {
+	KBLIB_NODISCARD constexpr auto crend() const& noexcept
+	    -> const_reverse_iterator {
 		return std::make_reverse_iterator(cbegin());
 	}
 
-	KBLIB_NODISCARD constexpr bool empty() const& noexcept { return _size == 0; }
-
-	KBLIB_NODISCARD constexpr std::size_t size() const& noexcept {
-		return _size;
-	}
-	KBLIB_NODISCARD constexpr std::ptrdiff_t ssize() const& noexcept {
-		return _size;
+	KBLIB_NODISCARD constexpr auto empty() const& noexcept -> bool {
+		return _size == 0;
 	}
 
-	KBLIB_NODISCARD constexpr static std::size_t max_size() noexcept {
+	KBLIB_NODISCARD constexpr auto size() const& noexcept -> std::size_t {
+		return _size;
+	}
+	KBLIB_NODISCARD constexpr auto ssize() const& noexcept -> std::ptrdiff_t {
+		return _size;
+	}
+
+	KBLIB_NODISCARD constexpr static auto max_size() noexcept -> std::size_t {
 		return key_range;
 	}
 
-	constexpr void clear() noexcept {
+	constexpr auto clear() noexcept -> void {
 		for (auto i : range(+min(), max() + 1)) {
 			if (contains(i)) {
 				unsafe_at(i).destroy();
@@ -908,7 +936,7 @@ class direct_map<Key, T, void> {
 		_size = 0;
 	}
 
-	constexpr std::pair<iterator, bool> insert(const value_type& value) {
+	constexpr auto insert(const value_type& value) -> std::pair<iterator, bool> {
 		if (not contains(value.first)) {
 			construct(value.first, value.second);
 			return {{this, index(value.first)}, true};
@@ -917,9 +945,9 @@ class direct_map<Key, T, void> {
 		}
 	}
 	template <typename U>
-	constexpr return_assert_t<std::is_constructible<value_type, U&&>::value,
-	                          std::pair<iterator, bool>>
-	insert(U&& value) {
+	constexpr auto insert(U&& value)
+	    -> return_assert_t<std::is_constructible<value_type, U&&>::value,
+	                       std::pair<iterator, bool>> {
 		if (not contains(value.first)) {
 			construct(value.first, std::forward<U>(value.second));
 			return {{this, index(value.first)}, true};
@@ -927,7 +955,7 @@ class direct_map<Key, T, void> {
 			return {{this, index(value.first)}, false};
 		}
 	}
-	constexpr std::pair<iterator, bool> insert(value_type&& value) {
+	constexpr auto insert(value_type&& value) -> std::pair<iterator, bool> {
 		if (not contains(value.first)) {
 			construct(value.first, std::move(value.second));
 			return {{this, index(value.first)}, true};
@@ -937,7 +965,8 @@ class direct_map<Key, T, void> {
 	}
 
 	template <typename U>
-	constexpr std::pair<iterator, bool> insert_or_assign(Key key, U&& value) {
+	constexpr auto insert_or_assign(Key key, U&& value)
+	    -> std::pair<iterator, bool> {
 		if (not contains(key)) {
 			construct(key, std::forward<U>(value));
 			return {{this, index(key)}, true};
@@ -947,7 +976,8 @@ class direct_map<Key, T, void> {
 		}
 	}
 	template <typename... Args>
-	constexpr std::pair<iterator, bool> try_emplace(Key key, Args&&... args) {
+	constexpr auto try_emplace(Key key, Args&&... args)
+	    -> std::pair<iterator, bool> {
 		if (not contains(key)) {
 			construct(key, std::forward<Args>(args)...);
 			return {{this, index(key)}, true};
@@ -956,16 +986,16 @@ class direct_map<Key, T, void> {
 		}
 	}
 
-	constexpr iterator erase(iterator pos) noexcept {
+	constexpr auto erase(iterator pos) noexcept -> iterator {
 		destroy(to_key(pos.pos));
 		return ++pos;
 	}
-	constexpr iterator erase(const_iterator pos) noexcept {
+	constexpr auto erase(const_iterator pos) noexcept -> iterator {
 		destroy(to_key(pos.pos));
 		return ++pos;
 	}
 
-	constexpr iterator erase(iterator first, iterator last) noexcept {
+	constexpr auto erase(iterator first, iterator last) noexcept -> iterator {
 		for (auto i : range(first.pos, last.pos)) {
 			if (contains(to_key(i))) {
 				destroy(to_key(i));
@@ -974,7 +1004,7 @@ class direct_map<Key, T, void> {
 		return ++last;
 	}
 
-	constexpr std::size_t erase(Key key) noexcept {
+	constexpr auto erase(Key key) noexcept -> std::size_t {
 		if (contains(key)) {
 			destroy(key);
 			return 1;
@@ -983,9 +1013,9 @@ class direct_map<Key, T, void> {
 		}
 	}
 
-	constexpr void swap(direct_map& other) noexcept(
+	constexpr auto swap(direct_map& other) noexcept(
 	    std::is_nothrow_move_constructible<value_type>::value and
-	        fakestd::is_nothrow_swappable<T>::value) {
+	        fakestd::is_nothrow_swappable<T>::value) -> void {
 		using std::swap;
 		for (auto k : range(+min(), max() + 1)) {
 			if (contains(k)) {
@@ -1008,40 +1038,41 @@ class direct_map<Key, T, void> {
 		swap(_size, other._size);
 	}
 
-	KBLIB_NODISCARD constexpr bool contains(Key key) const noexcept {
+	KBLIB_NODISCARD constexpr auto contains(Key key) const noexcept -> bool {
 		return bitmap().test(index(key));
 	}
-	KBLIB_NODISCARD constexpr std::size_t count(Key key) const noexcept {
+	KBLIB_NODISCARD constexpr auto count(Key key) const noexcept -> std::size_t {
 		return contains(key);
 	}
 
-	KBLIB_NODISCARD constexpr iterator find(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto find(Key key) & noexcept -> iterator {
 		return contains(key) ? iterator{this, index(key)}
 		                     : iterator{this, key_range};
 	}
-	KBLIB_NODISCARD constexpr const_iterator find(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto find(Key key) const& noexcept
+	    -> const_iterator {
 		return contains(key) ? iterator{this, index(key)}
 		                     : iterator{this, key_range};
 	}
 
-	KBLIB_NODISCARD constexpr std::pair<iterator, iterator>
-	equal_range(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto equal_range(Key key) & noexcept
+	    -> std::pair<iterator, iterator> {
 		return {lower_bound(key), upper_bound(key)};
 	}
-	KBLIB_NODISCARD constexpr std::pair<const_iterator, const_iterator>
-	equal_range(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto equal_range(Key key) const& noexcept
+	    -> std::pair<const_iterator, const_iterator> {
 		return {lower_bound(key), upper_bound(key)};
 	}
 
-	KBLIB_NODISCARD constexpr iterator lower_bound(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto lower_bound(Key key) & noexcept -> iterator {
 		if (contains(key)) {
 			return find(key);
 		} else {
 			return ++iterator{this, index(key)};
 		}
 	}
-	KBLIB_NODISCARD constexpr const_iterator
-	lower_bound(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto lower_bound(Key key) const& noexcept
+	    -> const_iterator {
 		if (contains(key)) {
 			return find(key);
 		} else {
@@ -1049,7 +1080,7 @@ class direct_map<Key, T, void> {
 		}
 	}
 
-	KBLIB_NODISCARD constexpr iterator upper_bound(Key key) & noexcept {
+	KBLIB_NODISCARD constexpr auto upper_bound(Key key) & noexcept -> iterator {
 		// if the key exists, upper_bound is the next one
 		auto l = lower_bound(key);
 		if (l.pos == index(key)) {
@@ -1059,8 +1090,8 @@ class direct_map<Key, T, void> {
 			return l;
 		}
 	}
-	KBLIB_NODISCARD constexpr const_iterator
-	upper_bound(Key key) const& noexcept {
+	KBLIB_NODISCARD constexpr auto upper_bound(Key key) const& noexcept
+	    -> const_iterator {
 		// if the key exists, upper_bound is the next one
 		auto l = lower_bound(key);
 		if (l.pos == index(key)) {
@@ -1071,17 +1102,16 @@ class direct_map<Key, T, void> {
 		}
 	}
 
-	KBLIB_NODISCARD constexpr static Key min() noexcept {
+	KBLIB_NODISCARD constexpr static auto min() noexcept -> Key {
 		return std::numeric_limits<Key>::min();
 	}
-	KBLIB_NODISCARD constexpr static Key max() noexcept {
+	KBLIB_NODISCARD constexpr static auto max() noexcept -> Key {
 		return std::numeric_limits<Key>::max();
 	}
 
-	KBLIB_NODISCARD friend constexpr bool
-	operator==(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>() ==
-	                                                  std::declval<T&>())) {
+	KBLIB_NODISCARD friend constexpr auto
+	operator==(const direct_map& l, const direct_map& r) noexcept(
+	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
 		if (l.size() != r.size()) {
 			return false;
 		}
@@ -1097,71 +1127,78 @@ class direct_map<Key, T, void> {
 		return true;
 	}
 
-	KBLIB_NODISCARD friend constexpr bool
-	operator!=(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>() ==
-	                                                  std::declval<T&>())) {
+	KBLIB_NODISCARD friend constexpr auto
+	operator!=(const direct_map& l, const direct_map& r) noexcept(
+	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
 		return not(l == r);
 	}
 
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator<(const direct_map& l,
 	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>())) {
+	                                                 std::declval<T&>()))
+	    -> bool {
 		return kblib::lexicographical_compare(l.begin(), l.end(), r.begin(),
 		                                      r.end());
 	}
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator>(const direct_map& l,
 	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>())) {
+	                                                 std::declval<T&>()))
+	    -> bool {
 		return r < l;
 	}
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator<=(const direct_map& l,
 	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>())) {
+	                                                  std::declval<T&>()))
+	    -> bool {
 		return not(r < l);
 	}
-	KBLIB_NODISCARD friend constexpr bool
+	KBLIB_NODISCARD friend constexpr auto
 	operator>=(const direct_map& l,
 	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>())) {
+	                                                  std::declval<T&>()))
+	    -> bool {
 		return not(l < r);
 	}
 
-	KBLIB_NODISCARD constexpr static std::ptrdiff_t index(Key key) noexcept {
+	KBLIB_NODISCARD constexpr static auto index(Key key) noexcept
+	    -> std::ptrdiff_t {
 		return to_unsigned(key);
 	}
-	KBLIB_NODISCARD constexpr static Key to_key(std::ptrdiff_t i) noexcept {
+	KBLIB_NODISCARD constexpr static auto to_key(std::ptrdiff_t i) noexcept
+	    -> Key {
 		return Key(i);
 	}
 
  private:
-	KBLIB_NODISCARD constexpr std::bitset<key_range>& bitmap() noexcept {
+	KBLIB_NODISCARD constexpr auto bitmap() noexcept -> std::bitset<key_range>& {
 		return active_elems;
 	}
-	KBLIB_NODISCARD constexpr const std::bitset<key_range>&
-	bitmap() const noexcept {
+	KBLIB_NODISCARD constexpr auto bitmap() const noexcept
+	    -> const std::bitset<key_range>& {
 		return active_elems;
 	}
 
-	KBLIB_NODISCARD constexpr storage_type& unsafe_at(Key key) & {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) & -> storage_type& {
 		return elems[index(key)];
 	}
-	KBLIB_NODISCARD constexpr storage_type&& unsafe_at(Key key) && {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) && -> storage_type&& {
 		return elems[index(key)];
 	}
-	KBLIB_NODISCARD constexpr const storage_type& unsafe_at(Key key) const& {
+	KBLIB_NODISCARD constexpr auto
+	unsafe_at(Key key) const& -> const storage_type& {
 		return elems[index(key)];
 	}
-	KBLIB_NODISCARD constexpr const storage_type&& unsafe_at(Key key) const&& {
+	KBLIB_NODISCARD constexpr auto
+	unsafe_at(Key key) const&& -> const storage_type&& {
 		return elems[index(key)];
 	}
 
 	template <typename... Args>
-	constexpr void construct(Key key, Args&&... args) noexcept(
-	    std::is_nothrow_constructible<value_type, Args&&...>::value) {
+	constexpr auto construct(Key key, Args&&... args) noexcept(
+	    std::is_nothrow_constructible<value_type, Args&&...>::value) -> void {
 		if (not active_elems.test(index(key))) {
 			do_construct(key, std::forward<Args>(args)...);
 			// doing these after construction maintains exception safety.
@@ -1171,14 +1208,14 @@ class direct_map<Key, T, void> {
 	}
 
 	template <typename... Args>
-	constexpr void do_construct(Key key, Args&&... args) noexcept(
-	    std::is_nothrow_constructible<value_type, Args&&...>::value) {
+	constexpr auto do_construct(Key key, Args&&... args) noexcept(
+	    std::is_nothrow_constructible<value_type, Args&&...>::value) -> void {
 		elems[index(key)].construct(
 		    std::piecewise_construct, std::forward_as_tuple(key),
 		    std::forward_as_tuple(std::forward<Args>(args)...));
 	}
 
-	void destroy(Key key) {
+	auto destroy(Key key) -> void {
 		assert(contains(key));
 
 		bitmap().reset(index(key));

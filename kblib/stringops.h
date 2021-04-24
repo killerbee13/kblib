@@ -90,7 +90,9 @@ namespace detail {
 		 * @param in A numeric value to convert to a string.
 		 * @return std::string A string representation of that number.
 		 */
-		static std::string convert(T in) { return std::to_string(in); }
+		KBLIB_NODISCARD static auto convert(T in) -> std::string {
+			return std::to_string(in);
+		}
 	};
 	/**
 	 * @brief Performs a natural conversion to a stringlike type.
@@ -113,7 +115,9 @@ namespace detail {
 		/**
 		 * @brief Returns the argument unchanged.
 		 */
-		static type convert(T&& in) { return std::forward<T>(in); }
+		KBLIB_NODISCARD static auto convert(T&& in) -> type {
+			return std::forward<T>(in);
+		}
 	};
 	/**
 	 * @brief Override for char to avoid conversion to integer
@@ -121,7 +125,7 @@ namespace detail {
 	template <>
 	struct str_type<char, char> {
 		using type = char;
-		static char convert(char in) { return in; }
+		KBLIB_NODISCARD static auto convert(char in) -> char { return in; }
 	};
 	/**
 	 * @brief Override for wchar_t to avoid conversion to integer
@@ -129,7 +133,7 @@ namespace detail {
 	template <>
 	struct str_type<wchar_t, wchar_t> {
 		using type = wchar_t;
-		static wchar_t convert(wchar_t in) { return in; }
+		KBLIB_NODISCARD static auto convert(wchar_t in) -> wchar_t { return in; }
 	};
 	/**
 	 * @brief Override for char16_t to avoid conversion to integer
@@ -137,7 +141,9 @@ namespace detail {
 	template <>
 	struct str_type<char16_t, char16_t> {
 		using type = char16_t;
-		static char16_t convert(char16_t in) { return in; }
+		KBLIB_NODISCARD static auto convert(char16_t in) -> char16_t {
+			return in;
+		}
 	};
 	/**
 	 * @brief Override for char32_t to avoid conversion to integer
@@ -145,7 +151,9 @@ namespace detail {
 	template <>
 	struct str_type<char32_t, char32_t> {
 		using type = char32_t;
-		static char32_t convert(char32_t in) { return in; }
+		KBLIB_NODISCARD static auto convert(char32_t in) -> char32_t {
+			return in;
+		}
 	};
 #ifdef __cpp_char8_t
 	/**
@@ -154,7 +162,7 @@ namespace detail {
 	template <>
 	struct str_type<char8_t, char8_t> {
 		using type = char8_t;
-		static char8_t convert(char8_t in) { return in; }
+		KBLIB_NODISCARD static auto convert(char8_t in) -> char8_t { return in; }
 	};
 #endif
 	/**
@@ -174,7 +182,7 @@ namespace detail {
  * @return std::size_t The number of characters needed to represent str.
  */
 template <typename Str>
-std::size_t strsize(Str&& str) {
+KBLIB_NODISCARD auto strsize(Str&& str) -> std::size_t {
 	if constexpr (std::is_array_v<std::remove_reference_t<Str>>) {
 		return fakestd::size(str);
 	} else if constexpr (std::is_pointer_v<std::decay_t<Str>>) {
@@ -186,6 +194,12 @@ std::size_t strsize(Str&& str) {
 	} else {
 		return fakestd::size(str);
 	}
+}
+
+template <typename CharT>
+KBLIB_NODISCARD constexpr auto length(const CharT* str) noexcept
+    -> std::size_t {
+	return std::char_traits<CharT>::length(str);
 }
 
 /**
@@ -200,7 +214,7 @@ std::size_t strsize(Str&& str) {
  * @param tail Any number of subsequent values to append to out.
  */
 template <typename string, typename F, typename... S>
-void append(string&& out, F&& f, S&&... tail) {
+auto append(string&& out, F&& f, S&&... tail) -> void {
 	if constexpr (is_character_v<std::decay_t<F>>) {
 		out.append(1, f);
 	} else if constexpr (std::is_arithmetic_v<std::decay_t<F>>) {
@@ -217,7 +231,8 @@ void append(string&& out, F&& f, S&&... tail) {
 namespace detail {
 
 	template <typename string, typename... S, std::size_t... I>
-	string concat_impl(std::index_sequence<I...>, S&&... ins) {
+	KBLIB_NODISCARD auto concat_impl(std::index_sequence<I...>, S&&... ins)
+	    -> string {
 		std::tuple<detail::str_type_t<S>...> buf(
 		    detail::str_type<S>::convert(std::forward<S>(ins))...);
 		string ret;
@@ -240,7 +255,7 @@ namespace detail {
  * arguments.
  */
 template <typename string = std::string, typename F, typename... S>
-string concat(F&& f, S&&... ins) {
+KBLIB_NODISCARD auto concat(F&& f, S&&... ins) -> string {
 	return detail::concat_impl<string>(
 	    std::make_index_sequence<1 + sizeof...(S)>{}, std::forward<F>(f),
 	    std::forward<S>(ins)...);
@@ -254,7 +269,7 @@ string concat(F&& f, S&&... ins) {
  * arguments.
  */
 template <typename string = std::string, typename str>
-string concat(std::initializer_list<str> ins) {
+KBLIB_NODISCARD auto concat(std::initializer_list<str> ins) -> string {
 	string ret;
 	ret.reserve(std::accumulate(
 	    ins.begin(), ins.end(), std::size_t{0},
@@ -266,12 +281,16 @@ string concat(std::initializer_list<str> ins) {
 }
 #endif
 
-inline bool isspace(char c) { return std::isspace(to_unsigned(c)); }
-inline bool isspace(wchar_t c) { return iswspace(to_unsigned(c)); }
+KBLIB_NODISCARD inline auto isspace(char c) -> bool {
+	return std::isspace(to_unsigned(c));
+}
+KBLIB_NODISCARD inline auto isspace(wchar_t c) -> bool {
+	return iswspace(to_unsigned(c));
+}
 
 struct is_space {
-	bool operator()(char c) { return isspace(c); }
-	bool operator()(wchar_t c) { return isspace(c); }
+	KBLIB_NODISCARD auto operator()(char c) -> bool { return isspace(c); }
+	KBLIB_NODISCARD auto operator()(wchar_t c) -> bool { return isspace(c); }
 };
 
 /**
@@ -284,7 +303,8 @@ struct is_space {
  * @return string The joined string.
  */
 template <typename range, typename string = std::string>
-string join(const range& in, const string& joiner = "") {
+KBLIB_NODISCARD auto join(const range& in, const string& joiner = "")
+    -> string {
 	if (in.size() == 0) {
 		return {};
 	} else if (fakestd::size(in) == 1) {
@@ -309,10 +329,10 @@ string join(const range& in, const string& joiner = "") {
  */
 template <typename Container = std::vector<std::string>, typename Predicate,
           typename String>
-return_assert_t<
+KBLIB_NODISCARD auto
+split_tokens(const String& in, Predicate spacer) -> return_assert_t<
     is_callable<Predicate, typename Container::value_type::value_type>::value,
-    Container>
-split_tokens(const String& in, Predicate spacer) {
+    Container> {
 	Container ret{};
 	bool delim_run = true;
 	const char* begpos{};
@@ -338,7 +358,7 @@ split_tokens(const String& in, Predicate spacer) {
 }
 
 template <typename Container = std::vector<std::string>, typename String>
-Container split_tokens(const String& in) {
+KBLIB_NODISCARD auto split_tokens(const String& in) -> Container {
 	return split_tokens(in, is_space{});
 }
 
@@ -350,8 +370,9 @@ Container split_tokens(const String& in) {
  * @return Container A sequence container of all substrings in the split input.
  */
 template <typename Container = std::vector<std::string>, typename String>
-Container split_tokens(const String& in,
-                       typename Container::value_type::value_type delim) {
+KBLIB_NODISCARD auto
+split_tokens(const String& in, typename Container::value_type::value_type delim)
+    -> Container {
 	Container ret{};
 	bool delim_run = true;
 	using CharT = typename Container::value_type::value_type;
@@ -378,7 +399,7 @@ Container split_tokens(const String& in,
 }
 
 template <typename Container = std::vector<std::string>, typename String>
-Container kbsplit2(const String& in, char delim = ' ') {
+KBLIB_NODISCARD auto kbsplit2(const String& in, char delim = ' ') -> Container {
 	Container ret{""};
 	bool delim_run = true;
 	for (char c : in) {
@@ -405,7 +426,7 @@ Container kbsplit2(const String& in, char delim = ' ') {
  * @return Container A sequence container of all substrings in the split input.
  */
 template <typename Container = std::vector<std::string>, typename String>
-Container split_dsv(const String& str, char delim) {
+KBLIB_NODISCARD auto split_dsv(const String& str, char delim) -> Container {
 	Container ret;
 	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
 		ret.emplace_back(str, pos1, pos2 - pos1);
@@ -426,10 +447,10 @@ Container split_dsv(const String& str, char delim) {
  */
 template <typename Container = std::vector<std::string>, typename String,
           typename Predicate>
-return_assert_t<
+KBLIB_NODISCARD auto
+split_dsv(const String& str, Predicate delim) -> return_assert_t<
     is_callable<Predicate, typename Container::value_type::value_type>::value,
-    Container>
-split_dsv(const String& str, Predicate delim) {
+    Container> {
 	Container ret;
 	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
 		ret.emplace_back(str, pos1, pos2 - pos1);
@@ -455,7 +476,7 @@ split_dsv(const String& str, Predicate delim) {
  * @return string The reversed range.
  */
 template <typename string>
-string reverse_str(string val) {
+KBLIB_NODISCARD auto reverse_str(string val) -> string {
 	std::reverse(val.begin(), val.end());
 	return val;
 }
@@ -467,7 +488,7 @@ string reverse_str(string val) {
  * @return string The case-folded string.
  */
 template <typename string>
-string tolower(string str) {
+KBLIB_NODISCARD auto tolower(string str) -> string {
 	std::transform(str.begin(), str.end(), str.begin(),
 	               [](auto c) { return std::tolower(c); });
 	return str;
@@ -480,7 +501,7 @@ string tolower(string str) {
  * @return string The case-folded string.
  */
 template <typename string>
-string toupper(string str) {
+KBLIB_NODISCARD auto toupper(string str) -> string {
 	std::transform(str.begin(), str.end(), str.begin(),
 	               [](auto c) { return std::toupper(c); });
 	return str;
@@ -498,7 +519,7 @@ string toupper(string str) {
  * @todo Defer constrution of a string with a class.
  */
 template <typename string>
-string repeat(string val, std::size_t count) {
+KBLIB_NODISCARD auto repeat(string val, std::size_t count) -> string {
 	string tmp;
 	try_reserve(tmp, fakestd::size(val) * count);
 	for (std::size_t i = 0; i < count; ++i) {
@@ -515,7 +536,7 @@ string repeat(string val, std::size_t count) {
  * @param val The character to be repeated.
  * @param count The number of times to repeat val.
  */
-inline std::string repeat(char val, std::size_t count) {
+KBLIB_NODISCARD inline auto repeat(char val, std::size_t count) -> std::string {
 	return std::string(count, val);
 }
 
@@ -527,7 +548,8 @@ inline std::string repeat(char val, std::size_t count) {
  * @param needle The suffix to check for.
  * @return bool If haystack ends with needle.
  */
-inline bool ends_with(std::string_view haystack, std::string_view needle) {
+KBLIB_NODISCARD inline auto ends_with(std::string_view haystack,
+                                      std::string_view needle) -> bool {
 	return haystack.size() >= needle.size() and
 	       haystack.compare(haystack.size() - needle.size(),
 	                        std::string_view::npos, needle) == 0;
@@ -539,7 +561,8 @@ inline bool ends_with(std::string_view haystack, std::string_view needle) {
  * @param needle The suffix to check for.
  * @return bool If haystack ends with needle.
  */
-inline bool ends_with(std::string_view haystack, char needle) {
+KBLIB_NODISCARD inline auto ends_with(std::string_view haystack, char needle)
+    -> bool {
 	return !haystack.empty() and haystack.back() == needle;
 }
 
@@ -549,7 +572,8 @@ inline bool ends_with(std::string_view haystack, char needle) {
  * @param needle The prefix to check for.
  * @return bool If haystack starts with needle.
  */
-inline bool starts_with(std::string_view haystack, std::string_view needle) {
+KBLIB_NODISCARD inline auto starts_with(std::string_view haystack,
+                                        std::string_view needle) -> bool {
 	return haystack.size() >= needle.size() and
 	       haystack.compare(0, needle.size(), needle) == 0;
 }
@@ -560,7 +584,8 @@ inline bool starts_with(std::string_view haystack, std::string_view needle) {
  * @param needle The prefix to check for.
  * @return bool If haystack starts with needle.
  */
-inline bool starts_with(std::string_view haystack, char needle) {
+KBLIB_NODISCARD inline auto starts_with(std::string_view haystack, char needle)
+    -> bool {
 	return !haystack.empty() and haystack.front() == needle;
 }
 

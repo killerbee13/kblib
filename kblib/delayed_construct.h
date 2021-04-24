@@ -19,7 +19,7 @@ class delayed_construct : protected std::optional<T> {
 
 	template <typename U,
 	          std::enable_if_t<std::is_assignable_v<T&, U&&>, int> = 0>
-	delayed_construct& operator=(U&& t) {
+	auto operator=(U&& t) -> delayed_construct& {
 		Base::operator=(std::forward<U>(t));
 		return *this;
 	}
@@ -28,44 +28,58 @@ class delayed_construct : protected std::optional<T> {
 	using Base::operator*;
 
 	using Base::operator bool;
-	constexpr bool is_constructed() const noexcept { return Base::has_value(); }
+	KBLIB_NODISCARD constexpr auto is_constructed() const noexcept -> bool {
+		return Base::has_value();
+	}
 
 	using Base::value;
 
 	using Base::emplace;
 
+	// TODO(killerbee): add C++20 operator<=> support to delayed_construct
+
+#if 0 && KBLIB_USE_CXX20
+
+	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs,
+	                 const delayed_construct& rhs) = default;
+	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs, std::nullopt_t rhs);
+	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs, const U& rhs);
+
+#else
 	/**
 	 * @brief delayed_construct<T> is comparable. A non-constructed object is
 	 * less than any constructed one. std::nullopt_t is equivalent to a non-
 	 * constructed object, and a value is equivalent to a constructed one.
 	 */
 #define OVERLOAD_DEFER_OP(op)                                                \
-	friend constexpr bool operator op(const delayed_construct& lhs,           \
-	                                  const delayed_construct& rhs) {         \
+	KBLIB_NODISCARD friend constexpr auto operator op(                        \
+	    const delayed_construct& lhs,                                         \
+	    const delayed_construct& rhs) noexcept->bool {                        \
 		return static_cast<const Base&>(lhs) op static_cast<const Base&>(rhs); \
 	}                                                                         \
 	template <typename U>                                                     \
-	friend constexpr bool operator op(const delayed_construct& lhs,           \
-	                                  const delayed_construct<U>& rhs) {      \
+	KBLIB_NODISCARD friend constexpr auto operator op(                        \
+	    const delayed_construct& lhs,                                         \
+	    const delayed_construct<U>& rhs) noexcept->bool {                     \
 		return static_cast<const Base&>(lhs)                                   \
 		    op static_cast<const std::optional<U>&>(rhs);                      \
 	}                                                                         \
-	friend constexpr bool operator op(const delayed_construct& lhs,           \
-	                                  std::nullopt_t rhs) {                   \
+	KBLIB_NODISCARD friend constexpr auto operator op(                        \
+	    const delayed_construct& lhs, std::nullopt_t rhs) noexcept->bool {    \
 		return static_cast<const Base&>(lhs) op rhs;                           \
 	}                                                                         \
-	friend constexpr bool operator op(std::nullopt_t lhs,                     \
-	                                  const delayed_construct& rhs) {         \
+	KBLIB_NODISCARD friend constexpr auto operator op(                        \
+	    std::nullopt_t lhs, const delayed_construct& rhs) noexcept->bool {    \
 		return lhs op static_cast<const Base&>(rhs);                           \
 	}                                                                         \
 	template <typename U>                                                     \
-	friend constexpr bool operator op(const delayed_construct& opt,           \
-	                                  const U& value) {                       \
+	KBLIB_NODISCARD friend constexpr auto operator op(                        \
+	    const delayed_construct& opt, const U& value) noexcept->bool {        \
 		return static_cast<const Base&>(opt) op value;                         \
 	}                                                                         \
 	template <typename U>                                                     \
-	friend constexpr bool operator op(const U& value,                         \
-	                                  const delayed_construct& opt) {         \
+	KBLIB_NODISCARD friend constexpr auto operator op(                        \
+	    const U& value, const delayed_construct& opt) noexcept->bool {        \
 		return value op static_cast<const Base&>(opt);                         \
 	}
 
@@ -77,6 +91,7 @@ class delayed_construct : protected std::optional<T> {
 	OVERLOAD_DEFER_OP(>=)
 
 #undef OVERLOAD_DEFER_OP
+#endif
 
 	friend struct std::hash<T>;
 };
@@ -92,7 +107,7 @@ namespace std {
 template <typename T>
 struct hash<kblib::delayed_construct<T>> : hash<T> {
 	using argument_type = kblib::delayed_construct<T>;
-	size_t operator()(const argument_type& value) const noexcept {
+	auto operator()(const argument_type& value) const noexcept -> std::size_t {
 		return hash<optional<T>>{}(static_cast<const optional<T>&>(value));
 	}
 };

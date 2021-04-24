@@ -105,7 +105,7 @@ enum class endian { unknown, little, big, weird };
 
 #ifdef __BYTE_ORDER__
 namespace detail {
-	constexpr endian get_system_endian() {
+	KBLIB_NODISCARD constexpr auto get_system_endian() -> endian {
 		if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
 			return endian::big;
 		} else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
@@ -122,7 +122,7 @@ constexpr endian system_endian = endian::unknown;
 #endif
 
 namespace detail {
-	constexpr endian get_hash_order() {
+	KBLIB_NODISCARD constexpr auto get_hash_order() -> endian {
 		if (system_endian == endian::little or system_endian == endian::big) {
 			return system_endian;
 		} else {

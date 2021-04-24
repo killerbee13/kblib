@@ -7,7 +7,7 @@
 #include <string>
 
 template <int I1, int I2>
-int multi_template() {
+auto multi_template() -> int {
 	return I1 * I2;
 }
 
@@ -39,36 +39,29 @@ transpose_arr(std::array<std::array<T, cols>, rows> in) {
 	/*
 	std::array<std::array<T, cols>, rows> ret{};
 	for (std::size_t C = 0; C != cols; ++C) {
-		for (std::size_t R = 0; R != rows; ++R) {
-			ret[R][C] = in[C][R];
-		}
+	   for (std::size_t R = 0; R != rows; ++R) {
+	      ret[R][C] = in[C][R];
+	   }
 	}
 	return ret;*/
 }
 
 TEST_CASE("transpose") {
-	std::array<std::array<int, 4>, 3> input{{
-		{0, 1, 2, 3},
-		{4, 5, 6, 7},
-		{8, 9, 10, 11}
-	}};
-	std::array<std::array<int, 3>, 4> transposed{{
-		{0, 4, 8},
-		{1, 5, 9},
-		{2, 6, 10},
-		{3, 7, 11}
-	}};
+	std::array<std::array<int, 4>, 3> input{
+	    {{0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}}};
+	std::array<std::array<int, 3>, 4> transposed{
+	    {{0, 4, 8}, {1, 5, 9}, {2, 6, 10}, {3, 7, 11}}};
 
 	REQUIRE(transpose_arr(input) == transposed);
 }
 
 template <int I2, int... Is1>
-constexpr std::array<int (*)(), 8> gen_row(tag<Is1...>) {
+constexpr auto gen_row(tag<Is1...>) -> std::array<int (*)(), 8> {
 	return {&multi_template<Is1, I2>...};
 }
 
 template <typename Tag1, int... Is2>
-constexpr std::array<std::array<int (*)(), 8>, 8> gen_dispatch_table() {
+constexpr auto gen_dispatch_table() -> std::array<std::array<int (*)(), 8>, 8> {
 	std::array<std::array<int (*)(), 8>, 8> tmp = {gen_row<Is2>(Tag1{})...};
 	return transpose_arr(tmp);
 }
@@ -77,7 +70,7 @@ constexpr std::array<std::array<int (*)(), 8>, 8> dispatch_table =
     gen_dispatch_table<tag<6, 13, 14, 19, 22, 22, 24, 27>, 1, 3, 5, 6, 18, 21,
                        25, 31>();
 
-int multi_dispatcher(int i1, int i2) {
+auto multi_dispatcher(int i1, int i2) -> int {
 	constexpr std::array<int, 8> i1_lookup = {6, 13, 14, 19, 22, 22, 24, 27};
 	constexpr std::array<int, 8> i2_lookup = {1, 3, 5, 6, 18, 21, 25, 31};
 	auto find = [](int v, const std::array<int, 8>& arr) {

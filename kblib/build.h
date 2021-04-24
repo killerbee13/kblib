@@ -33,9 +33,10 @@ namespace kblib {
  *    range.
  */
 template <typename Container, typename InputIt, typename UnaryFunction>
-KBLIB_NODISCARD Container build(InputIt first, InputIt last, UnaryFunction f,
-                                typename Container::allocator_type allocator =
-                                    typename Container::allocator_type{}) {
+KBLIB_NODISCARD auto build(InputIt first, InputIt last, UnaryFunction f,
+                           typename Container::allocator_type allocator =
+                               typename Container::allocator_type{})
+    -> Container {
 	Container out(allocator);
 	std::transform(first, last, std::back_inserter(out), f);
 	return static_cast<void>(out.resize(out.size())), out;
@@ -58,10 +59,11 @@ KBLIB_NODISCARD Container build(InputIt first, InputIt last, UnaryFunction f,
  */
 template <typename Container, typename InputIt, typename InputIt2,
           typename BinaryFunction>
-KBLIB_NODISCARD Container build(InputIt first, InputIt last, InputIt2 first2,
-                                BinaryFunction f,
-                                typename Container::allocator_type allocator =
-                                    typename Container::allocator_type{}) {
+KBLIB_NODISCARD auto build(InputIt first, InputIt last, InputIt2 first2,
+                           BinaryFunction f,
+                           typename Container::allocator_type allocator =
+                               typename Container::allocator_type{})
+    -> Container {
 	Container out(allocator);
 	std::transform(first, last, first2, std::back_inserter(out), f);
 	return out;
@@ -86,7 +88,8 @@ KBLIB_NODISCARD Container build(InputIt first, InputIt last, InputIt2 first2,
  */
 template <typename Array, typename InputIt, typename UnaryFunction,
           enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
-KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
+KBLIB_NODISCARD auto build(InputIt first, InputIt last, UnaryFunction f)
+    -> Array {
 	Array out;
 	std::transform(first, last, out.begin(), f);
 	return out;
@@ -112,8 +115,8 @@ KBLIB_NODISCARD Array build(InputIt first, InputIt last, UnaryFunction f) {
 template <typename Array, typename InputIt, typename InputIt2,
           typename BinaryFunction,
           enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
-KBLIB_NODISCARD Array build(InputIt first, InputIt last, InputIt2 first2,
-                            BinaryFunction f) {
+KBLIB_NODISCARD auto build(InputIt first, InputIt last, InputIt2 first2,
+                           BinaryFunction f) -> Array {
 	Array out;
 	std::transform(first, last, first2, out.begin(), f);
 	return out;
@@ -132,9 +135,10 @@ KBLIB_NODISCARD Array build(InputIt first, InputIt last, InputIt2 first2,
  *    sequence.
  */
 template <typename Container, typename Functor>
-KBLIB_NODISCARD Container build(Functor f, size_t size,
-                                typename Container::allocator_type allocator =
-                                    typename Container::allocator_type{}) {
+KBLIB_NODISCARD auto build(Functor f, size_t size,
+                           typename Container::allocator_type allocator =
+                               typename Container::allocator_type{})
+    -> Container {
 	Container out(allocator);
 	try_reserve(out, size);
 	std::generate_n(std::back_inserter(out), size, f);
@@ -158,8 +162,9 @@ KBLIB_NODISCARD Container build(Functor f, size_t size,
  */
 template <typename Array, typename Functor,
           enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
-KBLIB_NODISCARD Array build(Functor f,
-                            size_t size = std::tuple_size<Array>::value) {
+KBLIB_NODISCARD auto build(Functor f,
+                           size_t size = std::tuple_size<Array>::value)
+    -> Array {
 	Array out;
 	std::generate_n(out.begin(), size, f);
 	return out;
@@ -180,8 +185,8 @@ KBLIB_NODISCARD Array build(Functor f,
  *    range.
  */
 template <typename Container, typename InputIt, typename UnaryFunction>
-KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last,
-                                   UnaryFunction f) {
+KBLIB_NODISCARD auto build_dy(InputIt first, InputIt last, UnaryFunction f)
+    -> Container {
 	Container out;
 	std::transform(first, last, std::back_inserter(out), f);
 	return out;
@@ -204,8 +209,8 @@ KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last,
  */
 template <typename Container, typename InputIt, typename InputIt2,
           typename BinaryFunction>
-KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last, InputIt2 first2,
-                                   BinaryFunction f) {
+KBLIB_NODISCARD auto build_dy(InputIt first, InputIt last, InputIt2 first2,
+                              BinaryFunction f) -> Container {
 	Container out;
 	std::transform(first, last, first2, std::back_inserter(out), f);
 	return out;
@@ -222,7 +227,7 @@ KBLIB_NODISCARD Container build_dy(InputIt first, InputIt last, InputIt2 first2,
  *    sequence.
  */
 template <typename Container, typename Functor>
-KBLIB_NODISCARD Container build_dy(Functor f, size_t size) {
+KBLIB_NODISCARD auto build_dy(Functor f, size_t size) -> Container {
 	Container out;
 	try_reserve(out, size);
 	std::generate_n(std::back_inserter(out), size, f);
@@ -230,61 +235,78 @@ KBLIB_NODISCARD Container build_dy(Functor f, size_t size) {
 }
 
 #if 0
-//I can't overload on both array vs. dynamic container and execution policy
-//in any sane way without concepts, so this whole set of functions is cut
+// I can't overload on both array vs. dynamic container and execution policy
+// in any sane way without concepts, so this whole set of functions is cut
 // because they're less useful than the array overloads.
-template<typename Container, typename ExecutionPolicy,
-      typename InputIt, typename UnaryFunction>
-Container build(ExecutionPolicy&& policy, InputIt first,
-      InputIt last, UnaryFunction f,
-      [[gnu::unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
-  Container out;
-  std::transform(policy, first, last, std::back_inserter(out), f);
-  return static_cast<void>(out.resize(out.size())), out;
+template <typename Container, typename ExecutionPolicy, typename InputIt,
+          typename UnaryFunction>
+KBLIB_NODISCARD auto
+build(ExecutionPolicy&& policy, InputIt first, InputIt last, UnaryFunction f,
+      KBLIB_UNUSED
+      typename Container::allocator_type = typename Container::allocator_type{})
+    -> Container {
+	Container out;
+	std::transform(policy, first, last, std::back_inserter(out), f);
+	return static_cast<void>(out.resize(out.size())), out;
 }
-template<typename Container, typename ExecutionPolicy,
-      typename InputIt, typename InputIt2, typename BinaryFunction>
-Container build(ExecutionPolicy&& policy, InputIt first,
-      InputIt last, InputIt2 first2, BinaryFunction f,
-      [[gnu::unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
-  Container out;
-  std::transform(policy, first, last, first2,
-     std::back_inserter(out), f);
-  return out;
+template <typename Container, typename ExecutionPolicy, typename InputIt,
+          typename InputIt2, typename BinaryFunction>
+KBLIB_NODISCARD auto
+build(ExecutionPolicy&& policy, InputIt first, InputIt last, InputIt2 first2,
+      BinaryFunction f,
+      KBLIB_UNUSED
+      typename Container::allocator_type = typename Container::allocator_type{})
+    -> Container {
+	Container out;
+	std::transform(policy, first, last, first2, std::back_inserter(out), f);
+	return out;
 }
-template<typename Array, typename ExecutionPolicy,
-      typename InputIt, typename UnaryFunction,
-      typename std::enable_if<std::is_convertible<typename std::tuple_size<Array>::value_type, size_t>::value, int>::type = 0>
-Array build(ExecutionPolicy&& policy, InputIt first,
-      InputIt last, UnaryFunction f) {
-  Array out;
-  std::transform(policy, first, last, out.begin(), f);
-  return out;
+template <typename Array, typename ExecutionPolicy, typename InputIt,
+          typename UnaryFunction,
+          typename std::enable_if<
+              std::is_convertible<typename std::tuple_size<Array>::value_type,
+                                  size_t>::value,
+              int>::type = 0>
+KBLIB_NODISCARD auto build(ExecutionPolicy&& policy, InputIt first,
+                           InputIt last, UnaryFunction f) -> Array {
+	Array out;
+	std::transform(policy, first, last, out.begin(), f);
+	return out;
 }
-template<typename Array, typename ExecutionPolicy,
-      typename InputIt, typename InputIt2, typename BinaryFunction,
-      typename std::enable_if<std::is_convertible<typename std::tuple_size<Array>::value_type, size_t>::value, int>::type = 0>
-Array build(ExecutionPolicy&& policy, InputIt first,
-      InputIt last, InputIt2 first2, BinaryFunction f) {
-  Array out;
-  std::transform(policy, first, last, first2, out.begin(), f);
-  return out;
+template <typename Array, typename ExecutionPolicy, typename InputIt,
+          typename InputIt2, typename BinaryFunction,
+          typename std::enable_if<
+              std::is_convertible<typename std::tuple_size<Array>::value_type,
+                                  size_t>::value,
+              int>::type = 0>
+KBLIB_NODISCARD auto build(ExecutionPolicy&& policy, InputIt first,
+                           InputIt last, InputIt2 first2, BinaryFunction f)
+    -> Array {
+	Array out;
+	std::transform(policy, first, last, first2, out.begin(), f);
+	return out;
 }
-template<typename Container, typename ExecutionPolicy,
-      typename Functor>
-inline Container build(ExecutionPolicy&& policy, Functor f, size_t size,
-      [[gnu::unused]] typename Container::allocator_type = typename Container::allocator_type{}) {
-  Container out(size);
-  std::generate_n(policy, out.begin(), size, f);
-  return out;
+template <typename Container, typename ExecutionPolicy, typename Functor>
+KBLIB_NODISCARD auto
+build(ExecutionPolicy&& policy, Functor f, size_t size,
+      [[gnu::unused]]
+      typename Container::allocator_type = typename Container::allocator_type{})
+    -> Container {
+	Container out(size);
+	std::generate_n(policy, out.begin(), size, f);
+	return out;
 }
-template<typename Array, typename ExecutionPolicy,
-      typename Functor,
-      typename std::enable_if<std::is_convertible<typename std::tuple_size<Array>::value_type, size_t>::value, int>::type = 0>
-inline Array build(ExecutionPolicy&& policy, Functor f, size_t size = std::tuple_size<Array>::value) {
-  Array out;
-  std::generate_n(policy, out.begin(), size, f);
-  return out;
+template <typename Array, typename ExecutionPolicy, typename Functor,
+          typename std::enable_if<
+              std::is_convertible<typename std::tuple_size<Array>::value_type,
+                                  size_t>::value,
+              int>::type = 0>
+KBLIB_NODISCARD auto build(ExecutionPolicy&& policy, Functor f,
+                           size_t size = std::tuple_size<Array>::value)
+    -> Array {
+	Array out;
+	std::generate_n(policy, out.begin(), size, f);
+	return out;
 }
 #endif
 
@@ -293,7 +315,7 @@ namespace detail {
 	template <typename Container>
 	struct buildiota_impl<Container, true> {
 		template <typename T>
-		constexpr static Container impl(std::size_t count, T value) {
+		constexpr static auto impl(std::size_t count, T value) -> Container {
 			Container out;
 			try_reserve(out, count);
 			while (count-- > 0) {
@@ -303,7 +325,8 @@ namespace detail {
 			return out;
 		}
 		template <typename T, typename I>
-		constexpr static Container impl(std::size_t count, T value, I incr) {
+		constexpr static auto impl(std::size_t count, T value, I incr)
+		    -> Container {
 			Container out;
 			try_reserve(out, count);
 			while (count-- > 0) {
@@ -317,7 +340,7 @@ namespace detail {
 	template <typename Array>
 	struct buildiota_impl<Array, false> {
 		template <typename T>
-		constexpr static Array impl(T value) {
+		constexpr static auto impl(T value) -> Array {
 			Array out{};
 			for (auto& v : out) {
 				v = value;
@@ -326,7 +349,7 @@ namespace detail {
 			return out;
 		}
 		template <typename T, typename I>
-		constexpr static Array impl(T value, I incr) {
+		constexpr static auto impl(T value, I incr) -> Array {
 			Array out{};
 			for (auto& v : out) {
 				v = value;
@@ -352,7 +375,7 @@ namespace detail {
  * final argument.
  */
 template <typename Container, typename... Args>
-KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) {
+KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) -> auto {
 	return detail::buildiota_impl<Container, detail::is_resizable_v<Container>>::
 	    impl(std::forward<Args>(args)...);
 }
@@ -366,10 +389,10 @@ KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) {
  * @return Container
  */
 template <typename Container, typename InputIt>
-KBLIB_NODISCARD Container
-build_copy(InputIt first, InputIt last,
-           typename Container::allocator_type allocator =
-               typename Container::allocator_type{}) {
+KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last,
+                                typename Container::allocator_type allocator =
+                                    typename Container::allocator_type{})
+    -> Container {
 	Container out(allocator);
 	std::copy(first, last, std::back_inserter(out));
 	return out;
@@ -383,9 +406,10 @@ build_copy(InputIt first, InputIt last,
  * @return Container
  */
 template <typename Container, typename Range>
-KBLIB_NODISCARD Container
-build_copy(Range&& r, typename Container::allocator_type allocator =
-                          typename Container::allocator_type{}) {
+KBLIB_NODISCARD auto build_copy(Range&& r,
+                                typename Container::allocator_type allocator =
+                                    typename Container::allocator_type{})
+    -> Container {
 	Container out(allocator);
 	std::copy(std::begin(r), std::end(r), std::back_inserter(out));
 	return out;
@@ -400,7 +424,8 @@ build_copy(Range&& r, typename Container::allocator_type allocator =
  */
 template <typename Container, typename InputIt,
           enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
-KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
+KBLIB_NODISCARD constexpr auto build_copy(InputIt first, InputIt last)
+    -> Container {
 	Container out{};
 	auto pos = std::begin(out);
 	auto end = std::end(out);
@@ -418,7 +443,7 @@ KBLIB_NODISCARD constexpr Container build_copy(InputIt first, InputIt last) {
  */
 template <typename Container, typename Range,
           enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
-KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
+KBLIB_NODISCARD constexpr auto build_copy(Range&& r) -> Container {
 	Container out{};
 	auto first = std::begin(r);
 	auto last = std::end(r);
@@ -440,8 +465,8 @@ KBLIB_NODISCARD constexpr Container build_copy(Range&& r) {
  */
 template <typename Container, typename InputIt,
           enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
-KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
-                                     std::size_t size) {
+KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last, std::size_t size)
+    -> Container {
 	Container out;
 	auto pos = std::begin(out);
 	auto end = std::end(out);
@@ -461,7 +486,7 @@ KBLIB_NODISCARD Container build_copy(InputIt first, InputIt last,
  */
 template <typename Container, typename Range,
           enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
-KBLIB_NODISCARD Container build_copy(Range&& r, std::size_t size) {
+KBLIB_NODISCARD auto build_copy(Range&& r, std::size_t size) -> Container {
 	Container out;
 	auto first = std::begin(r);
 	auto last = std::end(r);
@@ -484,10 +509,10 @@ KBLIB_NODISCARD Container build_copy(Range&& r, std::size_t size) {
  * @return Container
  */
 template <typename Container, typename InputIt, typename Predicate>
-KBLIB_NODISCARD Container
+KBLIB_NODISCARD auto
 build_copy_if(InputIt first, InputIt last, Predicate f,
               typename Container::allocator_type allocator =
-                  typename Container::allocator_type{}) {
+                  typename Container::allocator_type{}) -> Container {
 	Container out(allocator);
 	kblib::copy_if(first, last, std::back_inserter(out), f);
 	return out;
@@ -502,10 +527,10 @@ build_copy_if(InputIt first, InputIt last, Predicate f,
  * @return Container
  */
 template <typename Container, typename InputIt, typename Size>
-KBLIB_NODISCARD Container
-build_copy_n(InputIt first, Size count,
-             typename Container::allocator_type allocator =
-                 typename Container::allocator_type{}) {
+KBLIB_NODISCARD auto build_copy_n(InputIt first, Size count,
+                                  typename Container::allocator_type allocator =
+                                      typename Container::allocator_type{})
+    -> Container {
 	Container out(allocator);
 	std::copy_n(first, count, std::back_inserter(out));
 	return out;
@@ -522,10 +547,10 @@ build_copy_n(InputIt first, Size count,
  */
 template <typename Container, typename InputIt, typename Size,
           typename Predicate>
-KBLIB_NODISCARD Container
+KBLIB_NODISCARD auto
 build_copy_n_if(InputIt first, Size count, Predicate f,
                 typename Container::allocator_type allocator =
-                    typename Container::allocator_type{}) {
+                    typename Container::allocator_type{}) -> Container {
 	Container out(allocator);
 	kblib::copy_n_if(first, count, std::back_inserter(out), f);
 	return out;

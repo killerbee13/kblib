@@ -20,7 +20,7 @@ class invasive_map {
 	// etc
 
 	template <int>
-	auto get();
+	auto get() -> auto;
 
  private:
 	std::deque<Value> storage;
@@ -39,7 +39,7 @@ class invasive_dual_map {
 	// etc
 
 	template <int>
-	auto get();
+	auto get() -> auto;
 
  private:
 	std::deque<Value> storage;

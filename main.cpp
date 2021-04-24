@@ -13,7 +13,7 @@
 
 #if KBLIB_USE_CXX17
 template <class T>
-constexpr std::string_view type_name_f() {
+constexpr auto type_name_f() -> std::string_view {
 	using namespace std;
 	auto sz = sizeof("type_name_f") - 1;
 #ifdef __clang__
@@ -54,16 +54,18 @@ KBLIB_UNUSED constexpr const char type_name<signed char>[] = "signed char";
 template <int depth>
 struct bad_iterator {
 	int* p;
-	constexpr bad_iterator<depth - 1> operator->() const noexcept { return {p}; }
+	constexpr auto operator->() const noexcept -> bad_iterator<depth - 1> {
+		return {p};
+	}
 };
 
 template <>
 struct bad_iterator<0> {
 	int* p;
-	constexpr int* operator->() const noexcept { return p; }
+	constexpr auto operator->() const noexcept -> int* { return p; }
 };
 
-constexpr bool test() noexcept {
+constexpr auto test() noexcept -> bool {
 	int i{};
 	return &i == kblib::to_pointer(&i) and
 	       &i == kblib::to_pointer(bad_iterator<0>{&i}) and
@@ -73,13 +75,13 @@ constexpr bool test() noexcept {
 
 static_assert(test(), "");
 
-void test(std::streamsize s) { std::cout << s << '\n'; }
+auto test(std::streamsize s) -> void { std::cout << s << '\n'; }
 void test_trie();
 
 TEST_CASE("main") {
 
-	for (int b = 0; b < 62; ++b) {
-		long long i = 1ll << b;
+	for (unsigned b = 0; b < 62; ++b) {
+		std::uint64_t i = 1ull << b;
 		std::pair<int, int> lengths[] = {
 		    {std::to_string(i).length(), kblib::count_digits(i)},
 		    {std::to_string(-i).length(), kblib::count_digits(-i)},

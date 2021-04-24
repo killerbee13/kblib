@@ -9,7 +9,7 @@
 #include <map>
 
 template <typename T, std::size_t N>
-constexpr bool sort_test(kblib::trivial_array<T, N> val) noexcept {
+constexpr auto sort_test(kblib::trivial_array<T, N> val) noexcept -> bool {
 	kblib::trivial_array<T, N> out{};
 	kblib::insertion_sort_copy(val.begin(), val.end(), out.begin(), out.end());
 	kblib::insertion_sort(val.begin(), val.end());
@@ -24,7 +24,7 @@ TEST_CASE("sort") {
 		return copy;
 	}();
 
-	[[gnu::unused]] auto print_arr = [&](auto c) {
+	KBLIB_UNUSED auto print_arr = [&](auto c) {
 		for (const auto& v : c) {
 			std::cout << v << ", ";
 		}
@@ -106,7 +106,7 @@ TEST_CASE("sort") {
 
 static std::ostream& log_location = std::cout;
 
-auto linear(std::size_t i) { return i; }
+auto linear(std::size_t i) -> std::size_t { return i; }
 
 TEST_CASE("insertion sort performance") {
 	auto time_and_log = [&](auto&& f, std::size_t quick = 30,
@@ -245,7 +245,6 @@ TEST_CASE("insertion sort performance") {
 }
 
 TEST_CASE("byte extraction") {
-	namespace detail = kblib::detail;
 	constexpr std::uint32_t x{0xAB23CD67};
 
 	static_assert(std::numeric_limits<std::uint32_t>::digits ==
@@ -253,27 +252,27 @@ TEST_CASE("byte extraction") {
 	              "these checks assume uint32_t does not have padding.");
 	static_assert(CHAR_BIT == 8, "these checks assume 8-bit bytes");
 
-	static_assert(detail::byte_count(x) == sizeof(x), "");
-	static_assert(+detail::get_byte_index(x, 0) == 0x67, "");
-	static_assert(+detail::get_byte_index(x, 1) == 0xCD, "");
-	static_assert(+detail::get_byte_index(x, 2) == 0x23, "");
-	static_assert(+detail::get_byte_index(x, 3) == 0xAB, "");
+	static_assert(kblib::byte_count(x) == sizeof(x), "");
+	static_assert(+kblib::get_byte_index(x, 0) == 0x67, "");
+	static_assert(+kblib::get_byte_index(x, 1) == 0xCD, "");
+	static_assert(+kblib::get_byte_index(x, 2) == 0x23, "");
+	static_assert(+kblib::get_byte_index(x, 3) == 0xAB, "");
 
 	std::string str{"0123456789"};
-	REQUIRE(detail::byte_count(str) == str.length());
+	REQUIRE(kblib::byte_count(str) == str.length());
 	for (auto i : kblib::range(str.length())) {
-		REQUIRE((detail::get_byte_index(str, i)) == str[i]);
+		REQUIRE((kblib::get_byte_index(str, i)) == str[i]);
 	}
 
 	constexpr std::array<std::int32_t, 2> arr{0x10325476,
 	                                          std::int32_t(0x98BADCFE)};
-	static_assert(detail::byte_count(arr) == 8, "");
-	static_assert(+detail::get_byte_index(arr, 0) == 0x76, "");
-	static_assert(+detail::get_byte_index(arr, 1) == 0x54, "");
-	static_assert(+detail::get_byte_index(arr, 2) == 0x32, "");
-	static_assert(+detail::get_byte_index(arr, 3) == 0x10, "");
-	static_assert(+detail::get_byte_index(arr, 4) == 0xFE, "");
-	static_assert(+detail::get_byte_index(arr, 5) == 0xDC, "");
-	static_assert(+detail::get_byte_index(arr, 6) == 0xBA, "");
-	static_assert(+detail::get_byte_index(arr, 7) == 0x98, "");
+	static_assert(kblib::byte_count(arr) == 8, "");
+	static_assert(+kblib::get_byte_index(arr, 0) == 0x76, "");
+	static_assert(+kblib::get_byte_index(arr, 1) == 0x54, "");
+	static_assert(+kblib::get_byte_index(arr, 2) == 0x32, "");
+	static_assert(+kblib::get_byte_index(arr, 3) == 0x10, "");
+	static_assert(+kblib::get_byte_index(arr, 4) == 0xFE, "");
+	static_assert(+kblib::get_byte_index(arr, 5) == 0xDC, "");
+	static_assert(+kblib::get_byte_index(arr, 6) == 0xBA, "");
+	static_assert(+kblib::get_byte_index(arr, 7) == 0x98, "");
 }

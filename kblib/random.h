@@ -16,7 +16,7 @@
 
 namespace kblib {
 
-class trivial_seed_seq {
+class KBLIB_NODISCARD trivial_seed_seq {
  public:
 	using result_type = std::uint32_t;
 
@@ -32,7 +32,7 @@ class trivial_seed_seq {
 	}
 
 	template <typename RandomAccessIt>
-	void generate(RandomAccessIt begin, RandomAccessIt end) const {
+	auto generate(RandomAccessIt begin, RandomAccessIt end) const -> void {
 		auto o_size = end - begin;
 		auto d_size = to_signed(data.size());
 		if (data.empty()) {
@@ -52,10 +52,12 @@ class trivial_seed_seq {
 		return;
 	}
 
-	std::size_t size() const noexcept { return data.size(); }
+	KBLIB_NODISCARD auto size() const noexcept -> std::size_t {
+		return data.size();
+	}
 
 	template <typename OutputIt>
-	void param(OutputIt dest) const {
+	auto param(OutputIt dest) const -> void {
 		std::copy(data.begin(), data.end(), dest);
 		return;
 	}
@@ -97,25 +99,27 @@ template <typename T>
 constexpr std::size_t state_size_v = state_size<T>::value;
 
 template <typename Gen, typename Source>
-Gen seeded(Source&& s) {
+KBLIB_NODISCARD auto seeded(Source&& s) -> Gen {
 	auto seed = trivial_seed_seq(std::ref(s), state_size_v<Gen>);
 	return Gen{seed};
 }
 
 template <typename Gen>
-Gen seeded() {
+KBLIB_NODISCARD auto seeded() -> Gen {
 	auto seed = trivial_seed_seq(std::random_device{}, state_size_v<Gen>);
 	return Gen{seed};
 }
 
 template <typename URBG, typename Transform>
-class transform_engine : URBG {
+class KBLIB_NODISCARD transform_engine : URBG {
  private:
 	using E = URBG;
 	static_assert(std::is_default_constructible<Transform>::value, "");
 
-	E& engine() { return static_cast<E&>(*this); }
-	const E& engine() const { return static_cast<const E&>(*this); }
+	KBLIB_NODISCARD auto engine() -> E& { return static_cast<E&>(*this); }
+	KBLIB_NODISCARD auto engine() const -> const E& {
+		return static_cast<const E&>(*this);
+	}
 
  public:
 	using result_type = typename Transform::result_type;
@@ -130,12 +134,14 @@ class transform_engine : URBG {
 	                             !std::is_same<SSeq, transform_engine>::value>>
 	transform_engine(SSeq& s) : E(s) {}
 
-	transform_engine& operator=(const transform_engine&) = delete;
-	transform_engine& operator=(transform_engine&&) = delete;
+	KBLIB_NODISCARD auto operator=(const transform_engine&)
+	    -> transform_engine& = delete;
+	KBLIB_NODISCARD auto operator=(transform_engine &&)
+	    -> transform_engine& = delete;
 
 	~transform_engine() = default;
 
-	constexpr result_type operator()() noexcept {
+	KBLIB_NODISCARD constexpr auto operator()() noexcept -> result_type {
 		return Transform{}(engine()());
 	}
 
@@ -143,27 +149,30 @@ class transform_engine : URBG {
 
 	using E::discard;
 
-	static constexpr result_type min() noexcept {
+	KBLIB_NODISCARD static constexpr auto min() noexcept -> result_type {
 		return Transform::min(URBG::min(), URBG::max());
 	}
-	static constexpr result_type max() noexcept {
+	KBLIB_NODISCARD static constexpr auto max() noexcept -> result_type {
 		return Transform::max(URBG::min(), URBG::max());
 	}
 
-	friend bool operator==(const transform_engine& lhs,
-	                       const transform_engine& rhs) noexcept {
+	KBLIB_NODISCARD friend auto operator==(const transform_engine& lhs,
+	                                       const transform_engine& rhs) noexcept
+	    -> bool {
 		return lhs.engine() == rhs.engine();
 	}
-	friend bool operator!=(const transform_engine& lhs,
-	                       const transform_engine& rhs) noexcept {
+	KBLIB_NODISCARD friend auto operator!=(const transform_engine& lhs,
+	                                       const transform_engine& rhs) noexcept
+	    -> bool {
 		return !(lhs == rhs);
 	}
 
-	friend std::ostream& operator<<(std::ostream& os,
-	                                const transform_engine& e) {
+	friend auto operator<<(std::ostream& os, const transform_engine& e)
+	    -> std::ostream& {
 		return os << e.engine();
 	}
-	friend std::istream& operator>>(std::istream& is, transform_engine& e) {
+	friend auto operator>>(std::istream& is, transform_engine& e)
+	    -> std::istream& {
 		return is >> e.engine();
 	}
 };
@@ -176,26 +185,26 @@ struct shift_mask {
 	using result_type = UIntType;
 
 	template <typename UIntInput>
-	static constexpr auto g(UIntInput in) noexcept -> UIntType {
+	KBLIB_NODISCARD static constexpr auto g(UIntInput in) noexcept -> UIntType {
 		return static_cast<UIntType>(in >> shift) & mask;
 	}
 	KBLIB_NODISCARD constexpr auto operator()(UIntType in) const noexcept
 	    -> UIntType {
 		return g(in);
 	}
-	static constexpr auto min(UIntType min,
-	                          [[maybe_unused]] UIntType max) noexcept
-	    -> UIntType {
+	KBLIB_NODISCARD static constexpr auto
+	min(UIntType min, [[maybe_unused]] UIntType max) noexcept -> UIntType {
 		return g(min);
 	}
-	static constexpr auto max([[maybe_unused]] UIntType min,
-	                          UIntType max) noexcept -> UIntType {
+	KBLIB_NODISCARD static constexpr auto max([[maybe_unused]] UIntType min,
+	                                          UIntType max) noexcept
+	    -> UIntType {
 		return g(max);
 	}
 };
 
 template <typename UIntType>
-constexpr auto ipow2(UIntType b) noexcept -> UIntType {
+KBLIB_NODISCARD constexpr auto ipow2(UIntType b) noexcept -> UIntType {
 	if (b == std::numeric_limits<UIntType>::digits) {
 		return 0u;
 	} else {

@@ -22,18 +22,18 @@ static_assert(kblib::is_linear_container_v<std::string> and
 static_assert(kblib::asserts::is_trivial_container<std::vector<char>>, "");
 
 TEST_CASE("FNV_hash") {
-	kblib::FNV_hash<int*>{}({});
-	kblib::FNV_hash<std::string>{}({});
-	kblib::FNV_hash<std::vector<char>>{}({});
-	kblib::FNV_hash<std::vector<int>>{}({});
-	kblib::FNV_hash<std::deque<char>>{}({});
-	kblib::FNV_hash<std::tuple<>>{}({});
-	kblib::FNV_hash<std::tuple<int*>>{}({});
-	kblib::FNV_hash<std::tuple<std::wstring, int*>>{}({});
-	kblib::FNV_hash<std::string::iterator>{}({});
-	kblib::FNV_hash<std::vector<int>::iterator>{}({});
-	kblib::FNV_hash<std::deque<char>::iterator>{}({});
-	kblib::FNV_hash<std::set<int>::iterator>{}({});
+	(void)kblib::FNV_hash<int*>{}({});
+	(void)kblib::FNV_hash<std::string>{}({});
+	(void)kblib::FNV_hash<std::vector<char>>{}({});
+	(void)kblib::FNV_hash<std::vector<int>>{}({});
+	(void)kblib::FNV_hash<std::deque<char>>{}({});
+	(void)kblib::FNV_hash<std::tuple<>>{}({});
+	(void)kblib::FNV_hash<std::tuple<int*>>{}({});
+	(void)kblib::FNV_hash<std::tuple<std::wstring, int*>>{}({});
+	(void)kblib::FNV_hash<std::string::iterator>{}({});
+	(void)kblib::FNV_hash<std::vector<int>::iterator>{}({});
+	(void)kblib::FNV_hash<std::deque<char>::iterator>{}({});
+	(void)kblib::FNV_hash<std::set<int>::iterator>{}({});
 
 	std::unordered_map<std::tuple<std::wstring, int*>,
 	                   std::vector<std::basic_string<bool>>,
@@ -58,21 +58,21 @@ TEST_CASE("FNV_hash") {
 	//	                       std::hash<std::wstring>>>
 	//	    std_hash;
 	using namespace kblib::literals;
-	kblib::FNV_hash<unsigned long long> h_i;
+	kblib::FNV_hash<std::uint64_t> h_i;
 	static_assert(3452452_fnv64 == h_i(3452452ull),
 	              "hash literal and FNH_hash don't agree");
 
 	REQUIRE(kblib::FNV_hash<int>{}(1000) == 3434534542295815964);
-	kblib::FNV_hash<std::vector<int>>{}({});
-	kblib::FNV_hash<std::vector<empty_t>>{}({});
+	(void)kblib::FNV_hash<std::vector<int>>{}({});
+	(void)kblib::FNV_hash<std::vector<empty_t>>{}({});
 	// fails because of padding:
 	// kblib::FNV_hash<std::vector<has_padding>>{}({});
 	// fails because of unorderedness:
 	// kblib::FNV_hash<std::unordered_map<int, int>>{}({});
 #if KBLIB_USE_CXX17
 	kblib::FNV_hash<std::optional<int>> test_opt_hash;
-	test_opt_hash(std::nullopt);
-	test_opt_hash(42);
+	(void)test_opt_hash(std::nullopt);
+	(void)test_opt_hash(42);
 	REQUIRE(test_opt_hash(42) == kblib::FNV_hash<int>{}(42));
 
 	std::variant<int, int, std::string> var(std::in_place_index<1>, 42);

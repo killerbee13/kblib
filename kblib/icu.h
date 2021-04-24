@@ -19,7 +19,7 @@ namespace kblib {
  * @return string The re-encoded result.
  */
 template <typename string = std::string>
-string toUTF8(const icu::UnicodeString& s) {
+auto toUTF8(const icu::UnicodeString& s) -> string {
 	string res;
 	return s.toUTF8String(res);
 }
@@ -34,7 +34,7 @@ string toUTF8(const icu::UnicodeString& s) {
  * @return icu::UnicodeString The re-encoded result.
  */
 template <typename string>
-icu::UnicodeString fromUTF8(string s) {
+auto fromUTF8(string s) -> icu::UnicodeString {
 	return icu::UnicodeString::fromUTF8(s);
 }
 
@@ -45,7 +45,7 @@ icu::UnicodeString fromUTF8(string s) {
  * @return string The re-encoded result.
  */
 template <typename string = std::u32string>
-string toUTF32(const icu::UnicodeString& s) {
+auto toUTF32(const icu::UnicodeString& s) -> string {
 	string res(s.countChar32(), '\0');
 	UErrorCode ec{U_ZERO_ERROR};
 	s.toUTF32(&res[0], res.size(), ec);
@@ -66,7 +66,7 @@ string toUTF32(const icu::UnicodeString& s) {
  * @return icu::UnicodeString The re-encoded result.
  */
 template <typename string>
-icu::UnicodeString fromUTF32(string s) {
+auto fromUTF32(string s) -> icu::UnicodeString {
 	return icu::UnicodeString::fromUTF32(s.data(), s.length());
 }
 
@@ -80,8 +80,8 @@ namespace icu_str_ops {
 	 * @param str The string to output.
 	 * @return std::ostream& A reference to os.
 	 */
-	inline std::ostream& operator<<(std::ostream& os,
-	                                const icu::UnicodeString& str) {
+	inline auto operator<<(std::ostream& os, const icu::UnicodeString& str)
+	    -> std::ostream& {
 		return os << toUTF8(str);
 	}
 
@@ -89,16 +89,16 @@ namespace icu_str_ops {
 	 * @brief Give the strange ICU interface for concatenating UTF-8 and
 	 * UnicodeStrings a more idiomatic name in the form of operator+.
 	 */
-	inline std::string operator+(std::string lhs,
-	                             const icu::UnicodeString& str) {
+	inline auto operator+(std::string lhs, const icu::UnicodeString& str)
+	    -> std::string {
 		return str.toUTF8String(lhs);
 	}
 
 	/**
 	 * @brief
 	 */
-	inline icu::UnicodeString operator+(icu::UnicodeString lhs,
-	                                    const std::string& rhs) {
+	inline auto operator+(icu::UnicodeString lhs, const std::string& rhs)
+	    -> icu::UnicodeString {
 		return lhs += fromUTF8(rhs);
 	}
 } // namespace icu_str_ops
@@ -112,7 +112,8 @@ namespace icu_str_ops {
  * @return T The converted value.
  */
 template <typename T>
-T fromStr(const icu::UnicodeString& val, const char* type = typeid(T).name()) {
+auto fromStr(const icu::UnicodeString& val, const char* type = typeid(T).name())
+    -> T {
 	return fromStr<T>(toUTF8(val), type);
 }
 

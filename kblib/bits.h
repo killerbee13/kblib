@@ -33,8 +33,8 @@ namespace detail {
 		bool exists = false;
 
 		template <typename... Args>
-		Value& create(Args&&... args) noexcept(
-		    std::is_nothrow_constructible<Value, Args...>::value) {
+		auto create(Args&&... args) noexcept(
+		    std::is_nothrow_constructible<Value, Args...>::value) -> Value& {
 			clear();
 			// This variable must exist for exception safety. exists should not be
 			// set to true if an exception is thrown.
@@ -43,18 +43,18 @@ namespace detail {
 			return *v;
 		}
 
-		void clear() noexcept {
+		auto clear() noexcept -> void {
 			if (exists) {
 				get()->~Value();
 			}
 			return;
 		}
 
-		Value& get() noexcept {
+		KBLIB_NODISCARD auto get() noexcept -> Value& {
 			assert(exists);
 			return *reinterpret_cast<Value*>(storage);
 		}
-		const Value& get() const noexcept {
+		KBLIB_NODISCARD auto get() const noexcept -> const Value& {
 			assert(exists);
 			return *reinterpret_cast<Value*>(storage);
 		}
@@ -113,7 +113,8 @@ class compact_bit_trie {
 	static_assert(std::is_nothrow_destructible<mapped_type>::value,
 	              "mapped_type must be nothrow destructible.");
 
-	const_reference at(key_type key) const noexcept(false) {
+	KBLIB_NODISCARD auto at(key_type key) const noexcept(false)
+	    -> const_reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -133,7 +134,7 @@ class compact_bit_trie {
 		throw std::out_of_range("key not found in compact_bit_trie");
 	}
 
-	reference at(key_type key) noexcept(false) {
+	KBLIB_NODISCARD auto at(key_type key) noexcept(false) -> reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -153,8 +154,8 @@ class compact_bit_trie {
 		throw std::out_of_range("key not found in compact_bit_trie");
 	}
 
-	const_reference find_deep(key_type key, size_type depth = -1) const
-	    noexcept(false) {
+	KBLIB_NODISCARD auto find_deep(key_type key, size_type depth = -1) const
+	    noexcept(false) -> const_reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -181,7 +182,9 @@ class compact_bit_trie {
 		}
 	}
 
-	reference find_deep(key_type key, size_type depth = -1) noexcept(false) {
+	KBLIB_NODISCARD auto find_deep(key_type key,
+	                               size_type depth = -1) noexcept(false)
+	    -> reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -208,10 +211,12 @@ class compact_bit_trie {
 		}
 	}
 
-	bool empty() const noexcept { return values.empty(); }
+	KBLIB_NODISCARD auto empty() const noexcept -> bool {
+		return values.empty();
+	}
 
 	template <typename... Ts>
-	bool emplace(key_type key, Ts&&... args) {
+	auto emplace(key_type key, Ts&&... args) -> bool {
 		size_type node = get_storage_node_for(key);
 		if (auto& v = storage[node].val; v != max) {
 			return false;
@@ -222,14 +227,14 @@ class compact_bit_trie {
 		}
 	}
 
-	bool insert(key_type key, const value_type& value) {
+	auto insert(key_type key, const value_type& value) -> bool {
 		return emplace(key, value);
 	}
-	bool insert(key_type key, value_type&& value) {
+	auto insert(key_type key, value_type&& value) -> bool {
 		return emplace(key, std::move(value));
 	}
 
-	reference insert_or_assign(key_type key, const value_type& value) {
+	auto insert_or_assign(key_type key, const value_type& value) -> reference {
 		size_type node = get_storage_node_for(key);
 		auto& v = storage[node].val;
 		if (v != -1) {
@@ -241,7 +246,7 @@ class compact_bit_trie {
 		return values[v];
 	}
 
-	reference insert_or_assign(key_type key, value_type&& value) {
+	auto insert_or_assign(key_type key, value_type&& value) -> reference {
 		size_type node = get_storage_node_for(key);
 		auto& v = storage[node].val;
 		if (v != -1) {
@@ -255,19 +260,21 @@ class compact_bit_trie {
 
 	bool erase(key_type key);
 	bool prune(key_type prefix);
-	void clear() {
+	auto clear() -> void {
 		storage.clear();
 		values.clear();
 	}
 
-	size_type size() const noexcept { return values.size(); }
+	KBLIB_NODISCARD auto size() const noexcept -> size_type {
+		return values.size();
+	}
 
-	std::size_t memory_use() const noexcept {
+	KBLIB_NODISCARD auto memory_use() const noexcept -> std::size_t {
 		return storage.capacity() * sizeof(inline_node) +
 		       values.size() * sizeof(Value);
 	}
 
-	void shrink_to_fit() {
+	auto shrink_to_fit() -> void {
 		storage.shrink_to_fit();
 		values.shrink_to_fit();
 	}
@@ -281,7 +288,7 @@ class compact_bit_trie {
 	std::vector<inline_node> storage;
 	std::vector<Value> values;
 
-	void do_init() {
+	auto do_init() -> void {
 		if (storage.size() < 2) {
 			storage.resize(2);
 			storage[0] = {};
@@ -289,7 +296,7 @@ class compact_bit_trie {
 		}
 	}
 
-	size_type get_storage_node_for(key_type key) {
+	KBLIB_NODISCARD auto get_storage_node_for(key_type key) -> size_type {
 		if (key.bits > bits_of<Key>) {
 			throw std::invalid_argument("key prefix longer than key length");
 		}
@@ -323,15 +330,15 @@ class compact_bit_trie {
 		iterator_t(const compact_bit_trie& range)
 		    : tree_ptr{&range.storage}, values_ptr{&range.values}, node{0} {}
 		iterator_t(const iterator_t&) = default;
-		iterator_t& operator=(const iterator_t&) = default;
+		auto operator=(const iterator_t&) -> iterator_t& = default;
 
-		reference operator*() const noexcept {
+		auto operator*() const noexcept -> reference {
 			return (*values_ptr)[(*tree_ptr)[node].val];
 		}
-		pointer operator->() const noexcept {
+		auto operator->() const noexcept -> pointer {
 			return std::addressof((*values_ptr)[(*tree_ptr)[node].val]);
 		}
-		iterator_t operator++() {}
+		auto operator++() -> iterator_t {}
 
 	 private:
 		iterator_t(const compact_bit_trie& range, size_type n_)
@@ -355,10 +362,28 @@ class compact_bit_trie {
  * @param B A pointer to memory to swap with *A.
  * @param size The number of bytes to swap between *A and *B.
  */
-inline void memswap(void* A, void* B, std::size_t size) {
+constexpr inline auto memswap(unsigned char* A, unsigned char* B,
+                              std::size_t size) noexcept -> void {
+	for (auto i : range(size)) {
+		(swap)(A[i], B[i]);
+	}
+	return;
+}
+
+/**
+ * @brief Swaps memory ranges.
+ *
+ * @pre A and B must not be null.
+ * @pre *A and *B must not overlap.
+ *
+ * @param A A pointer to memory to swap with *B.
+ * @param B A pointer to memory to swap with *A.
+ * @param size The number of bytes to swap between *A and *B.
+ */
+inline auto memswap(void* A, void* B, std::size_t size) noexcept -> void {
 	auto Ab = static_cast<unsigned char*>(A);
 	auto Bb = static_cast<unsigned char*>(B);
-	std::swap_ranges(Ab, Ab + size, Bb);
+	memswap(Ab, Bb, size);
 	return;
 }
 
@@ -381,10 +406,10 @@ inline void memswap(void* A, void* B, std::size_t size) {
  */
 template <unsigned offset, unsigned size, typename Storage>
 struct bitfield {
-	Storage operator()() const noexcept {
+	auto operator()() const noexcept -> Storage {
 		return (raw >> offset) & ((1u << size) - 1);
 	}
-	Storage operator()(Storage val) noexcept {
+	auto operator()(const Storage val) noexcept -> Storage {
 		// Clear the bits for this field
 		raw &= ~(((1u << size) - 1) << offset);
 		// Set the field
@@ -392,10 +417,10 @@ struct bitfield {
 		return val;
 	}
 	operator Storage() const noexcept { return (*this)(); }
-	Storage operator=(Storage val) noexcept { return (*this)(val); }
+	auto operator=(Storage val) noexcept -> Storage { return (*this)(val); }
 	Storage raw;
 	// Is this a good idea?
-	// void operator&() = delete;
+	auto operator&() -> void = delete;
 };
 
 namespace detail {
@@ -413,7 +438,7 @@ namespace detail {
 	          ReturnT (Parent::*Get)() const noexcept>
 	struct bitfield_proxy {
 		Parent* p;
-		constexpr ReturnT operator=(ReturnT val) noexcept {
+		constexpr auto operator=(ReturnT val) noexcept -> ReturnT {
 			return (p->*Set)(val);
 		}
 		constexpr operator ReturnT() const noexcept { return (p->*Get)(); }
@@ -427,29 +452,37 @@ namespace detail {
  * @note This macro is defined unconditionally.
  */
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
+	static_assert(offset >= 0 and size > 0);                                    \
+                                                                               \
  private:                                                                      \
-	constexpr decltype(raw) name##_get_impl() const noexcept {                  \
-		return (raw >> offset) & ((decltype(raw)(1) << size) - 1);               \
+	constexpr auto name##_get_impl() const noexcept->decltype(raw) {            \
+		return (raw >> kblib::to_unsigned(offset)) &                             \
+		       ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);             \
 	}                                                                           \
                                                                                \
  public:                                                                       \
-	constexpr decltype(raw) name() const noexcept { return name##_get_impl(); } \
+	KBLIB_NODISCARD constexpr auto name() const noexcept->decltype(raw) {       \
+		return name##_get_impl();                                                \
+	}                                                                           \
                                                                                \
  private:                                                                      \
-	constexpr decltype(raw) name##_set_impl(decltype(raw) val) noexcept {       \
+	constexpr auto name##_set_impl(const decltype(raw) val) noexcept->decltype( \
+	    raw) {                                                                  \
 		/* Clear the bits for this field */                                      \
-		raw &= ~(((decltype(raw)(1) << size) - 1) << offset);                    \
+		raw &= ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1)            \
+		         << kblib::to_unsigned(offset));                                 \
 		/* Set the field */                                                      \
-		raw |= (val & ((decltype(raw)(1) << size) - 1)) << offset;               \
+		raw |= (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1))      \
+		       << kblib::to_unsigned(offset);                                    \
 		return val;                                                              \
 	}                                                                           \
                                                                                \
  public:                                                                       \
-	constexpr decltype(raw) name(decltype(raw) val) noexcept {                  \
+	constexpr auto name(const decltype(raw) val) noexcept->decltype(raw) {      \
 		return name##_set_impl(val);                                             \
 	}                                                                           \
                                                                                \
-	constexpr auto name() noexcept {                                            \
+	KBLIB_NODISCARD constexpr auto name() noexcept->auto {                      \
 		using Parent = std::remove_pointer<decltype(this)>::type;                \
 		return kblib::detail::bitfield_proxy<Parent, decltype(raw),              \
 		                                     &Parent::name##_set_impl,           \
@@ -458,19 +491,22 @@ namespace detail {
                                                                                \
 	template <decltype(raw) val, decltype(raw) basis = 0>                       \
 	constexpr static decltype(raw) set_##name##_v =                             \
-	    (basis & ~(((decltype(raw)(1) << size) - 1) << offset)) |               \
-	    (val & ((decltype(raw)(1) << size) - 1)) << offset;                     \
+	    (basis & ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1)         \
+	               << kblib::to_unsigned(offset))) |                            \
+	    (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1))            \
+	        << kblib::to_unsigned(offset);                                      \
                                                                                \
 	template <decltype(raw) basis>                                              \
 	constexpr static decltype(raw) get_##name##_v =                             \
-	    (basis >> offset) & ((decltype(raw)(1) << size) - 1);
+	    (basis >> kblib::to_unsigned(offset)) &                                 \
+	    ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);
 
 namespace detail {
 
 	template <typename Type, typename Storage>
 	struct pun_proxy {
 		Storage& base;
-		pun_proxy& operator=(Type val) noexcept {
+		auto operator=(const Type val) noexcept -> pun_proxy& {
 			std::memcpy(&base, &val, sizeof val);
 			return *this;
 		}
@@ -542,10 +578,10 @@ namespace detail {
 		static_assert(std::is_trivially_copyable<type>::value,
 		              "Type must be trivially copyable");
 
-		auto get() {
+		KBLIB_NODISCARD auto get() noexcept -> auto {
 			return pun_proxy<type, decltype(P::raw)>{static_cast<P*>(this)->raw};
 		}
-		auto get() const {
+		KBLIB_NODISCARD auto get() const noexcept -> auto {
 			return pun_proxy<const type, const decltype(P::raw)>{
 			    static_cast<const P*>(this)->raw};
 		}
@@ -555,10 +591,10 @@ namespace detail {
 	struct pun_el<P, Type[S], S, I, true> {
 		using type = Type[S];
 
-		decltype(auto) get() {
+		KBLIB_NODISCARD auto get() noexcept -> decltype(auto) {
 			return reinterpret_cast<type&>(static_cast<P*>(this)->raw);
 		}
-		decltype(auto) get() const {
+		KBLIB_NODISCARD auto get() const noexcept -> decltype(auto) {
 			return reinterpret_cast<const type&>(static_cast<const P*>(this)->raw);
 		}
 	};
@@ -567,10 +603,10 @@ namespace detail {
 	struct pun_el<P, Type[], S, I, true> {
 		using type = Type[S];
 
-		decltype(auto) get() {
+		KBLIB_NODISCARD auto get() noexcept -> decltype(auto) {
 			return reinterpret_cast<type&>(static_cast<P*>(this)->raw);
 		}
-		decltype(auto) get() const {
+		KBLIB_NODISCARD auto get() const noexcept -> decltype(auto) {
 			return reinterpret_cast<const type&>(static_cast<const P*>(this)->raw);
 		}
 	};
@@ -615,20 +651,20 @@ struct punner
 	using element_t = typename base_t<I>::type;
 
 	template <std::size_t I>
-	decltype(auto) get() & {
+	KBLIB_NODISCARD auto get() & noexcept -> decltype(auto) {
 		static_assert(std::is_base_of<base_t<I>, impl_t>::value, "");
 		return static_cast<base_t<I>&>(*this).get();
 	}
 	template <std::size_t I>
-	decltype(auto) get() const& {
+	KBLIB_NODISCARD auto get() const& noexcept -> decltype(auto) {
 		return static_cast<const base_t<I>&>(*this).get();
 	}
 	template <std::size_t I>
-	decltype(auto) get() && {
+	KBLIB_NODISCARD auto get() && noexcept -> decltype(auto) {
 		return static_cast<base_t<I>&&>(*this).get();
 	}
 	template <std::size_t I>
-	decltype(auto) get() const&& {
+	KBLIB_NODISCARD auto get() const&& noexcept -> decltype(auto) {
 		return static_cast<const base_t<I>&&>(*this).get();
 	}
 };
@@ -651,19 +687,20 @@ struct tuple_size<kblib::punner<Types...>>
 namespace kblib {
 
 template <std::size_t I, typename... Types>
-decltype(auto) get(punner<Types...>& p) {
+KBLIB_NODISCARD auto get(punner<Types...>& p) noexcept -> decltype(auto) {
 	return p.template get<I>();
 }
 template <std::size_t I, typename... Types>
-decltype(auto) get(const punner<Types...>& p) {
+KBLIB_NODISCARD auto get(const punner<Types...>& p) noexcept -> decltype(auto) {
 	return p.template get<I>();
 }
 template <std::size_t I, typename... Types>
-decltype(auto) get(punner<Types...>&& p) {
+KBLIB_NODISCARD auto get(punner<Types...>&& p) noexcept -> decltype(auto) {
 	return p.template get<I>();
 }
 template <std::size_t I, typename... Types>
-decltype(auto) get(const punner<Types...>&& p) {
+KBLIB_NODISCARD auto get(const punner<Types...>&& p) noexcept
+    -> decltype(auto) {
 	return p.template get<I>();
 }
 
@@ -685,21 +722,23 @@ class union_pun {
 	    std::is_trivially_copyable_v<std::remove_all_extents_t<member_t>>,
 	    "Storage type must be trivially copyable.");
 
-	member_t& base() noexcept {
+	KBLIB_NODISCARD auto base() noexcept -> member_t& {
 		return reinterpret_cast<class_t*>(this)->*Storage;
 	}
-	const member_t& base() const noexcept {
+	KBLIB_NODISCARD auto base() const noexcept -> const member_t& {
 		return reinterpret_cast<const class_t*>(this)->*Storage;
 	}
 
  public:
-	const_proxy_t operator()() const noexcept { return {base()}; }
-	proxy_t operator()(Type val) noexcept {
+	KBLIB_NODISCARD auto operator()() const noexcept -> const_proxy_t {
+		return {base()};
+	}
+	auto operator()(const Type val) noexcept -> proxy_t {
 		std::memcpy(&base(), &val, sizeof val);
 		return {base()};
 	}
 	operator Type() const noexcept { return (*this)(); }
-	proxy_t operator=(Type val) noexcept { return (*this)(val); }
+	auto operator=(const Type val) noexcept -> proxy_t { return (*this)(val); }
 };
 
 template <typename Type, std::size_t N, auto Storage>
@@ -719,21 +758,25 @@ class union_pun<Type[N], Storage> {
 	    std::is_trivially_copyable_v<std::remove_all_extents_t<member_t>>,
 	    "Storage type must be trivially copyable.");
 
-	member_t& base() noexcept {
+	KBLIB_NODISCARD auto base() noexcept -> member_t& {
 		return reinterpret_cast<class_t*>(this)->*Storage;
 	}
-	const member_t& base() const noexcept {
+	KBLIB_NODISCARD auto base() const noexcept -> const member_t& {
 		return reinterpret_cast<const class_t*>(this)->*Storage;
 	}
 
  public:
-	const_proxy_t operator()() const noexcept { return {base()}; }
-	proxy_t operator()(const Type (&val)[N]) noexcept {
+	KBLIB_NODISCARD auto operator()() const noexcept -> const_proxy_t {
+		return {base()};
+	}
+	auto operator()(const Type (&val)[N]) noexcept -> proxy_t {
 		std::memcpy(&base(), &val, sizeof val);
 		return {base()};
 	}
 	operator type() const noexcept { return (*this)(); }
-	proxy_t operator=(const Type (&val)[N]) noexcept { return (*this)(val); }
+	auto operator=(const Type (&val)[N]) noexcept -> proxy_t {
+		return (*this)(val);
+	}
 };
 #endif
 

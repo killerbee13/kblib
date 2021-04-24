@@ -5,7 +5,7 @@
 TEST_CASE("direct_map") {
 	kblib::direct_map<char, std::string> map;
 	REQUIRE(map.begin() == map.end());
-	REQUIRE(map.size() == 0);
+	REQUIRE((map.size()) == 0); // extra parens to silence a warning
 	REQUIRE(map.empty());
 	REQUIRE_FALSE(map.contains('a'));
 	map['a'] = "42";
@@ -53,12 +53,12 @@ TEST_CASE("direct_map") {
 	REQUIRE(std::distance(map.begin(), map.end()) == 2);
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
-	map[map.min()] = "2";
+	map[decltype(map)::min()] = "2";
 	REQUIRE(map.at('a') == "42");
 	REQUIRE(map.at(map.min()) == "2");
 	{
 		auto b = map.begin();
-		auto f = map.find(map.min());
+		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE(f->second == "2");
@@ -86,6 +86,7 @@ KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,
                                      kblib::direct_map<char, int>& map2,
                                      kblib::direct_map<char, int>& map3)
     -> bool {
+	using map_t = kblib::direct_map<char, int>;
 	map['a'] = 42;
 	static_cast<void>(map.contains('a'));
 	static_cast<void>(not map.contains('b'));
@@ -132,12 +133,12 @@ KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,
 	static_cast<void>(std::distance(map.begin(), map.end()) == 2);
 	static_cast<void>(map.upper_bound('\t') == map.find('a'));
 
-	map[map.min()] = 2;
+	map[map_t::min()] = 2;
 	static_cast<void>(map.at('a') == 42);
-	static_cast<void>(map.at(map.min()) == 2);
+	static_cast<void>(map.at(map_t::min()) == 2);
 	{
 		auto b = map.begin();
-		auto f = map.find(map.min());
+		auto f = map.find(map_t::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		static_cast<void>(f->second == 2);
@@ -163,7 +164,7 @@ KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,
 TEST_CASE("direct_map<trivial>") {
 	kblib::direct_map<char, int> map;
 	REQUIRE(map.begin() == map.end());
-	REQUIRE(map.size() == 0);
+	REQUIRE((map.size()) == 0);
 	REQUIRE(map.empty());
 	REQUIRE_FALSE(map.contains('a'));
 	map['a'] = 42;
@@ -211,12 +212,12 @@ TEST_CASE("direct_map<trivial>") {
 	REQUIRE(std::distance(map.begin(), map.end()) == 2);
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
-	map[map.min()] = 2;
+	map[decltype(map)::min()] = 2;
 	REQUIRE(map.at('a') == 42);
 	REQUIRE(map.at(map.min()) == 2);
 	{
 		auto b = map.begin();
-		auto f = map.find(map.min());
+		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE(f->second == 2);
@@ -243,7 +244,7 @@ TEST_CASE("direct_map (heap)") {
 	                  std::allocator<std::pair<const char, std::string>>>
 	    map;
 	REQUIRE(map.begin() == map.end());
-	REQUIRE(map.size() == 0);
+	REQUIRE((map.size()) == 0);
 	REQUIRE(map.empty());
 	REQUIRE_FALSE(map.contains('a'));
 	map['a'] = "42";
@@ -291,12 +292,12 @@ TEST_CASE("direct_map (heap)") {
 	REQUIRE(std::distance(map.begin(), map.end()) == 2);
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
-	map[map.min()] = "2";
+	map[decltype(map)::min()] = "2";
 	REQUIRE(map.at('a') == "42");
 	REQUIRE(map.at(map.min()) == "2");
 	{
 		auto b = map.begin();
-		auto f = map.find(map.min());
+		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE(f->second == "2");
@@ -324,7 +325,7 @@ TEST_CASE("direct_map<trivial> (heap)") {
 	                  std::allocator<std::pair<const char, std::string>>>
 	    map;
 	REQUIRE(map.begin() == map.end());
-	REQUIRE(map.size() == 0);
+	REQUIRE((map.size()) == 0);
 	REQUIRE(map.empty());
 	REQUIRE_FALSE(map.contains('a'));
 	map['a'] = 42;
@@ -372,12 +373,12 @@ TEST_CASE("direct_map<trivial> (heap)") {
 	REQUIRE(std::distance(map.begin(), map.end()) == 2);
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
-	map[map.min()] = 2;
+	map[decltype(map)::min()] = 2;
 	REQUIRE(map.at('a') == 42);
 	REQUIRE(map.at(map.min()) == 2);
 	{
 		auto b = map.begin();
-		auto f = map.find(map.min());
+		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE(f->second == 2);

@@ -39,8 +39,8 @@ namespace detail {
 	template <
 	    typename F, typename... Args,
 	    enable_if_t<not std::is_member_pointer<decay_t<F>>::value, int> = 0>
-	constexpr decltype(auto) do_invoke(F&& f, Args&&... args) noexcept(
-	    noexcept(std::forward<F>(f)(std::forward<Args>(args)...))) {
+	constexpr auto do_invoke(F&& f, Args&&... args) noexcept(noexcept(
+	    std::forward<F>(f)(std::forward<Args>(args)...))) -> decltype(auto) {
 		return std::forward<F>(f)(std::forward<Args>(args)...);
 	}
 
@@ -48,9 +48,8 @@ namespace detail {
 	          enable_if_t<not std::is_pointer<decay_t<Object>>::value and
 	                          std::is_member_function_pointer<F>::value,
 	                      int> = 0>
-	constexpr decltype(auto)
-	do_invoke(F f, Object&& obj, Args&&... args) noexcept(
-	    noexcept((obj.*f)(std::forward<Args>(args)...))) {
+	constexpr auto do_invoke(F f, Object&& obj, Args&&... args) noexcept(
+	    noexcept((obj.*f)(std::forward<Args>(args)...))) -> decltype(auto) {
 		return (obj.*f)(std::forward<Args>(args)...);
 	}
 
@@ -58,9 +57,8 @@ namespace detail {
 	          enable_if_t<std::is_pointer<Pointer>::value and
 	                          std::is_member_function_pointer<F>::value,
 	                      int> = 0>
-	constexpr decltype(auto)
-	do_invoke(F f, Pointer ptr, Args&&... args) noexcept(
-	    noexcept((ptr->*f)(std::forward<Args>(args)...))) {
+	constexpr auto do_invoke(F f, Pointer ptr, Args&&... args) noexcept(
+	    noexcept((ptr->*f)(std::forward<Args>(args)...))) -> decltype(auto) {
 		return (ptr->*f)(std::forward<Args>(args)...);
 	}
 
@@ -68,7 +66,8 @@ namespace detail {
 	          enable_if_t<not std::is_pointer<decay_t<Object>>::value and
 	                          std::is_member_object_pointer<Member>::value,
 	                      int> = 0>
-	constexpr decltype(auto) do_invoke(Member mem, Object&& obj) noexcept {
+	constexpr auto do_invoke(Member mem, Object&& obj) noexcept
+	    -> decltype(auto) {
 		return std::forward<Object>(obj).*mem;
 	}
 
@@ -76,14 +75,16 @@ namespace detail {
 	          enable_if_t<std::is_pointer<Pointer>::value and
 	                          std::is_member_object_pointer<Member>::value,
 	                      int> = 0>
-	constexpr decltype(auto) do_invoke(Member mem, Pointer ptr) noexcept {
+	constexpr auto do_invoke(Member mem, Pointer ptr) noexcept
+	    -> decltype(auto) {
 		return ptr.*mem;
 	}
 } // namespace detail
 
 template <typename F, typename... Args>
-constexpr decltype(auto) invoke(F&& f, Args&&... args) noexcept(noexcept(
-    detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...))) {
+constexpr auto invoke(F&& f, Args&&... args) noexcept(noexcept(
+    detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...)))
+    -> decltype(auto) {
 #if KBLIB_USE_CXX17
 	return std::apply(std::forward<F>(f),
 	                  std::forward_as_tuple(std::forward<Args>(args)...));
@@ -173,8 +174,8 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 			static nat test_swap(long);
 
 			// Extra parens are needed for the C++03 definition of decltype.
-			typedef decltype((test_swap<Tp, Up>(0))) swap1;
-			typedef decltype((test_swap<Up, Tp>(0))) swap2;
+			using swap1 = decltype((test_swap<Tp, Up>(0)));
+			using swap2 = decltype((test_swap<Up, Tp>(0)));
 
 			static const bool value = not std::is_same<swap1, nat>::value and
 			                          not std::is_same<swap2, nat>::value;
@@ -275,7 +276,7 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 	} // namespace detail
 
 	template <typename F>
-	detail::not_fn_t<F> not_fn(F&& f) {
+	auto not_fn(F&& f) -> detail::not_fn_t<F> {
 		return detail::not_fn_t<F>(std::forward<F>(f));
 	}
 
@@ -285,7 +286,7 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 	static constexpr in_place_t in_place{};
 
 	template <class ForwardIt>
-	constexpr ForwardIt max_element(ForwardIt first, ForwardIt last) {
+	constexpr auto max_element(ForwardIt first, ForwardIt last) -> ForwardIt {
 		if (first == last)
 			return last;
 
@@ -300,8 +301,8 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 	}
 
 	template <class ForwardIt, class Compare>
-	constexpr ForwardIt max_element(ForwardIt first, ForwardIt last,
-	                                Compare comp) {
+	constexpr auto max_element(ForwardIt first, ForwardIt last, Compare comp)
+	    -> ForwardIt {
 		if (first == last)
 			return last;
 
@@ -321,7 +322,7 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 	}
 
 	template <class T, std::size_t N>
-	constexpr std::size_t size(const T (&)[N]) noexcept {
+	constexpr auto size(const T (&)[N]) noexcept -> std::size_t {
 		return N;
 	}
 
@@ -336,7 +337,7 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 			    -> decltype(kblib::invoke(std::declval<XFp>(),
 			                              std::declval<XArgs>()...));
 			template <class XFp, class... XArgs>
-			static detail::nat try_call(...);
+			static auto try_call(...) -> detail::nat;
 
 			using Result = decltype(try_call<Fp, Args...>(0));
 
@@ -358,7 +359,7 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 
 		template <class Ret, class Fp, class... Args>
 		struct nothrow_invokable_r_imp<true, false, Ret, Fp, Args...> {
-			typedef nothrow_invokable_r_imp ThisT;
+			using ThisT = nothrow_invokable_r_imp;
 
 			template <class Tp>
 			static void test_noexcept(Tp) noexcept;
@@ -522,11 +523,12 @@ apply(F&& f, Arg&& arg) noexcept(noexcept(detail::apply_impl<F, Arg>::do_apply(
 }
 
 template <typename T>
-std::unique_ptr<T> to_unique(gsl::owner<T*> p) {
+KBLIB_NODISCARD auto to_unique(gsl::owner<T*> p) -> std::unique_ptr<T> {
 	return std::unique_ptr<T>(p);
 }
 template <typename T, typename D>
-std::unique_ptr<T, D> to_unique(gsl::owner<T*> p, D&& d) {
+KBLIB_NODISCARD auto to_unique(gsl::owner<T*> p, D&& d)
+    -> std::unique_ptr<T, D> {
 	return std::unique_ptr<T, D>(p, d);
 }
 
@@ -534,14 +536,14 @@ std::unique_ptr<T, D> to_unique(gsl::owner<T*> p, D&& d) {
  * @brief Cast integral argument to corresponding unsigned type
  */
 template <typename I>
-constexpr std::make_unsigned_t<I> to_unsigned(I x) {
+KBLIB_NODISCARD constexpr auto to_unsigned(I x) -> std::make_unsigned_t<I> {
 	return static_cast<std::make_unsigned_t<I>>(x);
 }
 /**
  * @brief Cast integral argument to corresponding signed type
  */
 template <typename I>
-constexpr std::make_signed_t<I> to_signed(I x) {
+KBLIB_NODISCARD constexpr auto to_signed(I x) -> std::make_signed_t<I> {
 	return static_cast<std::make_signed_t<I>>(x);
 }
 
@@ -550,11 +552,10 @@ constexpr std::make_signed_t<I> to_signed(I x) {
  * the template parameter
  */
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value and
-                                          std::is_integral<F>::value and
-                                          std::is_signed<A>::value,
-                                      std::make_signed_t<F>>
-signed_cast(F x) {
+KBLIB_NODISCARD KBLIB_NODISCARD constexpr auto signed_cast(F x)
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
+                       std::is_signed<A>::value,
+                   std::make_signed_t<F>> {
 	return to_signed(x);
 }
 
@@ -563,11 +564,10 @@ signed_cast(F x) {
  * the template parameter
  */
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value and
-                                          std::is_integral<F>::value and
-                                          std::is_unsigned<A>::value,
-                                      std::make_unsigned_t<F>>
-signed_cast(F x) {
+KBLIB_NODISCARD constexpr auto signed_cast(F x)
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
+                       std::is_unsigned<A>::value,
+                   std::make_unsigned_t<F>> {
 	return to_unsigned(x);
 }
 
@@ -577,11 +577,11 @@ struct has_member_swap {
 	using no = char (&)[2];
 
 	template <typename C>
-	static yes check(decltype(&C::swap));
+	static auto check(decltype(&C::swap)) -> yes;
 	template <typename>
-	static no check(...);
+	static auto check(...) -> no;
 
-	constexpr static bool value = sizeof(check<T>(0)) == sizeof(yes);
+	constexpr static bool value = sizeof(check<T>(nullptr)) == sizeof(yes);
 };
 
 template <typename T, typename = void>
@@ -594,12 +594,13 @@ struct is_tuple_like<T, void_t<typename std::tuple_element<0, T>::type>>
 namespace detail {
 
 	template <typename... Ts>
-	constexpr void ignore(Ts&&... /*unused*/) noexcept {}
+	constexpr auto ignore(Ts&&... /*unused*/) noexcept -> void {}
 
 	template <typename T, std::size_t... Is>
-	constexpr void
+	constexpr auto
 	swap_tuple_impl(T& a, T& b, std::index_sequence<Is...> /*unused*/) noexcept(
-	    noexcept(ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)), 0)...))) {
+	    noexcept(ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)), 0)...)))
+	    -> void {
 		ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)), 0)...);
 	}
 
@@ -614,9 +615,9 @@ namespace detail {
 	template <typename T, enable_if_t<not has_member_swap<T>::value and
 	                                      not is_tuple_like<T>::value,
 	                                  int> = 0>
-	constexpr void operator()(T& a, T& b) const
+	[[maybe_unused]] constexpr auto operator()(T& a, T& b) const
 	    noexcept(std::is_nothrow_move_constructible<T>::value and
-	                 std::is_nothrow_move_assignable<T>::value) {
+	                 std::is_nothrow_move_assignable<T>::value) -> void {
 		auto tmp = std::move(a);
 		a = std::move(b);
 		b = std::move(tmp);
@@ -629,7 +630,8 @@ namespace detail {
 	 * @param a,b The objects that will be swapped.
 	 */
 	template <typename T, enable_if_t<has_member_swap<T>::value, int> = 0>
-	constexpr void operator()(T& a, T& b) const noexcept(noexcept(a.swap(b))) {
+	[[maybe_unused]] constexpr auto operator()(T& a, T& b) const
+	    noexcept(noexcept(a.swap(b))) -> void {
 		a.swap(b);
 		return;
 	}
@@ -640,9 +642,9 @@ namespace detail {
 	 * @param a,b The arrays that will be swapped.
 	 */
 	template <typename T, std::size_t N>
-	constexpr void operator()(T (&a)[N], T (&b)[N]) const
+	[[maybe_unused]] constexpr auto operator()(T (&a)[N], T (&b)[N]) const
 	    noexcept(std::is_nothrow_move_constructible<T>::value and
-	                 std::is_nothrow_move_assignable<T>::value) {
+	                 std::is_nothrow_move_assignable<T>::value) -> void {
 		for (std::size_t i = 0; i < N; ++i) {
 			swap(a[i], b[i]);
 		}
@@ -657,8 +659,9 @@ namespace detail {
 	                                      not has_member_swap<T>::value,
 	                                  std::size_t>
 	                          N = std::tuple_size<T>::value>
-	constexpr void operator()(T& a, T& b) const noexcept(
-	    noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) {
+	[[maybe_unused]] constexpr auto operator()(T& a, T& b) const noexcept(
+	    noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{})))
+	    -> void {
 		detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
 	}
 } swap;
@@ -670,7 +673,7 @@ namespace detail {
 	template <typename T>
 	constexpr std::intmax_t max_val = std::numeric_limits<T>::max();
 
-	constexpr std::uintmax_t msb(std::uintmax_t x) {
+	KBLIB_NODISCARD constexpr auto msb(std::uintmax_t x) -> std::uintmax_t {
 		x |= (x >> 1u);
 		x |= (x >> 2u);
 		x |= (x >> 4u);
@@ -681,7 +684,7 @@ namespace detail {
 	}
 
 	template <typename Num>
-	constexpr Num msb_possible() {
+	KBLIB_NODISCARD constexpr auto msb_possible() -> Num {
 		return static_cast<Num>(typename std::make_unsigned<Num>::type{1}
 		                        << (std::numeric_limits<Num>::digits - 1u));
 	}
@@ -705,7 +708,7 @@ namespace detail {
 		using element = typename types::template type<I>;
 
 		template <Key key, std::size_t I = 0>
-		constexpr static auto get() {
+		KBLIB_NODISCARD constexpr static auto get() noexcept -> auto {
 			static_assert(I < sizeof...(Vals), "key not found");
 			if constexpr (Comp{}(key, element<I>::key)) {
 				return tag<typename element<I>::value>{};
@@ -715,7 +718,7 @@ namespace detail {
 		}
 
 		template <Key key, typename Default = void, std::size_t I = 0>
-		constexpr static auto get_default() {
+		KBLIB_NODISCARD constexpr static auto get_default() noexcept -> auto {
 			if constexpr (I == sizeof...(Vals)) {
 				return Default();
 			} else if constexpr (Comp{}(key, element<I>::key)) {
@@ -736,7 +739,7 @@ namespace detail {
 		              "Cannot safely promote intmax_t.");
 		struct false_compare {
 			template <typename U>
-			constexpr bool operator()(U, U) {
+			constexpr auto operator()(U, U) noexcept -> bool {
 				return true;
 			}
 		};
@@ -788,7 +791,8 @@ template <typename N>
 using safe_signed_t = typename safe_signed<N>::type;
 
 template <typename N>
-KBLIB_NODISCARD constexpr safe_signed_t<N> signed_promote(N x) noexcept {
+KBLIB_NODISCARD constexpr auto signed_promote(N x) noexcept
+    -> safe_signed_t<N> {
 	return static_cast<safe_signed_t<N>>(x);
 }
 
@@ -900,7 +904,8 @@ constexpr static bool
                                  value_detected_t<Container>>::value);
 
 template <class InputIt1, class InputIt2>
-constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2) {
+KBLIB_NODISCARD constexpr auto equal(InputIt1 first1, InputIt1 last1,
+                                     InputIt2 first2) -> bool {
 	for (; first1 != last1; ++first1, ++first2) {
 		if (not(*first1 == *first2)) {
 			return false;
@@ -909,20 +914,117 @@ constexpr bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2) {
 	return true;
 }
 
+template <typename InputIt1, typename InputIt2, typename BinaryPredicate,
+          typename kblib::enable_if_t<
+              not std::is_same<InputIt2, BinaryPredicate>::value, int> = 0>
+KBLIB_NODISCARD constexpr auto equal(InputIt1 first1, InputIt1 last1,
+                                     InputIt2 first2, BinaryPredicate p)
+    -> bool {
+	for (; first1 != last1; ++first1, ++first2) {
+		if (not p(*first1, *first2)) {
+			return false;
+		}
+	}
+	return true;
+}
+template <class RandomIt1, class RandomIt2,
+          typename kblib::enable_if_t<
+              std::is_base_of<std::random_access_iterator_tag,
+                              typename std::iterator_traits<
+                                  RandomIt1>::iterator_category>::value and
+                  std::is_base_of<std::random_access_iterator_tag,
+                                  typename std::iterator_traits<
+                                      RandomIt2>::iterator_category>::value,
+              int> = 0>
+KBLIB_NODISCARD constexpr auto equal(RandomIt1 first1, RandomIt1 last1,
+                                     RandomIt2 first2, RandomIt2 last2)
+    -> bool {
+	if (std::distance(first1, last1) == std::distance(first2, last2)) {
+		return false;
+	}
+	for (; first1 != last1; ++first1, ++first2) {
+		if (not(*first1 == *first2)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+template <class RandomIt1, class RandomIt2, typename BinaryPredicate,
+          typename kblib::enable_if_t<
+              std::is_base_of<std::random_access_iterator_tag,
+                              typename std::iterator_traits<
+                                  RandomIt1>::iterator_category>::value and
+                  std::is_base_of<std::random_access_iterator_tag,
+                                  typename std::iterator_traits<
+                                      RandomIt2>::iterator_category>::value,
+              int> = 0>
+KBLIB_NODISCARD constexpr auto equal(RandomIt1 first1, RandomIt1 last1,
+                                     RandomIt2 first2, RandomIt2 last2,
+                                     BinaryPredicate p) -> bool {
+	if (std::distance(first1, last1) == std::distance(first2, last2)) {
+		return false;
+	}
+	for (; first1 != last1; ++first1, ++first2) {
+		if (not p(*first1, *first2)) {
+			return false;
+		}
+	}
+	return true;
+}
+template <class InputIt1, class InputIt2,
+          typename kblib::enable_if_t<
+              not std::is_base_of<std::random_access_iterator_tag,
+                                  typename std::iterator_traits<
+                                      InputIt1>::iterator_category>::value or
+                  not std::is_base_of<std::random_access_iterator_tag,
+                                      typename std::iterator_traits<
+                                          InputIt2>::iterator_category>::value,
+              int> = 0>
+KBLIB_NODISCARD constexpr auto equal(InputIt1 first1, InputIt1 last1,
+                                     InputIt2 first2, InputIt2 last2) -> bool {
+	for (; first1 != last1 and first2 != last2; ++first1, ++first2) {
+		if (not(*first1 == *first2)) {
+			return false;
+		}
+	}
+	return (first1 == last1 and first2 == last2);
+}
+
+template <typename InputIt1, typename InputIt2, typename BinaryPredicate,
+          typename kblib::enable_if_t<
+              not std::is_base_of<std::random_access_iterator_tag,
+                                  typename std::iterator_traits<
+                                      InputIt1>::iterator_category>::value or
+                  not std::is_base_of<std::random_access_iterator_tag,
+                                      typename std::iterator_traits<
+                                          InputIt2>::iterator_category>::value,
+              int> = 0>
+KBLIB_NODISCARD constexpr auto equal(InputIt1 first1, InputIt1 last1,
+                                     InputIt2 first2, InputIt2 last2,
+                                     BinaryPredicate p) -> bool {
+	for (; first1 != last1 and first2 != last2; ++first1, ++first2) {
+		if (not p(*first1, *first2)) {
+			return false;
+		}
+	}
+	return (first1 == last1 and first2 == last2);
+}
+
 template <typename C>
-constexpr auto size(const C& c) -> decltype(c.size()) {
+KBLIB_NODISCARD constexpr auto size(const C& c) -> decltype(c.size()) {
 	return c.size();
 }
 
 template <typename T, std::size_t N>
-constexpr std::size_t size(const T (&)[N]) noexcept {
+KBLIB_NODISCARD constexpr auto size(const T (&)[N]) noexcept -> std::size_t {
 	return N;
 }
 
 template <class InputIt1, class InputIt2>
-KBLIB_NODISCARD constexpr bool
+KBLIB_NODISCARD constexpr auto
 lexicographical_compare(InputIt1 first1, InputIt1 last1, InputIt2 first2,
-                        InputIt2 last2) {
+                        InputIt2 last2) -> bool {
 	for (; (first1 != last1) and (first2 != last2); ++first1, (void)++first2) {
 		if (*first1 < *first2)
 			return true;
@@ -970,69 +1072,54 @@ class heap_value {
 	heap_value(const heap_value& u) : p{(u.p ? (new T(*u.p)) : nullptr)} {}
 	heap_value(heap_value&& u) noexcept : p{std::exchange(u.p, nullptr)} {}
 
-	heap_value& operator=(const heap_value& u) & {
+	auto operator=(const heap_value& u) & -> heap_value& {
 		if (this == &u) {
 			return *this;
 		} else if (not u) {
-			reset();
+			p.reset();
 		} else if (p) {
 			*p = *u;
 		} else {
-			p = new T(*u.p);
+			p.reset(new T(*u.p));
 		}
 		return *this;
 	}
 
-	heap_value& operator=(heap_value&& u) & noexcept {
+	auto operator=(heap_value&& u) & noexcept -> heap_value& {
 		if (this == &u) {
 			return *this;
 		}
-		reset();
 		p = std::exchange(u.p, nullptr);
 		return *this;
 	}
 
-	heap_value& operator=(const T& val) & {
+	auto operator=(const T& val) & -> heap_value& {
 		if (this == &val) {
 			return *this;
 		}
-		reset();
-		p = new T(val);
+		p.reset(new T(val));
 	}
-	heap_value& operator=(T&& val) & {
+	auto operator=(T&& val) & -> heap_value& {
 		if (this == &val) {
 			return *this;
 		}
-		reset();
-		p = new T(std::move(val));
+		p.reset(new T(std::move(val)));
 	}
 
-	void assign() & {
-		reset();
-		p = new T();
-	}
-	void assign(const T& val) & {
-		reset();
-		p = new T(val);
-	}
-	void assign(T&& val) & {
-		reset();
-		p = new T(std::move(val));
+	auto assign() & -> void { p.reset(new T()); }
+	auto assign(const T& val) & -> void { p.reset(new T(val)); }
+	auto assign(T&& val) & -> void { p.reset(new T(std::move(val))); }
+	template <typename... Args>
+	auto assign(fakestd::in_place_t, Args&&... args) -> void {
+		p.reset(new T(std::forward<Args>(args)...));
 	}
 	template <typename... Args>
-	void assign(fakestd::in_place_t, Args&&... args) {
-		reset();
-		p = new T(std::forward<Args>(args)...);
-	}
-	template <typename... Args>
-	void assign(in_place_agg_t, Args&&... args) {
-		reset();
-		p = new T{std::forward<Args>(args)...};
+	auto assign(in_place_agg_t, Args&&... args) -> void {
+		p.reset(new T{std::forward<Args>(args)...});
 	}
 
-	void reset() & {
-		delete p;
-		p = nullptr;
+	auto reset() noexcept -> void {
+		p.reset();
 		return;
 	}
 
@@ -1040,28 +1127,38 @@ class heap_value {
 		return p != nullptr;
 	}
 
-	constexpr void swap(heap_value& other) noexcept { kblib::swap(p, other.p); }
+	constexpr auto swap(heap_value& other) noexcept -> void {
+		kblib::swap(p, other.p);
+	}
 
-	KBLIB_NODISCARD pointer get() & noexcept { return p; }
-	KBLIB_NODISCARD const_pointer get() const& noexcept { return p; }
+	KBLIB_NODISCARD auto get() & noexcept -> pointer { return p.get(); }
+	KBLIB_NODISCARD auto get() const& noexcept -> const_pointer {
+		return p.get();
+	}
 
-	KBLIB_NODISCARD reference value() & noexcept { return *p; }
-	KBLIB_NODISCARD const_reference value() const& noexcept { return *p; }
-	KBLIB_NODISCARD T&& value() && noexcept { return *p; }
-	KBLIB_NODISCARD const T&& value() const&& noexcept { return *p; }
+	KBLIB_NODISCARD auto value() & noexcept -> reference { return *p; }
+	KBLIB_NODISCARD auto value() const& noexcept -> const_reference {
+		return *p;
+	}
+	KBLIB_NODISCARD auto value() && noexcept -> T&& { return *p; }
+	KBLIB_NODISCARD auto value() const&& noexcept -> const T&& { return *p; }
 
-	KBLIB_NODISCARD reference operator*() & noexcept { return *p; }
-	KBLIB_NODISCARD const_reference operator*() const& noexcept { return *p; }
-	KBLIB_NODISCARD T&& operator*() && noexcept { return *p; }
-	KBLIB_NODISCARD const T&& operator*() const&& noexcept { return *p; }
+	KBLIB_NODISCARD auto operator*() & noexcept -> reference { return *p; }
+	KBLIB_NODISCARD auto operator*() const& noexcept -> const_reference {
+		return *p;
+	}
+	KBLIB_NODISCARD auto operator*() && noexcept -> T&& { return *p; }
+	KBLIB_NODISCARD auto operator*() const&& noexcept -> const T&& { return *p; }
 
-	KBLIB_NODISCARD pointer operator->() & noexcept { return p; }
-	KBLIB_NODISCARD const_pointer operator->() const& noexcept { return p; }
+	KBLIB_NODISCARD auto operator->() & noexcept -> pointer { return p.get(); }
+	KBLIB_NODISCARD auto operator->() const& noexcept -> const_pointer {
+		return p.get();
+	}
 
-	~heap_value() { delete p; }
+	~heap_value() = default;
 
  private:
-	pointer p;
+	std::unique_ptr<element_type> p;
 };
 
 } // namespace kblib

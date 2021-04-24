@@ -54,7 +54,7 @@ namespace multi_impl {
 	 private:
 		friend class boost::iterator_core_access;
 
-		void recalculate_cache() const {
+		auto recalculate_cache() const -> void {
 			if (!pos_cache) {
 				if (index == 0) {
 					pos_cache = {parent->spans.begin(),
@@ -77,14 +77,14 @@ namespace multi_impl {
 				}
 			}
 		}
-		T& dereference() const noexcept {
+		auto dereference() const noexcept -> T& {
 			recalculate_cache();
 			assert(index != parent->size());
 			return *pos_cache.value().pos;
 		}
 		template <typename U,
 		          typename = decltype(std::declval<T*>() == std::declval<U*>())>
-		bool equal(const mulspan_iterator<U>& o) const noexcept {
+		auto equal(const mulspan_iterator<U>& o) const noexcept -> bool {
 			return
 			    // if both *this and o have caches,
 			    /*(pos_cache and o.pos_cache)
@@ -94,7 +94,7 @@ namespace multi_impl {
 			    :*/
 			    std::tie(parent, index) == std::tie(o.parent, o.index);
 		}
-		void increment() noexcept {
+		auto increment() noexcept -> void {
 			++index;
 			if (pos_cache) {
 				++pos_cache.value().pos;
@@ -104,7 +104,7 @@ namespace multi_impl {
 				}
 			}
 		}
-		void decrement() noexcept {
+		auto decrement() noexcept -> void {
 			--index;
 			if (pos_cache) {
 				if (pos_cache.value().pos ==
@@ -116,14 +116,14 @@ namespace multi_impl {
 				}
 			}
 		}
-		void advance(std::ptrdiff_t delta) noexcept {
+		auto advance(std::ptrdiff_t delta) noexcept -> void {
 			index += delta;
 			pos_cache = std::nullopt;
 		}
 		// enabled if T* is comparable with U*
 		template <typename U,
 		          typename = decltype(std::declval<T*>() == std::declval<U*>())>
-		std::ptrdiff_t distance_to(mulspan_iterator<U> o) const noexcept {
+		auto distance_to(mulspan_iterator<U> o) const noexcept -> std::ptrdiff_t {
 			return index - o.index;
 		}
 
@@ -132,7 +132,7 @@ namespace multi_impl {
 		struct cached_iterator {
 			typename std::vector<multi_impl::subspan_t<T>>::const_iterator subs;
 			typename gsl::span<T>::iterator pos;
-			bool operator==(const cached_iterator& o) {
+			auto operator==(const cached_iterator& o) const noexcept -> bool {
 				return std::tie(subs, pos) == std::tie(o.subs, o.pos);
 			}
 		};
@@ -191,46 +191,62 @@ class multi_span {
 	multi_span(const multi_span&) = default;
 	multi_span(multi_span&&) noexcept = default;
 
-	multi_span& operator=(const multi_span&) = default;
-	multi_span& operator=(multi_span&&) noexcept = default;
+	auto operator=(const multi_span&) -> multi_span& = default;
+	auto operator=(multi_span&&) noexcept -> multi_span& = default;
 
 	~multi_span() = default;
 
-	iterator begin() noexcept { return {*this}; }
-	const_iterator begin() const noexcept { return {*this}; }
-	const_iterator cbegin() const noexcept { return {*this}; }
+	KBLIB_NODISCARD auto begin() noexcept -> iterator { return {*this}; }
+	KBLIB_NODISCARD auto begin() const noexcept -> const_iterator {
+		return {*this};
+	}
+	KBLIB_NODISCARD auto cbegin() const noexcept -> const_iterator {
+		return {*this};
+	}
 
-	iterator end() noexcept {
+	KBLIB_NODISCARD auto end() noexcept -> iterator {
 		return {*this, size(), spans.end(), spans.back().second.begin()};
 	}
-	const_iterator end() const noexcept {
+	KBLIB_NODISCARD auto end() const noexcept -> const_iterator {
 		return {*this, size(), spans.end(), spans.back().second.begin()};
 	}
-	const_iterator cend() const noexcept {
+	KBLIB_NODISCARD auto cend() const noexcept -> const_iterator {
 		return {*this, size(), spans.end(), spans.back().second.begin()};
 	}
 
-	reverse_iterator rbegin() noexcept {
+	KBLIB_NODISCARD auto rbegin() noexcept -> reverse_iterator {
 		return iterator{*this, size(), spans.end(), spans.back().second.begin()};
 	}
-	const_reverse_iterator rbegin() const noexcept {
+	KBLIB_NODISCARD auto rbegin() const noexcept -> const_reverse_iterator {
 		return iterator{*this, size(), spans.end(), spans.back().second.begin()};
 	}
-	const_reverse_iterator crbegin() const noexcept {
+	KBLIB_NODISCARD auto crbegin() const noexcept -> const_reverse_iterator {
 		return iterator{*this, size(), spans.end(), spans.back().second.begin()};
 	}
 
-	reverse_iterator rend() noexcept { return iterator{*this}; }
-	const_reverse_iterator rend() const noexcept { return iterator{*this}; }
-	const_reverse_iterator crend() const noexcept { return iterator{*this}; }
+	KBLIB_NODISCARD auto rend() noexcept -> reverse_iterator {
+		return iterator{*this};
+	}
+	KBLIB_NODISCARD auto rend() const noexcept -> const_reverse_iterator {
+		return iterator{*this};
+	}
+	KBLIB_NODISCARD auto crend() const noexcept -> const_reverse_iterator {
+		return iterator{*this};
+	}
 
-	reference operator[](index_type i) const { return *iterator{*this, i}; }
+	KBLIB_NODISCARD reference operator[](index_type i) const {
+		return *iterator{*this, i};
+	}
 
 	// see invariant on spans
-	index_type size() const noexcept { return spans.back().first; }
-	bool empty() const noexcept { return spans.back().first == 0; }
+	KBLIB_NODISCARD auto size() const noexcept -> index_type {
+		return spans.back().first;
+	}
+	KBLIB_NODISCARD auto empty() const noexcept -> bool {
+		return spans.back().first == 0;
+	}
 
-	void diag(std::ostream& os) const noexcept {
+	auto diag(std::ostream& os) const noexcept -> void {
 		os << "Diagnostics: " << spans.size() << '\n';
 		for (auto& s : spans) {
 			os << &s << '\t' << s.first << ':' << s.second.size() << '\t';

@@ -23,9 +23,9 @@ template <typename... Ts>
 constexpr bool any_void = (std::is_void_v<Ts> or ...);
 
 template <typename F, typename... T>
-auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
+KBLIB_NODISCARD auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
     kblib::apply(f, std::forward<T>(t))...}))
-    -> return_assert_t<
+    -> enable_if_t<
         not any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>,
         decltype(std::tuple{kblib::apply(f, std::forward<T>(t))...})> {
 	return std::tuple{kblib::apply(f, std::forward<T>(t))...};
@@ -34,8 +34,8 @@ auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
 template <typename F, typename... T>
 auto map(F f, T&&... t) noexcept(
     noexcept((static_cast<void>(kblib::apply(f, std::forward<T>(t))), ...)))
-    -> return_assert_t<
-        any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>, void> {
+    -> enable_if_t<any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>,
+                   void> {
 	(static_cast<void>(kblib::apply(f, std::forward<T>(t))), ...);
 }
 
@@ -51,7 +51,7 @@ auto map(F f, T&&... t) noexcept(
  * @tparam BinaryOperation The operation to reverse.
  */
 template <typename BinaryOperation>
-constexpr auto flip() {
+KBLIB_NODISCARD constexpr auto flip() -> auto {
 	return [](auto&& a, auto&& b) {
 		return BinaryOperation{}(static_cast<decltype(b)>(b),
 		                         static_cast<decltype(a)>(a));
@@ -67,15 +67,15 @@ constexpr auto flip() {
  * @param op The operation to reverse.
  */
 template <typename BinaryOperation>
-constexpr auto flip(BinaryOperation op) {
+KBLIB_NODISCARD constexpr auto flip(BinaryOperation op) -> auto {
 	return [op = std::move(op)](auto&& a, auto&& b) {
 		return op(static_cast<decltype(b)>(b), static_cast<decltype(a)>(a));
 	};
 }
 
 template <typename T, std::size_t N>
-constexpr return_assert_t<std::is_integral<T>::value, bool>
-is_consecutive(const T (&array)[N]) {
+KBLIB_NODISCARD constexpr auto is_consecutive(const T (&array)[N])
+    -> enable_if_t<std::is_integral<T>::value, bool> {
 	if (N <= 1) {
 		return true;
 	} else if (N == 2) {
@@ -100,9 +100,9 @@ namespace detail {
 	 * @param val
 	 * @return int
 	 */
-	constexpr int
+	KBLIB_NODISCARD constexpr auto
 	filg2(const std::bitset<std::numeric_limits<std::uintmax_t>::digits>
-	          val) noexcept {
+	          val) noexcept -> int {
 		for (auto i : range<int>(to_signed(val.size()) - 1, 0, -1)) {
 			if (val[to_unsigned(i)])
 				return i;
@@ -139,6 +139,32 @@ template <std::uintmax_t I>
 using int_smallest_t = typename int_smallest<I>::type;
 
 /**
+ * @brief The identity function, as a function object.
+ */
+struct identity {
+	template <typename T>
+	KBLIB_NODISCARD auto operator()(T&& in) -> T&& {
+		return static_cast<T&&>(in);
+	}
+};
+
+/**
+ * @brief Safely propagate an xvalue or lvalue without dangling references
+ */
+template <typename T>
+auto safe_auto(T&& in) -> T {
+	return std::forward<T>(in);
+}
+
+/**
+ * @brief Safely propagate an xvalue or lvalue without dangling references
+ */
+template <typename T>
+auto safe_auto(T& in) -> T& {
+	return in;
+}
+
+/**
  * @brief Concatenate two dynamic containers together.
  *
  * @param A,B The containers to concatenate together.
@@ -146,8 +172,8 @@ using int_smallest_t = typename int_smallest<I>::type;
  * order.
  */
 template <typename LeftContainer, typename RightContainer>
-LeftContainer arraycat(LeftContainer A, RightContainer&& B) noexcept(
-    noexcept(A.insert(A.end(), B.begin(), B.end()))) {
+auto arraycat(LeftContainer A, RightContainer&& B) noexcept(
+    noexcept(A.insert(A.end(), B.begin(), B.end()))) -> LeftContainer {
 	A.insert(A.end(), B.begin(), B.end());
 	return std::move(A);
 }
@@ -162,7 +188,7 @@ LeftContainer arraycat(LeftContainer A, RightContainer&& B) noexcept(
  * @param a The array literal to index into.
  */
 template <typename T>
-constexpr auto a(const std::initializer_list<T>& a) {
+KBLIB_NODISCARD constexpr auto a(const std::initializer_list<T>& a) -> auto {
 	return a.begin();
 }
 // use like:

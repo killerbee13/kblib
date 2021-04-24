@@ -22,8 +22,9 @@ template <typename Container>
 struct indexer_extractor : iterator_extractor<Container> {
 
 	template <typename index_type>
-	constexpr static decltype(auto)
-	subscript(Container&& c, index_type index) noexcept(noexcept(c[index])) {
+	KBLIB_NODISCARD constexpr static auto
+	subscript(Container&& c, index_type index) noexcept(noexcept(c[index]))
+	    -> decltype(auto) {
 		return c[index];
 	}
 };

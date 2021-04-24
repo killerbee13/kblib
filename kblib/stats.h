@@ -16,7 +16,8 @@
 namespace kblib {
 
 template <typename T, typename U>
-constexpr auto div(T num, U den) noexcept -> decltype(std::div(num, den)) {
+KBLIB_NODISCARD constexpr auto div(T num, U den) noexcept
+    -> decltype(std::div(num, den)) {
 	decltype(std::div(num, den)) ret{};
 	ret.quot = num / den;
 	ret.rem = num % den;
@@ -34,8 +35,8 @@ constexpr auto div(T num, U den) noexcept -> decltype(std::div(num, den)) {
  * @todo Refactor to remove the ugly unreachable stuff.
  */
 template <typename Array, typename RandomGenerator, typename freqtype = double>
-[[deprecated("Use std::discrete_distribution instead")]] auto
-chooseCategorical(Array&& cats, RandomGenerator& r) {
+KBLIB_NODISCARD [[deprecated("Use std::discrete_distribution instead")]] auto
+chooseCategorical(Array&& cats, RandomGenerator& r) -> decltype(cats.size()) {
 	std::uniform_real_distribution<freqtype> uniform(
 	    0.0, std::accumulate(cats.begin(), cats.end(), 0.0));
 	freqtype choose = uniform(r);
@@ -62,7 +63,7 @@ struct trivial_pair {
 	T second;
 };
 
-#if KBLIB_USE_CXX17
+#if 0 and KBLIB_USE_CXX17
 
 /**
  * @brief std::array isn't constexpr enough in C++14, so this is a separate
@@ -82,25 +83,28 @@ using trivial_array = std::array<T, N>;
 template <typename T, std::size_t N>
 struct trivial_array {
 	T arr[N];
-	constexpr T& operator[](std::size_t n) { return arr[n]; }
-	constexpr const T& operator[](std::size_t n) const { return arr[n]; }
-	constexpr std::size_t size() const { return N; }
-	constexpr T* begin() & noexcept { return arr; }
-	constexpr const T* begin() const& noexcept { return arr; }
-	constexpr T* end() & noexcept { return arr + N; }
-	constexpr const T* end() const& noexcept { return arr + N; }
-
-	constexpr friend bool operator==(const trivial_array& a,
-	                                 const trivial_array& b) {
-		for (std::size_t idx = 0; idx != N; ++idx) {
-			if (a[idx] != b[idx]) {
-				return false;
-			}
-		}
-		return true;
+	KBLIB_NODISCARD constexpr auto operator[](std::size_t n) -> T& {
+		return arr[n];
 	}
-	constexpr friend bool operator!=(const trivial_array& a,
-	                                 const trivial_array& b) {
+	KBLIB_NODISCARD constexpr auto operator[](std::size_t n) const -> const T& {
+		return arr[n];
+	}
+	KBLIB_NODISCARD constexpr auto size() const -> std::size_t { return N; }
+	KBLIB_NODISCARD constexpr auto begin() & noexcept -> T* { return arr; }
+	KBLIB_NODISCARD constexpr auto begin() const& noexcept -> const T* {
+		return arr;
+	}
+	KBLIB_NODISCARD constexpr auto end() & noexcept -> T* { return arr + N; }
+	KBLIB_NODISCARD constexpr auto end() const& noexcept -> const T* {
+		return arr + N;
+	}
+
+	KBLIB_NODISCARD constexpr friend auto
+	operator==(const trivial_array& a, const trivial_array& b) noexcept -> bool {
+		return equal(a.begin(), a.end(), b.begin());
+	}
+	KBLIB_NODISCARD constexpr friend auto
+	operator!=(const trivial_array& a, const trivial_array& b) noexcept -> bool {
 		return not(a == b);
 	}
 };
@@ -125,7 +129,7 @@ struct trivial_array {
  * @return std::size_t
  */
 template <typename U>
-constexpr std::size_t calc_fib_size() {
+KBLIB_NODISCARD constexpr auto calc_fib_size() noexcept -> std::size_t {
 	static_assert(std::is_unsigned<U>::value, "U must be unsigned");
 	std::size_t n{};
 	trivial_pair<U> state{0, 1};
@@ -149,7 +153,7 @@ constexpr std::size_t calc_fib_size() {
  * numbers.
  */
 template <typename U, std::size_t N = calc_fib_size<U>() + 1>
-constexpr trivial_array<U, N> make_fib_arr() {
+KBLIB_NODISCARD constexpr auto make_fib_arr() noexcept -> trivial_array<U, N> {
 	static_assert(
 	    implies<(N > calc_fib_size<U>()), std::is_unsigned<U>::value>::value,
 	    "signed U with large N would trigger signed overflow");
@@ -170,7 +174,7 @@ constexpr trivial_array<U, N> make_fib_arr() {
  * @return The nth fibonacci number.
  */
 template <typename U = std::uintmax_t>
-constexpr U fibonacci(int n) {
+KBLIB_NODISCARD constexpr auto fibonacci(int n) noexcept -> U {
 	constexpr auto arr = make_fib_arr<U>();
 	assert(n >= 0 and static_cast<std::size_t>(n) < arr.size());
 	return arr[n];
@@ -180,8 +184,8 @@ constexpr U fibonacci(int n) {
  * @brief A constexpr version of std::accumulate
  */
 template <typename InputIt, typename T>
-constexpr auto accumulate(InputIt first, InputIt last, T init)
-    -> std::decay_t<decltype(*first)> {
+KBLIB_NODISCARD constexpr auto accumulate(InputIt first, InputIt last, T init)
+    -> T {
 	for (; first != last; ++first) {
 		init = std::move(init) + *first;
 	}
@@ -192,8 +196,8 @@ constexpr auto accumulate(InputIt first, InputIt last, T init)
  * @brief A constexpr version of std::accumulate
  */
 template <class InputIt, class T, class BinaryOperation>
-constexpr T accumulate(InputIt first, InputIt last, T init,
-                       BinaryOperation op) {
+KBLIB_NODISCARD constexpr auto accumulate(InputIt first, InputIt last, T init,
+                                          BinaryOperation op) -> T {
 	for (; first != last; ++first) {
 		init = op(std::move(init), *first);
 	}
@@ -212,7 +216,7 @@ constexpr T accumulate(InputIt first, InputIt last, T init,
  * @return The sum of the input range.
  */
 template <typename InputIt>
-constexpr auto sum(InputIt first, InputIt last)
+KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last)
     -> std::decay_t<decltype(*first)> {
 	if (first == last) {
 		return {};
@@ -234,7 +238,8 @@ constexpr auto sum(InputIt first, InputIt last)
  * @return The sum of the input range.
  */
 template <typename InputIt, typename BinaryOperation>
-constexpr auto sum(InputIt first, InputIt last, BinaryOperation op)
+KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last,
+                                   BinaryOperation op)
     -> std::decay_t<decltype(*first)> {
 	if (first == last) {
 		return {};
@@ -254,7 +259,7 @@ constexpr auto sum(InputIt first, InputIt last, BinaryOperation op)
  * @return The sum of the input range.
  */
 template <typename Range>
-constexpr auto sum(Range&& r) {
+KBLIB_NODISCARD constexpr auto sum(Range&& r) -> auto {
 	using std::begin;
 	auto first = begin(r);
 	auto last = end(r);
@@ -280,31 +285,43 @@ inline namespace nums {
 		    noexcept(noexcept(std::numeric_limits<T>::max())) {
 			return std::numeric_limits<T>::max();
 		}
+
+		/**
+		 @brief
+
+		 @param lhs,rhs
+		 @return operator
+		*/
+		template <typename L, typename R>
+		KBLIB_NODISCARD constexpr auto operator()(L&& lhs, R&& rhs) const noexcept
+		    -> decltype(auto) {
+			return rhs < lhs ? std::forward<R>(lhs) : std::forward<L>(rhs);
+		}
 	} max; /**< A shorthand for the maximum value of the destination type. */
 
 	template <typename T>
-	bool operator==(T t, max_t) {
+	KBLIB_NODISCARD auto operator==(T t, max_t) -> bool {
 		return t == T(max);
 	}
 	template <typename T>
-	bool operator==(max_t, T t) {
+	KBLIB_NODISCARD auto operator==(max_t, T t) -> bool {
 		return t == T(max);
 	}
 	template <typename T>
-	bool operator!=(T t, max_t) {
+	KBLIB_NODISCARD auto operator!=(T t, max_t) -> bool {
 		return t != T(max);
 	}
 	template <typename T>
-	bool operator!=(max_t, T t) {
+	KBLIB_NODISCARD auto operator!=(max_t, T t) -> bool {
 		return t != T(max);
 	}
 
 	template <typename T>
-	bool operator<(T t, max_t) {
+	KBLIB_NODISCARD auto operator<(T t, max_t) -> bool {
 		return t < T(max);
 	}
 	template <typename T>
-	bool operator>(max_t, T t) {
+	KBLIB_NODISCARD auto operator>(max_t, T t) -> bool {
 		return T(max) > t;
 	}
 
@@ -321,54 +338,66 @@ inline namespace nums {
 		    noexcept(noexcept(std::numeric_limits<T>::min())) {
 			return std::numeric_limits<T>::min();
 		}
+
+		/**
+		 @brief
+
+		 @param lhs,rhs
+		 @return operator
+		*/
+		template <typename L, typename R>
+		KBLIB_NODISCARD constexpr auto operator()(L&& lhs, R&& rhs) const noexcept
+		    -> decltype(auto) {
+			return lhs < rhs ? std::forward<R>(lhs) : std::forward<L>(rhs);
+		}
 	} min; /**< A shorthand for the minimum value of the destination type. */
 
 	template <typename T>
-	bool operator==(T t, min_t) {
+	KBLIB_NODISCARD auto operator==(T t, min_t) -> bool {
 		return t == T(min);
 	}
 	template <typename T>
-	bool operator==(min_t, T t) {
+	KBLIB_NODISCARD auto operator==(min_t, T t) -> bool {
 		return t == T(min);
 	}
 	template <typename T>
-	bool operator!=(T t, min_t) {
+	KBLIB_NODISCARD auto operator!=(T t, min_t) -> bool {
 		return t != T(min);
 	}
 	template <typename T>
-	bool operator!=(min_t, T t) {
+	KBLIB_NODISCARD auto operator!=(min_t, T t) -> bool {
 		return t != T(min);
 	}
 
 	template <typename T>
-	bool operator<(min_t, T t) {
+	KBLIB_NODISCARD auto operator<(min_t, T t) -> bool {
 		return T(min) < t;
 	}
 	template <typename T>
-	bool operator>(T t, min_t) {
+	KBLIB_NODISCARD auto operator>(T t, min_t) -> bool {
 		return t > T(min);
 	}
 
 } // namespace nums
 
 template <typename T>
-constexpr T pi() {
+KBLIB_NODISCARD constexpr auto pi() -> T {
 	return 3.1415926535897932384626433832795028841971693993751l;
 }
 template <typename T>
-constexpr T tau() {
+KBLIB_NODISCARD constexpr auto tau() -> T {
 	return 2 * pi<T>;
 }
 template <typename T>
-constexpr T e() {
+KBLIB_NODISCARD constexpr auto e() -> T {
 	return 2.7182818284590452353602874713526624977572470937000l;
 }
 template <typename T>
-constexpr T root_2() {
+KBLIB_NODISCARD constexpr auto root_2() -> T {
 	return 1.4142135623730950488016887242096980785696718753769l;
 }
 template <typename T>
-constexpr T phi() {
+KBLIB_NODISCARD constexpr auto phi() -> T {
 	return 1.6180339887498948482045868343656381177203091798058l;
 }
 
@@ -377,11 +406,10 @@ constexpr T phi() {
 
 // saturating to_unsigned
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr enable_if_t<std::is_integral<A>::value and
-                                          std::is_integral<F>::value and
-                                          std::is_unsigned<A>::value,
-                                      A>
-saturating_cast(F x) {
+KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
+                       std::is_unsigned<A>::value,
+                   A> {
 	if (x < 0) {
 		return 0;
 	} else if (to_unsigned(x) > A(max)) {
@@ -393,11 +421,10 @@ saturating_cast(F x) {
 
 // saturating to_signed(signed)
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr enable_if_t<
-    std::is_integral<A>::value and std::is_integral<F>::value and
-        std::is_signed<A>::value and std::is_signed<F>::value,
-    A>
-saturating_cast(F x) {
+KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
+                       std::is_signed<A>::value and std::is_signed<F>::value,
+                   A> {
 	if (x < A(min)) {
 		return min;
 	} else if (to_unsigned(x) > A(max)) {
@@ -408,11 +435,10 @@ saturating_cast(F x) {
 }
 // saturating to_signed(unsigned)
 template <typename A, typename F>
-KBLIB_NODISCARD constexpr enable_if_t<
-    std::is_integral<A>::value and std::is_integral<F>::value and
-        std::is_signed<A>::value and std::is_unsigned<F>::value,
-    A>
-saturating_cast(F x) {
+KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
+                       std::is_signed<A>::value and std::is_unsigned<F>::value,
+                   A> {
 	if (x > to_unsigned(A(max))) {
 		return max;
 	} else {
@@ -430,7 +456,8 @@ saturating_cast(F x) {
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-constexpr T quantizeStep(F min, F delta, F val) {
+KBLIB_NODISCARD constexpr auto quantizeStep(F min, F delta, F val) noexcept
+    -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
 	return static_cast<T>((val - min) * static_cast<T>(nums::max) * delta);
 }
@@ -445,7 +472,8 @@ constexpr T quantizeStep(F min, F delta, F val) {
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-constexpr T quantizeRange(F min, F max, F val) {
+KBLIB_NODISCARD constexpr auto quantizeRange(F min, F max, F val) noexcept
+    -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
 	auto delta = (max - min) / static_cast<T>(nums::max);
 	return static_cast<T>((val - min) * static_cast<T>(nums::max) * delta);

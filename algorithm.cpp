@@ -11,14 +11,14 @@ TEST_CASE("erase") {
 		return std::equal(std::begin(a), std::end(a), std::begin(b), std::end(b));
 	};
 	SECTION("erase and erase_if") {
-		const std::vector<int> erase_test{2, 2, 3, 4, 5, 7, 8, 11};
-		const std::vector<int> no_2s = {3, 4, 5, 7, 8, 11};
+		const std::vector<unsigned> erase_test{2, 2, 3, 4, 5, 7, 8, 11};
+		const std::vector<unsigned> no_2s = {3, 4, 5, 7, 8, 11};
 		auto erase_copy = erase_test;
 		kblib::erase(erase_copy, 2);
 		REQUIRE(equal(no_2s, erase_copy));
 		erase_copy = erase_test;
-		const std::vector<int> no_evens = {3, 5, 7, 11};
-		kblib::erase_if(erase_copy, [](int x) { return (~x) & 1; });
+		const std::vector<unsigned> no_evens = {3, 5, 7, 11};
+		kblib::erase_if(erase_copy, [](unsigned x) { return (~x) & 1u; });
 		REQUIRE(equal(no_evens, erase_copy));
 	}
 }
