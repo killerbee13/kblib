@@ -28,7 +28,7 @@ namespace kblib {
  */
 template <typename C>
 struct is_character
-    : detail::contains_type<std::tuple<char, wchar_t, char16_t, char32_t
+    : contains_type<std::tuple<char, wchar_t, char16_t, char32_t
 #ifdef __cpp_char8_t
                                        ,
                                        char8_t
@@ -190,6 +190,8 @@ KBLIB_NODISCARD auto strsize(Str&& str) -> std::size_t {
 	} else if constexpr (is_character_v<std::decay_t<Str>>) {
 		return 1;
 	} else if constexpr (std::is_integral_v<std::decay_t<Str>>) {
+		return count_digits(str);
+	} else if constexpr (std::is_floating_point_v<std::decay_t<Str>>) {
 		return count_digits(str);
 	} else {
 		return fakestd::size(str);
@@ -563,7 +565,7 @@ KBLIB_NODISCARD inline auto ends_with(std::string_view haystack,
  */
 KBLIB_NODISCARD inline auto ends_with(std::string_view haystack, char needle)
     -> bool {
-	return !haystack.empty() and haystack.back() == needle;
+	return not haystack.empty() and haystack.back() == needle;
 }
 
 /**
@@ -586,7 +588,7 @@ KBLIB_NODISCARD inline auto starts_with(std::string_view haystack,
  */
 KBLIB_NODISCARD inline auto starts_with(std::string_view haystack, char needle)
     -> bool {
-	return !haystack.empty() and haystack.front() == needle;
+	return not haystack.empty() and haystack.front() == needle;
 }
 
 #endif

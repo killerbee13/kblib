@@ -17,12 +17,12 @@ namespace kblib {
  */
 template <typename Number>
 constexpr auto count_digits(Number val) -> int {
-	if (val > 0) {
-		return std::ceil(std::log10(val + 1));
-	} else if (val < 0) {
-		return 1 + std::ceil(std::log10(-val + 1));
-	} else {
+	if (val == 0) {
 		return 1;
+	} else if (std::is_floating_point<Number>::value) {
+		return std::numeric_limits<Number>::digits10;
+	} else {
+		return std::ceil(std::log10(val + 1)) + (val < 0);
 	}
 }
 
@@ -36,8 +36,14 @@ constexpr auto count_digits(Number val) -> int {
  */
 template <typename Number>
 constexpr auto count_digits(Number val, int base) -> int {
-	return std::ceil(std::log(std::abs(val) + 1) / std::log(base)) +
-	       std::signbit(val);
+	if (val == 0) {
+		return 1;
+	} else if (std::is_floating_point<Number>::value) {
+		return std::ceil(std::numeric_limits<Number>::digits * std::logb(base));
+	} else {
+		return std::ceil(std::log(std::abs(val) + 1) / std::log(base)) +
+		       (val < 0);
+	}
 }
 
 /**

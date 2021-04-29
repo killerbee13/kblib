@@ -16,48 +16,57 @@
 #include <type_traits>
 
 namespace kblib {
+
+// contains_types adapted from code by Maarten Bamelis,
+// https://stackoverflow.com/a/42581257/1924641
+
+/**
+ * @brief Determines if T is a type in Tuple, which must be a std::tuple.
+ */
+template <typename Tuple, typename T>
+struct contains_type;
+
+template <typename T, typename U, typename... Ts>
+struct contains_type<std::tuple<T, Ts...>, U>
+    : contains_type<std::tuple<Ts...>, U> {};
+
+template <typename T, typename... Ts>
+struct contains_type<std::tuple<T, Ts...>, T> : std::true_type {};
+
+template <typename T>
+struct contains_type<std::tuple<>, T> : std::false_type {};
+
+template <typename... Ts>
+constexpr bool contains_type_v = contains_type<Ts...>::value;
+
+/**
+ * @brief Determines if Lhs contains all of the types in Rhs, where both are
+ * std::tuples.
+ */
+template <typename Lhs, typename Rhs>
+struct contains_types;
+
+template <typename Tuple, typename T, typename... Ts>
+struct contains_types<Tuple, std::tuple<T, Ts...>>
+    : std::integral_constant<
+          bool, contains_type<Tuple, T>::value and
+                    contains_types<Tuple, std::tuple<Ts...>>::value> {};
+
+template <typename Tuple>
+struct contains_types<Tuple, std::tuple<>> : std::true_type {};
+
+template <typename... Ts>
+constexpr bool contains_types_v = contains_types<Ts...>::value;
+
+template <typename T>
+struct list_as_tuple;
+
+template <template <typename...> typename Tuple, typename... Ts>
+struct list_as_tuple<Tuple<Ts...>> {
+	using type = std::tuple<Ts...>;
+};
+
 namespace detail {
-
-	// contains_types adapted from code by Maarten Bamelis,
-	// https://stackoverflow.com/a/42581257/1924641
-
-	/**
-	 * @brief Determines if T is a type in Tuple, which must be a std::tuple.
-	 */
-	template <typename Tuple, typename T>
-	struct contains_type;
-
-	template <typename T, typename U, typename... Ts>
-	struct contains_type<std::tuple<T, Ts...>, U>
-	    : contains_type<std::tuple<Ts...>, U> {};
-
-	template <typename T, typename... Ts>
-	struct contains_type<std::tuple<T, Ts...>, T> : std::true_type {};
-
-	template <typename T>
-	struct contains_type<std::tuple<>, T> : std::false_type {};
-
-	template <typename... Ts>
-	constexpr bool contains_type_v = contains_type<Ts...>::value;
-
-	/**
-	 * @brief Determines if Lhs contains all of the types in Rhs, where both are
-	 * std::tuples.
-	 */
-	template <typename Lhs, typename Rhs>
-	struct contains_types;
-
-	template <typename Tuple, typename T, typename... Ts>
-	struct contains_types<Tuple, std::tuple<T, Ts...>>
-	    : std::integral_constant<
-	          bool, contains_type<Tuple, T>::value and
-	                    contains_types<Tuple, std::tuple<Ts...>>::value> {};
-
-	template <typename Tuple>
-	struct contains_types<Tuple, std::tuple<>> : std::true_type {};
-
-	template <typename... Ts>
-	constexpr bool contains_types_v = contains_types<Ts...>::value;
 
 	/**
 	 * @brief Truncates an array to its first N elements.

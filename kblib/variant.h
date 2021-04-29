@@ -16,6 +16,14 @@ namespace kblib {
 
 #if KBLIB_USE_CXX17
 
+template <typename T, typename = void>
+constexpr inline bool is_variant_like_v = false;
+template <typename T>
+constexpr inline bool is_variant_like_v<T, void_t<std::variant_size<T>>> = true;
+
+template <typename T>
+struct is_variant_like : std::bool_constant<is_variant_like_v<T>> {};
+
 /**
  * @brief Lexically converts the value of v (no matter its type) to type To.
  *
@@ -142,10 +150,9 @@ constexpr auto visit_indexed(Variant&& variant, Fs&&... fs) -> decltype(auto) {
  */
 template <typename To, typename From>
 KBLIB_NODISCARD constexpr auto variant_cast(From&& v) -> To {
-	static_assert(
-	    detail::contains_types_v<detail::tuple_type_t<std::decay_t<To>>,
-	                             detail::tuple_type_t<std::decay_t<From>>>,
-	    "To must include all types in From");
+	static_assert(contains_types_v<detail::tuple_type_t<std::decay_t<To>>,
+	                               detail::tuple_type_t<std::decay_t<From>>>,
+	              "To must include all types in From");
 
 	return visit_indexed(std::forward<From>(v), [](auto constant, auto&& x) {
 		return To(std::in_place_type<
