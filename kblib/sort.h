@@ -321,7 +321,7 @@ KBLIB_NODISCARD constexpr auto get_byte_index(const T& x,
 
 template <typename T>
 struct is_trivial_transformation
-    : std::bool_constant<std::is_member_object_pointer<T>::value> {};
+    : bool_constant<std::is_member_object_pointer<T>::value> {};
 
 template <>
 struct is_trivial_transformation<identity> : std::true_type {};

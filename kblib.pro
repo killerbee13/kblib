@@ -69,9 +69,9 @@ DISTFILES += \
     var_timings.log \
     medfile
 
-QMAKE_CXXFLAGS += -std=c++17
+QMAKE_CXXFLAGS += -std=c++14
 QMAKE_CXXFLAGS += -march=native
-QMAKE_CXXFLAGS += -Wall -Wextra -Wpointer-to-int-cast -pedantic-errors
+QMAKE_CXXFLAGS += -Wall -Wextra -Wpointer-to-int-cast -Wpedantic -Wshadow
 QMAKE_CXXFLAGS += -Wno-missing-braces
 QMAKE_CXXFLAGS += -I/mnt/Vers1/include
 

@@ -279,7 +279,7 @@ inline namespace nums {
 	 * For signed destination types, there is no concise representation for a
 	 * generic maximum.
 	 */
-	KBLIB_UNUSED constexpr struct max_t {
+	constexpr struct max_t {
 		template <typename T>
 		constexpr /* implicit*/ operator T() const
 		    noexcept(noexcept(std::numeric_limits<T>::max())) {
@@ -332,7 +332,7 @@ inline namespace nums {
 	 * type. For unsigned destination types, this is always 0. For signed
 	 * destination types, it depends on size.
 	 */
-	KBLIB_UNUSED constexpr struct min_t {
+	constexpr struct min_t {
 		template <typename T>
 		constexpr /* implicit*/ operator T() const
 		    noexcept(noexcept(std::numeric_limits<T>::min())) {

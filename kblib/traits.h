@@ -61,7 +61,7 @@ constexpr bool contains_types_v = contains_types<Ts...>::value;
 template <typename T>
 struct list_as_tuple;
 
-template <template <typename...> typename Tuple, typename... Ts>
+template <template <typename...> class Tuple, typename... Ts>
 struct list_as_tuple<Tuple<Ts...>> {
 	using type = std::tuple<Ts...>;
 };

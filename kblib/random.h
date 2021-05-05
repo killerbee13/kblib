@@ -106,7 +106,8 @@ KBLIB_NODISCARD auto seeded(Source&& s) -> Gen {
 
 template <typename Gen>
 KBLIB_NODISCARD auto seeded() -> Gen {
-	auto seed = trivial_seed_seq(std::random_device{}, state_size_v<Gen>);
+	std::random_device rd{};
+	auto seed = trivial_seed_seq(std::ref(rd), state_size_v<Gen>);
 	return Gen{seed};
 }
 

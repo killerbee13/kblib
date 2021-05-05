@@ -606,7 +606,7 @@ namespace detail {
 
 } // namespace detail
 
-[[maybe_unused]] constexpr inline struct {
+KBLIB_UNUSED constexpr inline struct {
 	/**
 	 * @brief Swaps two objects, using move operations.
 	 *
@@ -615,7 +615,7 @@ namespace detail {
 	template <typename T, enable_if_t<not has_member_swap<T>::value and
 	                                      not is_tuple_like<T>::value,
 	                                  int> = 0>
-	[[maybe_unused]] constexpr auto operator()(T& a, T& b) const
+	KBLIB_UNUSED constexpr auto operator()(T& a, T& b) const
 	    noexcept(std::is_nothrow_move_constructible<T>::value and
 	                 std::is_nothrow_move_assignable<T>::value) -> void {
 		auto tmp = std::move(a);
@@ -630,7 +630,7 @@ namespace detail {
 	 * @param a,b The objects that will be swapped.
 	 */
 	template <typename T, enable_if_t<has_member_swap<T>::value, int> = 0>
-	[[maybe_unused]] constexpr auto operator()(T& a, T& b) const
+	KBLIB_UNUSED constexpr auto operator()(T& a, T& b) const
 	    noexcept(noexcept(a.swap(b))) -> void {
 		a.swap(b);
 		return;
@@ -642,7 +642,7 @@ namespace detail {
 	 * @param a,b The arrays that will be swapped.
 	 */
 	template <typename T, std::size_t N>
-	[[maybe_unused]] constexpr auto operator()(T (&a)[N], T (&b)[N]) const
+	KBLIB_UNUSED constexpr auto operator()(T (&a)[N], T (&b)[N]) const
 	    noexcept(std::is_nothrow_move_constructible<T>::value and
 	                 std::is_nothrow_move_assignable<T>::value) -> void {
 		for (std::size_t i = 0; i < N; ++i) {
@@ -659,9 +659,8 @@ namespace detail {
 	                                      not has_member_swap<T>::value,
 	                                  std::size_t>
 	                          N = std::tuple_size<T>::value>
-	[[maybe_unused]] constexpr auto operator()(T& a, T& b) const noexcept(
-	    noexcept(detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{})))
-	    -> void {
+	KBLIB_UNUSED constexpr auto operator()(T& a, T& b) const noexcept(noexcept(
+	    detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) -> void {
 		detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
 	}
 } swap;

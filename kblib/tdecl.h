@@ -137,6 +137,12 @@ constexpr endian hash_order = little;
 constexpr endian hash_order = detail::get_hash_order();
 #endif
 
+#if KBLIB_USE_CXX17
+using std::byte;
+#else
+using byte = unsigned char;
+#endif
+
 } // namespace kblib
 
 #endif // KBLIB_TDECL_H

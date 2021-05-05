@@ -26,7 +26,7 @@ namespace detail {
 	template <typename T,
 	          bool = std::is_trivially_default_constructible<T>::value and
 	              std::is_trivially_destructible<T>::value>
-	struct alignas(T) storage_for : private std::array<std::byte, sizeof(T)> {
+	struct alignas(T) storage_for : private std::array<byte, sizeof(T)> {
 		template <
 		    typename... Args,
 		    enable_if_t<std::is_constructible<T, Args&&...>::value, int> = 0>

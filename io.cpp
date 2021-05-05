@@ -327,7 +327,8 @@ TEST_CASE("tee_stream") {
 #if KBLIB_USE_CXX17
 	auto os = kblib::tee(a, b);
 #else
-	kblib::basic_teestream<std::ostringstream, std::ostringstream> os(a, b);
+	// kblib::basic_teestream<std::ostringstream, std::ostringstream> os(a, b);
+	auto&& os = kblib::tee(a, b);
 #endif
 
 	os << "test" << std::flush;

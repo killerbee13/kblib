@@ -73,8 +73,8 @@ namespace detail {
 
 	template <typename T>
 	constexpr construct_type construct_traits =
-	    construct_type::copy* std::is_copy_constructible_v<T> |
-	    construct_type::move* std::is_move_constructible_v<T>;
+	    construct_type::copy* std::is_copy_constructible<T>::value |
+	    construct_type::move* std::is_move_constructible<T>::value;
 
 	template <construct_type traits>
 	struct assign_conditional;
@@ -110,8 +110,8 @@ namespace detail {
 
 	template <typename T>
 	constexpr construct_type assign_traits =
-	    construct_type::copy * std::is_copy_assignable_v<T> |
-	    construct_type::move * std::is_move_assignable_v<T>;
+	    construct_type::copy * std::is_copy_assignable<T>::value |
+	    construct_type::move * std::is_move_assignable<T>::value;
 
 	// clang-format on
 
@@ -152,7 +152,7 @@ namespace detail {
 	struct erased_hash_t {};
 
 	template <typename T>
-	struct erased_hash_t<T, std::void_t<std::invoke_result_t<std::hash<T>, T>>> {
+	struct erased_hash_t<T, void_t<fakestd::invoke_result_t<std::hash<T>, T>>> {
 		static auto default_hash(void* obj) -> std::size_t {
 			return std::hash<T>()(*static_cast<const T*>(obj));
 		}
@@ -165,7 +165,7 @@ namespace detail {
 
 	template <typename T>
 	struct kblib_erased_hash_t<
-	    T, std::void_t<std::invoke_result_t<std::hash<T>, T>>> {
+	    T, void_t<fakestd::invoke_result_t<std::hash<T>, T>>> {
 		static auto default_hash(void* obj) -> std::size_t {
 			return FNV_hash<T>{}(*static_cast<const T*>(obj));
 		}
@@ -178,7 +178,7 @@ namespace detail {
 	}
 	template <typename T>
 	auto default_move(void* dest, void* from) noexcept(
-	    std::is_nothrow_move_constructible_v<T>) -> void* {
+	    std::is_nothrow_move_constructible<T>::value) -> void* {
 		return static_cast<void*>(new (dest)
 		                              T(std::move(*static_cast<T*>(from))));
 	}
@@ -189,14 +189,15 @@ namespace detail {
 		if constexpr (noop) {
 			return {};
 		}
-		static_assert(implies_v<std::is_copy_constructible_v<Traits>,
-		                        std::is_copy_constructible_v<T>>,
+		static_assert(implies<std::is_copy_constructible<Traits>::value,
+		                      std::is_copy_constructible<T>::value>::value,
 		              "T must be copy constructible if Traits is.");
-		static_assert(implies_v<std::is_nothrow_move_constructible_v<Traits>,
-		                        std::is_nothrow_move_constructible_v<T>>,
-		              "T must be nothrow move constructible if Traits is.");
-		static_assert(implies_v<std::is_move_constructible_v<Traits>,
-		                        std::is_move_constructible_v<T>>,
+		static_assert(
+		    implies<std::is_nothrow_move_constructible<Traits>::value,
+		            std::is_nothrow_move_constructible<T>::value>::value,
+		    "T must be nothrow move constructible if Traits is.");
+		static_assert(implies<std::is_move_constructible<Traits>::value,
+		                      std::is_move_constructible<T>::value>::value,
 		              "T must be move constructible if Traits is.");
 		if constexpr (construct_traits<Traits> == construct_type::none) {
 			return {};
@@ -217,6 +218,15 @@ namespace detail {
 	template <typename T>
 	struct extract_derived_size<T, void_if_t<(T::max_derived_size > sizeof(T))>>
 	    : std::integral_constant<std::size_t, T::max_derived_size> {};
+
+#if KBLIB_USE_CXX17
+	using std::launder;
+#else
+	template <typename T>
+	auto launder(T* x) -> T* {
+		return x;
+	}
+#endif
 
 } // namespace detail
 
@@ -281,9 +291,9 @@ class poly_obj
 	static_assert(Capacity >= sizeof(Obj),
 	              "Capacity must be large enough for the object type.");
 	static_assert(
-	    std::has_virtual_destructor_v<Obj>,
+	    std::has_virtual_destructor<Obj>::value,
 	    "Obj must have a virtual destructor to be used as a base class object.");
-	static_assert(not std::is_array_v<Obj>,
+	static_assert(not std::is_array<Obj>::value,
 	              "poly_obj of array type is disallowed.");
 
 	static constexpr std::size_t capacity = Capacity;
@@ -318,7 +328,7 @@ class poly_obj
 	 * @param other A poly_obj to move from.
 	 */
 	constexpr poly_obj(poly_obj&& other) noexcept(
-	    std::is_nothrow_move_constructible_v<Traits>)
+	    std::is_nothrow_move_constructible<Traits>::value)
 	    : disabler(std::move(other)), ops_t(std::move(other)),
 	      valid(other.valid) {
 		if (valid) {
@@ -342,7 +352,7 @@ class poly_obj
 	 * @param obj The object to move from.
 	 */
 	constexpr poly_obj(Obj&& obj) noexcept(
-	    std::is_nothrow_move_constructible_v<Traits>)
+	    std::is_nothrow_move_constructible<Traits>::value)
 	    : valid(true) {
 		new (data) Obj(std::move(obj));
 	}
@@ -356,10 +366,10 @@ class poly_obj
 	 * is cleared and the exception rethrown.
 	 */
 	template <typename... Args,
-	          typename std::enable_if_t<std::is_constructible_v<Obj, Args...>,
-	                                    int> = 0>
-	constexpr explicit poly_obj(std::in_place_t, Args&&... args) noexcept(
-	    std::is_nothrow_constructible_v<Obj, Args&&...>)
+	          typename std::enable_if_t<
+	              std::is_constructible<Obj, Args...>::value, int> = 0>
+	constexpr explicit poly_obj(fakestd::in_place_t, Args&&... args) noexcept(
+	    std::is_nothrow_constructible<Obj, Args&&...>::value)
 	    : ops_t(detail::make_ops_t<Obj, Traits>()), valid(true) {
 		new (data) Obj(std::forward<Args>(args)...);
 	}
@@ -373,10 +383,10 @@ class poly_obj
 	 * is cleared and the exception rethrown.
 	 */
 	template <typename... Args,
-	          typename std::enable_if_t<std::is_constructible_v<Obj, Args...>,
-	                                    int> = 0>
+	          typename std::enable_if_t<
+	              std::is_constructible<Obj, Args...>::value, int> = 0>
 	constexpr explicit poly_obj(kblib::in_place_agg_t, Args&&... args) noexcept(
-	    std::is_nothrow_constructible_v<Obj, Args&&...>)
+	    std::is_nothrow_constructible<Obj, Args&&...>::value)
 	    : ops_t(detail::make_ops_t<Obj, Traits>()), valid(true) {
 		new (data) Obj{std::forward<Args>(args)...};
 	}
@@ -412,7 +422,7 @@ class poly_obj
 	 * is cleared and the exception rethrown.
 	 */
 	auto operator=(poly_obj&& other) & noexcept(
-	    std::is_nothrow_move_assignable_v<Traits>) -> poly_obj& {
+	    std::is_nothrow_move_assignable<Traits>::value) -> poly_obj& {
 		clear();
 		static_cast<ops_t&>(*this) = other;
 		if (other.valid) {
@@ -435,21 +445,20 @@ class poly_obj
 	 * @return poly_obj A poly_obj<Obj> containing an object of type U.
 	 */
 	template <typename U, typename... Args>
-	KBLIB_NODISCARD static auto
-	make(Args&&... args) noexcept(std::is_nothrow_constructible_v<U, Args&&...>)
-	    -> poly_obj {
+	KBLIB_NODISCARD static auto make(Args&&... args) noexcept(
+	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
 		static_assert(sizeof(U) <= Capacity,
 		              "U must fit inside of the inline capacity.");
-		static_assert(std::is_base_of_v<Obj, U> and
-		                  std::is_convertible_v<U*, Obj*>,
+		static_assert(std::is_base_of<Obj, U>::value and
+		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
-		static_assert(std::has_virtual_destructor_v<Obj>,
+		static_assert(std::has_virtual_destructor<Obj>::value,
 		              "It must be safe to delete a U through an Obj*.");
-		static_assert(implies_v<std::is_copy_constructible_v<Traits>,
-		                        std::is_copy_constructible_v<U>>,
+		static_assert(implies<std::is_copy_constructible<Traits>::value,
+		                      std::is_copy_constructible<U>::value>::value,
 		              "U must be copy constructible if Traits is.");
-		static_assert(implies_v<std::is_move_constructible_v<Traits>,
-		                        std::is_move_constructible_v<U>>,
+		static_assert(implies<std::is_move_constructible<Traits>::value,
+		                      std::is_move_constructible<U>::value>::value,
 		              "U must be move constructible if Traits is.");
 		return {tag<U>{}, std::forward<Args>(args)...};
 	}
@@ -468,26 +477,26 @@ class poly_obj
 	 */
 	template <typename U, typename... Args>
 	KBLIB_NODISCARD static auto make_aggregate(Args&&... args) noexcept(
-	    std::is_nothrow_constructible_v<U, Args&&...>) -> poly_obj {
+	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
 		static_assert(sizeof(U) <= Capacity,
 		              "U must fit inside of the inline capacity.");
-		static_assert(std::is_base_of_v<Obj, U> and
-		                  std::is_convertible_v<U*, Obj*>,
+		static_assert(std::is_base_of<Obj, U>::value and
+		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
-		static_assert(std::has_virtual_destructor_v<Obj>,
+		static_assert(std::has_virtual_destructor<Obj>::value,
 		              "It must be safe to delete a U through an Obj*.");
-		static_assert(implies_v<std::is_copy_constructible_v<Traits>,
-		                        std::is_copy_constructible_v<U>>,
+		static_assert(implies<std::is_copy_constructible<Traits>::value,
+		                      std::is_copy_constructible<U>::value>::value,
 		              "U must be copy constructible if Traits is.");
-		static_assert(implies_v<std::is_move_constructible_v<Traits>,
-		                        std::is_move_constructible_v<U>>,
+		static_assert(implies<std::is_move_constructible<Traits>::value,
+		                      std::is_move_constructible<U>::value>::value,
 		              "U must be move constructible if Traits is.");
 		return {tag<U, true>{}, std::forward<Args>(args)...};
 	}
 
 	/*template <typename U = Obj, typename... Args>
 	constexpr auto emplace(Args&&... args) noexcept(
-	    std::is_nothrow_constructible_v<U, Args&&...>) -> Obj& {
+	    std::is_nothrow_constructible<U, Args&&...>::value) -> Obj& {
 	   clear();
 	   static_cast<ops_t&>(*this) = detail::make_ops_t<U, Traits>();
 	   value = new (data) U(std::forward<Args>(args)...);
@@ -561,7 +570,7 @@ class poly_obj
 	 * @return Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto get() & noexcept -> Obj* {
-		return std::launder(reinterpret_cast<Obj*>(data));
+		return detail::launder(reinterpret_cast<Obj*>(data));
 	}
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -573,7 +582,7 @@ class poly_obj
 	 * @return const Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto get() const& noexcept -> const Obj* {
-		return std::launder(reinterpret_cast<const Obj*>(data));
+		return detail::launder(reinterpret_cast<const Obj*>(data));
 	}
 
 	/**
@@ -586,7 +595,7 @@ class poly_obj
 	 * @return Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto operator->() & noexcept -> Obj* {
-		return std::launder(reinterpret_cast<Obj*>(data));
+		return detail::launder(reinterpret_cast<Obj*>(data));
 	}
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -598,33 +607,37 @@ class poly_obj
 	 * @return const Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto operator->() const& noexcept -> const Obj* {
-		return std::launder(reinterpret_cast<const Obj*>(data));
+		return detail::launder(reinterpret_cast<const Obj*>(data));
 	}
 
 	template <typename member_type>
-	return_assert_t<not std::is_member_function_pointer_v<member_type Obj::*>,
-	                member_type>&
+	return_assert_t<
+	    not std::is_member_function_pointer<member_type Obj::*>::value,
+	    member_type>&
 	operator->*(member_type Obj::*member) & noexcept {
 		return get()->*member;
 	}
 
 	template <typename member_type>
 	const return_assert_t<
-	    not std::is_member_function_pointer_v<member_type Obj::*>, member_type>&
+	    not std::is_member_function_pointer<member_type Obj::*>::value,
+	    member_type>&
 	operator->*(member_type Obj::*member) const& noexcept {
 		return get()->*member;
 	}
 
 	template <typename member_type>
-	return_assert_t<not std::is_member_function_pointer_v<member_type Obj::*>,
-	                member_type>&&
+	return_assert_t<
+	    not std::is_member_function_pointer<member_type Obj::*>::value,
+	    member_type>&&
 	operator->*(member_type Obj::*member) && noexcept {
 		return std::move(get()->*member);
 	}
 
 	template <typename member_type>
 	const return_assert_t<
-	    not std::is_member_function_pointer_v<member_type Obj::*>, member_type>&&
+	    not std::is_member_function_pointer<member_type Obj::*>::value,
+	    member_type>&&
 	operator->*(member_type Obj::*member) const&& noexcept {
 		return std::move(get()->*member);
 	}
@@ -708,12 +721,12 @@ class poly_obj
 	 * behavior is undefined.
 	 *
 	 * @param args The arguments to forward to the function.
-	 * @return std::invoke_result_t<Obj&, Args&&...> The return value of
+	 * @return invoke_result_t<Obj&, Args&&...> The return value of
 	 * the function.
 	 */
 	template <typename... Args>
 	auto operator()(Args&&... args) noexcept(
-	    std::is_nothrow_invocable_v<Obj&, Args&&...>)
+	    is_nothrow_invocable<Obj&, Args&&...>::value)
 	    -> fakestd::invoke_result_t<Obj&, Args&&...> {
 		return kblib::invoke(*get(), std::forward<Args>(args)...);
 	}
@@ -724,12 +737,12 @@ class poly_obj
 	 * behavior is undefined.
 	 *
 	 * @param args The arguments to forward to the function.
-	 * @return std::invoke_result_t<const Obj&, Args&&...> The return value of
+	 * @return invoke_result_t<const Obj&, Args&&...> The return value of
 	 * the function.
 	 */
 	template <typename... Args>
 	auto operator()(Args&&... args) const
-	    noexcept(std::is_nothrow_invocable_v<const Obj&, Args&&...>)
+	    noexcept(is_nothrow_invocable<const Obj&, Args&&...>::value)
 	        -> fakestd::invoke_result_t<const Obj&, Args&&...> {
 		return kblib::invoke(*get(), std::forward<Args>(args)...);
 	}
@@ -759,7 +772,7 @@ class poly_obj
 	}
 
  private:
-	alignas(Obj) std::byte data[Capacity]{};
+	alignas(Obj) byte data[Capacity]{};
 	bool valid{};
 
 	template <typename U, bool = false>
@@ -767,14 +780,14 @@ class poly_obj
 
 	template <typename U, typename... Args>
 	poly_obj(tag<U>, Args&&... args) noexcept(
-	    std::is_nothrow_constructible_v<U, Args&&...>)
+	    std::is_nothrow_constructible<U, Args&&...>::value)
 	    : ops_t(detail::make_ops_t<U, Traits>()), valid(true) {
 		new (data) U(std::forward<Args>(args)...);
 	}
 
 	template <typename U, typename... Args>
 	poly_obj(tag<U, true>, Args&&... args) noexcept(
-	    std::is_nothrow_constructible_v<U, Args&&...>)
+	    std::is_nothrow_constructible<U, Args&&...>::value)
 	    : ops_t(detail::make_ops_t<U, Traits>()), valid(true) {
 		new (data) U{std::forward<Args>(args)...};
 	}

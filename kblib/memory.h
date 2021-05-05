@@ -496,7 +496,7 @@ class cond_ptr : private detail::as_base_class<Deleter> {
 	}
 
 	auto
-	swap(cond_ptr& other) noexcept(std::is_nothrow_swappable<Deleter>::value)
+	swap(cond_ptr& other) noexcept(fakestd::is_nothrow_swappable<Deleter>::value)
 	    -> void {
 		using std::swap;
 		swap(ptr_, other.ptr_);

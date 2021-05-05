@@ -113,6 +113,6 @@ TEST_CASE("transform_engine") {
 		REQUIRE(gen != gen2);
 		REQUIRE(gen1 != gen2);
 	}
-	std::uniform_int_distribution dist;
+	std::uniform_int_distribution<int> dist;
 	(void)dist(gen);
 }

@@ -378,8 +378,8 @@ namespace detail {
 			}
 		}
 
-		auto bool_to_failure(bool b) const noexcept -> int_type {
-			return b ? traits_type::to_int_type(char_type{}) : traits_type::eof();
+		auto bool_to_failure(bool B) const noexcept -> int_type {
+			return B ? traits_type::to_int_type(char_type{}) : traits_type::eof();
 		}
 
 		auto fail() noexcept -> void {
@@ -464,10 +464,10 @@ class basic_teestream
 	auto rdbuf() const -> buf_type* { return &buf; }
 };
 
-#if KBLIB_USE_CXX17
+#if 1 || KBLIB_USE_CXX17
 template <typename StreamA, typename StreamB>
 auto tee(StreamA& a, StreamB& b) -> basic_teestream<StreamA, StreamB> {
-	return basic_teestream<StreamA, StreamB>(a, b);
+	return {a, b};
 }
 #endif
 

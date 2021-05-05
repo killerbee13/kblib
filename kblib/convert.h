@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <exception>
 #include <iomanip>
@@ -15,6 +16,8 @@
 #include <string>
 #include <typeinfo>
 
+#include "algorithm.h"
+#include "iterators.h"
 #include "traits.h"
 
 #if KBLIB_USE_STRING_VIEW
