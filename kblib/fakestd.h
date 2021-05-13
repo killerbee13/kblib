@@ -552,7 +552,7 @@ KBLIB_NODISCARD constexpr auto to_signed(I x) -> std::make_signed_t<I> {
  * the template parameter
  */
 template <typename A, typename F>
-KBLIB_NODISCARD KBLIB_NODISCARD constexpr auto signed_cast(F x)
+KBLIB_NODISCARD constexpr auto signed_cast(F x)
     -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
                        std::is_signed<A>::value,
                    std::make_signed_t<F>> {

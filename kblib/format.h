@@ -1,7 +1,7 @@
 #ifndef KBLIB_FORMAT_H
 #define KBLIB_FORMAT_H
 
-#include "tdecl.h"
+#include "fakestd.h"
 
 #include <algorithm>
 #include <cmath>
@@ -16,13 +16,30 @@ namespace kblib {
  * @return int The number of digits needed to represent a number.
  */
 template <typename Number>
-constexpr auto count_digits(Number val) -> int {
+constexpr auto count_digits(Number val)
+    -> enable_if_t<not std::is_unsigned<Number>::value, int> {
 	if (val == 0) {
 		return 1;
 	} else if (std::is_floating_point<Number>::value) {
 		return std::numeric_limits<Number>::digits10;
 	} else {
-		return std::ceil(std::log10(val + 1)) + (val < 0);
+		return std::ceil(std::log10(std::abs(val) + 1)) + (val < 0);
+	}
+}
+
+/**
+ * @brief Calculates the number of decimal digits needed to represent a number.
+ *
+ * @param val The number to be checked.
+ * @return int The number of digits needed to represent a number.
+ */
+template <typename Number>
+constexpr auto count_digits(Number val)
+    -> enable_if_t<std::is_unsigned<Number>::value, int> {
+	if (val == 0) {
+		return 1;
+	} else {
+		return std::ceil(std::log10(val + 1));
 	}
 }
 

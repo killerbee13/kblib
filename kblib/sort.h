@@ -262,6 +262,9 @@ constexpr auto byte_count(const T& x) noexcept
 }
 
 // Can be used to detect unsupported types with overload resolution.
+
+// cert-dcl50-cpp: An exception to the rule for defining as deleted is not
+// implemented by clang-tidy. This definition does not pose a security risk.
 constexpr auto byte_count(...) -> void = delete;
 
 template <typename T>
@@ -275,6 +278,8 @@ KBLIB_NODISCARD constexpr auto get_byte_index(const T& x,
     -> enable_if_t<std::is_enum<T>::value, unsigned char> {
 	return static_cast<unsigned char>(etoi(x) >> (idx * CHAR_BIT));
 }
+// Note that the ordering created by casting to std::uintptr_t may not agree
+// with the ordering imposed by std::less<T*>.
 template <typename T>
 KBLIB_NODISCARD auto get_byte_index(T* x, std::size_t idx) noexcept
     -> unsigned char {
