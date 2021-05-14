@@ -1459,6 +1459,143 @@ auto transform_range(It begin, EndIt end, operation op) noexcept(
 }
 #endif
 
+template <typename InputIt1, typename EndIt, typename InputIt2>
+struct zip_iterator {
+	InputIt1 pos1{};
+	EndIt end1{};
+	InputIt2 pos2{};
+
+	constexpr static bool is_nothrow_copyable =
+	    std::is_nothrow_copy_constructible<InputIt1>::value and
+	    std::is_nothrow_copy_constructible<EndIt>::value and
+	    std::is_nothrow_copy_constructible<InputIt2>::value;
+
+	auto operator++() noexcept(noexcept(++pos1) and noexcept(++pos2))
+	    -> zip_iterator& {
+		++pos1;
+		++pos2;
+		return *this;
+	}
+	auto operator++(int) noexcept(is_nothrow_copyable and noexcept(
+	    ++pos1) and noexcept(++pos2)) -> const zip_iterator {
+		auto tmp = *this;
+		++pos1;
+		++pos2;
+		return tmp;
+	}
+
+	KBLIB_NODISCARD auto operator*() const noexcept -> auto {
+		return std::forward_as_tuple(*pos1, *pos2);
+	}
+
+	KBLIB_NODISCARD auto begin() const noexcept(is_nothrow_copyable)
+	    -> zip_iterator {
+		return *this;
+	}
+	KBLIB_NODISCARD auto end() const
+	    noexcept(std::is_nothrow_copy_constructible<EndIt>::value and
+	                 std::is_nothrow_copy_constructible<InputIt2>::value)
+	        -> zip_iterator<EndIt, EndIt, InputIt2> {
+		return {end1, end1};
+	}
+
+	KBLIB_NODISCARD friend auto
+	operator==(const zip_iterator& z1,
+	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1))
+	    -> bool {
+		return z1.pos1 == z2.pos1;
+	}
+	KBLIB_NODISCARD friend auto
+	operator!=(const zip_iterator& z1,
+	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 != z2.pos1))
+	    -> bool {
+		return z1.pos1 != z2.pos1;
+	}
+	KBLIB_NODISCARD friend auto operator==(
+	    const zip_iterator& z1,
+	    zip_iterator<EndIt, EndIt, InputIt2> end) noexcept(noexcept(z1.pos1 ==
+	                                                                end.val))
+	    -> bool {
+		return z1.end1 == end.val;
+	}
+	KBLIB_NODISCARD friend auto operator!=(
+	    const zip_iterator& z1,
+	    zip_iterator<EndIt, EndIt, InputIt2> end) noexcept(noexcept(z1.pos1 ==
+	                                                                end.val))
+	    -> bool {
+		return z1.end1 != end.val;
+	}
+};
+
+template <typename It1, typename It2>
+struct zip_iterator<It1, It1, It2> {
+	It1 pos1{};
+	It1 end1{};
+	It2 pos2{};
+
+	constexpr static bool is_nothrow_copyable =
+	    std::is_nothrow_copy_constructible<It1>::value and
+	    std::is_nothrow_copy_constructible<It2>::value;
+
+	auto operator++() noexcept(noexcept(++pos1)) -> zip_iterator& {
+		++pos1;
+		++pos2;
+		return *this;
+	}
+	auto operator++(int) noexcept(is_nothrow_copyable and noexcept(++pos1))
+	    -> const zip_iterator {
+		auto tmp = *this;
+		++pos1;
+		++pos2;
+		return tmp;
+	}
+
+	KBLIB_NODISCARD auto operator*() -> auto {
+		return std::forward_as_tuple(*pos1, *pos2);
+	}
+
+	KBLIB_NODISCARD auto begin() const noexcept(is_nothrow_copyable)
+	    -> zip_iterator {
+		return *this;
+	}
+	KBLIB_NODISCARD auto end() const
+	    noexcept(std::is_nothrow_copy_constructible<It1>::value)
+	        -> zip_iterator {
+		return {end1, end1};
+	}
+
+	KBLIB_NODISCARD friend auto
+	operator==(const zip_iterator& z1,
+	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1))
+	    -> bool {
+		return z1.pos1 == z2.pos1;
+	}
+	KBLIB_NODISCARD friend auto
+	operator!=(const zip_iterator& z1,
+	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1))
+	    -> bool {
+		return z1.pos1 != z2.pos1;
+	}
+};
+
+/**
+ * @brief Iterate over two ranges in lockstep, like Python's zip.
+ *
+ * InputIt1 and EndIt may be different types, however that breaks range-for
+ * in C++14.
+ *
+ * @param begin1,end1 The first range.
+ * @param begin2 The beginning of the second range.
+ * @return zip_iterator<InputIt1, EndIt, InputIt2> A range (and also an
+ * iterator) which represents the two ranges taken in pairs.
+ */
+template <typename InputIt1, typename EndIt, typename InputIt2>
+KBLIB_NODISCARD auto zip(InputIt1 begin1, EndIt end1, InputIt2 begin2) noexcept(
+    zip_iterator<InputIt1, EndIt, InputIt2>::is_nothrow_copyable)
+    -> zip_iterator<InputIt1, EndIt, InputIt2> {
+	return {begin1, end1, begin2};
+}
+
 /**
  * @brief An OutputIterator that transforms the values assigned to it before
  * inserting them into the back of a container.
