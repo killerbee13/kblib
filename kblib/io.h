@@ -10,7 +10,18 @@
 #include <vector>
 
 #if KBLIB_USE_CXX17
+#include <cstdio>
+#include <filesystem>
 #include <optional>
+
+#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || \
+                         (defined(__APPLE__) && defined(__MACH__)))
+/* UNIX-style OS. ------------------------------------------- */
+#include <unistd.h>
+#if defined(_POSIX_VERSION)
+#define KBLIB_POSIX_TMPFILE
+#endif
+#endif
 #endif
 
 #include <iostream>
@@ -335,6 +346,30 @@ std::basic_ostream<CharT, Tr>& operator<<(std::basic_ostream<CharT, Tr>& is,
 
 namespace detail {
 
+	/*
+	class steambuf_template : public std::streambuf {
+	protected:
+	   auto imbue(const std::locale& loc) -> void override;
+
+	   auto setbuf(char_type* s, std::streamsize n) -> std::streambuf* override;
+	   auto seekoff(off_type off, std::ios_base::seekdir dir,
+	std::ios_base::openmode which) -> pos_type override; auto seekpos(pos_type
+	pos, std::ios_base::openmode which) -> pos_type override; auto sync() -> int
+	override;
+
+	   auto showmanyc() -> std::streamsize override;
+	   auto underflow() -> int_type override;
+	   auto uflow() -> int_type override;
+	   auto xsgetn(char_type* s, std::streamsize count) -> std::streamsize
+	override;
+
+	   auto xsputn(const char_type* s, std::streamsize count) -> std::streamsize
+	override; auto overflow(int_type ch) -> int_type override;
+
+	   auto pbackfail(int_type c) -> int_type override;
+	};
+	 */
+
 	template <typename SB1_t, typename SB2_t>
 	class basic_teestreambuf
 	    : public std::basic_streambuf<typename SB1_t::char_type,
@@ -469,6 +504,141 @@ template <typename StreamA, typename StreamB>
 auto tee(StreamA& a, StreamB& b) -> basic_teestream<StreamA, StreamB> {
 	return {a, b};
 }
+#endif
+
+#if KBLIB_USE_CXX17
+
+class FILEbuf : public std::streambuf {
+ private:
+	FILE* file;
+
+	using streambuf = std::streambuf;
+
+ public:
+	auto is_open() -> bool;
+
+ protected:
+	// auto imbue(const std::locale& loc) -> void override;
+
+	// auto setbuf(char_type* s, std::streamsize n) -> streambuf* override;
+	auto seekoff(off_type off, std::ios_base::seekdir dir,
+	             std::ios_base::openmode /*which*/) -> pos_type override {
+		if (not is_open()) {
+			return pos_type(off_type(-1));
+		} else {
+			if (true /* unwritten data */) {
+				overflow();
+			}
+			int whence = (dir == std::ios::beg)
+			                 ? SEEK_SET
+			                 : (dir == std::ios::end) ? SEEK_END : SEEK_CUR;
+			if (auto e = std::fseek(file, off, whence)) {
+				return pos_type(off_type(-1));
+			}
+			return std::ftell(file);
+		}
+	}
+	auto seekpos(pos_type pos, std::ios_base::openmode /*which*/)
+	    -> pos_type override {
+		if (not is_open()) {
+			return pos_type(off_type(-1));
+		} else {
+			if (true /* unwritten data */) {
+				overflow();
+			}
+			if (auto e = std::fseek(file, pos, SEEK_SET)) {
+				return pos_type(off_type(-1));
+			}
+			return pos;
+		}
+	}
+	auto sync() -> int override {
+		if (true /* opened for writing */) {
+			overflow();
+			if (auto e = std::fflush(file)) {
+				return -1;
+			}
+		}
+		if (true /* opened for reading */) {
+			// implementation-defined
+		}
+		return 0;
+	}
+
+	// auto showmanyc() -> std::streamsize override;
+	auto underflow() -> int_type override;
+	auto uflow() -> int_type override;
+	auto xsgetn(char_type* s, std::streamsize count) -> std::streamsize override;
+
+	auto xsputn(const char_type* s, std::streamsize count)
+	    -> std::streamsize override;
+	auto overflow(int_type ch = traits_type::eof()) -> int_type override;
+
+	auto pbackfail(int_type c) -> int_type override;
+};
+
+namespace detail {
+	class FILE_stream_impl {
+		FILEbuf buf;
+	};
+} // namespace detail
+
+class iFILE_stream : private detail::FILE_stream_impl, public std::istream {
+	FILEbuf* rdbuf();
+};
+
+class oFILE_stream : private detail::FILE_stream_impl, public std::ostream {
+	FILEbuf* rdbuf();
+};
+
+class FILE_stream : private detail::FILE_stream_impl, public std::iostream {
+	FILEbuf* rdbuf();
+};
+
+template <typename F, typename D = std::default_delete<F>,
+          typename P = typename D::pointer>
+struct file_deleter {
+	std::filesystem::path path;
+	using pointer = P;
+	void operator()(P fs) {
+		static_cast<D&>(this)(fs);
+		std::filesystem::remove(path);
+	}
+};
+
+#ifdef KBLIB_POSIX_TMPFILE
+namespace detail {
+	struct fd_closer {
+		void operator()(int fd) const noexcept { close(fd); }
+		using pointer = int;
+	};
+} // namespace detail
+
+using fd_deleter = file_deleter<int, detail::fd_closer>;
+#endif
+
+template <typename File = std::fstream>
+[[nodiscard]] auto
+scoped_file(const std::filesystem::path& path,
+            std::ios_base::openmode mode = std::ios_base::in |
+                                           std::ios_base::out) {
+	return std::unique_ptr<File, file_deleter<File>>{
+	    new std::fstream{path, mode}, {path}};
+}
+
+template <typename File = std::fstream>
+[[nodiscard]] auto tmpfile(const std::filesystem::path& path,
+                           std::ios_base::openmode mode = std::ios_base::in |
+                                                          std::ios_base::out) {
+#ifdef KBLIB_POSIX_TMPFILE
+	auto p = std::make_unique<File>(path, mode);
+	std::filesystem::remove(path);
+	return p;
+#else
+	return scoped_file<File>(path, mode);
+#endif
+}
+
 #endif
 
 } // namespace kblib

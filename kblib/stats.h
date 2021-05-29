@@ -272,7 +272,7 @@ KBLIB_NODISCARD constexpr auto sum(Range&& r) -> auto {
 
 inline namespace nums {
 	/**
-	 * @brief Shorthand for std::numeric_limits::max()
+	 * @brief Shorthand for std::numeric_limits::max().
 	 *
 	 * Implicitly converts to the maximum representable value of any numeric
 	 * type. For unsigned destination types, -1 is shorter, but much less clear.
@@ -287,17 +287,15 @@ inline namespace nums {
 		}
 
 		/**
-		 @brief
-
-		 @param lhs,rhs
-		 @return operator
+		 @brief Return the larger of two values.
 		*/
 		template <typename L, typename R>
 		KBLIB_NODISCARD constexpr auto operator()(L&& lhs, R&& rhs) const noexcept
 		    -> decltype(auto) {
 			return rhs < lhs ? std::forward<R>(lhs) : std::forward<L>(rhs);
 		}
-	} max; /**< A shorthand for the maximum value of the destination type. */
+	} max; /**< A shorthand for the maximum value of the destination type. Also
+	          provides max(a, b). */
 
 	template <typename T>
 	KBLIB_NODISCARD auto operator==(T t, max_t) -> bool {
@@ -340,17 +338,15 @@ inline namespace nums {
 		}
 
 		/**
-		 @brief
-
-		 @param lhs,rhs
-		 @return operator
+		 @brief Returns the smaller of two values.
 		*/
 		template <typename L, typename R>
 		KBLIB_NODISCARD constexpr auto operator()(L&& lhs, R&& rhs) const noexcept
 		    -> decltype(auto) {
 			return lhs < rhs ? std::forward<R>(lhs) : std::forward<L>(rhs);
 		}
-	} min; /**< A shorthand for the minimum value of the destination type. */
+	} min; /**< A shorthand for the minimum value of the destination type. Also
+	          provides min(a, b). */
 
 	template <typename T>
 	KBLIB_NODISCARD auto operator==(T t, min_t) -> bool {
@@ -401,9 +397,6 @@ KBLIB_NODISCARD constexpr auto phi() -> T {
 	return 1.6180339887498948482045868343656381177203091798058l;
 }
 
-// TODO(killerbee13): write tests and fix style issues for quantization
-// functions
-
 // saturating to_unsigned
 template <typename A, typename F>
 KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
@@ -446,6 +439,9 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
 	}
 }
 
+/// TODO(killerbee13): write tests and fix style issues for quantization
+/// functions
+
 /**
  * @brief Quantize a real-valued value into a discrete integer.
  *
@@ -456,7 +452,7 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-KBLIB_NODISCARD constexpr auto quantizeStep(F min, F delta, F val) noexcept
+KBLIB_NODISCARD constexpr auto quantize_step(F min, F delta, F val) noexcept
     -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
 	return static_cast<T>((val - min) * static_cast<T>(nums::max) * delta);
@@ -472,7 +468,7 @@ KBLIB_NODISCARD constexpr auto quantizeStep(F min, F delta, F val) noexcept
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-KBLIB_NODISCARD constexpr auto quantizeRange(F min, F max, F val) noexcept
+KBLIB_NODISCARD constexpr auto quantize_range(F min, F max, F val) noexcept
     -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
 	auto delta = (max - min) / static_cast<T>(nums::max);

@@ -12,6 +12,17 @@
 #error kblib requires C++14 or higher
 #endif
 
+// 1MMmmrr
+#define KBLIB_VERS 1000201
+
+#define KBLIB_VERS_MAJ 0
+#define KBLIB_VERS_MIN 2
+#define KBLIB_VERS_REV 1
+// MM_mm_rr
+#define KBLIB_VERS_S KBLIB_VERS_MAJ##_##KBLIB_VERS_MIN##_##KBLIB_VERS_REV
+// api_vMM_mm_rr
+#define KBLIB_VERS_NS api_v##KBLIB_VERS_S
+
 /**
  * @def KBLIB_USE_CXX17
  * @brief This internal macro is used to determine if kblib can use C++17

@@ -529,7 +529,7 @@ struct FNV_hash<Container,
 	           std::size_t offset =
 	               fnv::fnv_offset<std::size_t>::value) const noexcept {
 		using Elem = typename Container::value_type;
-		return std::accumulate(key.cbegin(), key.cend(), offset,
+		return std::accumulate(cbegin(key), cend(key), offset,
 		                       [](std::size_t offset, const Elem& elem) {
 			                       return FNV_hash<Elem>{}(elem, offset);
 		                       });

@@ -190,6 +190,14 @@ counting_back_inserter(C& c, std::size_t count = 0) {
  */
 template <typename Value, typename Delta>
 class range_t {
+ private:
+	Value min, max;
+	Delta step;
+
+	constexpr static bool nothrow_copyable =
+	    std::is_nothrow_copy_constructible<Value>::value;
+	constexpr static bool nothrow_steppable = noexcept(min + step);
+
  public:
 	/**
 	 * @brief 2- and 3-argument constructor. Explicitly specify start, end, and
@@ -231,20 +239,22 @@ class range_t {
 		 *
 		 * @return Value The value in the range this iterator corresponds to.
 		 */
-		constexpr auto operator*() const -> Value { return val; }
+		constexpr auto operator*() const noexcept(nothrow_copyable) -> Value {
+			return val;
+		}
 		/**
 		 * @brief Return a pointer to the value.
 		 *
 		 * @return pointer A pointer to a value equivalent to *(*this). Valid
 		 * until the iterator is modified in any way or destroyed.
 		 */
-		constexpr auto operator->() const -> pointer { return &val; }
+		constexpr auto operator->() const noexcept -> pointer { return &val; }
 		/**
 		 * @brief Prefix increment. Advance to the next value in the range.
 		 *
 		 * @return iterator& *this.
 		 */
-		constexpr auto operator++() & -> iterator& {
+		constexpr auto operator++() & noexcept(nothrow_steppable) -> iterator& {
 			val = val + step;
 			return *this;
 		}
@@ -254,7 +264,7 @@ class range_t {
 		 *
 		 * @return iterator A copy of the pre-incrementing value of *this.
 		 */
-		constexpr auto operator++(int) -> iterator {
+		constexpr auto operator++(int) noexcept(nothrow_steppable) -> iterator {
 			auto ret = *this;
 			val = val + step;
 			return ret;
@@ -265,7 +275,8 @@ class range_t {
 		 * Range iterators compare equal if they point to the same value and have
 		 * the same step.
 		 */
-		constexpr friend auto operator==(iterator l, iterator r) -> bool {
+		constexpr friend auto operator==(iterator l, iterator r) noexcept
+		    -> bool {
 			return l.val == r.val and l.step == r.step;
 		}
 		/**
@@ -274,7 +285,8 @@ class range_t {
 		 * Range iterators compare equal if they point to the same value and have
 		 * the same step.
 		 */
-		constexpr friend auto operator!=(iterator l, iterator r) -> bool {
+		constexpr friend auto operator!=(iterator l, iterator r) noexcept
+		    -> bool {
 			return l.val != r.val or l.step != r.step;
 		}
 		/**
@@ -283,7 +295,7 @@ class range_t {
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend auto operator<(iterator l, iterator r) -> bool {
+		constexpr friend auto operator<(iterator l, iterator r) noexcept -> bool {
 			if (l.step > 0)
 				return l.val < r.val;
 			else
@@ -295,7 +307,8 @@ class range_t {
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend auto operator<=(iterator l, iterator r) -> bool {
+		constexpr friend auto operator<=(iterator l, iterator r) noexcept
+		    -> bool {
 			return not(r < l);
 		}
 		/**
@@ -304,7 +317,7 @@ class range_t {
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend auto operator>(iterator l, iterator r) -> bool {
+		constexpr friend auto operator>(iterator l, iterator r) noexcept -> bool {
 			return r < l;
 		}
 		/**
@@ -313,24 +326,53 @@ class range_t {
 		 * For range iterators, (A < B) is true when A can be advanced until (*A -
 		 * *B) changes sign.
 		 */
-		constexpr friend auto operator>=(iterator l, iterator r) -> bool {
+		constexpr friend auto operator>=(iterator l, iterator r) noexcept
+		    -> bool {
 			return not(l < r);
+		}
+		constexpr auto operator[](std::ptrdiff_t x) const noexcept -> Value {
+			return val + x * step;
+		}
+		template <typename Integral>
+		constexpr auto operator[](Integral x) const noexcept -> Value {
+			return val + std::ptrdiff_t(x) * step;
 		}
 	};
 
 	/**
 	 * @brief Returns an iterator to the beginning of the range.
 	 */
-	constexpr auto begin() const -> iterator { return {min, step}; }
+	constexpr auto begin() const noexcept -> iterator { return {min, step}; }
 	/**
 	 * @brief Return an iterator to the end of the range.
 	 */
-	constexpr auto end() const -> iterator { return {max, step}; }
+	constexpr auto end() const noexcept -> iterator { return {max, step}; }
 
 	/**
 	 * @brief Returns the distance between start() and stop().
 	 */
-	constexpr auto size() const -> std::size_t { return (max - min) / step; }
+	constexpr auto size() const noexcept -> std::size_t {
+		return (max - min) / step;
+	}
+
+	/**
+	 * @brief Query whether the range will generate any elements.
+	 */
+	constexpr auto empty() const noexcept -> bool { return size() != 0; }
+
+	template <typename Integral>
+	constexpr auto operator[](Integral x) const noexcept
+	    -> decltype(begin()[x]) {
+		return begin()[x];
+	}
+
+	constexpr auto lesser() const noexcept(nothrow_copyable) -> Value {
+		return (step > 0) ? max : min;
+	}
+
+	constexpr auto greater() const noexcept(nothrow_copyable) -> Value {
+		return (step > 0) ? min : max;
+	}
 
 	/**
 	 \brief Returns a linear container whose elements are this range
@@ -361,28 +403,23 @@ class range_t {
 	 *
 	 * Ranges are equal when they generate identical ranges.
 	 */
-	constexpr friend auto operator==(range_t l, range_t r) -> bool {
-		return (l.begin() == r.begin()) and (l.end() == r.end()) and
-		       (l.step == r.step);
+	constexpr friend auto operator==(range_t l, range_t r) noexcept -> bool {
+		return (l.empty() and r.empty()) or
+		       ((l.begin() == r.begin()) and (l.end() == r.end()) and
+		        (l.step == r.step));
 	}
 	/**
 	 * @brief Compare l and r for inequality.
 	 *
 	 * Ranges are equal when they generate identical ranges.
 	 */
-	constexpr friend auto operator!=(range_t l, range_t r) -> bool {
+	constexpr friend auto operator!=(range_t l, range_t r) noexcept -> bool {
 		return not(l == r);
 	}
 
  private:
-	Value min, max;
-	Delta step;
-
-	constexpr auto normalize() -> void {
+	constexpr auto normalize() noexcept(nothrow_steppable) -> void {
 		if (min == max) {
-			min = Value{};
-			max = Value{};
-			step = 1;
 		} else if (step == 0) {
 			if (min != std::numeric_limits<Value>::max()) {
 				max = min + 1;
@@ -391,7 +428,7 @@ class range_t {
 			}
 		} else {
 			auto difference = max - min;
-			int sign = (step > 0) ? 1 : -1;
+			std::ptrdiff_t sign = (step > 0) ? 1 : -1;
 			if ((sign * to_signed(difference)) <= (sign * step)) {
 				step = sign;
 				max = min + step;
@@ -406,14 +443,40 @@ class range_t {
 	}
 };
 
+namespace detail {
+	template <typename T, typename U, typename = void>
+	struct is_addable : std::false_type {};
+
+	template <typename T, typename U>
+	struct is_addable<T, U,
+	                  void_t<decltype(std::declval<T&>() + std::declval<U&>())>>
+	    : std::true_type {};
+} // namespace detail
+
+struct adjuster {
+	std::ptrdiff_t adj;
+	constexpr adjuster(std::ptrdiff_t adj) noexcept : adj(adj) {}
+	constexpr operator std::ptrdiff_t() const noexcept { return adj; }
+};
+
+template <typename T>
+constexpr auto operator+(T val, adjuster a) noexcept
+    -> enable_if_t<not detail::is_addable<T, std::ptrdiff_t>::value,
+                   decltype(std::advance(val, a.adj))> {
+	return std::advance(val, a.adj);
+}
+
 /**
  * @brief A struct which increments anything it is added to. Suitable for use as
  * a Delta type for range_t.
  */
 struct incrementer {
-	constexpr incrementer() = default;
-	constexpr incrementer(int) {}
+	constexpr incrementer() noexcept = default;
+	constexpr incrementer(int) noexcept {}
 	constexpr operator int() const noexcept { return 1; }
+	friend constexpr auto operator*(std::ptrdiff_t x, incrementer) {
+		return adjuster{x};
+	}
 };
 
 /**
@@ -429,9 +492,12 @@ constexpr auto operator+(T val, incrementer) -> T {
  * a Delta type for range_t.
  */
 struct decrementer {
-	constexpr decrementer() = default;
-	constexpr decrementer(int) {}
+	constexpr decrementer() noexcept = default;
+	constexpr decrementer(int) noexcept {}
 	constexpr operator int() const noexcept { return -1; }
+	friend constexpr auto operator*(std::ptrdiff_t x, decrementer) {
+		return adjuster{-x};
+	}
 };
 
 /**

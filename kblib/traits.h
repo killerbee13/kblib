@@ -307,15 +307,15 @@ struct exists : std::true_type {};
  * @brief Type trait that determines the iterator type for a range.
  *
  */
+template <typename Range, typename = void>
+struct iterator_type_for;
+template <typename T, std::size_t N>
+struct iterator_type_for<T[N], void> {
+	using type = decltype(std::begin(std::declval<T (&)[N]>()));
+};
 template <typename Range>
-struct iterator_type_for {
- private:
-	static auto begin(Range& c) -> decltype(auto) {
-		using std::begin;
-		return begin(c);
-	}
-
- public:
+struct iterator_type_for<Range,
+                         void_t<decltype(begin(std::declval<Range&>()))>> {
 	using type = decltype(begin(std::declval<Range&>()));
 };
 
@@ -327,10 +327,10 @@ struct is_iterable : std::false_type {};
 
 template <typename Range>
 struct is_iterable<
-    Range, void_if_t<std::is_base_of<
-               std::forward_iterator_tag,
-               typename std::iterator_traits<
-                   typename Range::iterator>::iterator_category>::value>>
+    Range,
+    void_if_t<std::is_base_of<std::forward_iterator_tag,
+                              typename std::iterator_traits<iterator_type_for_t<
+                                  Range>>::iterator_category>::value>>
     : std::true_type {};
 
 template <typename T, std::size_t N>

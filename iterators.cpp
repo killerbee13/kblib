@@ -23,6 +23,9 @@ TEST_CASE("range") {
 	auto r2 = kblib::range(10);
 	REQUIRE(r.size() == r2.size());
 	REQUIRE(std::equal(r.begin(), r.end(), r2.begin()));
+	REQUIRE(r2[0] == 0);
+	REQUIRE(r2[9] == 9);
+	REQUIRE(r2[-1] == -1);
 }
 
 TEST_CASE("range conversion") {

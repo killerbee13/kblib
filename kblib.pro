@@ -69,13 +69,18 @@ DISTFILES += \
     var_timings.log \
     medfile
 
+VERSION = 0.2.1
+
 QMAKE_CXXFLAGS += -std=c++17
 QMAKE_CXXFLAGS += -march=native
 QMAKE_CXXFLAGS += -Wall -Wextra -Wpointer-to-int-cast -Wpedantic -Wshadow
 QMAKE_CXXFLAGS += -Wno-missing-braces
 QMAKE_CXXFLAGS += -I/mnt/Vers1/include
 
-#QMAKE_CXXFLAGS += -stdlib=libc++ -Wreturn-std-move -Wno-mismatched-tags -fstandalone-debug
+#QMAKE_CXXFLAGS += -stdlib=libc++ -fstandalone-debug
+#QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations -Wduplicated-cond \
+# -Wlogical-op -Wold-style-cast -Wshadow -Wzero-as-null-pointer-constant \
+# -Wreturn-std-move -Wno-mismatched-tags
 #QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib
 
 CONFIG(debug, debug|release)|CONFIG(sanitize) {
