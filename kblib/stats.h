@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <limits>
 #include <numeric>
-#include <random>
 
 #include "fakestd.h"
 #include "logic.h"
@@ -22,35 +21,6 @@ KBLIB_NODISCARD constexpr auto div(T num, U den) noexcept
 	ret.quot = num / den;
 	ret.rem = num % den;
 	return ret;
-}
-
-/**
- * @brief Given a categorical distribution cats, selects one category
- *
- * @deprecated std::discrete_distribution provides the same functionality, with
- * a worse name. Because it exists, there is no reason to use this function.
- *
- * @param cats A sequence of category weights
- * @param r A <random>-compatible RandomGenerator
- * @todo Refactor to remove the ugly unreachable stuff.
- */
-template <typename Array, typename RandomGenerator, typename freqtype = double>
-KBLIB_NODISCARD [[deprecated("Use std::discrete_distribution instead")]] auto
-chooseCategorical(Array&& cats, RandomGenerator& r) -> decltype(cats.size()) {
-	std::uniform_real_distribution<freqtype> uniform(
-	    0.0, std::accumulate(cats.begin(), cats.end(), 0.0));
-	freqtype choose = uniform(r);
-	for (decltype(cats.size()) stop = 0; stop != cats.size(); ++stop) {
-		choose -= cats[stop];
-		if (choose <= 0) {
-			return stop;
-		}
-	}
-#if __has_builtin(__builtin_unreachable)
-	__builtin_unreachable();
-#else
-	return cats.size() - 1;
-#endif
 }
 
 /**
@@ -178,96 +148,6 @@ KBLIB_NODISCARD constexpr auto fibonacci(int n) noexcept -> U {
 	constexpr auto arr = make_fib_arr<U>();
 	assert(n >= 0 and static_cast<std::size_t>(n) < arr.size());
 	return arr[n];
-}
-
-/**
- * @brief A constexpr version of std::accumulate
- */
-template <typename InputIt, typename T>
-KBLIB_NODISCARD constexpr auto accumulate(InputIt first, InputIt last, T init)
-    -> T {
-	for (; first != last; ++first) {
-		init = std::move(init) + *first;
-	}
-	return init;
-}
-
-/**
- * @brief A constexpr version of std::accumulate
- */
-template <class InputIt, class T, class BinaryOperation>
-KBLIB_NODISCARD constexpr auto accumulate(InputIt first, InputIt last, T init,
-                                          BinaryOperation op) -> T {
-	for (; first != last; ++first) {
-		init = op(std::move(init), *first);
-	}
-	return init;
-}
-
-/**
- * @brief Sum a range
- *
- * Convenience wrapper for std::accumulate. For an empty range, returns a
- * value-initialized temporary (usually 0). Deduces the correct type for the
- * initializer, which reduces risk of truncation and incorrect results.
- *
- * @param[in] first Beginning of range
- * @param[in] last End of range
- * @return The sum of the input range.
- */
-template <typename InputIt>
-KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last)
-    -> std::decay_t<decltype(*first)> {
-	if (first == last) {
-		return {};
-	}
-	auto init = *first++;
-	return kblib::accumulate(first, last, std::move(init));
-}
-
-/**
- * @brief Fold a range over an operation.
- *
- * Convenience wrapper for std::accumulate. For an empty range, returns a
- * value-initialized temporary (usually 0). Deduces the correct type for the
- * initializer, which reduces risk of truncation and incorrect results.
- *
- * @param[in] first Beginning of range
- * @param[in] last End of range
- * @param[in] op The fold operation
- * @return The sum of the input range.
- */
-template <typename InputIt, typename BinaryOperation>
-KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last,
-                                   BinaryOperation op)
-    -> std::decay_t<decltype(*first)> {
-	if (first == last) {
-		return {};
-	}
-	auto init = *first++;
-	return kblib::accumulate(first, last, std::move(init), op);
-}
-
-/**
- * @brief Sum a range
- *
- * Convenience wrapper for std::accumulate. For an empty range, returns a
- * value-initialized temporary (usually 0). Deduces the correct type for the
- * initializer, which reduces risk of truncation and incorrect results.
- *
- * @param[in] r The range to sum
- * @return The sum of the input range.
- */
-template <typename Range>
-KBLIB_NODISCARD constexpr auto sum(Range&& r) -> auto {
-	using std::begin;
-	auto first = begin(r);
-	auto last = end(r);
-	if (first == last) {
-		return std::decay_t<decltype(*first)>{};
-	}
-	auto init = *first++;
-	return kblib::accumulate(first, last, std::move(init));
 }
 
 inline namespace nums {

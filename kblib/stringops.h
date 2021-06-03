@@ -27,14 +27,13 @@ namespace kblib {
  * in C++20, char8_t.
  */
 template <typename C>
-struct is_character
-    : contains_type<std::tuple<char, wchar_t, char16_t, char32_t
+struct is_character : contains_type<std::tuple<char, wchar_t, char16_t, char32_t
 #ifdef __cpp_char8_t
-                                       ,
-                                       char8_t
+                                               ,
+                                               char8_t
 #endif
-                                       >,
-                            std::decay_t<C>> {
+                                               >,
+                                    std::decay_t<C>> {
 };
 
 /**
@@ -232,15 +231,28 @@ auto append(string&& out, F&& f, S&&... tail) -> void {
 
 namespace detail {
 
+	template <std::size_t I, typename T>
+	struct value {
+		T v;
+	};
+
+	template <class Idxs, class... Ts>
+	struct values;
+
+	template <std::size_t... Idxs, typename... Ts>
+	struct values<std::index_sequence<Idxs...>, Ts...> : value<Idxs, Ts>... {};
+
 	template <typename string, typename... S, std::size_t... I>
 	KBLIB_NODISCARD auto concat_impl(std::index_sequence<I...>, S&&... ins)
 	    -> string {
-		std::tuple<detail::str_type_t<S>...> buf(
-		    detail::str_type<S>::convert(std::forward<S>(ins))...);
+		values<std::index_sequence<I...>, detail::str_type_t<S>...> buf{
+		    {detail::str_type<S>::convert(std::forward<S>(ins))}...};
 		string ret;
-		std::size_t size = (strsize(std::get<I>(buf)) + ...);
+		std::size_t size =
+		    (strsize(static_cast<value<I, detail::str_type_t<S>>&>(buf).v) + ... +
+		     0);
 		ret.reserve(size);
-		append(ret, std::get<I>(buf)...);
+		append(ret, static_cast<value<I, detail::str_type_t<S>>&>(buf).v...);
 		return ret;
 	}
 
@@ -307,17 +319,10 @@ struct is_space {
 template <typename range, typename string = std::string>
 KBLIB_NODISCARD auto join(const range& in, const string& joiner = "")
     -> string {
-	if (in.size() == 0) {
-		return {};
-	} else if (fakestd::size(in) == 1) {
-		return *in.begin();
-	} else {
-		return std::accumulate(
-		    std::next(std::begin(in)), std::end(in), *in.begin(),
-		    [&joiner](const string& a, const string& b) -> string {
-			    return concat(a, joiner, b);
-		    });
-	}
+	return kblib::sum(begin(in), end(in),
+	                  [&joiner](const string& a, const string& b) -> string {
+		                  return concat(a, joiner, b);
+	                  });
 }
 #endif // KBLIB_USE_CXX17
 
@@ -359,6 +364,12 @@ split_tokens(const String& in, Predicate spacer) -> return_assert_t<
 	return ret;
 }
 
+/**
+ * @brief Split a string on all instances of whitespace.
+ *
+ * @param in The string to split
+ * @return Container A sequence container of all substrings in the split input.
+ */
 template <typename Container = std::vector<std::string>, typename String>
 KBLIB_NODISCARD auto split_tokens(const String& in) -> Container {
 	return split_tokens(in, is_space{});

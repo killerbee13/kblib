@@ -363,13 +363,6 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 
 	stack() : stack(Container()) {}
 	explicit stack(const Container& cont) : backing(cont) {}
-	explicit stack(Container && cont) noexcept(
-	    std::is_nothrow_move_constructible<container_type>::value)
-	    : backing(std::move(cont)) {}
-	stack(const stack& other) : backing(other.backing) {}
-	stack(stack && other) noexcept(
-	    std::is_nothrow_move_constructible<container_type>::value)
-	    : backing(std::move(other.backing)) {}
 
 	template <typename Alloc,
 	          typename std::enable_if<

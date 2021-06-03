@@ -234,6 +234,22 @@ KBLIB_NODISCARD auto build_dy(Functor f, size_t size) -> Container {
 	return out;
 }
 
+/**
+ * @brief
+ *
+ * @param r
+ * @param allocator
+ * @return Container
+ */
+template <typename Container, typename Range, typename UnaryFunction,
+          enable_if_t<detail::is_resizable_v<Container>, int> = 0>
+KBLIB_NODISCARD auto build_dy(Range&& r, UnaryFunction f) -> Container {
+	using std::begin, std::end;
+	Container out(kblib::size(r));
+	std::transform(begin(r), end(r), begin(out), std::ref(f));
+	return out;
+}
+
 #if 0
 // I can't overload on both array vs. dynamic container and execution policy
 // in any sane way without concepts, so this whole set of functions is cut
@@ -395,6 +411,22 @@ KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last,
     -> Container {
 	Container out(allocator);
 	std::copy(first, last, std::back_inserter(out));
+	return out;
+}
+
+/**
+ * @brief
+ *
+ * @param r
+ * @param allocator
+ * @return Container
+ */
+template <typename Container, typename Range,
+          enable_if_t<detail::is_resizable_v<Container>, int> = 0>
+KBLIB_NODISCARD auto build_copy(Range&& r) -> Container {
+	using std::size, std::begin, std::end;
+	Container out(kblib::size(r));
+	std::copy(begin(r), end(r), begin(out));
 	return out;
 }
 

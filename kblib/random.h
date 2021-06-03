@@ -16,6 +16,35 @@
 
 namespace kblib {
 
+/**
+ * @brief Given a categorical distribution cats, selects one category
+ *
+ * @deprecated std::discrete_distribution provides the same functionality, with
+ * a worse name. Because it exists, there is no reason to use this function.
+ *
+ * @param cats A sequence of category weights
+ * @param r A <random>-compatible RandomGenerator
+ * @todo Refactor to remove the ugly unreachable stuff.
+ */
+template <typename Array, typename RandomGenerator, typename freqtype = double>
+KBLIB_NODISCARD [[deprecated("Use std::discrete_distribution instead")]] auto
+chooseCategorical(Array&& cats, RandomGenerator& r) -> decltype(cats.size()) {
+	std::uniform_real_distribution<freqtype> uniform(
+	    0.0, std::accumulate(cats.begin(), cats.end(), 0.0));
+	freqtype choose = uniform(r);
+	for (decltype(cats.size()) stop = 0; stop != cats.size(); ++stop) {
+		choose -= cats[stop];
+		if (choose <= 0) {
+			return stop;
+		}
+	}
+#if __has_builtin(__builtin_unreachable)
+	__builtin_unreachable();
+#else
+	return cats.size() - 1;
+#endif
+}
+
 class KBLIB_NODISCARD trivial_seed_seq {
  public:
 	using result_type = std::uint32_t;

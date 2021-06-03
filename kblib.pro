@@ -88,6 +88,10 @@ CONFIG(debug, debug|release)|CONFIG(sanitize) {
 	QMAKE_LFLAGS += -fsanitize=address,undefined
 }
 
+CONFIG(build_trace) {
+	QMAKE_CXXFLAGS += -ftime-trace
+}
+
 QMAKE_CXXFLAGS_RELEASE += -flto
 QMAKE_LFLAGS_RELEASE += -flto
 

@@ -10,7 +10,7 @@ namespace detail {
 
 	enum class construct_type : unsigned {
 		none = 0,
-		copy = 1,
+		copy_only = 1,
 		move = 2,
 		both = 3,
 		throw_move = 4,
@@ -40,19 +40,39 @@ namespace detail {
 	struct construct_conditional<construct_type::none> {
 		construct_conditional() noexcept = default;
 		construct_conditional(const construct_conditional&) = delete;
+		construct_conditional(construct_conditional&&) = delete;
+
+		auto operator=(const construct_conditional&)
+		    -> construct_conditional& = default;
+		auto operator=(construct_conditional &&)
+		    -> construct_conditional& = default;
+		~construct_conditional() = default;
 	};
 
 	template <>
-	struct construct_conditional<construct_type::copy> {
+	struct construct_conditional<construct_type::copy_only> {
 		construct_conditional() noexcept = default;
 		construct_conditional(const construct_conditional&) noexcept = default;
 		construct_conditional(construct_conditional&&) = delete;
+
+		auto operator=(const construct_conditional&)
+		    -> construct_conditional& = default;
+		auto operator=(construct_conditional &&)
+		    -> construct_conditional& = default;
+		~construct_conditional() = default;
 	};
 
 	template <>
 	struct construct_conditional<construct_type::move> {
 		construct_conditional() noexcept = default;
+		construct_conditional(const construct_conditional&) noexcept = delete;
 		construct_conditional(construct_conditional&&) noexcept = default;
+
+		auto operator=(const construct_conditional&)
+		    -> construct_conditional& = default;
+		auto operator=(construct_conditional &&)
+		    -> construct_conditional& = default;
+		~construct_conditional() = default;
 	};
 
 	template <>
@@ -61,7 +81,14 @@ namespace detail {
 	template <>
 	struct construct_conditional<construct_type::throw_move> {
 		construct_conditional() noexcept = default;
+		construct_conditional(const construct_conditional&) noexcept = delete;
 		construct_conditional(construct_conditional&&) noexcept(false) {}
+
+		auto operator=(const construct_conditional&)
+		    -> construct_conditional& = default;
+		auto operator=(construct_conditional &&)
+		    -> construct_conditional& = default;
+		~construct_conditional() = default;
 	};
 
 	template <>
@@ -69,11 +96,17 @@ namespace detail {
 		construct_conditional() noexcept = default;
 		construct_conditional(const construct_conditional&) = default;
 		construct_conditional(construct_conditional&&) noexcept(false) {}
+
+		auto operator=(const construct_conditional&)
+		    -> construct_conditional& = default;
+		auto operator=(construct_conditional &&)
+		    -> construct_conditional& = default;
+		~construct_conditional() = default;
 	};
 
 	template <typename T>
 	constexpr construct_type construct_traits =
-	    construct_type::copy* std::is_copy_constructible<T>::value |
+	    construct_type::copy_only* std::is_copy_constructible<T>::value |
 	    construct_type::move* std::is_move_constructible<T>::value;
 
 	template <construct_type traits>
@@ -82,22 +115,37 @@ namespace detail {
 	template <>
 	struct assign_conditional<construct_type::none> {
 		assign_conditional() noexcept = default;
+		assign_conditional(const assign_conditional&) = default;
+		assign_conditional(assign_conditional&&) = default;
+
 		auto operator=(const assign_conditional&) -> assign_conditional& = delete;
+		auto operator=(assign_conditional &&) -> assign_conditional& = delete;
+		~assign_conditional() = default;
 	};
 
 	template <>
-	struct assign_conditional<construct_type::copy> {
+	struct assign_conditional<construct_type::copy_only> {
 		assign_conditional() noexcept = default;
-		assign_conditional&
-		operator=(const assign_conditional&) noexcept = default;
+		assign_conditional(const assign_conditional&) = default;
+		assign_conditional(assign_conditional&&) = default;
+
+		auto operator=(const assign_conditional&) noexcept
+		    -> assign_conditional& = default;
 		auto operator=(assign_conditional &&) -> assign_conditional& = delete;
+		~assign_conditional() = default;
 	};
 
 	template <>
 	struct assign_conditional<construct_type::move> {
 		assign_conditional() noexcept = default;
+		assign_conditional(const assign_conditional&) = default;
+		assign_conditional(assign_conditional&&) = default;
+
+		auto operator=(const assign_conditional&) noexcept
+		    -> assign_conditional& = delete;
 		auto operator=(assign_conditional&&) noexcept
 		    -> assign_conditional& = default;
+		~assign_conditional() = default;
 	};
 
 	template <>
@@ -110,7 +158,7 @@ namespace detail {
 
 	template <typename T>
 	constexpr construct_type assign_traits =
-	    construct_type::copy * std::is_copy_assignable<T>::value |
+	    construct_type::copy_only * std::is_copy_assignable<T>::value |
 	    construct_type::move * std::is_move_assignable<T>::value;
 
 	// clang-format on
@@ -129,7 +177,7 @@ namespace detail {
 	struct erased_construct_helper {};
 
 	template <>
-	struct erased_construct_helper<construct_type::copy> {
+	struct erased_construct_helper<construct_type::copy_only> {
 		alias<void* (*)(void*, const void*)> copy = &noop;
 	};
 
@@ -145,7 +193,7 @@ namespace detail {
 
 	template <>
 	struct erased_construct_helper<construct_type::both>
-	    : erased_construct_helper<construct_type::copy>,
+	    : erased_construct_helper<construct_type::copy_only>,
 	      erased_construct_helper<construct_type::move> {};
 
 	template <typename T, typename hash = void>
@@ -201,7 +249,8 @@ namespace detail {
 		              "T must be move constructible if Traits is.");
 		if constexpr (construct_traits<Traits> == construct_type::none) {
 			return {};
-		} else if constexpr (construct_traits<Traits> == construct_type::copy) {
+		} else if constexpr (construct_traits<Traits> ==
+		                     construct_type::copy_only) {
 			return {{&default_copy<T>}};
 		} else if constexpr (construct_traits<Traits> == construct_type::move or
 		                     construct_traits<Traits> ==
@@ -254,8 +303,10 @@ struct no_move_t {
 	no_move_t() noexcept = default;
 
 	no_move_t(const no_move_t&) = delete;
+	no_move_t(no_move_t&&) = delete;
 
 	auto operator=(const no_move_t&) -> no_move_t& = delete;
+	auto operator=(no_move_t &&) -> no_move_t& = delete;
 
 	~no_move_t() = default;
 };

@@ -329,8 +329,6 @@ class compact_bit_trie {
 		iterator_t() = default;
 		iterator_t(const compact_bit_trie& range)
 		    : tree_ptr{&range.storage}, values_ptr{&range.values}, node{0} {}
-		iterator_t(const iterator_t&) = default;
-		auto operator=(const iterator_t&) -> iterator_t& = default;
 
 		auto operator*() const noexcept -> reference {
 			return (*values_ptr)[(*tree_ptr)[node].val];
@@ -540,6 +538,8 @@ namespace detail {
 				std::memcpy(&base, &data, sizeof data);
 			}
 		}
+		array_pun_proxy(const array_pun_proxy&) = delete;
+		array_pun_proxy& operator=(const array_pun_proxy&) = delete;
 	};
 
 	template <typename T>

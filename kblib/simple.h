@@ -38,8 +38,28 @@ auto map(F f, T&&... t) noexcept(
                    void> {
 	(static_cast<void>(kblib::apply(f, std::forward<T>(t))), ...);
 }
-
 #endif
+
+// clang-format off
+// clang-format gets confused by this attribute
+template <typename T>
+struct [[nodiscard]] RAII_wrapper {
+	T t;
+	~RAII_wrapper() noexcept(noexcept(t())) {
+		t();
+	}
+
+	RAII_wrapper(const RAII_wrapper&) = delete;
+	RAII_wrapper(RAII_wrapper&&) = delete;
+	RAII_wrapper& operator=(const RAII_wrapper&) = delete;
+	RAII_wrapper& operator=(RAII_wrapper&&) = delete;
+};
+// clang-format on
+
+template <typename F>
+auto defer(F f) {
+	return RAII_wrapper<F>{f};
+}
 
 /**
  * @brief Transforms a stateless binary operation into one which takes reversed

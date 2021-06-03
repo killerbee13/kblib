@@ -356,6 +356,26 @@ class range_t {
 	}
 
 	/**
+	 * @brief Returns an iterator to the beginning of the range.
+	 */
+	friend constexpr auto begin(const range_t& r) noexcept -> iterator {
+		return {r.min, r.step};
+	}
+	/**
+	 * @brief Return an iterator to the end of the range.
+	 */
+	friend constexpr auto end(const range_t& r) noexcept -> iterator {
+		return {r.max, r.step};
+	}
+
+	/**
+	 * @brief Returns the distance between start() and stop().
+	 */
+	friend constexpr auto size(const range_t& r) noexcept -> std::size_t {
+		return (r.max - r.min) / r.step;
+	}
+
+	/**
 	 * @brief Query whether the range will generate any elements.
 	 */
 	constexpr auto empty() const noexcept -> bool { return size() != 0; }
@@ -766,6 +786,10 @@ class enumeration {
 	enumeration(volatile enumeration& other)
 	    : enumeration(const_cast<const enumeration&>(other)) {}
 
+	enumeration(enumeration&&) = delete;
+	auto operator=(const enumeration&) = delete;
+	auto operator=(enumeration&&) = delete;
+
 	~enumeration() = default;
 
  private:
@@ -930,6 +954,11 @@ class enumerator_iterator {
 	    : enumerator_iterator(detail::force_copy_tag{}, other.curr_.idx,
 	                          other.it_) {}
 	enumerator_iterator(It it) : it_(it) {}
+
+	enumerator_iterator(enumerator_iterator&&) noexcept = default;
+	auto operator=(const enumerator_iterator&) -> enumerator_iterator& = default;
+	auto operator=(enumerator_iterator&&) noexcept
+	    -> enumerator_iterator& = default;
 
 	~enumerator_iterator() = default;
 
@@ -1255,6 +1284,13 @@ struct indirect_range {
 	}
 	constexpr auto rend() const noexcept -> auto {
 		return std::make_reverse_iterator(end_);
+	}
+
+	constexpr friend auto begin(const indirect_range& r) noexcept -> Iter1 {
+		return r.begin_;
+	}
+	constexpr friend auto end(const indirect_range& r) noexcept -> Iter2 {
+		return r.end_;
 	}
 };
 
@@ -1627,7 +1663,7 @@ struct zip_iterator<It1, It1, It2> {
 	KBLIB_NODISCARD auto end() const
 	    noexcept(std::is_nothrow_copy_constructible<It1>::value)
 	        -> zip_iterator {
-		return {end1, end1};
+		return {end1, end1, pos2};
 	}
 
 	KBLIB_NODISCARD friend auto
@@ -1660,6 +1696,24 @@ KBLIB_NODISCARD auto zip(InputIt1 begin1, EndIt end1, InputIt2 begin2) noexcept(
     zip_iterator<InputIt1, EndIt, InputIt2>::is_nothrow_copyable)
     -> zip_iterator<InputIt1, EndIt, InputIt2> {
 	return {begin1, end1, begin2};
+}
+
+/**
+ * @brief Iterate over two ranges in lockstep, like Python's zip.
+ *
+ * @param r1 The first range.
+ * @param r2 The second range.
+ * @return zip_iterator<decltype(begin(r1)), decltype(end(r1)),
+ * decltype(begin(r2))> A range (and also an iterator) which represents the two
+ * ranges taken in pairs.
+ */
+template <typename Range1, typename Range2>
+KBLIB_NODISCARD auto zip(Range1&& r1, Range2&& r2) noexcept(
+    zip_iterator<decltype(begin(r1)), decltype(end(r1)),
+                 decltype(begin(r2))>::is_nothrow_copyable)
+    -> zip_iterator<decltype(begin(r1)), decltype(end(r1)),
+                    decltype(begin(r2))> {
+	return {begin(r1), end(r1), begin(r2)};
 }
 
 /**

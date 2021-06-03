@@ -124,6 +124,96 @@ struct equivalent<void, void> {
 };
 
 /**
+ * @brief A constexpr version of std::accumulate
+ */
+template <typename InputIt, typename T>
+KBLIB_NODISCARD constexpr auto accumulate(InputIt first, InputIt last, T init)
+    -> T {
+	for (; first != last; ++first) {
+		init = std::move(init) + *first;
+	}
+	return init;
+}
+
+/**
+ * @brief A constexpr version of std::accumulate
+ */
+template <class InputIt, class T, class BinaryOperation>
+KBLIB_NODISCARD constexpr auto accumulate(InputIt first, InputIt last, T init,
+                                          BinaryOperation op) -> T {
+	for (; first != last; ++first) {
+		init = op(std::move(init), *first);
+	}
+	return init;
+}
+
+/**
+ * @brief Sum a range
+ *
+ * Convenience wrapper for std::accumulate. For an empty range, returns a
+ * value-initialized temporary (usually 0). Deduces the correct type for the
+ * initializer, which reduces risk of truncation and incorrect results.
+ *
+ * @param[in] first Beginning of range
+ * @param[in] last End of range
+ * @return The sum of the input range.
+ */
+template <typename InputIt>
+KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last)
+    -> std::decay_t<decltype(*first)> {
+	if (first == last) {
+		return {};
+	}
+	auto init = *first++;
+	return kblib::accumulate(first, last, std::move(init));
+}
+
+/**
+ * @brief Fold a range over an operation.
+ *
+ * Convenience wrapper for std::accumulate. For an empty range, returns a
+ * value-initialized temporary (usually 0). Deduces the correct type for the
+ * initializer, which reduces risk of truncation and incorrect results.
+ *
+ * @param[in] first Beginning of range
+ * @param[in] last End of range
+ * @param[in] op The fold operation
+ * @return The sum of the input range.
+ */
+template <typename InputIt, typename BinaryOperation>
+KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last,
+                                   BinaryOperation op)
+    -> std::decay_t<decltype(*first)> {
+	if (first == last) {
+		return {};
+	}
+	auto init = *first++;
+	return kblib::accumulate(first, last, std::move(init), op);
+}
+
+/**
+ * @brief Sum a range
+ *
+ * Convenience wrapper for std::accumulate. For an empty range, returns a
+ * value-initialized temporary (usually 0). Deduces the correct type for the
+ * initializer, which reduces risk of truncation and incorrect results.
+ *
+ * @param[in] r The range to sum
+ * @return The sum of the input range.
+ */
+template <typename Range>
+KBLIB_NODISCARD constexpr auto sum(Range&& r) -> auto {
+	using std::begin;
+	auto first = begin(r);
+	auto last = end(r);
+	if (first == last) {
+		return std::decay_t<decltype(*first)>{};
+	}
+	auto init = *first++;
+	return kblib::accumulate(first, last, std::move(init));
+}
+
+/**
  * @brief Finds a value in range [begin, end). If not found, returns end. It
  * also allows for a sentinel end iterator.
  *

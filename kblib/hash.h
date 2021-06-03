@@ -498,7 +498,8 @@ struct FNV_hash<
  *
  */
 template <typename T>
-struct FNV_hash<T, void_if_t<not std::is_integral<T>::value and
+struct FNV_hash<T, void_if_t<not is_contiguous<T>::value and
+	                     not std::is_integral<T>::value and
                              not std::is_pointer<T>::value and
                              is_trivially_hashable<T>::value>> {
 	KBLIB_NODISCARD KBLIB_CXX20(constexpr) std::size_t
