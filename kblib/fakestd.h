@@ -21,8 +21,8 @@
 
 /**
  * @file
- * This header provides some features of C++17 <type_traits> and other headers
- * for C++14, as well as some other traits.
+ * @brief This header provides some features of C++17 <type_traits> and other
+ * headers for C++14, as well as some other traits.
  *
  * @author killerbee
  * @date 2019-2021

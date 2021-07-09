@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides some basic interfaces to make using ICU smoother.
+ * @brief Provides some basic interfaces to make using ICU smoother.
  *
  * @author killerbee
  * @date 2019-2021

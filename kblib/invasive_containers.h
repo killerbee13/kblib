@@ -21,8 +21,8 @@
 
 /**
  * @file
- * Provides map types which directly use the members of the value type to create
- * the map structure.
+ * @brief Provides map types which directly use the members of the value type to
+ * create the map structure.
  *
  * @author killerbee
  * @date 2019-2021

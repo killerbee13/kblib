@@ -21,8 +21,8 @@
 
 /**
  * @file
- * This file provides some iterators, ranges, iterator/range adapters, and
- * operations that can be performed on iterators or smart pointers.
+ * @brief This file provides some iterators, ranges, iterator/range adapters,
+ * and operations that can be performed on iterators or smart pointers.
  *
  * @author killerbee
  * @date 2019-2021

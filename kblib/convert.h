@@ -21,7 +21,8 @@
 
 /**
  * @file
- * Provides facilities to convert between various kinds of representations.
+ * @brief Provides facilities to convert between various kinds of
+ * representations.
  *
  * @author killerbee
  * @date 2019-2021
@@ -250,6 +251,7 @@ KBLIB_NODISCARD auto time_to_str(std::chrono::time_point<clock, duration>& tp,
 }
 
 /**
+ * @namespace detail_units
  * @internal
  */
 namespace detail_units {

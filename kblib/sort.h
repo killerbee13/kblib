@@ -21,7 +21,7 @@
 
 /**
  * @file
- * {WIP} Provides a fast and generic sorting interface.
+ * @brief {WIP} Provides a fast and generic sorting interface.
  *
  * @author killerbee
  * @date 2019-2021

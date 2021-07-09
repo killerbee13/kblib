@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides macros and basic templates used by the rest of kblib.
+ * @brief Provides macros and basic templates used by the rest of kblib.
  *
  * @author killerbee
  * @date 2019-2021

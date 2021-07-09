@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides multi_span.
+ * @brief Provides multi_span.
  *
  * @author killerbee
  * @date 2019-2021

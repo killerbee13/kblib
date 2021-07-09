@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides bit-manipulation functions and classes.
+ * @brief Provides bit-manipulation functions and classes.
  *
  * @author killerbee
  * @date 2019-2021

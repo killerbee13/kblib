@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides direct_map.
+ * @brief Provides direct_map.
  *
  * @author killerbee
  * @date 2019-2021
@@ -45,6 +45,7 @@
 
 namespace kblib {
 /**
+ * @namespace detail_direct_map
  * @internal
  */
 namespace detail_direct_map {

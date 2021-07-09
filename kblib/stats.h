@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides numerical and mathematical utilities.
+ * @brief Provides numerical and mathematical utilities.
  *
  * @author killerbee
  * @date 2019-2021

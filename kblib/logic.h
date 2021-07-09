@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides basic compile-time logic operations.
+ * @brief Provides basic compile-time logic operations.
  *
  * @author killerbee
  * @date 2019-2021

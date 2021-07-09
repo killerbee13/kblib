@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides utilities to enable safe and expressive memory management and
+ * @brief Provides utilities to enable safe and expressive memory management and
  * low-level memory manipulation.
  *
  * @author killerbee

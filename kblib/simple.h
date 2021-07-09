@@ -21,7 +21,8 @@
 
 /**
  * @file
- * Provides general utilities which do not fit in any more specific header.
+ * @brief Provides general utilities which do not fit in any more specific
+ * header.
  *
  * @author killerbee
  * @date 2019-2021

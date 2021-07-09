@@ -21,7 +21,8 @@
 
 /**
  * @file
- * Provides delayed_construct, an optional-like type that cannot be cleared.
+ * @brief Provides delayed_construct, an optional-like type that cannot be
+ * cleared.
  *
  * @author killerbee
  * @date 2019-2021
@@ -113,9 +114,10 @@ class delayed_construct : protected std::optional<T> {
 	/**
 	 * @defgroup Equality operators.
 	 *
-	 * Two delayed_construct<T> objects are equal if either neither contains a
-	 * value, or if both contain the same value. std::nullopt_t is equivalent to
-	 * a non-constructed object, and a value is equivalent to a constructed one.
+	 * @brief Two delayed_construct<T> objects are equal if either neither
+	 * contains a value, or if both contain the same value. std::nullopt_t is
+	 * equivalent to a non-constructed object, and a value is equivalent to a
+	 * constructed one.
 	 */
 	///@{
 	OVERLOAD_DEFER_OP(==)
@@ -125,9 +127,9 @@ class delayed_construct : protected std::optional<T> {
 	/**
 	 * @defgroup Comparison operators.
 	 *
-	 * A non-constructed delayed_construct<T> object is less than any constructed
-	 * one. std::nullopt_t is equivalent to a non-constructed object, and a value
-	 * is equivalent to a constructed one.
+	 * @brief A non-constructed delayed_construct<T> object is less than any
+	 * constructed one. std::nullopt_t is equivalent to a non-constructed object,
+	 * and a value is equivalent to a constructed one.
 	 */
 	///@{
 	OVERLOAD_DEFER_OP(<)

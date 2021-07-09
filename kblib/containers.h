@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides generic operations for containers, as well as kblib::stack.
+ * @brief Provides generic operations for containers, as well as kblib::stack.
  *
  * @author killerbee
  * @date 2019-2021

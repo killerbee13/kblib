@@ -21,8 +21,8 @@
 
 /**
  * @file
- * Contains some type traits not in the standard library that are useful in the
- * implementation of kblib.
+ * @brief Contains some type traits not in the standard library that are useful
+ * in the implementation of kblib.
  *
  * @author killerbee
  * @date 2019-2021

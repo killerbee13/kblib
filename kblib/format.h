@@ -21,7 +21,8 @@
 
 /**
  * @file
- * Contains some utilities for manipulating and querying string representations.
+ * @brief Contains some utilities for manipulating and querying string
+ * representations.
  *
  * @author killerbee
  * @date 2019-2021

@@ -21,8 +21,8 @@
 
 /**
  * @file
- * Provides poly_obj, which enables polymorphism to be used without unnecessary
- * per-object dynamic allocations.
+ * @brief Provides poly_obj, which enables polymorphism to be used without
+ * unnecessary per-object dynamic allocations.
  *
  * @author killerbee
  * @date 2019-2021

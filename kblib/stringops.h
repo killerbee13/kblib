@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides utilities for performing common operations on strings.
+ * @brief Provides utilities for performing common operations on strings.
  *
  * @author killerbee
  * @date 2019-2021

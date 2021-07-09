@@ -21,8 +21,8 @@
 
 /**
  * @file
- * Provides utilities for working with std::variant more expressively and more
- * efficiently.
+ * @brief Provides utilities for working with std::variant more expressively and
+ * more efficiently.
  *
  * @author killerbee
  * @date 2019-2021

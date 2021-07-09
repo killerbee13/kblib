@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides by-value algorithms which produce containers.
+ * @brief Provides by-value algorithms which produce containers.
  *
  * @author killerbee
  * @date 2019-2021

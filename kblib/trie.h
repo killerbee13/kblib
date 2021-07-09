@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides the trie data structure.
+ * @brief Provides the trie data structure.
  *
  * @author killerbee
  * @date 2019-2021

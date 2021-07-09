@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides I/O utilities.
+ * @brief Provides I/O utilities.
  *
  * @author killerbee
  * @date 2019-2021
@@ -375,6 +375,7 @@ std::basic_ostream<CharT, Tr>& operator<<(std::basic_ostream<CharT, Tr>& is,
 }
 
 /**
+ * @namespace detail_io
  * @internal
  */
 namespace detail_io {

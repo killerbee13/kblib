@@ -21,8 +21,8 @@
 
 /**
  * @file
- * Provides utilities to correctly and expressively use C++11's random number
- * generation library, without requiring a PhD.
+ * @brief Provides utilities to correctly and expressively use C++11's random
+ * number generation library, without requiring a PhD.
  *
  * @author killerbee
  * @date 2019-2021

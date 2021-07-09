@@ -21,7 +21,8 @@
 
 /**
  * @file
- * Provides general-purpose algorithms, similar to the <algorithms> header.
+ * @brief Provides general-purpose algorithms, similar to the <algorithms>
+ * header.
  *
  * @author killerbee
  * @date 2019-2021

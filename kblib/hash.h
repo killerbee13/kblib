@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Provides generic facilities for hashing data, and aliases for standard
+ * @brief Provides generic facilities for hashing data, and aliases for standard
  * unordered containers using the provided hash objects.
  *
  * @author killerbee
@@ -591,6 +591,7 @@ struct FNV_hash<Container,
 #endif
 
 /**
+ * @namespace detail_hash
  * @internal
  */
 namespace detail_hash {
