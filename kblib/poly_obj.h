@@ -62,6 +62,11 @@ KBLIB_NODISCARD constexpr auto operator*(construct_type l, bool r) noexcept
 	return r ? l : construct_type::none;
 }
 
+/**
+ * @namespace kblib::detail_poly
+ * @brief Implementation details for poly_obj.
+ * @internal
+ */
 namespace detail_poly {
 
 	KBLIB_NODISCARD constexpr auto copyable(construct_type type) noexcept
