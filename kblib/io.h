@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides I/O utilities.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef KBLIB_IO_H
 #define KBLIB_IO_H
 
@@ -344,7 +374,10 @@ std::basic_ostream<CharT, Tr>& operator<<(std::basic_ostream<CharT, Tr>& is,
 	return func._f(is);
 }
 
-namespace detail {
+/**
+ * @internal
+ */
+namespace detail_io {
 
 	/*
 	class steambuf_template : public std::streambuf {
@@ -472,15 +505,15 @@ namespace detail {
 	using buf_for =
 	    std::remove_pointer_t<decltype(std::declval<Stream&>().rdbuf())>;
 
-} // namespace detail
+} // namespace detail_io
 
 template <typename StreamA, typename StreamB>
 class basic_teestream
     : public std::basic_ostream<typename StreamA::char_type,
                                 typename StreamA::traits_type> {
  private:
-	using buf_type = detail::basic_teestreambuf<detail::buf_for<StreamA>,
-	                                            detail::buf_for<StreamB>>;
+	using buf_type = detail_io::basic_teestreambuf<detail_io::buf_for<StreamA>,
+	                                               detail_io::buf_for<StreamB>>;
 	buf_type buf;
 	using ostream_type = std::basic_ostream<typename StreamA::char_type,
 	                                        typename StreamA::traits_type>;
@@ -520,14 +553,14 @@ struct file_deleter {
 };
 
 #ifdef KBLIB_POSIX_TMPFILE
-namespace detail {
+namespace detail_io {
 	struct fd_closer {
 		void operator()(int fd) const noexcept { close(fd); }
 		using pointer = int;
 	};
-} // namespace detail
+} // namespace detail_io
 
-using fd_deleter = file_deleter<int, detail::fd_closer>;
+using fd_deleter = file_deleter<int, detail_io::fd_closer>;
 #endif
 
 template <typename File = std::fstream>

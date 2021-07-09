@@ -1,23 +1,48 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides macros and basic templates used by the rest of kblib.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef KBLIB_TDECL_H
 #define KBLIB_TDECL_H
 
 #include <cstddef>
-
-/**
- * @file tdecl.h
- * @brief Contains basic declarations needed by other files.
- */
 
 #if __cplusplus < 201402L
 #error kblib requires C++14 or higher
 #endif
 
 // 1MMmmrr
-#define KBLIB_VERS 1000201
+#define KBLIB_VERS 1000202
 
 #define KBLIB_VERS_MAJ 0
 #define KBLIB_VERS_MIN 2
-#define KBLIB_VERS_REV 1
+#define KBLIB_VERS_REV 2
 // MM_mm_rr
 #define KBLIB_VERS_S KBLIB_VERS_MAJ##_##KBLIB_VERS_MIN##_##KBLIB_VERS_REV
 // api_vMM_mm_rr
@@ -110,8 +135,20 @@ namespace detail {
 		using type = T;
 	};
 
-} // namespace detail
+	template <typename T>
+	struct no_dangle {
+		using type = T&;
+	};
 
+	template <typename T>
+	struct no_dangle<T&&> {
+		using type = T;
+	};
+
+	template <typename T>
+	using no_dangle_t = typename no_dangle<T>::type;
+
+} // namespace detail
 enum class endian { unknown, little, big, weird };
 
 #ifdef __BYTE_ORDER__

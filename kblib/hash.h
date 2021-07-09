@@ -1,3 +1,34 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides generic facilities for hashing data, and aliases for standard
+ * unordered containers using the provided hash objects.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef HASH_H
 #define HASH_H
 
@@ -458,6 +489,9 @@ struct FNV_hash<T, void_if_t<std::is_base_of<std::forward_iterator_tag,
 	}
 };
 
+/**
+ * @internal
+ */
 namespace asserts {
 
 	template <typename Container>
@@ -498,10 +532,10 @@ struct FNV_hash<
  *
  */
 template <typename T>
-struct FNV_hash<T, void_if_t<not is_contiguous<T>::value and
-	                     not std::is_integral<T>::value and
-                             not std::is_pointer<T>::value and
-                             is_trivially_hashable<T>::value>> {
+struct FNV_hash<
+    T, void_if_t<
+           not is_contiguous<T>::value and not std::is_integral<T>::value and
+           not std::is_pointer<T>::value and is_trivially_hashable<T>::value>> {
 	KBLIB_NODISCARD KBLIB_CXX20(constexpr) std::size_t
 	operator()(T key, std::size_t offset =
 	                      fnv::fnv_offset<std::size_t>::value) const noexcept {
@@ -556,7 +590,10 @@ struct FNV_hash<Container,
 
 #endif
 
-namespace detail {
+/**
+ * @internal
+ */
+namespace detail_hash {
 
 	/**
 	 * @brief Hash each element of a tuple. This overload is for tuples of a
@@ -630,14 +667,14 @@ namespace detail {
 		    std::make_index_sequence<std::tuple_size<Tuple>::value>{});
 	}
 
-} // namespace detail
+} // namespace detail_hash
 
 /**
  * @brief Tuple-like (but not array-like) type hasher
  *
  */
 template <typename Tuple>
-struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() and
+struct FNV_hash<Tuple, void_if_t<detail_hash::all_hashable<Tuple>() and
                                  not is_trivially_hashable<Tuple>::value and
                                  (std::tuple_size<Tuple>::value > 0u) and
                                  not is_linear_container_v<Tuple>>> {
@@ -645,15 +682,13 @@ struct FNV_hash<Tuple, void_if_t<detail::all_hashable<Tuple>() and
 	operator()(const Tuple& key,
 	           std::size_t offset =
 	               fnv::fnv_offset<std::size_t>::value) const noexcept {
-		return detail::hash_tuple_impl(
+		return detail_hash::hash_tuple_impl(
 		    key, offset,
 		    std::make_index_sequence<std::tuple_size<Tuple>::value>{});
 	}
 };
 
 #if KBLIB_USE_CXX17
-
-namespace detail {}
 
 template <typename T>
 struct FNV_hash<std::optional<T>, void> {
@@ -671,7 +706,7 @@ struct FNV_hash<std::optional<T>, void> {
 
 template <typename... Ts>
 struct FNV_hash<std::variant<Ts...>,
-                void_if_t<detail::all_hashable<std::tuple<Ts...>>()>> {
+                void_if_t<detail_hash::all_hashable<std::tuple<Ts...>>()>> {
 	KBLIB_NODISCARD constexpr std::size_t
 	operator()(const std::variant<Ts...>& key,
 	           std::size_t offset =

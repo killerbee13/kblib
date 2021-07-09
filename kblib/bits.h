@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides bit-manipulation functions and classes.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef KBLIB_BITS_H
 #define KBLIB_BITS_H
 
@@ -24,7 +54,7 @@ constexpr int bits_of = std::numeric_limits<Int>::digits;
 
 #if KBLIB_USE_CXX17
 
-namespace detail {
+namespace detail_bits {
 
 	template <typename Key, typename Value>
 	class trie_node {
@@ -60,7 +90,7 @@ namespace detail {
 		}
 	};
 
-} // namespace detail
+} // namespace detail_bits
 /*
 template <typename Key, typename Value>
 class bit_trie {
@@ -78,7 +108,7 @@ class bit_trie {
   void insert(key_type, mapped_type&&);
 
  private:
-  std::array<detail::trie_node, bits_of<key_type>> roots;
+  std::array<detail_bits::trie_node, bits_of<key_type>> roots;
 };//*/
 
 template <typename Key, Key key_range, typename Value>
@@ -86,7 +116,7 @@ class compact_bit_trie {
  public:
 	struct key_type {
 		Key prefix;
-		std::uint16_t bits : detail::filg2(key_range);
+		std::uint16_t bits : filg2(key_range);
 	};
 
 	using value_type = Value;
@@ -421,7 +451,7 @@ struct bitfield {
 	auto operator&() -> void = delete;
 };
 
-namespace detail {
+namespace detail_bits {
 
 	/**
 	 * @brief A proxy reference type for BITFIELD-declared bitfields.
@@ -442,7 +472,7 @@ namespace detail {
 		constexpr operator ReturnT() const noexcept { return (p->*Get)(); }
 	};
 
-} // namespace detail
+} // namespace detail_bits
 
 /**
  * @def KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
@@ -482,9 +512,10 @@ namespace detail {
                                                                                \
 	KBLIB_NODISCARD constexpr auto name() noexcept->auto {                      \
 		using Parent = std::remove_pointer<decltype(this)>::type;                \
-		return kblib::detail::bitfield_proxy<Parent, decltype(raw),              \
-		                                     &Parent::name##_set_impl,           \
-		                                     &Parent::name##_get_impl>{this};    \
+		return kblib::detail_bits::bitfield_proxy<Parent, decltype(raw),         \
+		                                          &Parent::name##_set_impl,      \
+		                                          &Parent::name##_get_impl>{     \
+		    this};                                                               \
 	}                                                                           \
                                                                                \
 	template <decltype(raw) val, decltype(raw) basis = 0>                       \
@@ -499,7 +530,7 @@ namespace detail {
 	    (basis >> kblib::to_unsigned(offset)) &                                 \
 	    ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);
 
-namespace detail {
+namespace detail_bits {
 
 	template <typename Type, typename Storage>
 	struct pun_proxy {
@@ -627,17 +658,18 @@ namespace detail {
 	constexpr std::size_t
 	    max_size = std::max({sizeof(typename array_filter<Types>::type)...});
 
-} // namespace detail
+} // namespace detail_bits
 
 template <typename... Types>
 struct punner
-    : private detail::punner_impl<detail::max_size<Types...>,
-                                  std::index_sequence_for<Types...>, Types...> {
+    : private detail_bits::punner_impl<detail_bits::max_size<Types...>,
+                                       std::index_sequence_for<Types...>,
+                                       Types...> {
  private:
-	constexpr static std::size_t storage_size = detail::max_size<Types...>;
+	constexpr static std::size_t storage_size = detail_bits::max_size<Types...>;
 	using impl_t =
-	    detail::punner_impl<storage_size, std::index_sequence_for<Types...>,
-	                        Types...>;
+	    detail_bits::punner_impl<storage_size, std::index_sequence_for<Types...>,
+	                             Types...>;
 	using tuple_t = std::tuple<Types...>;
 	template <std::size_t I>
 	using r_element_t = typename std::tuple_element<I, tuple_t>::type;
@@ -646,7 +678,7 @@ struct punner
 
  public:
 	template <std::size_t I>
-	using base_t = detail::pun_el<impl_t, r_element_t<I>, storage_size, I>;
+	using base_t = detail_bits::pun_el<impl_t, r_element_t<I>, storage_size, I>;
 	template <std::size_t I>
 	using element_t = typename base_t<I>::type;
 
@@ -711,8 +743,8 @@ class union_pun {
 	using sptr_t = decltype(Storage);
 	using class_t = kblib::class_t<Storage>;
 	using member_t = kblib::member_of_t<sptr_t>;
-	using proxy_t = detail::pun_proxy<Type, member_t>;
-	using const_proxy_t = detail::pun_proxy<Type, const member_t>;
+	using proxy_t = detail_bits::pun_proxy<Type, member_t>;
+	using const_proxy_t = detail_bits::pun_proxy<Type, const member_t>;
 
 	static_assert(sizeof(Type) <= sizeof(member_t),
 	              "Type will not fit in the provided storage.");
@@ -747,8 +779,8 @@ class union_pun<Type[N], Storage> {
 	using class_t = kblib::class_t<Storage>;
 	using member_t = kblib::member_t<class_t, Storage>;
 	using type = std::array<Type, N>;
-	using proxy_t = detail::pun_proxy<type, member_t>;
-	using const_proxy_t = detail::pun_proxy<type, const member_t>;
+	using proxy_t = detail_bits::pun_proxy<type, member_t>;
+	using const_proxy_t = detail_bits::pun_proxy<type, const member_t>;
 
 	static_assert(sizeof(type) <= sizeof(member_t),
 	              "Type will not fit in the provided storage.");

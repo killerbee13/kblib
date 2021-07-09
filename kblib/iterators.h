@@ -1,6 +1,39 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * This file provides some iterators, ranges, iterator/range adapters, and
+ * operations that can be performed on iterators or smart pointers.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef KBLIB_ITERATORS_H
 #define KBLIB_ITERATORS_H
 
+#include "enumerate-contrib-cry.h"
+#include "enumerate-contrib-tw.h"
 #include "fakestd.h"
 
 #include <cassert>
@@ -10,12 +43,6 @@
 #if KBLIB_USE_CXX17
 #include <optional>
 #endif
-
-/**
- * @file iterators.h
- * @brief This file provides some iterators, ranges, iterator/range adapters,
- * and operations that can be performed on iterators or smart pointers.
- */
 
 namespace kblib {
 
@@ -463,7 +490,7 @@ class range_t {
 	}
 };
 
-namespace detail {
+namespace detail_iterators {
 	template <typename T, typename U, typename = void>
 	struct is_addable : std::false_type {};
 
@@ -471,7 +498,7 @@ namespace detail {
 	struct is_addable<T, U,
 	                  void_t<decltype(std::declval<T&>() + std::declval<U&>())>>
 	    : std::true_type {};
-} // namespace detail
+} // namespace detail_iterators
 
 struct adjuster {
 	std::ptrdiff_t adj;
@@ -481,7 +508,7 @@ struct adjuster {
 
 template <typename T>
 constexpr auto operator+(T val, adjuster a) noexcept
-    -> enable_if_t<not detail::is_addable<T, std::ptrdiff_t>::value,
+    -> enable_if_t<not detail_iterators::is_addable<T, std::ptrdiff_t>::value,
                    decltype(std::advance(val, a.adj))> {
 	return std::advance(val, a.adj);
 }
@@ -564,195 +591,15 @@ constexpr auto range(Value max) -> range_t<Value, incrementer> {
 	return {max};
 }
 
-// enumerate partially based on code by Tobias Widlund. License reproduced
-// below. Original source available at https://github.com/therocode/enumerate
-
-/*
- * MIT License
- *
- * Copyright (c) 2018 Tobias Widlund
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
-namespace detail {
-
-	template <typename T>
-	struct no_dangle {
-		using type = T&;
-	};
-
-	template <typename T>
-	struct no_dangle<T&&> {
-		using type = T;
-	};
-
-	template <typename T>
-	using no_dangle_t = typename no_dangle<T>::type;
-} // namespace detail
-
-/**
- * @brief
- *
- * @author Tobias Widlund, killerbee
- * @date 2018-2020
- * @copyright MIT license.
- */
-template <typename It>
-struct enumerate_iterator {
-	It it;
-	std::size_t idx;
-
-	using nested_reference = typename std::iterator_traits<It>::reference;
-
-	using difference_type = std::ptrdiff_t;
-	using value_type = std::pair<nested_reference, std::size_t>;
-	using pointer = void;
-	using reference = value_type;
-	using iterator_category = std::input_iterator_tag;
-
-	auto operator*() -> value_type { return {*it, idx}; }
-
-	auto operator++() & -> enumerate_iterator& {
-		++it;
-		++idx;
-		return *this;
-	}
-	auto operator++(int) -> enumerate_iterator {
-		auto tmp = *this;
-		++(*this);
-		return tmp;
-	}
-
-	template <typename OIt>
-	auto operator==(OIt rhs)
-	    -> decltype(std::declval<It&>() == std::declval<OIt&>()) {
-		return it == rhs;
-	}
-	template <typename OIt>
-	auto operator!=(OIt rhs)
-	    -> decltype(std::declval<It&>() != std::declval<OIt&>()) {
-		return it != rhs;
-	}
-
-	friend auto operator==(enumerate_iterator lhs, enumerate_iterator rhs)
-	    -> bool {
-		return lhs.it == rhs.it;
-	}
-	friend auto operator!=(enumerate_iterator lhs, enumerate_iterator rhs)
-	    -> bool {
-		return lhs.it != rhs.it;
-	}
-};
-
-template <typename Range, typename = void>
-struct enumerate_t;
-
-/**
- * @brief
- *
- * @author Tobias Widlund, killerbee
- * @date 2018-2020
- * @copyright MIT license.
- */
-template <typename Range>
-struct enumerate_t<Range, void> {
-	detail::no_dangle_t<Range> r;
-
-	using range_t = typename std::remove_reference_t<Range>;
-	using nested_iterator = decltype(r.begin());
-	using nested_end_iterator = decltype(r.end());
-	using iterator = enumerate_iterator<nested_iterator>;
-	using end_iterator = enumerate_iterator<nested_end_iterator>;
-
-	using nested_const_iterator = typename range_t::const_iterator;
-	using const_iterator = enumerate_iterator<nested_const_iterator>;
-
-	auto begin() const& noexcept(noexcept(r.cbegin())) -> const_iterator {
-		return {r.cbegin(), 0};
-	}
-	auto begin() & noexcept(noexcept(r.begin())) -> iterator {
-		return {r.begin(), 0};
-	}
-
-	auto end() const& noexcept(noexcept(r.cend())) -> const_iterator {
-		return {r.cend(), -std::size_t{1}};
-	}
-	auto end() & noexcept(noexcept(r.end())) -> end_iterator {
-		return {r.end(), -std::size_t{1}};
-	}
-};
-
-/**
- * @brief
- *
- * @author Tobias Widlund, killerbee
- * @date 2018-2020
- * @copyright MIT license.
- */
-template <typename It, typename EndIt>
-struct enumerate_t {
-	using nested_iterator = It;
-	using iterator = enumerate_iterator<nested_iterator>;
-	using end_iterator = enumerate_iterator<EndIt>;
-
-	auto begin() const& noexcept -> iterator { return {r_begin, 0}; }
-
-	auto end() const& noexcept -> end_iterator {
-		return {r_end, -std::size_t{1}};
-	}
-
-	It r_begin;
-	EndIt r_end;
-};
-
-/**
- * @brief Allow access to indexes while using range-based for loops. Safe to use
- * with rvalues.
- *
- * @param r A range to iterate over.
- */
-template <typename Range>
-auto enumerate(Range&& r) -> enumerate_t<Range&&> {
-	return {std::forward<Range>(r)};
-}
-
-/**
- * @brief Allow access to indexes while using range-based for loops.
- *
- * @param begin,end The input range.
- */
-template <typename It, typename EIt>
-auto enumerate(It begin, EIt end) -> enumerate_t<It, EIt> {
-	return {begin, end};
-}
-
-/*
- * End of contributed code.
- * */
-
 #if KBLIB_USE_CXX17
 
 template <typename T>
 class enumerator_iterator;
 
-namespace detail {
+/**
+ * @internal
+ */
+namespace detail_enumerate {
 
 	template <typename T1, typename T2>
 	auto get_or(T1&& t1, T2&& t2) -> decltype(auto) {
@@ -769,7 +616,7 @@ namespace detail {
 		    const_cast<char*>(&enumeration_magic_pointer));
 	}
 
-} // namespace detail
+} // namespace detail_enumerate
 
 template <typename T>
 class enumeration {
@@ -779,7 +626,7 @@ class enumeration {
 	enumeration(const enumeration& other)
 	    : idx(other.idx), local([&] {
 		      assert(other.source or other.local);
-		      assert(other.source != detail::get_magic_ptr<T>());
+		      assert(other.source != detail_enumerate::get_magic_ptr<T>());
 		      return other.copied();
 	      }()),
 	      source(nullptr) {}
@@ -793,28 +640,28 @@ class enumeration {
 	~enumeration() = default;
 
  private:
-	enumeration(detail::force_copy_tag, std::size_t i) : idx(i) {}
+	enumeration(detail_enumerate::force_copy_tag, std::size_t i) : idx(i) {}
 
  public:
 	auto index() const noexcept -> std::size_t { return idx; }
 
 	auto copied() & noexcept -> std::remove_const_t<T>& {
-		assert(source != detail::get_magic_ptr<T>());
+		assert(source != detail_enumerate::get_magic_ptr<T>());
 		assert(local);
 		return *local;
 	}
 	auto copied() const& noexcept -> const T& {
-		assert(source != detail::get_magic_ptr<T>());
-		return detail::get_or(local, source);
+		assert(source != detail_enumerate::get_magic_ptr<T>());
+		return detail_enumerate::get_or(local, source);
 	}
 
 	auto reffed() & noexcept -> T& {
-		assert(source != detail::get_magic_ptr<T>());
-		return detail::get_or(local, source);
+		assert(source != detail_enumerate::get_magic_ptr<T>());
+		return detail_enumerate::get_or(local, source);
 	}
 	auto reffed() const& noexcept -> const T& {
-		assert(source != detail::get_magic_ptr<T>());
-		return detail::get_or(local, source);
+		assert(source != detail_enumerate::get_magic_ptr<T>());
+		return detail_enumerate::get_or(local, source);
 	}
 
  private:
@@ -822,13 +669,13 @@ class enumeration {
 
 	auto advance() & noexcept -> void {
 		++idx;
-		source = detail::get_magic_ptr<T>();
+		source = detail_enumerate::get_magic_ptr<T>();
 		local = std::nullopt;
 	}
 
 	std::size_t idx = 0;
 	mutable std::optional<std::remove_const_t<T>> local = std::nullopt;
-	T* source = detail::get_magic_ptr<T>();
+	T* source = detail_enumerate::get_magic_ptr<T>();
 
 	template <typename>
 	friend class enumerator_iterator;
@@ -951,8 +798,8 @@ class enumerator_iterator {
 
 	enumerator_iterator() = default;
 	enumerator_iterator(const enumerator_iterator& other)
-	    : enumerator_iterator(detail::force_copy_tag{}, other.curr_.idx,
-	                          other.it_) {}
+	    : enumerator_iterator(detail_enumerate::force_copy_tag{},
+	                          other.curr_.idx, other.it_) {}
 	enumerator_iterator(It it) : it_(it) {}
 
 	enumerator_iterator(enumerator_iterator&&) noexcept = default;
@@ -986,7 +833,8 @@ class enumerator_iterator {
 	}
 
  private:
-	enumerator_iterator(detail::force_copy_tag t, std::size_t idx, It it)
+	enumerator_iterator(detail_enumerate::force_copy_tag t, std::size_t idx,
+	                    It it)
 	    : it_(it), curr_(t, idx) {}
 
 	It it_;
@@ -1093,179 +941,6 @@ auto magic_enumerate(Range&& r) -> auto {
 		return enumerator_t<Range&&>{std::forward<Range>(r)};
 	}
 }
-
-#endif
-
-/* *****************************************************************************
- * This code adapted from code written by Krystian Stasiowski
- * <sdkrystian@gmail.com>
- *
- * No specific license provisions were given, however permission was granted for
- * me to include it in kblib.
- *
- * His code is much faster and cleaner than my magic_enumerate is. HOWEVER, it
- * is fundamentally unable to detect the copying-nonconst-from-const case.
- *
- * My modifications are:
- * - Change from [val, idx] to [idx, val] to match Python's enumerate()
- * - Wrote documentation
- * - Change name from value_and_index() to cry_enumerate()
- * - Silenced Clang warnings about std::tuple_element specializations with
- *   mismatched tags.
- * - Formatting
- *
- * All credit for everything else goes to Krystian.
- *
- * ****************************************************************************/
-
-#if KBLIB_USE_CXX17
-
-namespace detail {
-	template <typename>
-	struct value_index_pair;
-
-	template <std::size_t N, typename T, std::enable_if_t<N == 0>* = nullptr>
-	auto get(T&& t)
-	    -> std::conditional_t<std::is_reference_v<T>, const std::size_t&,
-	                          const std::size_t> {
-		return t.index;
-	}
-
-	template <std::size_t N, typename T, std::enable_if_t<N == 1>* = nullptr>
-	auto get(T&& t)
-	    -> std::conditional_t<std::is_reference_v<T>,
-	                          typename std::remove_reference_t<T>::value_type&,
-	                          typename std::remove_reference_t<T>::value_type> {
-		// static_assert(std::is_reference_v<T>);
-		//	static_assert(
-		//	    std::is_const_v<std::remove_reference_t<decltype(*t.iter)>>);
-		return *t.iter;
-	}
-
-	template <typename Iterator>
-	struct value_index_pair {
-		using value_type =
-		    std::remove_reference_t<decltype(*std::declval<Iterator&>())>;
-
-		std::size_t index;
-		Iterator iter;
-	};
-
-	template <typename Range, typename = void>
-	struct value_and_index_base {
-	 public:
-		using iterator_type = decltype(std::begin(std::declval<Range&>()));
-
-		value_and_index_base(Range& range)
-		    : range_begin_(std::begin(range)), range_end_(std::end(range)) {}
-
-		auto range_begin() -> iterator_type { return range_begin_; }
-
-		auto range_end() -> iterator_type { return range_end_; }
-
-		iterator_type range_begin_;
-		iterator_type range_end_;
-	};
-
-	template <typename Range>
-	struct value_and_index_base<
-	    Range, std::enable_if_t<not std::is_reference_v<Range>>> {
-	 public:
-		using iterator_type = decltype(std::begin(std::declval<Range&>()));
-
-		value_and_index_base(Range& range) : range_(std::move(range)) {}
-
-		auto range_begin() -> iterator_type { return std::begin(range_); }
-
-		auto range_end() -> iterator_type { return std::end(range_); }
-
-		Range range_;
-	};
-
-	template <typename Range>
-	struct value_and_index_impl : value_and_index_base<Range> {
-		using iterator_type = typename value_and_index_base<Range>::iterator_type;
-
-		value_and_index_impl(Range& range)
-		    : value_and_index_base<Range>(range), begin_(this->range_begin(), 0),
-		      end_(this->range_end(), 0) {}
-
-		struct iterator {
-		 private:
-			value_index_pair<iterator_type> pair_;
-
-		 public:
-			iterator(iterator_type iter, std::size_t index = 0)
-			    : pair_{index, iter} {}
-
-			auto operator*() -> value_index_pair<iterator_type>& { return pair_; }
-
-			auto operator++(int) -> iterator {
-				iterator copy(pair_.iter, pair_.index);
-				++pair_.iter, ++pair_.index;
-				return copy;
-			}
-
-			auto operator++() -> iterator& {
-				++pair_.iter, ++pair_.index;
-				return *this;
-			}
-
-			auto operator==(const iterator& other) const -> bool {
-				return other.pair_.iter == pair_.iter;
-			}
-
-			auto operator!=(const iterator& other) const -> bool {
-				return not(other == *this);
-			}
-		};
-
-		auto begin() -> iterator { return begin_; }
-
-		auto end() -> iterator { return end_; }
-
-	 private:
-		iterator begin_;
-		iterator end_;
-	};
-} // namespace detail
-} // namespace kblib
-namespace std {
-#if defined(__clang__)
-// Fix from: https://github.com/nlohmann/json/issues/1401
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmismatched-tags"
-#endif
-template <typename T>
-struct tuple_size<kblib::detail::value_index_pair<T>> {
-	static constexpr std::size_t value = 2;
-};
-
-template <typename T>
-struct tuple_element<0, kblib::detail::value_index_pair<T>> {
-	using type = const std::size_t;
-};
-
-template <typename T>
-struct tuple_element<1, kblib::detail::value_index_pair<T>> {
-	using type = std::remove_reference_t<decltype(*std::declval<T&>())>;
-};
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-} // namespace std
-
-namespace kblib {
-
-template <typename Range>
-auto cry_enumerate(Range&& range) -> auto {
-	return detail::value_and_index_impl<Range>(range);
-}
-
-/*
- * End of contributed code.
- * */
 
 #endif
 

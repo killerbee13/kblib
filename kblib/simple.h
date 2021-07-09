@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides general utilities which do not fit in any more specific header.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef KBLIB_SIMPLE_H
 #define KBLIB_SIMPLE_H
 
@@ -110,27 +140,20 @@ KBLIB_NODISCARD constexpr auto is_consecutive(const T (&array)[N])
 	}
 }
 
-namespace detail {
-
-	/**
-	 * @brief Floored integer binary logarithm. Returns floor(lb(val)).
-	 *
-	 * Returns the number of significant bits in the given integer.
-	 *
-	 * @param val
-	 * @return int
-	 */
-	KBLIB_NODISCARD constexpr auto
-	filg2(const std::bitset<std::numeric_limits<std::uintmax_t>::digits>
-	          val) noexcept -> int {
-		for (auto i : range<int>(to_signed(val.size()) - 1, 0, -1)) {
-			if (val[to_unsigned(i)])
-				return i;
-		}
-		return 0;
+/**
+ * @brief Floored integer binary logarithm. Returns floor(lb(val)).
+ *
+ * Returns the number of significant bits in the given integer.
+ */
+KBLIB_NODISCARD constexpr auto filg2(
+    const std::bitset<std::numeric_limits<std::uintmax_t>::digits> val) noexcept
+    -> int {
+	for (auto i : range<int>(to_signed(val.size()) - 1, 0, -1)) {
+		if (val[to_unsigned(i)])
+			return i;
 	}
-
-} // namespace detail
+	return 0;
+}
 
 template <std::size_t size, typename T, typename... Ts>
 struct first_bigger_than
@@ -143,14 +166,15 @@ struct first_bigger_than<size, T>
 
 template <std::uintmax_t I>
 using uint_smallest =
-    typename first_bigger_than<1 + detail::filg2(I) / CHAR_BIT, unsigned char,
+    typename first_bigger_than<1 + filg2(I) / CHAR_BIT, unsigned char,
                                unsigned short, unsigned int, unsigned long,
                                unsigned long long, std::uintmax_t>::type;
 
 template <std::uintmax_t I>
-using int_smallest = typename first_bigger_than<
-    1 + (detail::filg2(I) + 1) / CHAR_BIT, signed char, signed short,
-    signed int, signed long, signed long long, std::uintmax_t>::type;
+using int_smallest =
+    typename first_bigger_than<1 + (filg2(I) + 1) / CHAR_BIT, signed char,
+                               signed short, signed int, signed long,
+                               signed long long, std::uintmax_t>::type;
 
 template <std::uintmax_t I>
 using uint_smallest_t = typename uint_smallest<I>::type;

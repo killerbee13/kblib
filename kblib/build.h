@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides by-value algorithms which produce containers.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef KBLIB_BUILD_H
 #define KBLIB_BUILD_H
 
@@ -87,7 +117,7 @@ KBLIB_NODISCARD auto build(InputIt first, InputIt last, InputIt2 first2,
  *    range.
  */
 template <typename Array, typename InputIt, typename UnaryFunction,
-          enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
+          enable_if_t<not is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD auto build(InputIt first, InputIt last, UnaryFunction f)
     -> Array {
 	Array out;
@@ -114,7 +144,7 @@ KBLIB_NODISCARD auto build(InputIt first, InputIt last, UnaryFunction f)
  */
 template <typename Array, typename InputIt, typename InputIt2,
           typename BinaryFunction,
-          enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
+          enable_if_t<not is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD auto build(InputIt first, InputIt last, InputIt2 first2,
                            BinaryFunction f) -> Array {
 	Array out;
@@ -161,7 +191,7 @@ KBLIB_NODISCARD auto build(Functor f, size_t size,
  *    sequence.
  */
 template <typename Array, typename Functor,
-          enable_if_t<not detail::is_resizable_v<Array>, int> = 0>
+          enable_if_t<not is_resizable_v<Array>, int> = 0>
 KBLIB_NODISCARD auto build(Functor f,
                            size_t size = std::tuple_size<Array>::value)
     -> Array {
@@ -242,7 +272,7 @@ KBLIB_NODISCARD auto build_dy(Functor f, size_t size) -> Container {
  * @return Container
  */
 template <typename Container, typename Range, typename UnaryFunction,
-          enable_if_t<detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD auto build_dy(Range&& r, UnaryFunction f) -> Container {
 	using std::begin, std::end;
 	Container out(kblib::size(r));
@@ -392,8 +422,8 @@ namespace detail {
  */
 template <typename Container, typename... Args>
 KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) -> auto {
-	return detail::buildiota_impl<Container, detail::is_resizable_v<Container>>::
-	    impl(std::forward<Args>(args)...);
+	return detail::buildiota_impl<Container, is_resizable_v<Container>>::impl(
+	    std::forward<Args>(args)...);
 }
 
 /**
@@ -422,7 +452,7 @@ KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last,
  * @return Container
  */
 template <typename Container, typename Range,
-          enable_if_t<detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD auto build_copy(Range&& r) -> Container {
 	using std::size, std::begin, std::end;
 	Container out(kblib::size(r));
@@ -455,7 +485,7 @@ KBLIB_NODISCARD auto build_copy(Range&& r,
  * @return Container
  */
 template <typename Container, typename InputIt,
-          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr auto build_copy(InputIt first, InputIt last)
     -> Container {
 	Container out{};
@@ -474,7 +504,7 @@ KBLIB_NODISCARD constexpr auto build_copy(InputIt first, InputIt last)
  * @return Container
  */
 template <typename Container, typename Range,
-          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD constexpr auto build_copy(Range&& r) -> Container {
 	Container out{};
 	auto first = std::begin(r);
@@ -496,7 +526,7 @@ KBLIB_NODISCARD constexpr auto build_copy(Range&& r) -> Container {
  * @return Container
  */
 template <typename Container, typename InputIt,
-          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last, std::size_t size)
     -> Container {
 	Container out;
@@ -517,7 +547,7 @@ KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last, std::size_t size)
  * @return Container
  */
 template <typename Container, typename Range,
-          enable_if_t<not detail::is_resizable_v<Container>, int> = 0>
+          enable_if_t<not is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD auto build_copy(Range&& r, std::size_t size) -> Container {
 	Container out;
 	auto first = std::begin(r);

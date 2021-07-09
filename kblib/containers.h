@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides generic operations for containers, as well as kblib::stack.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef KBLIB_CONTAINERS_H
 #define KBLIB_CONTAINERS_H
 
@@ -126,8 +156,7 @@ KBLIB_NODISCARD constexpr auto construct_from_range(Range&& r) -> Container {
 	return Container{begin(std::forward<Range>(r)), end(std::forward<Range>(r))};
 }
 
-template <typename Container,
-          bool ArrayLike = not detail::is_resizable_v<Container>>
+template <typename Container, bool ArrayLike = not is_resizable_v<Container>>
 class KBLIB_NODISCARD build_iterator {
  public:
 	using value_type = void;

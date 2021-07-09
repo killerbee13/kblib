@@ -62,7 +62,9 @@ HEADERS += \
     kblib/hash.h \
     kblib/sort.h \
     kblib/random.h \
-    kblib/poly_obj.h
+    kblib/poly_obj.h \
+    kblib/enumerate-contrib-cry.h \
+    kblib/enumerate-contrib-tw.h
 
 DISTFILES += \
     LICENSE.txt \

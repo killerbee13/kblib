@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * {WIP} Provides a fast and generic sorting interface.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef SORT_H
 #define SORT_H
 
@@ -64,7 +94,7 @@ constexpr auto insertion_sort_copy(
     const RandomAccessIt begin, const RandomAccessIt end,
     const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
     Compare&& compare =
-        {}) noexcept(noexcept(detail::
+        {}) noexcept(noexcept(detail_algorithm::
                                   shift_backward(
                                       d_begin, d_begin,
                                       d_end)) and noexcept(*d_begin = *begin))
@@ -121,7 +151,7 @@ constexpr auto insertion_sort_copy(
 				    }
 			    });
 #endif
-			detail::shift_backward(write, write + 1, index);
+			detail_algorithm::shift_backward(write, write + 1, index);
 			*(index - 1) = *read;
 		} while (write != d_begin);
 		return;
@@ -150,7 +180,7 @@ constexpr auto adaptive_insertion_sort_copy(
     const RandomAccessIt begin, const RandomAccessIt end,
     const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
     Compare&& compare =
-        {}) noexcept(noexcept(detail::
+        {}) noexcept(noexcept(detail_algorithm::
                                   shift_backward(
                                       d_begin, d_begin,
                                       d_end)) and noexcept(*d_begin = *begin))
@@ -331,7 +361,7 @@ struct is_trivial_transformation
 template <>
 struct is_trivial_transformation<identity> : std::true_type {};
 
-namespace detail {
+namespace detail_sort {
 
 	template <typename RandomAccessIt, typename Compare>
 	constexpr auto sort(RandomAccessIt begin, const RandomAccessIt end,
@@ -557,7 +587,7 @@ namespace detail {
 		}
 	};
 #endif
-} // namespace detail
+} // namespace detail_sort
 
 /**
  * @brief Sorts a range after applying a transformation.
@@ -579,8 +609,9 @@ template <typename RandomAccessIt, typename UnaryOperation,
 constexpr auto sort_transform(RandomAccessIt begin, RandomAccessIt end,
                               UnaryOperation&& transform,
                               BinaryPredicate&& compare) -> void {
-	detail::sort_transform_impl<RandomAccessIt, UnaryOperation, BinaryPredicate,
-	                            decltype(kblib::invoke(transform, *begin))>::
+	detail_sort::sort_transform_impl<
+	    RandomAccessIt, UnaryOperation, BinaryPredicate,
+	    decltype(kblib::invoke(transform, *begin))>::
 	    inplace(begin, end, std::forward<UnaryOperation>(transform),
 	            std::forward<BinaryPredicate>(compare));
 }
@@ -594,10 +625,13 @@ constexpr auto sort_transform(RandomAccessIt begin, RandomAccessIt end,
 template <typename RandomAccessIt, typename UnaryOperation>
 constexpr auto sort_transform(RandomAccessIt begin, RandomAccessIt end,
                               UnaryOperation&& transform) -> void {
-	detail::sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<>,
-	                            decltype(kblib::invoke(transform, *begin))>::
-	    inplace(begin, end, std::forward<UnaryOperation>(transform),
-	            std::less<>{});
+	detail_sort::sort_transform_impl<
+	    RandomAccessIt, UnaryOperation, std::less<>,
+	    decltype(kblib::invoke(transform,
+	                           *begin))>::inplace(begin, end,
+	                                              std::forward<UnaryOperation>(
+	                                                  transform),
+	                                              std::less<>{});
 }
 
 /**
@@ -615,9 +649,12 @@ constexpr auto sort_transform(RandomAccessIt begin, RandomAccessIt end,
 template <typename RandomAccessIt, typename BinaryPredicate>
 constexpr auto sort(RandomAccessIt begin, RandomAccessIt end,
                     BinaryPredicate&& compare) -> void {
-	detail::sort_transform_impl<RandomAccessIt, identity, BinaryPredicate,
-	                            decltype(kblib::invoke(transform, *begin))>::
-	    inplace(begin, end, identity{}, std::forward<BinaryPredicate>(compare));
+	detail_sort::sort_transform_impl<
+	    RandomAccessIt, identity, BinaryPredicate,
+	    decltype(kblib::invoke(transform,
+	                           *begin))>::inplace(begin, end, identity{},
+	                                              std::forward<BinaryPredicate>(
+	                                                  compare));
 }
 
 /**
@@ -627,11 +664,11 @@ constexpr auto sort(RandomAccessIt begin, RandomAccessIt end,
  */
 template <typename RandomAccessIt>
 constexpr auto sort(RandomAccessIt begin, RandomAccessIt end) -> void {
-	detail::sort_transform_impl<RandomAccessIt, identity, std::less<>,
-	                            decltype(kblib::invoke(
-	                                transform, *begin))>::inplace(begin, end,
-	                                                              identity{},
-	                                                              std::less<>{});
+	detail_sort::sort_transform_impl<
+	    RandomAccessIt, identity, std::less<>,
+	    decltype(kblib::invoke(transform, *begin))>::inplace(begin, end,
+	                                                         identity{},
+	                                                         std::less<>{});
 }
 
 } // namespace kblib

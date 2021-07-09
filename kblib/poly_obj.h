@@ -1,3 +1,34 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides poly_obj, which enables polymorphism to be used without unnecessary
+ * per-object dynamic allocations.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef POLY_OBJ_H
 #define POLY_OBJ_H
 
@@ -6,31 +37,45 @@
 
 namespace kblib {
 
-namespace detail {
+enum class construct_type : unsigned {
+	none = 0,
+	copy_only = 1,
+	move = 2,
+	both = 3,
+	throw_move = 4,
+	both_throw = 5,
+};
+KBLIB_NODISCARD constexpr auto operator|(construct_type l,
+                                         construct_type r) noexcept
+    -> construct_type {
+	return static_cast<construct_type>(etoi(l) | etoi(r));
+}
 
-	enum class construct_type : unsigned {
-		none = 0,
-		copy_only = 1,
-		move = 2,
-		both = 3,
-		throw_move = 4,
-		both_throw = 5,
-	};
-	KBLIB_NODISCARD constexpr auto operator|(construct_type l,
-	                                         construct_type r) noexcept
-	    -> construct_type {
-		return static_cast<construct_type>(etoi(l) | etoi(r));
+KBLIB_NODISCARD constexpr auto operator&(construct_type l,
+                                         construct_type r) noexcept
+    -> construct_type {
+	return static_cast<construct_type>(etoi(l) & etoi(r));
+}
+
+KBLIB_NODISCARD constexpr auto operator*(construct_type l, bool r) noexcept
+    -> construct_type {
+	return r ? l : construct_type::none;
+}
+
+namespace detail_poly {
+
+	KBLIB_NODISCARD constexpr auto copyable(construct_type type) noexcept
+	    -> bool {
+		return (type & construct_type::copy_only) != construct_type::none;
 	}
-
-	KBLIB_NODISCARD constexpr auto operator&(construct_type l,
-	                                         construct_type r) noexcept
-	    -> construct_type {
-		return static_cast<construct_type>(etoi(l) & etoi(r));
+	KBLIB_NODISCARD constexpr auto movable(construct_type type) noexcept
+	    -> bool {
+		return (type & construct_type::move) != construct_type::none;
 	}
-
-	KBLIB_NODISCARD constexpr auto operator*(construct_type l, bool r) noexcept
-	    -> construct_type {
-		return r ? l : construct_type::none;
+	KBLIB_NODISCARD constexpr auto nothrow_movable(construct_type type) noexcept
+	    -> bool {
+		return (type & construct_type::move) != construct_type::none and
+		       (type & construct_type::throw_move) == construct_type::none;
 	}
 
 	template <construct_type traits>
@@ -109,63 +154,8 @@ namespace detail {
 	    construct_type::copy_only* std::is_copy_constructible<T>::value |
 	    construct_type::move* std::is_move_constructible<T>::value;
 
-	template <construct_type traits>
-	struct assign_conditional;
-
-	template <>
-	struct assign_conditional<construct_type::none> {
-		assign_conditional() noexcept = default;
-		assign_conditional(const assign_conditional&) = default;
-		assign_conditional(assign_conditional&&) = default;
-
-		auto operator=(const assign_conditional&) -> assign_conditional& = delete;
-		auto operator=(assign_conditional &&) -> assign_conditional& = delete;
-		~assign_conditional() = default;
-	};
-
-	template <>
-	struct assign_conditional<construct_type::copy_only> {
-		assign_conditional() noexcept = default;
-		assign_conditional(const assign_conditional&) = default;
-		assign_conditional(assign_conditional&&) = default;
-
-		auto operator=(const assign_conditional&) noexcept
-		    -> assign_conditional& = default;
-		auto operator=(assign_conditional &&) -> assign_conditional& = delete;
-		~assign_conditional() = default;
-	};
-
-	template <>
-	struct assign_conditional<construct_type::move> {
-		assign_conditional() noexcept = default;
-		assign_conditional(const assign_conditional&) = default;
-		assign_conditional(assign_conditional&&) = default;
-
-		auto operator=(const assign_conditional&) noexcept
-		    -> assign_conditional& = delete;
-		auto operator=(assign_conditional&&) noexcept
-		    -> assign_conditional& = default;
-		~assign_conditional() = default;
-	};
-
-	template <>
-	struct assign_conditional<construct_type::both> {};
-
-	// clang-format off
-
-	// It gets confused and thinks these are pointers for some reason and misaligns
-	// the asterisks.
-
 	template <typename T>
-	constexpr construct_type assign_traits =
-	    construct_type::copy_only * std::is_copy_assignable<T>::value |
-	    construct_type::move * std::is_move_assignable<T>::value;
-
-	// clang-format on
-
-	template <typename T>
-	struct disable_conditional : construct_conditional<construct_traits<T>>,
-	                             assign_conditional<assign_traits<T>> {};
+	struct disable_conditional : construct_conditional<construct_traits<T>> {};
 
 	inline auto noop(void*, void*) noexcept -> void* { return nullptr; }
 	inline auto noop(void*, const void*) -> void* { return nullptr; }
@@ -231,30 +221,28 @@ namespace detail {
 		                              T(std::move(*static_cast<T*>(from))));
 	}
 
-	template <typename T, typename Traits, bool noop = false>
+	template <typename T, construct_type ctype, bool noop = false>
 	KBLIB_NODISCARD auto make_ops_t() noexcept
-	    -> erased_construct_helper<construct_traits<Traits>> {
+	    -> erased_construct_helper<ctype> {
 		if constexpr (noop) {
 			return {};
 		}
-		static_assert(implies<std::is_copy_constructible<Traits>::value,
-		                      std::is_copy_constructible<T>::value>::value,
-		              "T must be copy constructible if Traits is.");
 		static_assert(
-		    implies<std::is_nothrow_move_constructible<Traits>::value,
+		    implies<copyable(ctype), std::is_copy_constructible<T>::value>::value,
+		    "T must be copy constructible if Traits is.");
+		static_assert(
+		    implies<nothrow_movable(ctype),
 		            std::is_nothrow_move_constructible<T>::value>::value,
 		    "T must be nothrow move constructible if Traits is.");
-		static_assert(implies<std::is_move_constructible<Traits>::value,
-		                      std::is_move_constructible<T>::value>::value,
-		              "T must be move constructible if Traits is.");
-		if constexpr (construct_traits<Traits> == construct_type::none) {
+		static_assert(
+		    implies<movable(ctype), std::is_move_constructible<T>::value>::value,
+		    "T must be move constructible if Traits is.");
+		if constexpr (ctype == construct_type::none) {
 			return {};
-		} else if constexpr (construct_traits<Traits> ==
-		                     construct_type::copy_only) {
+		} else if constexpr (ctype == construct_type::copy_only) {
 			return {{&default_copy<T>}};
-		} else if constexpr (construct_traits<Traits> == construct_type::move or
-		                     construct_traits<Traits> ==
-		                         construct_type::throw_move) {
+		} else if constexpr (ctype == construct_type::move or
+		                     ctype == construct_type::throw_move) {
 			return {{&default_move<T>}};
 		} else {
 			return {{&default_copy<T>}, {&default_move<T>}};
@@ -277,39 +265,64 @@ namespace detail {
 	}
 #endif
 
-} // namespace detail
+	/**
+	 * @brief A tag type for poly_obj, usable as a Traits type, which disables
+	 * copying.
+	 */
+	struct move_only_t {
+		move_only_t() noexcept = default;
 
-/**
- * @brief A tag type for poly_obj, usable as a Traits type, which disables
- * copying.
- */
-struct move_only_t {
-	move_only_t() noexcept = default;
+		move_only_t(move_only_t&&) noexcept = default;
+		move_only_t(const move_only_t&) = delete;
 
-	move_only_t(move_only_t&&) noexcept = default;
-	move_only_t(const move_only_t&) = delete;
+		auto operator=(move_only_t&&) noexcept -> move_only_t& = default;
+		auto operator=(const move_only_t&) -> move_only_t& = delete;
 
-	auto operator=(move_only_t&&) noexcept -> move_only_t& = default;
-	auto operator=(const move_only_t&) -> move_only_t& = delete;
+		~move_only_t() = default;
+	};
 
-	~move_only_t() = default;
+	/**
+	 * @brief A tag type for poly_obj, usable as a Traits type, which disables
+	 * copying and moving.
+	 */
+	struct no_move_t {
+		no_move_t() noexcept = default;
+
+		no_move_t(const no_move_t&) = delete;
+		no_move_t(no_move_t&&) = delete;
+
+		auto operator=(const no_move_t&) -> no_move_t& = delete;
+		auto operator=(no_move_t &&) -> no_move_t& = delete;
+
+		~no_move_t() = default;
+	};
+
+} // namespace detail_poly
+
+template <typename Obj>
+struct poly_obj_traits {
+	constexpr static inline construct_type ctype =
+	    detail_poly::construct_traits<Obj>;
+
+	using disabler = detail_poly::construct_conditional<ctype>;
+	using ops_t = detail_poly::erased_construct_helper<ctype>;
+
+	// using hash_t = detail_poly::erased_hash_t<Obj>;
+
+	constexpr static inline std::size_t default_capacity =
+	    detail_poly::extract_derived_size<Obj>::value;
+
+	constexpr static inline bool copyable = std::is_copy_constructible_v<Obj>;
+	constexpr static inline bool nothrow_copyable =
+	    std::is_nothrow_copy_constructible_v<Obj>;
+
+	constexpr static inline bool movable = std::is_move_constructible_v<Obj>;
+	constexpr static inline bool nothrow_movable =
+	    std::is_nothrow_move_constructible_v<Obj>;
 };
 
-/**
- * @brief A tag type for poly_obj, usable as a Traits type, which disables
- * copying and moving.
- */
-struct no_move_t {
-	no_move_t() noexcept = default;
-
-	no_move_t(const no_move_t&) = delete;
-	no_move_t(no_move_t&&) = delete;
-
-	auto operator=(const no_move_t&) -> no_move_t& = delete;
-	auto operator=(no_move_t &&) -> no_move_t& = delete;
-
-	~no_move_t() = default;
-};
+using move_only_traits = poly_obj_traits<detail_poly::move_only_t>;
+using no_move_traits = poly_obj_traits<detail_poly::no_move_t>;
 
 /**
  * @brief Inline polymorphic object. Generally mimics the interfaces of
@@ -323,23 +336,23 @@ struct no_move_t {
  * @tparam Obj The base class type which the poly_obj will store.
  * @tparam Capacity The inline capacity allocated for the contained object. May
  * be set larger than sizeof(Obj) to account for larger derived classes.
+ * @tparam Traits A type providing
  * @tparam Traits The type to base copy/move constructibility and assignability
  * of the poly_obj on. poly_obj will not create objects of type Traits, this
  * template parameter is only used in type traits.
  */
-template <typename Obj,
-          std::size_t Capacity = detail::extract_derived_size<Obj>::value,
-          typename Traits = Obj>
-class poly_obj
-    : detail::disable_conditional<Traits>,
-      detail::erased_construct_helper<detail::construct_traits<Traits>> {
+template <typename Obj, std::size_t Capacity = 0,
+          typename Traits = poly_obj_traits<Obj>>
+class poly_obj : Traits::disabler, Traits::ops_t {
  private:
-	using disabler = detail::disable_conditional<Traits>;
-	using ops_t =
-	    detail::erased_construct_helper<detail::construct_traits<Traits>>;
+	using disabler = typename Traits::disabler;
+	using ops_t = typename Traits::ops_t;
 
  public:
-	static_assert(Capacity >= sizeof(Obj),
+	static constexpr std::size_t capacity =
+	    Capacity > 0 ? Capacity : Traits::default_capacity;
+
+	static_assert(capacity >= sizeof(Obj),
 	              "Capacity must be large enough for the object type.");
 	static_assert(
 	    std::has_virtual_destructor<Obj>::value,
@@ -347,7 +360,6 @@ class poly_obj
 	static_assert(not std::is_array<Obj>::value,
 	              "poly_obj of array type is disallowed.");
 
-	static constexpr std::size_t capacity = Capacity;
 	using base_type = Obj;
 
 	/**
@@ -378,8 +390,7 @@ class poly_obj
 	 *
 	 * @param other A poly_obj to move from.
 	 */
-	constexpr poly_obj(poly_obj&& other) noexcept(
-	    std::is_nothrow_move_constructible<Traits>::value)
+	constexpr poly_obj(poly_obj&& other) noexcept(Traits::nothrow_movable)
 	    : disabler(std::move(other)), ops_t(std::move(other)),
 	      valid(other.valid) {
 		if (valid) {
@@ -402,8 +413,7 @@ class poly_obj
 	 *
 	 * @param obj The object to move from.
 	 */
-	constexpr poly_obj(Obj&& obj) noexcept(
-	    std::is_nothrow_move_constructible<Traits>::value)
+	constexpr poly_obj(Obj&& obj) noexcept(Traits::nothrow_movable)
 	    : valid(true) {
 		new (data) Obj(std::move(obj));
 	}
@@ -421,7 +431,7 @@ class poly_obj
 	              std::is_constructible<Obj, Args...>::value, int> = 0>
 	constexpr explicit poly_obj(fakestd::in_place_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
-	    : ops_t(detail::make_ops_t<Obj, Traits>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<Obj, Traits::ctype>()), valid(true) {
 		new (data) Obj(std::forward<Args>(args)...);
 	}
 
@@ -438,7 +448,7 @@ class poly_obj
 	              std::is_constructible<Obj, Args...>::value, int> = 0>
 	constexpr explicit poly_obj(kblib::in_place_agg_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
-	    : ops_t(detail::make_ops_t<Obj, Traits>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<Obj, Traits::ctype>()), valid(true) {
 		new (data) Obj{std::forward<Args>(args)...};
 	}
 
@@ -472,8 +482,8 @@ class poly_obj
 	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
 	 * is cleared and the exception rethrown.
 	 */
-	auto operator=(poly_obj&& other) & noexcept(
-	    std::is_nothrow_move_assignable<Traits>::value) -> poly_obj& {
+	auto operator=(poly_obj&& other) & noexcept(Traits::nothrow_movable)
+	    -> poly_obj& {
 		clear();
 		static_cast<ops_t&>(*this) = other;
 		if (other.valid) {
@@ -488,7 +498,7 @@ class poly_obj
 	 *
 	 * This function provides the polymorphism of poly_obj.
 	 *
-	 * sizeof(U) must be less than or equal to Capacity, and must be
+	 * sizeof(U) must be less than or equal to capacity, and must be
 	 * copy-constructible and move-constructible if Traits is.
 	 *
 	 * @tparam U A type publically derived from Obj.
@@ -498,19 +508,19 @@ class poly_obj
 	template <typename U, typename... Args>
 	KBLIB_NODISCARD static auto make(Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
-		static_assert(sizeof(U) <= Capacity,
+		static_assert(sizeof(U) <= capacity,
 		              "U must fit inside of the inline capacity.");
 		static_assert(std::is_base_of<Obj, U>::value and
 		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
 		static_assert(std::has_virtual_destructor<Obj>::value,
 		              "It must be safe to delete a U through an Obj*.");
-		static_assert(implies<std::is_copy_constructible<Traits>::value,
+		static_assert(implies<Traits::copyable,
 		                      std::is_copy_constructible<U>::value>::value,
 		              "U must be copy constructible if Traits is.");
-		static_assert(implies<std::is_move_constructible<Traits>::value,
-		                      std::is_move_constructible<U>::value>::value,
-		              "U must be move constructible if Traits is.");
+		static_assert(
+		    implies<Traits::movable, std::is_move_constructible<U>::value>::value,
+		    "U must be move constructible if Traits is.");
 		return {tag<U>{}, std::forward<Args>(args)...};
 	}
 
@@ -519,7 +529,7 @@ class poly_obj
 	 *
 	 * This function provides the polymorphism of poly_obj.
 	 *
-	 * sizeof(U) must be less than or equal to Capacity, and must be
+	 * sizeof(U) must be less than or equal to capacity, and must be
 	 * copy-constructible and move-constructible if Traits is.
 	 *
 	 * @tparam U A type publically derived from Obj.
@@ -529,19 +539,19 @@ class poly_obj
 	template <typename U, typename... Args>
 	KBLIB_NODISCARD static auto make_aggregate(Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
-		static_assert(sizeof(U) <= Capacity,
+		static_assert(sizeof(U) <= capacity,
 		              "U must fit inside of the inline capacity.");
 		static_assert(std::is_base_of<Obj, U>::value and
 		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
 		static_assert(std::has_virtual_destructor<Obj>::value,
 		              "It must be safe to delete a U through an Obj*.");
-		static_assert(implies<std::is_copy_constructible<Traits>::value,
+		static_assert(implies<Traits::copyable,
 		                      std::is_copy_constructible<U>::value>::value,
 		              "U must be copy constructible if Traits is.");
-		static_assert(implies<std::is_move_constructible<Traits>::value,
-		                      std::is_move_constructible<U>::value>::value,
-		              "U must be move constructible if Traits is.");
+		static_assert(
+		    implies<Traits::movable, std::is_move_constructible<U>::value>::value,
+		    "U must be move constructible if Traits is.");
 		return {tag<U, true>{}, std::forward<Args>(args)...};
 	}
 
@@ -549,8 +559,8 @@ class poly_obj
 	constexpr auto emplace(Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> Obj& {
 	   clear();
-	   static_cast<ops_t&>(*this) = detail::make_ops_t<U, Traits>();
-	   value = new (data) U(std::forward<Args>(args)...);
+	   static_cast<ops_t&>(*this) = detail_poly::make_ops_t<U,
+	Traits::ctype>(); value = new (data) U(std::forward<Args>(args)...);
 	}*/
 
 	/**
@@ -587,8 +597,7 @@ class poly_obj
 	 *
 	 * @return Obj&& An rvalue reference to the contained object.
 	 */
-	KBLIB_NODISCARD auto
-	operator*() && noexcept(std::is_nothrow_move_constructible<Obj>::value)
+	KBLIB_NODISCARD auto operator*() && noexcept(Traits::nothrow_movable)
 	    -> Obj&& {
 		return std::move(*get());
 	}
@@ -605,8 +614,7 @@ class poly_obj
 	 *
 	 * @return const Obj&& A const rvalue reference to the contained object.
 	 */
-	KBLIB_NODISCARD auto
-	operator*() const&& noexcept(std::is_nothrow_move_constructible<Obj>::value)
+	KBLIB_NODISCARD auto operator*() const&& noexcept(Traits::nothrow_movable)
 	    -> const Obj&& {
 		return std::move(*get());
 	}
@@ -621,7 +629,7 @@ class poly_obj
 	 * @return Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto get() & noexcept -> Obj* {
-		return detail::launder(reinterpret_cast<Obj*>(data));
+		return detail_poly::launder(reinterpret_cast<Obj*>(data));
 	}
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -633,7 +641,7 @@ class poly_obj
 	 * @return const Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto get() const& noexcept -> const Obj* {
-		return detail::launder(reinterpret_cast<const Obj*>(data));
+		return detail_poly::launder(reinterpret_cast<const Obj*>(data));
 	}
 
 	/**
@@ -646,7 +654,7 @@ class poly_obj
 	 * @return Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto operator->() & noexcept -> Obj* {
-		return detail::launder(reinterpret_cast<Obj*>(data));
+		return detail_poly::launder(reinterpret_cast<Obj*>(data));
 	}
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -658,7 +666,7 @@ class poly_obj
 	 * @return const Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto operator->() const& noexcept -> const Obj* {
-		return detail::launder(reinterpret_cast<const Obj*>(data));
+		return detail_poly::launder(reinterpret_cast<const Obj*>(data));
 	}
 
 	template <typename member_type>
@@ -823,7 +831,7 @@ class poly_obj
 	}
 
  private:
-	alignas(Obj) byte data[Capacity]{};
+	alignas(Obj) byte data[capacity]{};
 	bool valid{};
 
 	template <typename U, bool = false>
@@ -832,24 +840,40 @@ class poly_obj
 	template <typename U, typename... Args>
 	poly_obj(tag<U>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail::make_ops_t<U, Traits>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<U, Traits::ctype>()), valid(true) {
 		new (data) U(std::forward<Args>(args)...);
 	}
 
 	template <typename U, typename... Args>
 	poly_obj(tag<U, true>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail::make_ops_t<U, Traits>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<U, Traits::ctype>()), valid(true) {
 		new (data) U{std::forward<Args>(args)...};
 	}
 };
 
+template <bool warn>
+constexpr auto poly_warn_if() -> std::nullptr_t {
+	return {};
+}
+template <>
+[[deprecated(
+    "make_poly_obj<T, D, Capacity>(): Specifying capacity with this "
+    "API is error-prone, consider "
+    "using a type alias instead to avoid repetition.")]] constexpr inline auto
+poly_warn_if<true>() -> std::nullptr_t {
+	return {};
+}
+
 template <typename T, typename D = T, std::size_t Capacity = sizeof(D),
-          typename Traits = T, typename... Args>
-KBLIB_NODISCARD auto make_poly_obj(Args&&... args)
-    -> poly_obj<T, Capacity, Traits> {
-	return poly_obj<T, Capacity, Traits>::template make<D>(
-	    std::forward<Args>(args)...);
+          typename Traits = poly_obj_traits<T>, typename... Args>
+KBLIB_NODISCARD auto make_poly_obj(
+    Args&&... args,
+    std::nullptr_t = poly_warn_if<(Capacity != sizeof(D) and
+                                   Capacity > Traits::default_capacity)>())
+    -> poly_obj<T, std::max(Capacity, Traits::default_capacity), Traits> {
+	return poly_obj<T, std::max(Capacity, Traits::default_capacity),
+	                Traits>::template make<D>(std::forward<Args>(args)...);
 }
 
 } // namespace kblib

@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides facilities to convert between various kinds of representations.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #if KBLIB_DEF_MACROS and not defined(pFromStr)
 #define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
 #endif
@@ -79,7 +109,10 @@ KBLIB_NODISCARD auto to_string(Int num, int base) -> std::string {
 	return ret;
 }
 
-namespace detail {
+/**
+ * @internal
+ */
+namespace detail_convert {
 
 	template <typename Result, unsigned variants, std::size_t N>
 	KBLIB_NODISCARD constexpr auto read_digits(const char* begin,
@@ -105,7 +138,7 @@ namespace detail {
 		return result;
 	}
 
-} // namespace detail
+} // namespace detail_convert
 
 template <typename Result>
 KBLIB_NODISCARD constexpr auto parse_integer(const char* begin, const char* end,
@@ -138,12 +171,12 @@ KBLIB_NODISCARD constexpr auto parse_integer(const char* begin, const char* end,
 			throw std::invalid_argument(
 			    "base must be either 0 or a positive number between 2 and 62");
 		} else if (base <= 36) {
-			return detail::read_digits<Result, 2>(
+			return detail_convert::read_digits<Result, 2>(
 			    begin, end, base,
 			    "00112233445566778899AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRr"
 			    "SsTtUuVvWwXxYyZz");
 		} else if (base <= 62) {
-			return detail::read_digits<Result, 1>(
+			return detail_convert::read_digits<Result, 1>(
 			    begin, end, base,
 			    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 		}
@@ -216,7 +249,10 @@ KBLIB_NODISCARD auto time_to_str(std::chrono::time_point<clock, duration>& tp,
 	return ret;
 }
 
-namespace detail {
+/**
+ * @internal
+ */
+namespace detail_units {
 
 	KBLIB_NODISCARD constexpr auto unit_of(std::chrono::nanoseconds) noexcept
 	    -> auto {
@@ -412,14 +448,15 @@ namespace detail {
 	template <std::intmax_t Num, std::intmax_t Den>
 	using nearest_ratio_t = typename nearest_ratio<Num, Den>::type;
 
-} // namespace detail
+} // namespace detail_units
 
-template <typename Rep, typename Ratio,
-          enable_if_t<detail::is_si_ratio<typename Ratio::type>::value>* = 0>
+template <
+    typename Rep, typename Ratio,
+    enable_if_t<detail_units::is_si_ratio<typename Ratio::type>::value>* = 0>
 KBLIB_NODISCARD auto duration_to_str(std::chrono::duration<Rep, Ratio>& d)
     -> std::string {
 	using ratio = typename Ratio::type;
-	auto cv = detail::ratio_to_SI<ratio::num, ratio::den>();
+	auto cv = detail_units::ratio_to_SI<ratio::num, ratio::den>();
 	return concat(d.count() * cv.multiplier, ' ', cv.abbr, 's');
 }
 
@@ -428,8 +465,8 @@ template <typename Rep, typename Ratio,
 KBLIB_NODISCARD auto duration_to_str(std::chrono::duration<Rep, Ratio>& d)
     -> std::string {
 	using ratio = typename Ratio::type;
-	using n_r = detail::nearest_ratio_t<ratio::num, ratio::den>;
-	auto u = detail::name_of(n_r{});
+	using n_r = detail_units::nearest_ratio_t<ratio::num, ratio::den>;
+	auto u = detail_units::name_of(n_r{});
 
 	// require an implicit cast
 	std::chrono::duration<Rep, n_r> n_d = d;

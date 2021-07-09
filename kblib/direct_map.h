@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides direct_map.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef DIRECT_MAP_H
 #define DIRECT_MAP_H
 
@@ -14,8 +44,10 @@
 #include <optional>
 
 namespace kblib {
-
-namespace detail {
+/**
+ * @internal
+ */
+namespace detail_direct_map {
 
 	template <typename T>
 	constexpr auto
@@ -80,7 +112,7 @@ namespace detail {
 		}
 	};
 
-} // namespace detail
+} // namespace detail_direct_map
 
 template <typename Key, typename T, typename allocator = void>
 class direct_map {
@@ -98,8 +130,8 @@ class direct_map {
 	using const_pointer = const value_type*;
 
  private:
-	constexpr static std::ptrdiff_t key_range{detail::range_of<Key>};
-	using storage_type = detail::storage_for<value_type>;
+	constexpr static std::ptrdiff_t key_range{detail_direct_map::range_of<Key>};
+	using storage_type = detail_direct_map::storage_for<value_type>;
 
 	using held_type =
 	    std::pair<std::bitset<key_range>, std::array<storage_type, key_range>>;
@@ -654,8 +686,8 @@ class direct_map<Key, T, void> {
 	using const_pointer = const value_type*;
 
  private:
-	constexpr static std::ptrdiff_t key_range{detail::range_of<Key>};
-	using storage_type = detail::storage_for<value_type>;
+	constexpr static std::ptrdiff_t key_range{detail_direct_map::range_of<Key>};
+	using storage_type = detail_direct_map::storage_for<value_type>;
 
 	template <typename V>
 	class iter {

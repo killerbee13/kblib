@@ -1,11 +1,36 @@
-#ifndef KBLIB_TRAITS_H_INCLUDED_
-#define KBLIB_TRAITS_H_INCLUDED_
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
 
 /**
- * @file traits.h
- * @brief Contains some type traits not in the standard library that are useful
- * in the implementation of kblib.
+ * @file
+ * Contains some type traits not in the standard library that are useful in the
+ * implementation of kblib.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
  */
+
+#ifndef KBLIB_TRAITS_H_INCLUDED_
+#define KBLIB_TRAITS_H_INCLUDED_
 
 #include "fakestd.h"
 #include "tdecl.h"
@@ -178,32 +203,33 @@ namespace detail {
 	template <typename>
 	auto calc_resizable(...) noexcept -> std::false_type;
 
-	// Note that when a type that is not resizable, but also doesn't have a
-	// constexpr size, is passed, there is a hard error.
-	/**
-	 * True if and only if C is a resizable container.
-	 */
-	template <typename C>
-	constexpr bool is_resizable_v = decltype(calc_resizable<C>(0))::value;
-
-	template <typename C>
-	struct is_resizable {
-		constexpr static bool value = is_resizable_v<C>;
-	};
-
-	template <typename C, typename = void>
-	constexpr bool has_reserve_v = false;
-
-	template <typename C>
-	constexpr bool
-	    has_reserve_v<C, void_t<decltype(std::declval<C&>().reserve(0))>> = true;
-	/**
-	 * @brief True if and only if C contains an accessible reserve() member.
-	 */
-	template <typename C>
-	struct has_reserve : bool_constant<has_reserve_v<C>> {};
-
 } // namespace detail
+
+// Note that when a type that is not resizable, but also doesn't have a
+// constexpr size, is passed, there is a hard error.
+/**
+ * True if and only if C is a resizable container.
+ */
+template <typename C>
+constexpr bool is_resizable_v = decltype(detail::calc_resizable<C>(0))::value;
+
+template <typename C>
+struct is_resizable {
+	constexpr static bool value = is_resizable_v<C>;
+};
+
+template <typename C, typename = void>
+constexpr bool has_reserve_v = false;
+
+template <typename C>
+constexpr bool
+    has_reserve_v<C, void_t<decltype(std::declval<C&>().reserve(0))>> = true;
+
+/**
+ * @brief True if and only if C contains an accessible reserve() member.
+ */
+template <typename C>
+struct has_reserve : bool_constant<has_reserve_v<C>> {};
 
 /**
  * @brief Attempt to reserve capacity in a container. No-op if unsupported.
@@ -211,8 +237,7 @@ namespace detail {
  * @param c The container to modify.
  * @param s The requested capacity.
  */
-template <typename C,
-          typename std::enable_if<detail::has_reserve_v<C>, int>::type = 0>
+template <typename C, typename std::enable_if<has_reserve_v<C>, int>::type = 0>
 auto try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) -> void {
 	c.reserve(s);
 	return;
@@ -225,7 +250,7 @@ auto try_reserve(C& c, std::size_t s) noexcept(noexcept(c.reserve(s))) -> void {
  * @param s The requested capacity.
  */
 template <typename C,
-          typename std::enable_if<not detail::has_reserve_v<C>, int>::type = 0>
+          typename std::enable_if<not has_reserve_v<C>, int>::type = 0>
 auto try_reserve(C&, std::size_t) noexcept -> void {
 	return;
 }

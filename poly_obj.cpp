@@ -224,7 +224,8 @@ TEST_CASE("poly_obj") {
 	}
 
 	SECTION("non-copyable derived") {
-		kblib::poly_obj<copyable_base, sizeof(copyable_base), kblib::move_only_t>
+		kblib::poly_obj<copyable_base, sizeof(copyable_base),
+		                kblib::move_only_traits>
 		    o1{std::in_place};
 		// Valid because the template parameters explicitly disable copying, so
 		// derived classes don't need to be copyable.
@@ -274,7 +275,7 @@ TEST_CASE("poly_obj") {
 		    "make_poly_obj must return the correct type.");
 	}
 	SECTION("hinted") {
-		static_assert(kblib::detail::extract_derived_size<hinted_base>::value ==
+		static_assert(kblib::poly_obj_traits<hinted_base>::default_capacity ==
 		              hinted_base::max_derived_size);
 		kblib::poly_obj<hinted_base> o;
 		static_assert(decltype(o)::capacity ==
@@ -355,6 +356,9 @@ struct Base {
 	Base() = default;
 	Base(const Base&) = default;
 	virtual ~Base() = default;
+
+	constexpr static inline std::size_t max_derived_size =
+	    sizeof(good_base) + sizeof(unsigned);
 };
 
 struct Derived1 final : Base {
@@ -414,6 +418,8 @@ TEST_CASE("poly_obj performance") {
 #endif
 
 	std::vector<std::pair<unsigned, std::string_view>> reproducibility_test;
+	using poly_t =
+	    kblib::poly_obj<Base, sizeof(Derived1), kblib::poly_obj_traits<int>>;
 
 	auto push_checksum = [&](unsigned s, std::string_view name) {
 		auto begin = reproducibility_test.begin();
@@ -596,7 +602,6 @@ TEST_CASE("poly_obj performance") {
 		push_checksum(accum, "unique pointer");
 	};
 	BENCHMARK_ADVANCED("poly_obj")(Catch::Benchmark::Chronometer meter) {
-		using poly_t = kblib::poly_obj<Base, sizeof(Derived1), int>;
 		std::vector<poly_t> d;
 		kblib::FNV_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
@@ -869,7 +874,6 @@ TEST_CASE("poly_obj performance") {
 			});
 		};
 		BENCHMARK_ADVANCED("poly_obj, ch")(Catch::Benchmark::Chronometer meter) {
-			using poly_t = kblib::poly_obj<Base, sizeof(Derived1), int>;
 			std::vector<poly_t> d;
 			kblib::FNV_hash<unsigned> h;
 			for (auto i : kblib::range(count)) {

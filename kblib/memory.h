@@ -1,3 +1,34 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides utilities to enable safe and expressive memory management and
+ * low-level memory manipulation.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef MEMORY_H
 #define MEMORY_H
 
@@ -36,7 +67,7 @@ struct fun_ptr_deleter<FunPtr> {
 };
 #endif
 
-namespace detail {
+namespace detail_memory {
 
 	template <typename D, typename T, typename V = void>
 	struct filter_deleter_pointer {
@@ -145,7 +176,7 @@ namespace detail {
 		}
 	};
 
-} // namespace detail
+} // namespace detail_memory
 
 template <typename T>
 class live_ptr;
@@ -170,14 +201,15 @@ class live_wrapper {
 		}
 	};
 
-	null_construct<detail::on_destroy<std::vector<live_wrapper**>, _destroy>>
+	null_construct<
+	    detail_memory::on_destroy<std::vector<live_wrapper**>, _destroy>>
 	    _observers{};
 };
 
 template <typename T>
 class live_wrapper<const T> : public live_wrapper<T> {};
 
-namespace detail {
+namespace detail_memory {
 
 	template <typename T>
 	struct template_param;
@@ -278,11 +310,11 @@ namespace detail {
 			return static_cast<const D&>(*this);
 		}
 	};
-} // namespace detail
+} // namespace detail_memory
 
 template <typename T>
-class live_ptr : public detail::live_ptr_base<live_ptr<T>> {
-	using base = detail::live_ptr_base<live_ptr<T>>;
+class live_ptr : public detail_memory::live_ptr_base<live_ptr<T>> {
+	using base = detail_memory::live_ptr_base<live_ptr<T>>;
 
  public:
 	using value_type = T;
@@ -308,8 +340,9 @@ class live_ptr : public detail::live_ptr_base<live_ptr<T>> {
 };
 
 template <typename mT>
-class live_ptr<const mT> : public detail::live_ptr_base<live_ptr<const mT>> {
-	using base = detail::live_ptr_base<live_ptr<const mT>>;
+class live_ptr<const mT>
+    : public detail_memory::live_ptr_base<live_ptr<const mT>> {
+	using base = detail_memory::live_ptr_base<live_ptr<const mT>>;
 
  public:
 	using T = const mT;
@@ -364,11 +397,11 @@ live_ptr<const T> live_wrapper<T>::cref() const {
 // however it will not implicitly strip a deleter from a unique_ptr.
 
 template <typename T, typename Deleter = std::default_delete<T>>
-class cond_ptr : private detail::as_base_class<Deleter> {
-	using d_base = detail::as_base_class<Deleter>;
+class cond_ptr : private detail_memory::as_base_class<Deleter> {
+	using d_base = detail_memory::as_base_class<Deleter>;
 
  public:
-	using pointer = detail::filter_deleter_pointer_t<Deleter, T>;
+	using pointer = detail_memory::filter_deleter_pointer_t<Deleter, T>;
 	using element_type = T;
 	using deleter_type = Deleter;
 
@@ -544,11 +577,11 @@ class cond_ptr : private detail::as_base_class<Deleter> {
 };
 
 template <typename T, typename Deleter>
-class cond_ptr<T[], Deleter> : private detail::as_base_class<Deleter> {
-	using d_base = detail::as_base_class<Deleter>;
+class cond_ptr<T[], Deleter> : private detail_memory::as_base_class<Deleter> {
+	using d_base = detail_memory::as_base_class<Deleter>;
 
  public:
-	using pointer = detail::filter_deleter_pointer_t<Deleter, T>;
+	using pointer = detail_memory::filter_deleter_pointer_t<Deleter, T>;
 	using element_type = T;
 	using deleter_type = Deleter;
 

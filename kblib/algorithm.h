@@ -1,3 +1,33 @@
+/* *****************************************************************************
+ * kblib is a general utility library for C++14 and C++17, intended to provide
+ * performant high-level abstractions and more expressive ways to do simple
+ * things.
+ *
+ * Copyright (c) 2021 killerbee
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * ****************************************************************************/
+
+/**
+ * @file
+ * Provides general-purpose algorithms, similar to the <algorithms> header.
+ *
+ * @author killerbee
+ * @date 2019-2021
+ * @copyright GNU General Public Licence v3.0
+ */
+
 #ifndef ALGORITHM_H
 #define ALGORITHM_H
 
@@ -203,7 +233,7 @@ KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last,
  */
 template <typename Range>
 KBLIB_NODISCARD constexpr auto sum(Range&& r) -> auto {
-	using std::begin;
+	using std::begin, std::end;
 	auto first = begin(r);
 	auto last = end(r);
 	if (first == last) {
@@ -1138,7 +1168,7 @@ constexpr auto transform_if(InputIt first, EndIt last, OutputIt d_first,
 	return d_first;
 }
 
-namespace detail {
+namespace detail_algorithm {
 
 	/**
 	 * @brief Implementation function for insertion_sort_copy. Like
@@ -1167,7 +1197,7 @@ namespace detail {
 		return;
 	}
 
-} // namespace detail
+} // namespace detail_algorithm
 
 } // namespace kblib
 
