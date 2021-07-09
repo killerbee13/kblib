@@ -69,8 +69,12 @@ chooseCategorical(Array&& cats, RandomGenerator& r) -> decltype(cats.size()) {
 			return stop;
 		}
 	}
+#ifdef __has_builtin
 #if __has_builtin(__builtin_unreachable)
 	__builtin_unreachable();
+#else
+	return cats.size() - 1;
+#endif
 #else
 	return cats.size() - 1;
 #endif

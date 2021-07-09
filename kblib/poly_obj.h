@@ -78,6 +78,24 @@ namespace detail_poly {
 		       (type & construct_type::throw_move) == construct_type::none;
 	}
 
+	KBLIB_NODISCARD constexpr auto make_ctype(bool copyable, bool movable,
+	                                          bool nothrow_movable)
+	    -> construct_type {
+		if (copyable) {
+			if (not movable) {
+				return construct_type::copy_only;
+			} else if (nothrow_movable) {
+				return construct_type::both;
+			} else {
+				return construct_type::both_throw;
+			}
+		} else if (movable) {
+			return construct_type::move;
+		} else {
+			return construct_type::none;
+		}
+	}
+
 	template <construct_type traits>
 	struct construct_conditional;
 
@@ -151,20 +169,19 @@ namespace detail_poly {
 
 	template <typename T>
 	constexpr construct_type construct_traits =
-	    construct_type::copy_only* std::is_copy_constructible<T>::value |
-	    construct_type::move* std::is_move_constructible<T>::value;
+	    construct_type::copy_only* std::is_copy_constructible_v<T> |
+	    construct_type::move* std::is_move_constructible_v<T> |
+	    construct_type::throw_move*(std::is_move_constructible_v<T> &
+	                                not std::is_nothrow_move_constructible_v<T>);
 
-	template <typename T>
-	struct disable_conditional : construct_conditional<construct_traits<T>> {};
+	template <construct_type traits>
+	struct erased_construct_helper {};
 
 	inline auto noop(void*, void*) noexcept -> void* { return nullptr; }
 	inline auto noop(void*, const void*) -> void* { return nullptr; }
 	inline auto throw_noop(void*, void*) noexcept(false) -> void* {
 		return nullptr;
 	}
-
-	template <construct_type traits>
-	struct erased_construct_helper {};
 
 	template <>
 	struct erased_construct_helper<construct_type::copy_only> {
@@ -210,43 +227,55 @@ namespace detail_poly {
 
 		alias<std::size_t (*)(void*)> hash = &default_hash;
 	};
-	template <typename T>
-	auto default_copy(void* dest, const void* from) -> void* {
-		return static_cast<void*>(new (dest) T(*static_cast<const T*>(from)));
-	}
-	template <typename T>
-	auto default_move(void* dest, void* from) noexcept(
-	    std::is_nothrow_move_constructible<T>::value) -> void* {
-		return static_cast<void*>(new (dest)
-		                              T(std::move(*static_cast<T*>(from))));
-	}
 
-	template <typename T, construct_type ctype, bool noop = false>
-	KBLIB_NODISCARD auto make_ops_t() noexcept
-	    -> erased_construct_helper<ctype> {
-		if constexpr (noop) {
-			return {};
-		}
+	template <typename T, typename Traits>
+	KBLIB_NODISCARD auto make_ops_t1() noexcept
+	    -> erased_construct_helper<Traits::ctype> {
+		static_assert(implies<copyable(Traits::ctype),
+		                      std::is_copy_constructible<T>::value>::value,
+		              "T must be copy constructible if Traits is.");
 		static_assert(
-		    implies<copyable(ctype), std::is_copy_constructible<T>::value>::value,
-		    "T must be copy constructible if Traits is.");
-		static_assert(
-		    implies<nothrow_movable(ctype),
+		    implies<nothrow_movable(Traits::ctype),
 		            std::is_nothrow_move_constructible<T>::value>::value,
 		    "T must be nothrow move constructible if Traits is.");
-		static_assert(
-		    implies<movable(ctype), std::is_move_constructible<T>::value>::value,
-		    "T must be move constructible if Traits is.");
-		if constexpr (ctype == construct_type::none) {
+		static_assert(implies<movable(Traits::ctype),
+		                      std::is_move_constructible<T>::value>::value,
+		              "T must be move constructible if Traits is.");
+		if constexpr (Traits::ctype == construct_type::none) {
 			return {};
-		} else if constexpr (ctype == construct_type::copy_only) {
-			return {{&default_copy<T>}};
-		} else if constexpr (ctype == construct_type::move or
-		                     ctype == construct_type::throw_move) {
-			return {{&default_move<T>}};
+		} else if constexpr (Traits::ctype == construct_type::copy_only) {
+			return {{&Traits::template copy<T>}};
+		} else if constexpr (Traits::ctype == construct_type::move or
+		                     Traits::ctype == construct_type::throw_move) {
+			return {{&Traits::template move<T>}};
 		} else {
-			return {{&default_copy<T>}, {&default_move<T>}};
+			return {{&Traits::template copy<T>}, {&Traits::template move<T>}};
 		}
+	}
+
+	template <typename Traits>
+	struct erased_construct : Traits::copy_t, Traits::move_t, Traits::destroy_t {
+		using Traits::copy_t::copy;
+		using Traits::move_t::move;
+
+		using Traits::destroy_t::destroy;
+	};
+
+	template <typename T, typename Traits>
+	KBLIB_NODISCARD auto make_ops_t() noexcept -> erased_construct<Traits> {
+		static_assert(implies<copyable(Traits::ctype),
+		                      std::is_copy_constructible<T>::value>::value,
+		              "T must be copy constructible if Traits is.");
+		static_assert(
+		    implies<nothrow_movable(Traits::ctype),
+		            std::is_nothrow_move_constructible<T>::value>::value,
+		    "T must be nothrow move constructible if Traits is.");
+		static_assert(implies<movable(Traits::ctype),
+		                      std::is_move_constructible<T>::value>::value,
+		              "T must be move constructible if Traits is.");
+		return {{typename Traits::copy_t{static_cast<T*>(nullptr)}},
+		        {typename Traits::move_t{static_cast<T*>(nullptr)}},
+		        {typename Traits::destroy_t{static_cast<T*>(nullptr)}}};
 	}
 
 	template <typename T, typename = void>
@@ -265,64 +294,203 @@ namespace detail_poly {
 	}
 #endif
 
-	/**
-	 * @brief A tag type for poly_obj, usable as a Traits type, which disables
-	 * copying.
-	 */
-	struct move_only_t {
-		move_only_t() noexcept = default;
-
-		move_only_t(move_only_t&&) noexcept = default;
-		move_only_t(const move_only_t&) = delete;
-
-		auto operator=(move_only_t&&) noexcept -> move_only_t& = default;
-		auto operator=(const move_only_t&) -> move_only_t& = delete;
-
-		~move_only_t() = default;
-	};
-
-	/**
-	 * @brief A tag type for poly_obj, usable as a Traits type, which disables
-	 * copying and moving.
-	 */
-	struct no_move_t {
-		no_move_t() noexcept = default;
-
-		no_move_t(const no_move_t&) = delete;
-		no_move_t(no_move_t&&) = delete;
-
-		auto operator=(const no_move_t&) -> no_move_t& = delete;
-		auto operator=(no_move_t &&) -> no_move_t& = delete;
-
-		~no_move_t() = default;
-	};
-
 } // namespace detail_poly
 
+/**
+ *
+ */
+using copy_fn = auto (*)(void*, const void*) -> void*;
+/**
+ *
+ */
+template <bool nothrow>
+using move_fn = auto (*)(void*, void*) noexcept(nothrow) -> void*;
+/**
+ * @brief noop
+ */
+inline auto noop(void*, const void*) -> void* { return nullptr; }
+template <bool nothrow>
+/**
+ * @brief noop
+ */
+inline auto noop(void*, void*) noexcept(nothrow) -> void* {
+	return nullptr;
+}
+/**
+ * @brief The default_copy struct
+ */
+template <bool copyable>
+struct default_copy {
+ private:
+	template <typename T>
+	static auto do_copy(void* dest, const void* from) -> void* {
+		return static_cast<void*>(new (dest) T(*static_cast<const T*>(from)));
+	}
+
+	auto (*p_copy)(void* dest, const void* from) -> void* = &noop;
+
+ public:
+	default_copy() noexcept = default;
+	template <typename T>
+	explicit default_copy(T*) noexcept : p_copy(&do_copy<T>) {}
+
+	auto copy(void* dest, const void* from) -> void* {
+		return p_copy(dest, from);
+	}
+};
+template <>
+struct default_copy<false> {
+	default_copy() noexcept = default;
+	template <typename T>
+	explicit default_copy(T*) noexcept {}
+	auto copy(void* dest, const void* from) -> void* = delete;
+};
+/**
+ *
+ */
+template <typename Obj, void* (Obj::*clone)(void*) const>
+struct clone_copy {
+	clone_copy() = default;
+	template <typename T>
+	clone_copy(T*) {}
+
+	auto copy(void* dest, const void* from) -> void* {
+		return static_cast<const Obj*>(from)->*clone(dest);
+	}
+};
+/**
+ *
+ */
+template <bool movable, bool nothrow, bool copyable>
+struct default_move {
+	// private:
+	template <typename T>
+	static auto do_move(void* dest, void* from) noexcept(nothrow) -> void* {
+		return static_cast<void*>(new (dest)
+		                              T(std::move(*static_cast<T*>(from))));
+	}
+	// noexcept isn't working here on clang
+	auto (*p_move)(void* dest, void* from) noexcept(false)
+	    -> void* = &noop<nothrow>;
+
+ public:
+	default_move() noexcept = default;
+	template <typename T>
+	explicit default_move(T*) noexcept : p_move(&do_move<T>) {}
+
+	auto move(void* dest, void* from) noexcept(nothrow) -> void* {
+		return p_move(dest, from);
+	}
+};
+template <bool nothrow>
+struct default_move<false, nothrow, false> {
+	default_move() noexcept = default;
+	template <typename T>
+	explicit default_move(T*) noexcept {}
+	auto move(void* dest, void* from) noexcept(nothrow) -> void* = delete;
+};
+// fallback on copy
+template <bool nothrow>
+struct default_move<false, nothrow, true> : private default_copy<true> {
+	using default_copy::default_copy;
+
+	auto move(void* dest, const void* from) noexcept(nothrow) -> void* {
+		return copy(dest, from);
+	}
+};
+/**
+ *
+ */
 template <typename Obj>
-struct poly_obj_traits {
-	constexpr static inline construct_type ctype =
-	    detail_poly::construct_traits<Obj>;
+struct default_destroy {
+	default_destroy() noexcept = default;
+	template <typename T>
+	explicit default_destroy(T*) noexcept {}
 
-	using disabler = detail_poly::construct_conditional<ctype>;
-	using ops_t = detail_poly::erased_construct_helper<ctype>;
-
-	// using hash_t = detail_poly::erased_hash_t<Obj>;
-
-	constexpr static inline std::size_t default_capacity =
-	    detail_poly::extract_derived_size<Obj>::value;
-
-	constexpr static inline bool copyable = std::is_copy_constructible_v<Obj>;
-	constexpr static inline bool nothrow_copyable =
-	    std::is_nothrow_copy_constructible_v<Obj>;
-
-	constexpr static inline bool movable = std::is_move_constructible_v<Obj>;
-	constexpr static inline bool nothrow_movable =
-	    std::is_nothrow_move_constructible_v<Obj>;
+	auto destroy(void* obj) -> void { static_cast<Obj*>(obj)->~Obj(); }
+	static_assert(std::has_virtual_destructor_v<Obj>,
+	              "Obj must have a virtual destructor");
 };
 
-using move_only_traits = poly_obj_traits<detail_poly::move_only_t>;
-using no_move_traits = poly_obj_traits<detail_poly::no_move_t>;
+/**
+ * @brief poly_obj_traits is a traits class template which abstracts the allowed
+ * operations on a polymorphic type hierarchy. Any operation allowed by the
+ * traits must be usable for the entire hierarchy, not just the base class.
+ *
+ * Users of poly_obj may provide explicit instantiations of this type, as long
+ * as they satisfy all the requirements listed here. Alternatively, users may
+ * write their own traits types.
+ */
+template <typename Obj,
+          construct_type CType = detail_poly::construct_traits<Obj>>
+struct poly_obj_traits {
+
+	constexpr static construct_type ctype = CType;
+
+	/**
+	 * @brief The default capacity to use if not overridden.
+	 *
+	 * The default implementation uses Obj::max_derived_size if it exists, or
+	 * sizeof(Obj) otherwise.
+	 */
+	constexpr static std::size_t default_capacity =
+	    detail_poly::extract_derived_size<Obj>::value;
+
+	/**
+	 * @brief If the object is copy constructible.
+	 */
+	constexpr static bool copyable = detail_poly::copyable(CType);
+
+	/**
+	 * @brief If the object is move constructible
+	 */
+	constexpr static bool movable = detail_poly::movable(CType);
+	/**
+	 * @brief If the object is nothrow move constructible
+	 */
+	constexpr static bool nothrow_movable = detail_poly::nothrow_movable(CType);
+
+	/**
+	 * @brief Implements type erasure for copy construction.
+	 *
+	 * If copying is enabled, copy_t must have:
+	 * - a nothrow default constructor.
+	 * - a nothrow constructor template taking a single parameter of type T*
+	 *   (always nullptr) that produces a copy constructor for type T.
+	 * - a member function 'copy' which performs the actual copying.
+	 */
+	using copy_t = default_copy<copyable>;
+
+	/**
+	 * @brief Implements type erasure for move construction.
+	 *
+	 * If moving is enabled, move_t must have:
+	 * - a nothrow default constructor.
+	 * - a nothrow constructor template taking a single parameter of type T*
+	 *   (always nullptr) that produces a move constructor for type T.
+	 * - a member function 'move' which performs the actual moving.
+	 *
+	 * @note Move may fall back on copy.
+	 */
+	using move_t = default_move<movable, nothrow_movable, copyable>;
+
+	/**
+	 * @brief Implements type erasure for destruction. The default implementation
+	 * requires and always uses virtual dispatch for destruction.
+	 *
+	 * Must have:
+	 * - a nothrow default constructor.
+	 * - a nothrow constructor template taking a single parameter of type T*
+	 *   (always nullptr) that produces a destroyer for type T.
+	 * - a member function 'destroy' which performs the actual destruction.
+	 */
+	using destroy_t = default_destroy<Obj>;
+};
+
+template <typename Obj>
+using move_only_traits = poly_obj_traits<Obj, construct_type::move>;
+template <typename Obj>
+using no_move_traits = poly_obj_traits<Obj, construct_type::none>;
 
 /**
  * @brief Inline polymorphic object. Generally mimics the interfaces of
@@ -333,20 +501,23 @@ using no_move_traits = poly_obj_traits<detail_poly::no_move_t>;
  * in case derived objects are larger than the base (this is expected to be
  * commonplace).
  *
- * @tparam Obj The base class type which the poly_obj will store.
+ * @tparam Obj The base class type which the poly_obj will store. Must have a
+ * virtual destructor unless a custom traits class is provided.
  * @tparam Capacity The inline capacity allocated for the contained object. May
  * be set larger than sizeof(Obj) to account for larger derived classes.
- * @tparam Traits A type providing
- * @tparam Traits The type to base copy/move constructibility and assignability
- * of the poly_obj on. poly_obj will not create objects of type Traits, this
- * template parameter is only used in type traits.
+ * @tparam Traits A type providing member types and constants defining the
+ * allowed operations on the object type.
  */
 template <typename Obj, std::size_t Capacity = 0,
           typename Traits = poly_obj_traits<Obj>>
-class poly_obj : Traits::disabler, Traits::ops_t {
+class poly_obj
+    : private detail_poly::construct_conditional<detail_poly::make_ctype(
+          Traits::copyable, Traits::movable, Traits::nothrow_movable)>,
+      private detail_poly::erased_construct<Traits> {
  private:
-	using disabler = typename Traits::disabler;
-	using ops_t = typename Traits::ops_t;
+	using disabler = detail_poly::construct_conditional<detail_poly::make_ctype(
+	    Traits::copyable, Traits::movable, Traits::nothrow_movable)>;
+	using ops_t = detail_poly::erased_construct<Traits>;
 
  public:
 	static constexpr std::size_t capacity =
@@ -354,9 +525,6 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 
 	static_assert(capacity >= sizeof(Obj),
 	              "Capacity must be large enough for the object type.");
-	static_assert(
-	    std::has_virtual_destructor<Obj>::value,
-	    "Obj must have a virtual destructor to be used as a base class object.");
 	static_assert(not std::is_array<Obj>::value,
 	              "poly_obj of array type is disallowed.");
 
@@ -431,7 +599,7 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 	              std::is_constructible<Obj, Args...>::value, int> = 0>
 	constexpr explicit poly_obj(fakestd::in_place_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<Obj, Traits::ctype>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<Obj, Traits>()), valid(true) {
 		new (data) Obj(std::forward<Args>(args)...);
 	}
 
@@ -448,7 +616,7 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 	              std::is_constructible<Obj, Args...>::value, int> = 0>
 	constexpr explicit poly_obj(kblib::in_place_agg_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<Obj, Traits::ctype>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<Obj, Traits>()), valid(true) {
 		new (data) Obj{std::forward<Args>(args)...};
 	}
 
@@ -513,14 +681,13 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 		static_assert(std::is_base_of<Obj, U>::value and
 		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
-		static_assert(std::has_virtual_destructor<Obj>::value,
-		              "It must be safe to delete a U through an Obj*.");
-		static_assert(implies<Traits::copyable,
-		                      std::is_copy_constructible<U>::value>::value,
-		              "U must be copy constructible if Traits is.");
+		static_assert(
+		    implies<Traits::copyable,
+		            std::is_copy_constructible<U>::value>::value,
+		    "U must be copy constructible if Traits::copyable is true.");
 		static_assert(
 		    implies<Traits::movable, std::is_move_constructible<U>::value>::value,
-		    "U must be move constructible if Traits is.");
+		    "U must be move constructible if Traits::movable is true.");
 		return {tag<U>{}, std::forward<Args>(args)...};
 	}
 
@@ -544,14 +711,13 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 		static_assert(std::is_base_of<Obj, U>::value and
 		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
-		static_assert(std::has_virtual_destructor<Obj>::value,
-		              "It must be safe to delete a U through an Obj*.");
-		static_assert(implies<Traits::copyable,
-		                      std::is_copy_constructible<U>::value>::value,
-		              "U must be copy constructible if Traits is.");
+		static_assert(
+		    implies<Traits::copyable,
+		            std::is_copy_constructible<U>::value>::value,
+		    "U must be copy constructible if Traits::copyable is true.");
 		static_assert(
 		    implies<Traits::movable, std::is_move_constructible<U>::value>::value,
-		    "U must be move constructible if Traits is.");
+		    "U must be move constructible if Traits::movable is true.");
 		return {tag<U, true>{}, std::forward<Args>(args)...};
 	}
 
@@ -560,7 +726,7 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> Obj& {
 	   clear();
 	   static_cast<ops_t&>(*this) = detail_poly::make_ops_t<U,
-	Traits::ctype>(); value = new (data) U(std::forward<Args>(args)...);
+	Traits>(); value = new (data) U(std::forward<Args>(args)...);
 	}*/
 
 	/**
@@ -818,7 +984,8 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 	 */
 	auto clear() noexcept -> void {
 		if (valid) {
-			get()->~Obj();
+			// get()->~Obj();
+			this->destroy(data);
 			valid = false;
 		}
 		static_cast<ops_t&>(*this) = {};
@@ -826,7 +993,8 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 
 	~poly_obj() noexcept {
 		if (valid) {
-			get()->~Obj();
+			// get()->~Obj();
+			this->destroy(data);
 		}
 	}
 
@@ -840,14 +1008,14 @@ class poly_obj : Traits::disabler, Traits::ops_t {
 	template <typename U, typename... Args>
 	poly_obj(tag<U>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<U, Traits::ctype>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<U, Traits>()), valid(true) {
 		new (data) U(std::forward<Args>(args)...);
 	}
 
 	template <typename U, typename... Args>
 	poly_obj(tag<U, true>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<U, Traits::ctype>()), valid(true) {
+	    : ops_t(detail_poly::make_ops_t<U, Traits>()), valid(true) {
 		new (data) U{std::forward<Args>(args)...};
 	}
 };

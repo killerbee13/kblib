@@ -158,6 +158,17 @@ KBLIB_NODISCARD constexpr auto construct_from_range(Range&& r) -> Container {
 
 template <typename Container, bool ArrayLike = not is_resizable_v<Container>>
 class KBLIB_NODISCARD build_iterator {
+ private:
+	/**
+	 * @brief range A shared_ptr to the managed range.
+	 *
+	 * It is unfortunate that this has to be a shared_ptr, but that's the only
+	 * way to make this class a valid iterator. A move-only build_iterator-alike
+	 * could avoid this overhead, and I may write one because several algorithms
+	 * don't ever need to copy iterators.
+	 */
+	std::shared_ptr<Container> range;
+
  public:
 	using value_type = void;
 	using difference_type = void;
@@ -207,22 +218,12 @@ class KBLIB_NODISCARD build_iterator {
 	KBLIB_NODISCARD constexpr auto operator++(int) -> build_iterator& {
 		return *this;
 	}
-
- private:
-	/**
-	 * @brief range A shared_ptr to the managed range.
-	 *
-	 * It is unfortunate that this has to be a shared_ptr, but that's the only
-	 * way to make this class a valid iterator. A move-only build_iterator-alike
-	 * could avoid this overhead, and I may write one because several algorithms
-	 * don't ever need to copy iterators.
-	 */
-	std::shared_ptr<Container> range;
 };
 
 KBLIB_UNUSED constexpr struct build_end_t {
 	template <typename T>
-	KBLIB_NODISCARD constexpr operator T() const noexcept(noexcept(T{*this})) {
+	KBLIB_NODISCARD constexpr operator T() const
+	    noexcept(noexcept(T{build_end_t{}})) {
 		return T{this};
 	}
 } build_end;
@@ -388,6 +389,10 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 	static_assert(std::is_same<T, value_type>::value,
 	              "Container::value_type must be T.");
 
+ private:
+	container_type backing;
+
+ public:
 	// Constructors
 
 	stack() : stack(Container()) {}
@@ -475,9 +480,6 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 	KBLIB_NODISCARD auto container()&&->container_type {
 		return std::move(backing);
 	}
-
- private:
-	container_type backing;
 };
 
 } // namespace kblib

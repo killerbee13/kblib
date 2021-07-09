@@ -429,7 +429,8 @@ class range_t {
 	                      std::is_constructible<Container, iterator,
 	                                            iterator>::value>* = nullptr>
 	explicit operator Container() const
-	    noexcept(noexcept(Container(begin(), end()))) {
+	    noexcept(noexcept(Container(std::declval<iterator>(),
+	                                std::declval<iterator>()))) {
 		return Container(begin(), end());
 	}
 
@@ -441,7 +442,8 @@ class range_t {
 	                      std::is_constructible<Container, iterator,
 	                                            iterator>::value>* = nullptr>
 	explicit operator Container() const
-	    noexcept(noexcept(Container(begin(), end()))) {
+	    noexcept(noexcept(Container(std::declval<iterator>(),
+	                                std::declval<iterator>()))) {
 		return Container(begin(), end());
 	}
 
@@ -802,10 +804,9 @@ class enumerator_iterator {
 	                          other.curr_.idx, other.it_) {}
 	enumerator_iterator(It it) : it_(it) {}
 
-	enumerator_iterator(enumerator_iterator&&) noexcept = default;
+	enumerator_iterator(enumerator_iterator&&) = default;
 	auto operator=(const enumerator_iterator&) -> enumerator_iterator& = default;
-	auto operator=(enumerator_iterator&&) noexcept
-	    -> enumerator_iterator& = default;
+	auto operator=(enumerator_iterator &&) -> enumerator_iterator& = default;
 
 	~enumerator_iterator() = default;
 

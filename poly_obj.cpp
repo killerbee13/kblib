@@ -225,7 +225,7 @@ TEST_CASE("poly_obj") {
 
 	SECTION("non-copyable derived") {
 		kblib::poly_obj<copyable_base, sizeof(copyable_base),
-		                kblib::move_only_traits>
+		                kblib::move_only_traits<copyable_base>>
 		    o1{std::in_place};
 		// Valid because the template parameters explicitly disable copying, so
 		// derived classes don't need to be copyable.
@@ -355,6 +355,7 @@ struct Base {
 	virtual auto operator()() const noexcept -> unsigned = 0;
 	Base() = default;
 	Base(const Base&) = default;
+	Base(Base&&) noexcept = default;
 	virtual ~Base() = default;
 
 	constexpr static inline std::size_t max_derived_size =
@@ -418,8 +419,9 @@ TEST_CASE("poly_obj performance") {
 #endif
 
 	std::vector<std::pair<unsigned, std::string_view>> reproducibility_test;
-	using poly_t =
-	    kblib::poly_obj<Base, sizeof(Derived1), kblib::poly_obj_traits<int>>;
+	using poly_t = kblib::poly_obj<
+	    Base, sizeof(Derived1),
+	    kblib::poly_obj_traits<Base, kblib::construct_type::both>>;
 
 	auto push_checksum = [&](unsigned s, std::string_view name) {
 		auto begin = reproducibility_test.begin();

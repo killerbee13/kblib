@@ -184,7 +184,7 @@ KBLIB_NODISCARD constexpr auto parse_integer(const char* begin, const char* end,
 	}
 	// silence warning that control may flow off the end even though all paths
 	// return or throw
-	throw "unreachable";
+	return 0;
 }
 
 template <typename Result, std::size_t N>
@@ -305,36 +305,36 @@ namespace detail_units {
 	};
 // if std::intmax_t can represent the denominator
 #if (-1U >> 63) > (1U << 18)
-	constexpr auto name_of(std::yocto) -> prefix { return {"yocto", "y"}; }
+	constexpr auto name_of(std::yocto) -> prefix { return prefix{"yocto", "y"}; }
 #endif
 #if (-1U >> 63) > (1U << 8)
-	constexpr auto name_of(std::zepto) -> prefix { return {"zepto", "z"}; }
+	constexpr auto name_of(std::zepto) -> prefix { return prefix{"zepto", "z"}; }
 #endif
-	constexpr auto name_of(std::atto) -> prefix { return {"atto", "a"}; }
-	constexpr auto name_of(std::femto) -> prefix { return {"femto", "f"}; }
-	constexpr auto name_of(std::pico) -> prefix { return {"pico", "p"}; }
-	constexpr auto name_of(std::nano) -> prefix { return {"nano", "n"}; }
-	constexpr auto name_of(std::micro) -> prefix { return {"micro", "u"}; }
-	constexpr auto name_of(std::milli) -> prefix { return {"milli", "m"}; }
-	constexpr auto name_of(std::centi) -> prefix { return {"centi", "c"}; }
-	constexpr auto name_of(std::deci) -> prefix { return {"deci", "d"}; }
+	constexpr auto name_of(std::atto) -> prefix { return prefix{"atto", "a"}; }
+	constexpr auto name_of(std::femto) -> prefix { return prefix{"femto", "f"}; }
+	constexpr auto name_of(std::pico) -> prefix { return prefix{"pico", "p"}; }
+	constexpr auto name_of(std::nano) -> prefix { return prefix{"nano", "n"}; }
+	constexpr auto name_of(std::micro) -> prefix { return prefix{"micro", "u"}; }
+	constexpr auto name_of(std::milli) -> prefix { return prefix{"milli", "m"}; }
+	constexpr auto name_of(std::centi) -> prefix { return prefix{"centi", "c"}; }
+	constexpr auto name_of(std::deci) -> prefix { return prefix{"deci", "d"}; }
 
-	constexpr auto name_of(std::ratio<1, 1>) -> prefix { return {"", ""}; }
+	constexpr auto name_of(std::ratio<1, 1>) -> prefix { return prefix{"", ""}; }
 
-	constexpr auto name_of(std::deca) -> prefix { return {"deca", "da"}; }
-	constexpr auto name_of(std::hecto) -> prefix { return {"hecto", "h"}; }
-	constexpr auto name_of(std::kilo) -> prefix { return {"kilo", "k"}; }
-	constexpr auto name_of(std::mega) -> prefix { return {"mega", "M"}; }
-	constexpr auto name_of(std::giga) -> prefix { return {"giga", "G"}; }
-	constexpr auto name_of(std::tera) -> prefix { return {"tera", "T"}; }
-	constexpr auto name_of(std::peta) -> prefix { return {"peta", "P"}; }
-	constexpr auto name_of(std::exa) -> prefix { return {"exa", "E"}; }
+	constexpr auto name_of(std::deca) -> prefix { return prefix{"deca", "da"}; }
+	constexpr auto name_of(std::hecto) -> prefix { return prefix{"hecto", "h"}; }
+	constexpr auto name_of(std::kilo) -> prefix { return prefix{"kilo", "k"}; }
+	constexpr auto name_of(std::mega) -> prefix { return prefix{"mega", "M"}; }
+	constexpr auto name_of(std::giga) -> prefix { return prefix{"giga", "G"}; }
+	constexpr auto name_of(std::tera) -> prefix { return prefix{"tera", "T"}; }
+	constexpr auto name_of(std::peta) -> prefix { return prefix{"peta", "P"}; }
+	constexpr auto name_of(std::exa) -> prefix { return prefix{"exa", "E"}; }
 // if std::intmax_t can represent the numerator
 #if (-1U >> 63) > (1U << 8)
-	constexpr auto name_of(std::zetta) -> prefix { return {"zetta", "Z"}; }
+	constexpr auto name_of(std::zetta) -> prefix { return prefix{"zetta", "Z"}; }
 #endif
 #if (-1U >> 63) > (1U << 18)
-	constexpr auto name_of(std::yotta) -> prefix { return {"yotta", "Y"}; }
+	constexpr auto name_of(std::yotta) -> prefix { return prefix{"yotta", "Y"}; }
 #endif
 
 	KBLIB_NODISCARD constexpr auto largest_power_1000(std::intmax_t in) -> int {
