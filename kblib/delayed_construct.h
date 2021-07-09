@@ -112,8 +112,7 @@ class delayed_construct : protected std::optional<T> {
 	}
 
 	/**
-	 * @defgroup Equality operators.
-	 *
+	 * @name Equality
 	 * @brief Two delayed_construct<T> objects are equal if either neither
 	 * contains a value, or if both contain the same value. std::nullopt_t is
 	 * equivalent to a non-constructed object, and a value is equivalent to a
@@ -125,8 +124,7 @@ class delayed_construct : protected std::optional<T> {
 	///@}
 
 	/**
-	 * @defgroup Comparison operators.
-	 *
+	 * @name Comparison
 	 * @brief A non-constructed delayed_construct<T> object is less than any
 	 * constructed one. std::nullopt_t is equivalent to a non-constructed object,
 	 * and a value is equivalent to a constructed one.

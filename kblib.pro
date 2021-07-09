@@ -69,7 +69,8 @@ HEADERS += \
 DISTFILES += \
     LICENSE.txt \
     var_timings.log \
-    medfile
+    medfile \
+    Doxyfile
 
 VERSION = 0.2.1
 
