@@ -361,7 +361,7 @@ struct default_destroy {
  * operations on a polymorphic type hierarchy. Any operation allowed by the
  * traits must be usable for the entire hierarchy, not just the base class.
  *
- * Users of poly_obj may provide explicit instantiations of this type, as long
+ * Users of poly_obj may provide explicit specializations of this type, as long
  * as they satisfy all the requirements listed here. Alternatively, users may
  * write their own traits types, subject to the same restrictions.
  */
@@ -401,6 +401,8 @@ struct poly_obj_traits {
 	 * - a nothrow constructor template taking a single parameter of type T*
 	 *   (always nullptr) that produces a copy constructor for type T.
 	 * - a member function 'copy' which performs the actual copying.
+	 *
+	 * @see kblib::default_copy
 	 */
 	using copy_t = default_copy<copyable>;
 
@@ -415,6 +417,7 @@ struct poly_obj_traits {
 	 * - a member function 'move' which performs the actual moving.
 	 *
 	 * @note Move may fall back on copy.
+	 * @see kblib::default_move
 	 */
 	using move_t = default_move<movable, nothrow_movable, copyable>;
 
@@ -428,6 +431,8 @@ struct poly_obj_traits {
 	 * - a nothrow constructor template taking a single parameter of type T*
 	 *   (always nullptr) that produces a destroyer for type T.
 	 * - a member function 'destroy' which performs the actual destruction.
+	 *
+	 * @see kblib::default_destroy
 	 */
 	using destroy_t = default_destroy<Obj>;
 	static_assert(std::is_empty_v<destroy_t>);
@@ -442,17 +447,21 @@ using no_move_traits = poly_obj_traits<Obj, construct_type::none>;
  * @brief Inline polymorphic object. Generally mimics the interfaces of
  * std::optional and std::variant.
  *
- * Provides dynamic polymorphism without dynamic allocation. It is copy and move
- * constructible if and only if Obj is. The storage capacity can be overloaded
- * in case derived objects are larger than the base (this is expected to be
- * commonplace).
+ * Provides dynamic polymorphism without dynamic allocation. By default, it is
+ * copy and move constructible if and only if Obj is. The storage capacity can
+ * be overloaded in case derived objects are larger than the base (this is
+ * expected to be commonplace).
  *
  * @tparam Obj The base class type which the poly_obj will store. Must have a
  * virtual destructor unless a custom traits class is provided.
  * @tparam Capacity The inline capacity allocated for the contained object. May
- * be set larger than sizeof(Obj) to account for larger derived classes.
+ * be set larger than sizeof(Obj) to account for larger derived classes. A value
+ * of 0 indicates that the traits type should be used to obtain the capacity.
  * @tparam Traits A type providing member types and constants defining the
  * allowed operations on the object type.
+ *
+ * @see kblib::poly_obj_traits
+ * @nosubgrouping
  */
 template <typename Obj, std::size_t Capacity = 0,
           typename Traits = poly_obj_traits<Obj>>
@@ -466,6 +475,9 @@ class poly_obj
 	using ops_t = detail_poly::erased_construct<Traits>;
 
  public:
+	/**
+	 * @brief Equal to Capacity if specified, else Traits::default_capacity.
+	 */
 	static constexpr std::size_t capacity =
 	    Capacity > 0 ? Capacity : Traits::default_capacity;
 
@@ -475,7 +487,12 @@ class poly_obj
 	              "poly_obj of array type is disallowed.");
 
 	using base_type = Obj;
+	using traits_type = Traits;
 
+	/**
+	 * @name Construction
+	 */
+	///@{
 	/**
 	 * @brief The default constructor does not construct any contained object.
 	 */
@@ -485,37 +502,9 @@ class poly_obj
 	 */
 	constexpr poly_obj(std::nullptr_t) noexcept : poly_obj() {}
 	/**
-	 * @brief Constructs a copy of other.
-	 *
-	 * This function can only be called if Traits is copy-constructible.
-	 *
-	 * @param other A poly_obj to copy from.
-	 */
-	constexpr poly_obj(const poly_obj& other)
-	    : disabler(other), ops_t(other), valid(other.valid) {
-		if (valid) {
-			this->copy(data, other.get());
-		}
-	}
-	/**
-	 * @brief Moves the contained object of other into this.
-	 *
-	 * This function can only be called if Traits is move-constructible.
-	 *
-	 * @param other A poly_obj to move from.
-	 */
-	constexpr poly_obj(poly_obj&& other) noexcept(Traits::nothrow_movable)
-	    : disabler(std::move(other)), ops_t(std::move(other)),
-	      valid(other.valid) {
-		if (valid) {
-			this->move(data, other.get());
-		}
-	}
-
-	/**
 	 * @brief Copy-constructs the contained object from obj.
 	 *
-	 * This function can only be called is Traits is copy-constructible.
+	 * This function can only be called if Obj is copy-constructible.
 	 *
 	 * @param obj The object to copy.
 	 */
@@ -523,7 +512,7 @@ class poly_obj
 	/**
 	 * @brief Move-constructs the contained object from obj.
 	 *
-	 * This function can only be called if Traits is move-constructible.
+	 * This function can only be called if Obj is move-constructible.
 	 *
 	 * @param obj The object to move from.
 	 */
@@ -536,9 +525,7 @@ class poly_obj
 	 * @brief Constructs the contained object in-place without copying or moving.
 	 *
 	 * @param args Arguments to be passed to the constructor of Obj.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
+	 * @see kblib::fakestd::in_place
 	 */
 	template <typename... Args,
 	          typename std::enable_if_t<
@@ -553,9 +540,7 @@ class poly_obj
 	 * @brief Constructs the contained object in-place without copying or moving.
 	 *
 	 * @param args Arguments to be passed to the constructor of Obj.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
+	 * @see kblib::in_place_agg
 	 */
 	template <typename... Args,
 	          typename std::enable_if_t<
@@ -564,47 +549,6 @@ class poly_obj
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
 	    : ops_t(detail_poly::make_ops_t<Obj, Traits>()), valid(true) {
 		new (data) Obj{std::forward<Args>(args)...};
-	}
-
-	/**
-	 * @brief Destroys the contained object, if any, and then copies other as in
-	 * the copy constructor.
-	 *
-	 * @param other A poly_obj to copy from.
-	 * @return poly_obj& *this.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
-	 */
-	auto operator=(const poly_obj& other) & -> poly_obj& {
-		clear();
-		static_cast<ops_t&>(*this) = other;
-		if (other.valid) {
-			this->copy(data, static_cast<const void*>(other.data));
-			valid = true;
-		}
-		return *this;
-	}
-
-	/**
-	 * @brief Destroys the contained object, if any, and then moves from other as
-	 * in the move constructor.
-	 *
-	 * @param other A poly_obj to move from.
-	 * @return poly_obj& *this.
-	 *
-	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
-	 * is cleared and the exception rethrown.
-	 */
-	auto operator=(poly_obj&& other) & noexcept(Traits::nothrow_movable)
-	    -> poly_obj& {
-		clear();
-		static_cast<ops_t&>(*this) = other;
-		if (other.valid) {
-			this->move(data, static_cast<void*>(other.data));
-			valid = true;
-		}
-		return *this;
 	}
 
 	/**
@@ -666,7 +610,120 @@ class poly_obj
 		    "U must be move constructible if Traits::movable is true.");
 		return {tag<U, true>{}, std::forward<Args>(args)...};
 	}
+	///@}
 
+	/**
+	 * @name Copy/move operators
+	 */
+	///@{
+	/**
+	 * @brief Constructs a copy of other.
+	 *
+	 * This function can only be called if Traits::copyable is true.
+	 *
+	 * @param other A poly_obj to copy from.
+	 */
+	constexpr poly_obj(const poly_obj& other)
+	    : disabler(other), ops_t(other), valid(other.valid) {
+		if (valid) {
+			this->copy(data, other.get());
+		}
+	}
+	/**
+	 * @brief Moves the contained object of other into this. Note that the moved-
+	 * from poly_obj is not cleared; instead, its contained value is moved from.
+	 *
+	 * This function can only be called if Traits::movable is true.
+	 *
+	 * @param other A poly_obj to move from.
+	 */
+	constexpr poly_obj(poly_obj&& other) noexcept(Traits::nothrow_movable)
+	    : disabler(std::move(other)), ops_t(std::move(other)),
+	      valid(other.valid) {
+		if (valid) {
+			this->move(data, other.get());
+		}
+	}
+
+	/**
+	 * @brief Destroys the contained object, if any, and then copies other as in
+	 * the copy constructor.
+	 *
+	 * @param other A poly_obj to copy from.
+	 * @return poly_obj& *this.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
+	 */
+	auto operator=(const poly_obj& other) & -> poly_obj& {
+		clear();
+		static_cast<ops_t&>(*this) = other;
+		if (other.valid) {
+			this->copy(data, static_cast<const void*>(other.data));
+			valid = true;
+		}
+		return *this;
+	}
+
+	/**
+	 * @brief Destroys the contained object, if any, and then moves from other as
+	 * in the move constructor.
+	 *
+	 * @param other A poly_obj to move from.
+	 * @return poly_obj& *this.
+	 *
+	 * @exceptions In the event that the constructor of Obj throws, the poly_obj
+	 * is cleared and the exception rethrown.
+	 */
+	auto operator=(poly_obj&& other) & noexcept(Traits::nothrow_movable)
+	    -> poly_obj& {
+		clear();
+		static_cast<ops_t&>(*this) = other;
+		if (other.valid) {
+			this->move(data, static_cast<void*>(other.data));
+			valid = true;
+		}
+		return *this;
+	}
+	///@}
+
+	/**
+	 * @name Validity
+	 * @brief Check if the poly_obj contains a value.
+	 */
+	///@{
+	KBLIB_NODISCARD auto has_value() const& noexcept -> bool { return valid; }
+
+	explicit operator bool() const& noexcept { return has_value(); }
+	///@}
+
+	/**
+	 * @name Destruction
+	 */
+	///@{
+	/**
+	 * @brief Empties the poly_obj, reverting to a default-constructed state.
+	 */
+	auto clear() noexcept -> void {
+		if (valid) {
+			this->destroy(data);
+			valid = false;
+		}
+		static_cast<ops_t&>(*this) = {};
+	}
+
+	~poly_obj() noexcept {
+		if (valid) {
+			this->destroy(data);
+		}
+	}
+	///@}
+
+	/**
+	 * @name Object Access
+	 * @brief These functions allow access to the contained value.
+	 */
+	///@{
 	/**
 	 * @brief Returns a reference to the contained object.
 	 *
@@ -773,112 +830,8 @@ class poly_obj
 		return detail_poly::launder(reinterpret_cast<const Obj*>(data));
 	}
 
-	template <typename member_type>
-	return_assert_t<
-	    not std::is_member_function_pointer<member_type Obj::*>::value,
-	    member_type>&
-	operator->*(member_type Obj::*member) & noexcept {
-		return get()->*member;
-	}
-
-	template <typename member_type>
-	const return_assert_t<
-	    not std::is_member_function_pointer<member_type Obj::*>::value,
-	    member_type>&
-	operator->*(member_type Obj::*member) const& noexcept {
-		return get()->*member;
-	}
-
-	template <typename member_type>
-	return_assert_t<
-	    not std::is_member_function_pointer<member_type Obj::*>::value,
-	    member_type>&&
-	operator->*(member_type Obj::*member) && noexcept {
-		return std::move(get()->*member);
-	}
-
-	template <typename member_type>
-	const return_assert_t<
-	    not std::is_member_function_pointer<member_type Obj::*>::value,
-	    member_type>&&
-	operator->*(member_type Obj::*member) const&& noexcept {
-		return std::move(get()->*member);
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto
-	operator->*(member_type (Obj::*member)(Args...)) & noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (value->*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                     const) & noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (value->*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                     const) const& noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (value->*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto
-	operator->*(member_type (Obj::*member)(Args...) &) & noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (value->*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                     const&) & noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (value->*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                     const&) const& noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (value->*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto
-	operator->*(member_type (Obj::*member)(Args...) &&) && noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (std::move(*value).*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                     const&&) && noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (std::move(*value).*member)(std::forward<Args>(args)...);
-		};
-	}
-
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                     const&&) const&& noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (std::move(*value).*member)(std::forward<Args>(args)...);
-		};
-	}
-
 	/**
-	 * @brief Invokes the container function object, if Obj is a callable type.
+	 * @brief Invokes the contained function object, if Obj is a callable type.
 	 *
 	 * Invokes the contained object, if it exists. If it does not exist, the
 	 * behavior is undefined.
@@ -894,7 +847,7 @@ class poly_obj
 		return kblib::invoke(*get(), std::forward<Args>(args)...);
 	}
 	/**
-	 * @brief Invokes the container function object, if Obj is a callable type.
+	 * @brief Invokes the contained function object, if Obj is a callable type.
 	 *
 	 * Invokes the contained object, if it exists. If it does not exist, the
 	 * behavior is undefined.
@@ -911,30 +864,203 @@ class poly_obj
 	}
 
 	/**
-	 * @brief Check if the poly_obj contains a value.
+	 * @brief Access a member variable using a pointer to member
 	 */
-	KBLIB_NODISCARD auto has_value() const& noexcept -> bool { return valid; }
-
-	explicit operator bool() const& noexcept { return has_value(); }
+	template <typename member_type>
+	enable_if_t<not std::is_member_function_pointer<member_type Obj::*>::value,
+	            member_type>&
+	operator->*(member_type Obj::*member) & noexcept {
+		return get()->*member;
+	}
 
 	/**
-	 * @brief Empties the poly_obj, reverting to a default-constructed state.
+	 * @brief Access a member variable using a pointer to member
 	 */
-	auto clear() noexcept -> void {
-		if (valid) {
-			// get()->~Obj();
-			this->destroy(data);
-			valid = false;
-		}
-		static_cast<ops_t&>(*this) = {};
+	template <typename member_type>
+	const enable_if_t<
+	    not std::is_member_function_pointer<member_type Obj::*>::value,
+	    member_type>&
+	operator->*(member_type Obj::*member) const& noexcept {
+		return get()->*member;
 	}
 
-	~poly_obj() noexcept {
-		if (valid) {
-			// get()->~Obj();
-			this->destroy(data);
-		}
+	/**
+	 * @brief Access a member variable using a pointer to member
+	 */
+	template <typename member_type>
+	enable_if_t<not std::is_member_function_pointer<member_type Obj::*>::value,
+	            member_type>&&
+	operator->*(member_type Obj::*member) && noexcept {
+		return std::move(get()->*member);
 	}
+
+	/**
+	 * @brief Access a member variable using a pointer to member
+	 */
+	template <typename member_type>
+	const enable_if_t<
+	    not std::is_member_function_pointer<member_type Obj::*>::value,
+	    member_type>&&
+	operator->*(member_type Obj::*member) const&& noexcept {
+		return std::move(get()->*member);
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark unqualified on &
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto
+	operator->*(member_type (Obj::*member)(Args...)) & noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const on &
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const) & noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const on const&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const) const& noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const on &&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const) && noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark & on &
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto
+	operator->*(member_type (Obj::*member)(Args...) &) & noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const& on &
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const&) & noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const& on const&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const&) const& noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark && on &&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto
+	operator->*(member_type (Obj::*member)(Args...) &&) && noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (std::move(*value).*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const& on &&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const&) && noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark Unqualified on &&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto
+	operator->*(member_type (Obj::*member)(Args...)) && noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const&& on &&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const&&) && noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (std::move(*value).*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const&& on const&&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const&&) const&& noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (std::move(*value).*member)(std::forward<Args>(args)...);
+		};
+	}
+
+	/**
+	 * @brief Call a member function using a pointer to member
+	 * @remark const& on const&&
+	 */
+	template <typename member_type, typename... Args>
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	                                     const&) const&& noexcept {
+		return [member, value = get()](Args... args) -> decltype(auto) {
+			return (value->*member)(std::forward<Args>(args)...);
+		};
+	}
+	///@}
 
  private:
 	alignas(Obj) byte data[capacity]{};
