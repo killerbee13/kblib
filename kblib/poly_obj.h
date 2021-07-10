@@ -236,34 +236,28 @@ namespace detail_poly {
 	struct extract_derived_size<T, void_if_t<(T::max_derived_size > sizeof(T))>>
 	    : std::integral_constant<std::size_t, T::max_derived_size> {};
 
-#if KBLIB_USE_CXX17
-	using std::launder;
-#else
-	template <typename T>
-	auto launder(T* x) -> T* {
-		return x;
-	}
-#endif
-
 } // namespace detail_poly
 
 /// Does nothing; matches the copy construction signature.
-inline auto noop(void*, const void*) -> void* { return nullptr; }
-template <bool nothrow>
+template <typename T>
+inline auto noop(void*, const T*) -> T* {
+	return nullptr;
+}
 /// Does nothing; matches the move construction signature.
-inline auto noop(void*, void*) noexcept(nothrow) -> void* {
+template <typename T, bool nothrow>
+inline auto noop(void*, T*) noexcept(nothrow) -> T* {
 	return nullptr;
 }
 /// Implements type erasure for copy construction.
-template <bool copyable>
+template <typename Obj, bool copyable>
 struct default_copy {
  private:
 	template <typename T>
-	static auto do_copy(void* dest, const void* from) -> void* {
-		return static_cast<void*>(new (dest) T(*static_cast<const T*>(from)));
+	static auto do_copy(void* dest, const Obj* from) -> Obj* {
+		return static_cast<Obj*>(new (dest) T(*static_cast<const T*>(from)));
 	}
 
-	auto (*p_copy)(void* dest, const void* from) -> void* = &noop;
+	auto (*p_copy)(void* dest, const Obj* from) -> Obj* = &noop<Obj>;
 
  public:
 	/// Constructs an object which does nothing.
@@ -273,22 +267,22 @@ struct default_copy {
 	explicit default_copy(T*) noexcept : p_copy(&do_copy<T>) {}
 
 	/// Copies an object of previously-established type.
-	auto copy(void* dest, const void* from) -> void* {
+	KBLIB_NODISCARD auto copy(void* dest, const Obj* from) -> Obj* {
 		return p_copy(dest, from);
 	}
 };
-template <>
-struct default_copy<false> {
+template <typename Obj>
+struct default_copy<Obj, false> {
 	default_copy() noexcept = default;
 	template <typename T>
 	explicit default_copy(T*) noexcept {}
-	auto copy(void* dest, const void* from) -> void* = delete;
+	auto copy(void* dest, const Obj* from) -> Obj* = delete;
 };
 /**
  * @brief Implements copy construction using a virtual clone method.
  * This type is provided mostly as an example.
  */
-template <typename Obj, void* (Obj::*clone)(void*) const>
+template <typename Obj, auto (Obj::*clone)(void*) const->Obj*>
 struct clone_copy {
 	/// Does nothing
 	clone_copy() = default;
@@ -297,22 +291,21 @@ struct clone_copy {
 	clone_copy(T*) {}
 
 	/// Invokes the clone method to copy the object
-	auto copy(void* dest, const void* from) -> void* {
-		return static_cast<const Obj*>(from)->*clone(dest);
+	KBLIB_NODISCARD auto copy(void* dest, const Obj* from) -> Obj* {
+		return from->*clone(dest);
 	}
 };
 /// Implements type erasure for move construction.
-template <bool movable, bool nothrow, bool copyable>
+template <typename Obj, bool movable, bool nothrow, bool copyable>
 struct default_move {
  private:
 	template <typename T>
-	static auto do_move(void* dest, void* from) noexcept(nothrow) -> void* {
-		return static_cast<void*>(new (dest)
-		                              T(std::move(*static_cast<T*>(from))));
+	static auto do_move(void* dest, Obj* from) noexcept(nothrow) -> Obj* {
+		return static_cast<Obj*>(new (dest) T(std::move(*static_cast<T*>(from))));
 	}
 	// noexcept isn't working here on clang
-	auto (*p_move)(void* dest, void* from) noexcept(false)
-	    -> void* = &noop<nothrow>;
+	auto (*p_move)(void* dest, Obj* from) noexcept(false)
+	    -> Obj* = &noop<Obj, nothrow>;
 
  public:
 	/// Constructs an object which does nothing.
@@ -322,24 +315,26 @@ struct default_move {
 	explicit default_move(T*) noexcept : p_move(&do_move<T>) {}
 
 	/// Moves an object of previously-established type.
-	auto move(void* dest, void* from) noexcept(nothrow) -> void* {
+	KBLIB_NODISCARD auto move(void* dest, Obj* from) noexcept(nothrow) -> Obj* {
 		return p_move(dest, from);
 	}
 };
-template <bool nothrow>
-struct default_move<false, nothrow, false> {
+template <typename Obj, bool nothrow>
+struct default_move<Obj, false, nothrow, false> {
 	default_move() noexcept = default;
 	template <typename T>
 	explicit default_move(T*) noexcept {}
-	auto move(void* dest, void* from) noexcept(nothrow) -> void* = delete;
+	auto move(void* dest, Obj* from) noexcept(nothrow) -> Obj* = delete;
 };
 // fallback on copy
-template <bool nothrow>
-struct default_move<false, nothrow, true> : private default_copy<true> {
-	using default_copy::default_copy;
+template <typename Obj, bool nothrow>
+struct default_move<Obj, false, nothrow, true>
+    : private default_copy<Obj, true> {
+	using default_copy<Obj, true>::default_copy;
 
-	auto move(void* dest, const void* from) noexcept(nothrow) -> void* {
-		return copy(dest, from);
+	KBLIB_NODISCARD auto move(void* dest, const Obj* from) noexcept(nothrow)
+	    -> Obj* {
+		return this->copy(dest, from);
 	}
 };
 /**
@@ -351,7 +346,7 @@ struct default_destroy {
 	template <typename T>
 	explicit default_destroy(T*) noexcept {}
 
-	auto destroy(void* obj) -> void { static_cast<Obj*>(obj)->~Obj(); }
+	auto destroy(Obj* obj) -> void { obj->~Obj(); }
 	static_assert(std::has_virtual_destructor_v<Obj>,
 	              "Obj must have a virtual destructor");
 };
@@ -379,6 +374,12 @@ struct poly_obj_traits {
 	    detail_poly::extract_derived_size<Obj>::value;
 
 	/**
+	 * @brief How much to align the storage by.
+	 */
+	constexpr static std::size_t alignment =
+	    std::max(alignof(Obj), alignof(std::max_align_t));
+
+	/**
 	 * @brief If the object is copy constructible.
 	 */
 	constexpr static bool copyable = detail_poly::copyable(CType);
@@ -404,7 +405,7 @@ struct poly_obj_traits {
 	 *
 	 * @see kblib::default_copy
 	 */
-	using copy_t = default_copy<copyable>;
+	using copy_t = default_copy<Obj, copyable>;
 
 	/**
 	 * @brief Implements type erasure for move construction.
@@ -419,7 +420,7 @@ struct poly_obj_traits {
 	 * @note Move may fall back on copy.
 	 * @see kblib::default_move
 	 */
-	using move_t = default_move<movable, nothrow_movable, copyable>;
+	using move_t = default_move<Obj, movable, nothrow_movable, copyable>;
 
 	/**
 	 * @brief Implements type erasure for destruction. The default implementation
@@ -508,7 +509,7 @@ class poly_obj
 	 *
 	 * @param obj The object to copy.
 	 */
-	constexpr poly_obj(const Obj& obj) : valid(true) { new (data) Obj(obj); }
+	constexpr poly_obj(const Obj& obj) : ptr(new (data) Obj(obj)) {}
 	/**
 	 * @brief Move-constructs the contained object from obj.
 	 *
@@ -517,9 +518,7 @@ class poly_obj
 	 * @param obj The object to move from.
 	 */
 	constexpr poly_obj(Obj&& obj) noexcept(Traits::nothrow_movable)
-	    : valid(true) {
-		new (data) Obj(std::move(obj));
-	}
+	    : ptr(new (data) Obj(std::move(obj))) {}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
@@ -532,9 +531,8 @@ class poly_obj
 	              std::is_constructible<Obj, Args...>::value, int> = 0>
 	constexpr explicit poly_obj(fakestd::in_place_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<Obj, Traits>()), valid(true) {
-		new (data) Obj(std::forward<Args>(args)...);
-	}
+	    : ops_t(detail_poly::make_ops_t<Obj, Traits>()),
+	      ptr(new (data) Obj(std::forward<Args>(args)...)) {}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
@@ -547,9 +545,8 @@ class poly_obj
 	              std::is_constructible<Obj, Args...>::value, int> = 0>
 	constexpr explicit poly_obj(kblib::in_place_agg_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<Obj, Traits>()), valid(true) {
-		new (data) Obj{std::forward<Args>(args)...};
-	}
+	    : ops_t(detail_poly::make_ops_t<Obj, Traits>()),
+	      ptr(new (data) Obj{std::forward<Args>(args)...}) {}
 
 	/**
 	 * @brief Constructs a poly_obj containing an object of derived type.
@@ -568,6 +565,8 @@ class poly_obj
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
 		static_assert(sizeof(U) <= capacity,
 		              "U must fit inside of the inline capacity.");
+		static_assert(alignof(U) <= Traits::alignment,
+		              "U must be no more aligned than Traits::alignment");
 		static_assert(std::is_base_of<Obj, U>::value and
 		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
@@ -598,6 +597,8 @@ class poly_obj
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
 		static_assert(sizeof(U) <= capacity,
 		              "U must fit inside of the inline capacity.");
+		static_assert(alignof(U) <= Traits::alignment,
+		              "U must be no more aligned than Traits::alignment");
 		static_assert(std::is_base_of<Obj, U>::value and
 		                  std::is_convertible<U*, Obj*>::value,
 		              "Obj must be an accessible base of Obj.");
@@ -623,10 +624,9 @@ class poly_obj
 	 *
 	 * @param other A poly_obj to copy from.
 	 */
-	constexpr poly_obj(const poly_obj& other)
-	    : disabler(other), ops_t(other), valid(other.valid) {
-		if (valid) {
-			this->copy(data, other.get());
+	constexpr poly_obj(const poly_obj& other) : disabler(other), ops_t(other) {
+		if (other.ptr) {
+			ptr = this->copy(data, other.ptr);
 		}
 	}
 	/**
@@ -638,10 +638,9 @@ class poly_obj
 	 * @param other A poly_obj to move from.
 	 */
 	constexpr poly_obj(poly_obj&& other) noexcept(Traits::nothrow_movable)
-	    : disabler(std::move(other)), ops_t(std::move(other)),
-	      valid(other.valid) {
-		if (valid) {
-			this->move(data, other.get());
+	    : disabler(std::move(other)), ops_t(std::move(other)) {
+		if (other.ptr) {
+			ptr = this->move(data, other.ptr);
 		}
 	}
 
@@ -656,11 +655,13 @@ class poly_obj
 	 * is cleared and the exception rethrown.
 	 */
 	auto operator=(const poly_obj& other) & -> poly_obj& {
+		if (this == &other) {
+			return *this;
+		}
 		clear();
 		static_cast<ops_t&>(*this) = other;
-		if (other.valid) {
-			this->copy(data, static_cast<const void*>(other.data));
-			valid = true;
+		if (other.ptr) {
+			ptr = this->copy(data, other.ptr);
 		}
 		return *this;
 	}
@@ -677,11 +678,13 @@ class poly_obj
 	 */
 	auto operator=(poly_obj&& other) & noexcept(Traits::nothrow_movable)
 	    -> poly_obj& {
+		if (this == &other) {
+			return *this;
+		}
 		clear();
 		static_cast<ops_t&>(*this) = other;
-		if (other.valid) {
-			this->move(data, static_cast<void*>(other.data));
-			valid = true;
+		if (other.ptr) {
+			ptr = this->move(data, other.ptr);
 		}
 		return *this;
 	}
@@ -692,7 +695,7 @@ class poly_obj
 	 * @brief Check if the poly_obj contains a value.
 	 */
 	///@{
-	KBLIB_NODISCARD auto has_value() const& noexcept -> bool { return valid; }
+	KBLIB_NODISCARD auto has_value() const& noexcept -> bool { return ptr; }
 
 	explicit operator bool() const& noexcept { return has_value(); }
 	///@}
@@ -705,16 +708,16 @@ class poly_obj
 	 * @brief Empties the poly_obj, reverting to a default-constructed state.
 	 */
 	auto clear() noexcept -> void {
-		if (valid) {
-			this->destroy(data);
-			valid = false;
+		if (ptr) {
+			this->destroy(ptr);
+			ptr = nullptr;
 		}
 		static_cast<ops_t&>(*this) = {};
 	}
 
 	~poly_obj() noexcept {
-		if (valid) {
-			this->destroy(data);
+		if (ptr) {
+			this->destroy(ptr);
 		}
 	}
 	///@}
@@ -789,9 +792,7 @@ class poly_obj
 	 *
 	 * @return Obj* A pointer to the contained object.
 	 */
-	KBLIB_NODISCARD auto get() & noexcept -> Obj* {
-		return detail_poly::launder(reinterpret_cast<Obj*>(data));
-	}
+	KBLIB_NODISCARD auto get() & noexcept -> Obj* { return ptr; }
 	/**
 	 * @brief Returns a pointer to the contained object.
 	 *
@@ -801,9 +802,7 @@ class poly_obj
 	 *
 	 * @return const Obj* A pointer to the contained object.
 	 */
-	KBLIB_NODISCARD auto get() const& noexcept -> const Obj* {
-		return detail_poly::launder(reinterpret_cast<const Obj*>(data));
-	}
+	KBLIB_NODISCARD auto get() const& noexcept -> const Obj* { return ptr; }
 
 	/**
 	 * @brief Returns a pointer to the contained object.
@@ -814,9 +813,7 @@ class poly_obj
 	 *
 	 * @return Obj* A pointer to the contained object.
 	 */
-	KBLIB_NODISCARD auto operator->() & noexcept -> Obj* {
-		return detail_poly::launder(reinterpret_cast<Obj*>(data));
-	}
+	KBLIB_NODISCARD auto operator->() & noexcept -> Obj* { return ptr; }
 	/**
 	 * @brief Returns a pointer to the contained object.
 	 *
@@ -827,7 +824,7 @@ class poly_obj
 	 * @return const Obj* A pointer to the contained object.
 	 */
 	KBLIB_NODISCARD auto operator->() const& noexcept -> const Obj* {
-		return detail_poly::launder(reinterpret_cast<const Obj*>(data));
+		return ptr;
 	}
 
 	/**
@@ -1063,8 +1060,8 @@ class poly_obj
 	///@}
 
  private:
-	alignas(Obj) byte data[capacity]{};
-	bool valid{};
+	alignas(Traits::alignment) byte data[capacity]{};
+	Obj* ptr{};
 
 	template <typename U, bool = false>
 	struct tag {};
@@ -1072,16 +1069,14 @@ class poly_obj
 	template <typename U, typename... Args>
 	poly_obj(tag<U>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<U, Traits>()), valid(true) {
-		new (data) U(std::forward<Args>(args)...);
-	}
+	    : ops_t(detail_poly::make_ops_t<U, Traits>()),
+	      ptr(new (data) U(std::forward<Args>(args)...)) {}
 
 	template <typename U, typename... Args>
 	poly_obj(tag<U, true>, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<U, Traits>()), valid(true) {
-		new (data) U{std::forward<Args>(args)...};
-	}
+	    : ops_t(detail_poly::make_ops_t<U, Traits>()),
+	      ptr(new (data) U{std::forward<Args>(args)...}) {}
 };
 
 template <bool warn>
