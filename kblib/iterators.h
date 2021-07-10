@@ -405,7 +405,7 @@ class range_t {
 	/**
 	 * @brief Query whether the range will generate any elements.
 	 */
-	constexpr auto empty() const noexcept -> bool { return size() != 0; }
+	constexpr auto empty() const noexcept -> bool { return size() == 0; }
 
 	template <typename Integral>
 	constexpr auto operator[](Integral x) const noexcept

@@ -1,48 +1,136 @@
 #include "kblib/iterators.h"
+#include "kblib/build.h"
+
 #include "catch.hpp"
+
 #include <iterator>
+#include <list>
 #include <set>
 #include <sstream>
 
 TEST_CASE("to_pointer") {
 	auto smart_ptr = std::make_unique<int>(0);
 	auto* raw_pointer = kblib::to_pointer(smart_ptr);
-	REQUIRE(raw_pointer == smart_ptr.get());
+	CHECK(raw_pointer == smart_ptr.get());
 	const auto& smart_ptr_const_ref = smart_ptr;
 	auto* raw_pointer2 = kblib::to_pointer(smart_ptr_const_ref);
-	REQUIRE(raw_pointer2 == smart_ptr_const_ref.get());
+	CHECK(raw_pointer2 == smart_ptr_const_ref.get());
 }
 
 TEST_CASE("range") {
 	// range supports iterators and other similar types.
 	std::vector<int> v(100);
-	REQUIRE(v.begin() == *kblib::range(v.begin(), v.end()).begin());
-	REQUIRE(v.end() == *kblib::range(v.begin(), v.end()).end());
+	CHECK(v.begin() == *kblib::range(v.begin(), v.end()).begin());
+	CHECK(v.end() == *kblib::range(v.begin(), v.end()).end());
 
 	std::vector<int> r{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 	auto r2 = kblib::range(10);
-	REQUIRE(r.size() == r2.size());
-	REQUIRE(std::equal(r.begin(), r.end(), r2.begin()));
-	REQUIRE(r2[0] == 0);
-	REQUIRE(r2[9] == 9);
-	REQUIRE(r2[-1] == -1);
+	CHECK(r.size() == r2.size());
+	CHECK(std::equal(r.begin(), r.end(), r2.begin()));
+	CHECK(r2[0] == 0);
+	CHECK(r2[9] == 9);
+	CHECK(r2[-1] == -1);
+	SECTION("size") {
+		CHECK(kblib::range(0, 10, 1).size() == 10);
+		CHECK(kblib::range(10).size() == 10);
+		CHECK(kblib::range(0, 10, 2).size() == 5);
+		CHECK(kblib::range(0, 1).size() == 1);
+		CHECK(kblib::range(0, 0).size() == 0);
+		CHECK(kblib::range(0, 0, 1).size() == 0);
+
+		CHECK(kblib::range(10, 20, 1).size() == 10);
+		CHECK(kblib::range(10, 20, 2).size() == 5);
+		CHECK(kblib::range(10, 11).size() == 1);
+		CHECK(kblib::range(10, 10).size() == 0);
+		CHECK(kblib::range(10, 10, 1).size() == 0);
+	}
+	SECTION("empty") {
+		CHECK(kblib::range(0, 0, 1).empty());
+		CHECK(kblib::range(0, 0, 2).empty());
+		CHECK(kblib::range(10, 10).empty());
+
+		CHECK(not kblib::range(0, 10, 1).empty());
+		CHECK(not kblib::range(0, 10, 2).empty());
+	}
 }
 
 TEST_CASE("range conversion") {
 	SECTION("vector") {
 		auto r = kblib::range(2, 5);
 		auto v = std::vector<int>(r);
-		REQUIRE(v.size() == r.size());
-		REQUIRE(std::equal(v.begin(), v.end(), r.begin()));
+		CHECK(v.size() == r.size());
+		CHECK(std::equal(v.begin(), v.end(), r.begin()));
 	}
 	SECTION("string") {
 		auto r = kblib::range(+'a', 'z' + 1);
 		auto v = std::string(r);
-		REQUIRE(v == "abcdefghijklmnopqrstuvwxyz");
-		REQUIRE(v.size() == r.size());
-		REQUIRE(std::equal(v.begin(), v.end(), r.begin()));
+		CHECK(v == "abcdefghijklmnopqrstuvwxyz");
+		CHECK(v.size() == r.size());
+		CHECK(std::equal(v.begin(), v.end(), r.begin()));
 	}
 	auto x = std::set<int>(kblib::range(0, 10));
+}
+
+TEST_CASE("range comparison") {
+	auto equal = [](auto r1, auto r2) {
+		auto r1b = r1.begin();
+		auto r1e = r1.end();
+		auto r2b = r2.begin();
+		auto r2e = r2.end();
+		return std::distance(r1b, r1e) == std::distance(r2b, r2e) and
+		       kblib::equal(r1b, r1e, r2b);
+	};
+
+	SECTION("equivalency") {
+
+		auto target10 = std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+		auto target10m = std::vector<int>{0, -1, -2, -3, -4, -5, -6, -7, -8, -9};
+		auto target10r = std::vector<int>{10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+
+		CHECK(equal(kblib::range(0, 10), target10));
+		CHECK(equal(kblib::range(10), target10));
+		CHECK(equal(kblib::range(0, 10, kblib::incrementer{}), target10));
+
+		CHECK(equal(kblib::range(0, 10, 2), std::vector<int>{0, 2, 4, 6, 8}));
+
+		CHECK(equal(kblib::range(10, 0, -1), target10r));
+		CHECK(equal(kblib::range(10, 0, kblib::decrementer{}), target10r));
+
+		CHECK(equal(kblib::range(0, -10, -1), target10m));
+		CHECK(equal(kblib::range(0, -10), target10m));
+
+		CHECK(equal(kblib::range(0, 11, 2), kblib::range(0, 12, 2)));
+	}
+
+	SECTION("comparisons") {
+
+		CHECK(kblib::range(0, 0, 1) == kblib::range(1, 1, 2));
+		CHECK(kblib::range(100, 100, 1) == kblib::range(0, 0, 2));
+		CHECK(kblib::range(0, 10) != kblib::range(10, 0));
+		CHECK(kblib::range(0, 11, 2) != kblib::range(0, 10, 2));
+		CHECK(kblib::range(0, 0, 1) != kblib::range(0, 1, 2));
+	}
+
+	SECTION("buildiota equivalency") {
+		auto l = kblib::buildiota<std::list<int>>(10, 10, -1);
+		CHECK(equal(kblib::range(10, 0, -1), l));
+	}
+}
+
+TEST_CASE("range from iterators") {
+	std::string str = "abcdefghijklmnopqrstuvwxyz";
+	// Just asserting that this loop compiles.
+	for ([[gnu::unused]] std::string::iterator c :
+	     kblib::range(str.begin(), str.end())) {
+	}
+}
+
+TEST_CASE("ranges overflow") {
+	unsigned char c{};
+	for (auto i : kblib::range(static_cast<unsigned char>(255))) {
+		c = i;
+	}
+	CHECK(c == 254);
 }
 
 #if KBLIB_USE_CXX17
