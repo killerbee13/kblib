@@ -467,6 +467,28 @@ class range_t {
 	}
 
  private:
+	template <typename T>
+	static constexpr enable_if_t<not std::is_signed<T>::value, std::true_type>
+	positive(const T&) {
+		return {};
+	}
+	template <typename T>
+	static constexpr enable_if_t<std::is_signed<T>::value, bool> positive(T v) {
+		return v >= 0;
+	}
+	template <typename R, typename T,
+	          enable_if_t<std::is_integral<R>::value and
+	                      std::is_integral<T>::value>* = nullptr>
+	static constexpr auto signed_cast(T v) {
+		return kblib::signed_cast<R>(v);
+	}
+	template <typename R, typename T,
+	          enable_if_t<not(std::is_integral<R>::value and
+	                          std::is_integral<T>::value)>* = nullptr>
+	static constexpr auto signed_cast(T v) {
+		return v;
+	}
+
 	constexpr auto normalize() noexcept(nothrow_steppable) -> void {
 		if (min == max) {
 		} else if (step == 0) {
@@ -484,8 +506,12 @@ class range_t {
 			} else {
 				auto remainder = difference % step;
 				if (remainder != 0) {
-					max = max + step;
 					max = max - remainder;
+					assert(
+					    not(positive(max) and
+					        (signed_cast<Delta>(std::numeric_limits<Value>::max() -
+					                            max) < step)));
+					max = max + step;
 				}
 			}
 		}
@@ -594,6 +620,12 @@ constexpr auto range(Value max) -> range_t<Value, incrementer> {
 }
 
 #if KBLIB_USE_CXX17
+
+template <typename Value, typename Delta>
+class irange_t {};
+
+template <typename Value, typename Delta = int>
+constexpr auto irange(Value min, Value max, Delta step = 0) {}
 
 template <typename T>
 class enumerator_iterator;

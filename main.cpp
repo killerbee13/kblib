@@ -88,7 +88,7 @@ TEST_CASE("main") {
 		};
 		for (auto test : lengths) {
 			if (test.first != test.second) {
-				std::cout << "digitsOf failure at: " << i << ".\nExpected "
+				std::cout << "count_digits failure at: " << i << ".\nExpected "
 				          << test.first << ", got " << test.second << ".\n";
 				break;
 			}

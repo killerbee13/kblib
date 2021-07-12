@@ -109,27 +109,28 @@ static std::ostream& log_location = std::cout;
 auto linear(std::size_t i) -> std::size_t { return i; }
 
 TEST_CASE("insertion sort performance") {
-	auto time_and_log = [&](auto&& f, std::size_t quick = 30,
+	auto time_and_log = [&](auto line, auto&& f, std::size_t quick = 30,
 	                        std::size_t slow = 10000,
 	                        std::size_t(*O)(std::size_t) = linear) {
 		auto time_fast = f(quick) / O(quick);
 		double time_slow = f(slow) / O(slow);
 		double error = time_slow / time_fast;
-		log_location << __FILE__ ":" << std::left << __LINE__ << ": \t"
-		             << time_fast << "\t " << std::setw(12) << time_slow << '\t'
+		log_location << __FILE__ ":" << std::left << line << ": \t" << time_fast
+		             << "\t " << std::setw(12) << time_slow << '\t'
 		             << std::setw(14) << error << '\t' << time_slow * 10000
 		             << '\t' << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
 		REQUIRE(error < 1.05);
 	};
+#define TIME(...) time_and_log(__LINE__, __VA_ARGS__)
 
 	SECTION("labels") {
 		using namespace std::literals;
 		log_location << __FILE__ ":" << std::left << __LINE__
 		             << ": \t/el (30)\t /el (10000)"
 		                "\tsuperlinearity\ttotal (10000)\t"
-		                "total (30)\n-"
+		                "total (30)\n"
 		             << kblib::repeat(" -"s, 60) << '\n';
 	}
 
@@ -147,7 +148,7 @@ TEST_CASE("insertion sort performance") {
 			return static_cast<double>(duration.count());
 		};
 
-		time_and_log(time_per);
+		TIME(time_per);
 	}
 	SECTION("insertion_sort_copy on reverse sorted data is slow") {
 		auto time_per = [](std::size_t size) {
@@ -163,7 +164,8 @@ TEST_CASE("insertion sort performance") {
 			return static_cast<double>(duration.count());
 		};
 
-		time_and_log(time_per, 30, 1000, [](auto i) { return i * i; });
+		TIME(
+		    time_per, 30, 1000, +[](std::size_t i) { return i * i; });
 	}
 	SECTION("adaptive_insertion_sort_copy on sorted data is fast") {
 		auto time_per = [](std::size_t size) {
@@ -179,7 +181,7 @@ TEST_CASE("insertion sort performance") {
 			return static_cast<double>(duration.count());
 		};
 
-		time_and_log(time_per);
+		TIME(time_per);
 	}
 	SECTION("adaptive_insertion_sort_copy on reverse sorted data is fast") {
 		auto time_per = [](std::size_t size) {
@@ -195,7 +197,7 @@ TEST_CASE("insertion sort performance") {
 			return static_cast<double>(duration.count());
 		};
 
-		time_and_log(time_per);
+		TIME(time_per);
 	}
 	SECTION("insertion_sort_copy on mostly sorted data is fast") {
 		std::minstd_rand rng{std::random_device{}()};
@@ -225,11 +227,11 @@ TEST_CASE("insertion sort performance") {
 		             << __FILE__ ":" << std::left << __LINE__
 		             << ": \t/el (s) \t /el (v)    "
 		                "\tsuperlinearity\ttotal (v)    \t"
-		                "total (s)\n-"
+		                "total (s)\n"
 		             << kblib::repeat(" -"s, 60) << '\n';
 
-		auto time_fast = time_per(n, 0) / (n);
-		auto time_slow = time_per(n, v) / (n);
+		auto time_fast = time_per(n, 0) / n;
+		auto time_slow = time_per(n, v) / n;
 		auto ratio = time_slow / time_fast;
 		auto error = ratio / (n / v);
 
@@ -242,6 +244,7 @@ TEST_CASE("insertion sort performance") {
 		REQUIRE(error < 1.05);
 	}
 	log_location << std::flush;
+#undef TIME
 }
 
 TEST_CASE("byte extraction") {

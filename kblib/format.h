@@ -48,13 +48,31 @@ namespace kblib {
  */
 template <typename Number>
 constexpr auto count_digits(Number val)
-    -> enable_if_t<not std::is_unsigned<Number>::value, int> {
+    -> enable_if_t<std::is_floating_point<Number>::value, int> {
 	if (val == 0) {
 		return 1;
-	} else if (std::is_floating_point<Number>::value) {
-		return std::numeric_limits<Number>::digits10;
 	} else {
-		return std::ceil(std::log10(std::abs(val) + 1)) + (val < 0);
+		return std::numeric_limits<Number>::digits10;
+	}
+}
+
+/**
+ * @brief Calculates the number of decimal digits needed to represent a number,
+ * plus one for negative numbers.
+ *
+ * @param val The number to be checked.
+ * @return int The number of digits needed to represent a number.
+ */
+template <typename Number>
+constexpr auto count_digits(Number val)
+    -> enable_if_t<not std::is_floating_point<Number>::value and
+                       std::is_signed<Number>::value,
+                   int> {
+	if (val == 0 or val == 1) {
+		return 1;
+	} else {
+		return std::ceil(std::nextafter(std::log10(std::fabs(val)), INFINITY)) +
+		       (val < 0);
 	}
 }
 
@@ -69,6 +87,8 @@ constexpr auto count_digits(Number val)
     -> enable_if_t<std::is_unsigned<Number>::value, int> {
 	if (val == 0) {
 		return 1;
+	} else if (val == static_cast<Number>(-1)) {
+		return std::ceil(std::log10(val));
 	} else {
 		return std::ceil(std::log10(val + 1));
 	}
