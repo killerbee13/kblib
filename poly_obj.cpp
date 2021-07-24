@@ -358,7 +358,9 @@ struct Base {
 	Base(Base&&) noexcept = default;
 	virtual ~Base() = default;
 
-	constexpr static inline std::size_t max_derived_size =
+	// this is used, but the compiler doesn't think so because it's in a .cpp
+	// file
+	[[maybe_unused]] constexpr static inline std::size_t max_derived_size =
 	    sizeof(good_base) + sizeof(unsigned);
 };
 

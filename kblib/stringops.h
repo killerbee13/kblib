@@ -219,9 +219,9 @@ KBLIB_NODISCARD auto strsize(Str&& str) -> std::size_t {
 	} else if constexpr (is_character_v<std::decay_t<Str>>) {
 		return 1;
 	} else if constexpr (std::is_integral_v<std::decay_t<Str>>) {
-		return count_digits(str);
+		return to_unsigned(count_digits(str));
 	} else if constexpr (std::is_floating_point_v<std::decay_t<Str>>) {
-		return count_digits(str);
+		return to_unsigned(count_digits(str));
 	} else {
 		return fakestd::size(str);
 	}

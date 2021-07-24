@@ -63,7 +63,7 @@ template <typename D = std::string,
 auto get_contents(std::istream& in, D& out) -> auto {
 	in.seekg(0, std::ios::end);
 	auto size = in.tellg();
-	out.resize(size);
+	out.resize(static_cast<std::size_t>(size));
 	in.seekg(0, std::ios::beg);
 	in.read(reinterpret_cast<char*>(out.data()), size);
 	return size;
@@ -74,7 +74,7 @@ template <typename D = std::string,
 auto get_contents(std::istream& in, D& out) -> auto {
 	in.seekg(0, std::ios::end);
 	auto size = in.tellg();
-	out.resize(size);
+	out.resize(static_cast<std::size_t>(size));
 	in.seekg(0, std::ios::beg);
 	std::copy((std::istreambuf_iterator<char>(in)),
 	          std::istreambuf_iterator<char>(), out.begin());
@@ -212,7 +212,7 @@ auto nl(std::basic_istream<CharT, Traits>& is)
     -> std::basic_istream<CharT, Traits>& {
 	auto n = static_cast<typename Traits::int_type>(is.widen('\n'));
 	for (typename Traits::int_type c = is.peek();
-	     is and c != kblib::eof<CharT> and
+	     is and c != Traits::eof() and
 	     std::isspace(static_cast<CharT>(c), is.getloc()) and c != n;
 	     c = is.peek()) {
 		is.ignore();
@@ -260,14 +260,18 @@ constexpr static bool unicode_widen_v = unicode_widen<T, U>::value;
 template <typename CharT>
 auto unformatted_expect(CharT c) -> auto {
 	auto _f = [c](auto& istream) -> decltype(istream) {
-		using SCharT = typename std::decay<decltype(istream)>::type::char_type;
+		using SCharT = typename std::decay_t<decltype(istream)>::char_type;
 #if KBLIB_USE_CHAR8_t
 		static_assert(std::is_same_v<CharT, char_type> or
 		                  (not std::is_same_v<CharT, char8_t> and
 		                   not std::is_same_v<char_type, char8_t>),
 		              "No support for char8_t conversions.");
 #endif
-		auto widen_equal = [&](SCharT d) {
+		auto widen_equal = [&](auto di) {
+			if (di == std::decay_t<decltype(istream)>::traits_type::eof()) {
+				return false;
+			}
+			auto d = static_cast<SCharT>(di);
 			// Feasible:
 			// T     -> T      : c == d
 			// T     -> char   : istream.widen(c) == d
@@ -439,7 +443,7 @@ namespace detail_io {
 			std::streamsize successful = std::min(a_ct, b_ct);
 
 			if (successful == count) {
-				this->pbump(-count);
+				this->pbump(static_cast<int>(-count));
 				return true;
 			} else {
 				fail();
@@ -453,7 +457,7 @@ namespace detail_io {
 
 		auto fail() noexcept -> void {
 			this->setp(buffer.data(), buffer.data() + buffer.size() - 1);
-			this->pbump(buffer.size() - 1);
+			this->pbump(static_cast<int>(buffer.size() - 1));
 			return;
 		}
 

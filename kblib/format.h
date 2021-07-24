@@ -71,7 +71,8 @@ constexpr auto count_digits(Number val)
 	if (val == 0 or val == 1) {
 		return 1;
 	} else {
-		return std::ceil(std::nextafter(std::log10(std::fabs(val)), INFINITY)) +
+		return static_cast<int>(std::ceil(
+		           std::nextafter(std::log10(std::fabs(val)), INFINITY))) +
 		       (val < 0);
 	}
 }
@@ -88,9 +89,9 @@ constexpr auto count_digits(Number val)
 	if (val == 0) {
 		return 1;
 	} else if (val == static_cast<Number>(-1)) {
-		return std::ceil(std::log10(val));
+		return static_cast<int>(std::ceil(std::log10(val)));
 	} else {
-		return std::ceil(std::log10(val + 1));
+		return static_cast<int>(std::ceil(std::log10(val + 1)));
 	}
 }
 
@@ -107,9 +108,11 @@ constexpr auto count_digits(Number val, int base) -> int {
 	if (val == 0) {
 		return 1;
 	} else if (std::is_floating_point<Number>::value) {
-		return std::ceil(std::numeric_limits<Number>::digits * std::logb(base));
+		return static_cast<int>(
+		    std::ceil(std::numeric_limits<Number>::digits * std::logb(base)));
 	} else {
-		return std::ceil(std::log(std::abs(val) + 1) / std::log(base)) +
+		return static_cast<int>(
+		           std::ceil(std::log(std::abs(val) + 1) / std::log(base))) +
 		       (val < 0);
 	}
 }

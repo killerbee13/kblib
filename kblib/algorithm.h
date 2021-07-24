@@ -244,6 +244,19 @@ KBLIB_NODISCARD constexpr auto sum(Range&& r) -> auto {
 	return kblib::accumulate(first, last, std::move(init));
 }
 
+template <typename InputIt, typename EndIt, typename OutputIt, typename T,
+          typename BinaryAccumulation, typename UnaryTransform>
+constexpr auto transform_exclusive_scan(InputIt first, EndIt last,
+                                        OutputIt d_first, T init,
+                                        BinaryAccumulation accum,
+                                        UnaryTransform proj) -> OutputIt {
+	while (first != last) {
+		*d_first++ =
+		    kblib::exchange(init, accum(std::move(init), proj(*first++)));
+	}
+	return d_first;
+}
+
 /**
  * @brief Finds a value in range [begin, end). If not found, returns end. It
  * also allows for a sentinel end iterator.
@@ -424,7 +437,7 @@ template <typename ForwardIt, typename EndIt, typename Elem>
 KBLIB_NODISCARD constexpr auto
 find_in(ForwardIt begin, EndIt end,
         const Elem& value) noexcept(noexcept(*begin == value)) -> size_t {
-	return kblib::find(begin, end, value) - begin;
+	return to_unsigned(kblib::find(begin, end, value) - begin);
 }
 
 /**
@@ -441,7 +454,7 @@ KBLIB_NODISCARD constexpr auto
 find_in_if(ForwardIt begin, EndIt end,
            UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin)))
     -> size_t {
-	return kblib::find_if(begin, end, pred) - begin;
+	return to_unsigned(kblib::find_if(begin, end, pred) - begin);
 }
 /**
  * @brief Find the offset of the first element for which p returns false. It
@@ -457,7 +470,7 @@ KBLIB_NODISCARD constexpr auto find_in_if_not(
     ForwardIt begin, EndIt end,
     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin)))
     -> size_t {
-	return kblib::find_if_not(begin, end, pred) - begin;
+	return to_unsigned(kblib::find_if_not(begin, end, pred) - begin);
 }
 
 // find_last_in:
@@ -476,7 +489,7 @@ template <typename ForwardIt, typename EndIt, typename Elem>
 KBLIB_NODISCARD constexpr auto
 find_last_in(ForwardIt begin, EndIt end,
              const Elem& value) noexcept(noexcept(*begin == value)) -> size_t {
-	return kblib::find_last(begin, end, value) - begin;
+	return to_unsigned(kblib::find_last(begin, end, value) - begin);
 }
 
 /**
@@ -492,7 +505,7 @@ KBLIB_NODISCARD constexpr auto find_last_in_if(
     ForwardIt begin, EndIt end,
     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin)))
     -> size_t {
-	return kblib::find_last_if(begin, end, pred) - begin;
+	return to_unsigned(kblib::find_last_if(begin, end, pred) - begin);
 }
 /**
  * @brief Find the offset of the last element for which p returns false. It also
@@ -508,7 +521,7 @@ KBLIB_NODISCARD constexpr auto find_last_in_if_not(
     ForwardIt begin, EndIt end,
     UnaryPredicate pred) noexcept(noexcept(kblib::invoke(pred, *begin)))
     -> size_t {
-	return kblib::find_last_if_not(begin, end, pred) - begin;
+	return to_unsigned(kblib::find_last_if_not(begin, end, pred) - begin);
 }
 
 /**
@@ -527,13 +540,13 @@ find_in(const Container& c, const T& value) noexcept(
     -> size_t {
 	using std::begin;
 	using std::end;
-	return kblib::find(begin(c), end(c), value) - begin(c);
+	return to_unsigned(kblib::find(begin(c), end(c), value) - begin(c));
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename T>
 KBLIB_NODISCARD constexpr auto find_in(ExecutionPolicy&& policy,
                                          const Container& c, const T& v) -> size_t {
-  return std::find(policy, std::begin(c), std::end(c), v) - std::begin(c);
+  return to_unsigned(std::find(policy, std::begin(c), std::end(c), v) - std::begin(c));
 }
 #endif
 
@@ -555,7 +568,7 @@ find_in_if(const Container& c, UnaryPredicate pred) noexcept(noexcept(
     -> size_t {
 	using std::begin;
 	using std::end;
-	return kblib::find_if(begin(c), end(c), pred) - begin(c);
+	return to_unsigned(kblib::find_if(begin(c), end(c), pred) - begin(c));
 }
 /**
  * @brief Find the first element in c for which p returns false and return the
@@ -575,7 +588,7 @@ find_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
     -> size_t {
 	using std::begin;
 	using std::end;
-	return kblib::find_if_not(begin(c), end(c), pred) - begin(c);
+	return to_unsigned(kblib::find_if_not(begin(c), end(c), pred) - begin(c));
 }
 #if 0
 template<typename ExecutionPolicy, typename Container, typename UnaryPredicate>
@@ -609,7 +622,7 @@ find_last_in(const Container& c, const T& value) noexcept(
     -> size_t {
 	using std::begin;
 	using std::end;
-	return kblib::find_last(begin(c), end(c), value) - begin(c);
+	return to_unsigned(kblib::find_last(begin(c), end(c), value) - begin(c));
 }
 
 /**
@@ -630,7 +643,7 @@ find_last_in_if(const Container& c, UnaryPredicate pred) noexcept(noexcept(
     -> size_t {
 	using std::begin;
 	using std::end;
-	return kblib::find_last_if(begin(c), end(c), pred) - begin(c);
+	return to_unsigned(kblib::find_last_if(begin(c), end(c), pred) - begin(c));
 }
 /**
  * @brief Find the last element in c for which p returns true and return the
@@ -650,22 +663,361 @@ find_last_in_if_not(const Container& c, UnaryPredicate pred) noexcept(noexcept(
     -> size_t {
 	using std::begin;
 	using std::end;
-	return kblib::find_last_if_not(begin(c), end(c), pred) - begin(c);
+	return to_unsigned(kblib::find_last_if_not(begin(c), end(c), pred) -
+	                   begin(c));
+}
+
+template <typename InputIt1, typename EndIt1, typename InputIt2,
+          typename BinaryPredicate = std::equal_to<>>
+KBLIB_NODISCARD constexpr auto find_match(InputIt1 begin1, EndIt1 end1,
+                                          InputIt2 begin2, BinaryPredicate cmp)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value and
+                       is_invocable<BinaryPredicate, decltype(*begin1),
+                                    decltype(*begin2)>::value,
+                   std::pair<InputIt1, InputIt2>> {
+	while (begin1 != end1) {
+		if (kblib::invoke(cmp, *begin1++, *begin2++)) {
+			return std::make_pair(begin1, begin2);
+		}
+	}
+	return std::make_pair(begin1, begin2);
+}
+template <typename InputIt1, typename EndIt1, typename InputIt2,
+          typename EndIt2, typename BinaryPredicate = std::equal_to<>>
+KBLIB_NODISCARD constexpr auto find_match(InputIt1 begin1, EndIt1 end1,
+                                          InputIt2 begin2, EndIt2 end2,
+                                          BinaryPredicate cmp)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value and
+                       is_invocable<BinaryPredicate, decltype(*begin1),
+                                    decltype(*begin2)>::value,
+                   std::pair<InputIt1, InputIt2>> {
+	while (begin1 != end1 and begin2 != end2) {
+		if (kblib::invoke(cmp, *begin1++, *begin2++)) {
+			return std::make_pair(begin1, begin2);
+		}
+	}
+	return std::make_pair(begin1, begin2);
+}
+
+/**
+ * @brief Checks if a given range starts with a particular subrange.
+ */
+template <typename InputIt1, typename EndIt1, typename InputIt2,
+          typename EndIt2, typename BinaryPred>
+KBLIB_NODISCARD constexpr auto starts_with(InputIt1 begin1, EndIt1 end1,
+                                           InputIt2 begin2, EndIt2 end2,
+                                           BinaryPred pred) -> bool {
+	while (begin1 != end1 and begin2 != end2) {
+		if (not kblib::invoke(pred, *begin1++, *begin2++)) {
+			return false;
+		}
+	}
+	return begin2 == end2;
+}
+
+/**
+ * @brief Checks if a given range ends with a particular subrange.
+ */
+template <typename BidirIt1, typename BidirIt2,
+          typename BinaryPred = std::equal_to<>>
+KBLIB_NODISCARD constexpr auto ends_with(BidirIt1 begin1, BidirIt1 end1,
+                                         BidirIt2 begin2, BidirIt2 end2,
+                                         BinaryPred pred = {})
+    -> enable_if_t<
+        (std::is_base_of<std::bidirectional_iterator_tag,
+                         typename std::iterator_traits<
+                             BidirIt1>::iterator_category>::value and
+         std::is_base_of<std::bidirectional_iterator_tag,
+                         typename std::iterator_traits<
+                             BidirIt2>::iterator_category>::value) and
+            not(std::is_base_of<std::random_access_iterator_tag,
+                                typename std::iterator_traits<
+                                    BidirIt1>::iterator_category>::value and
+                std::is_base_of<std::random_access_iterator_tag,
+                                typename std::iterator_traits<
+                                    BidirIt2>::iterator_category>::value),
+        bool> {
+	while (begin1 != end1 and begin2 != end2) {
+		if (not kblib::invoke(pred, *--end1, *--end2)) {
+			return false;
+		}
+	}
+	return begin2 == end2;
+}
+
+/**
+ * @brief Checks if a given range ends with a particular subrange.
+ */
+template <typename BidirIt1, typename BidirIt2,
+          typename BinaryPred = std::equal_to<>>
+KBLIB_NODISCARD constexpr auto ends_with(BidirIt1 begin1, BidirIt1 end1,
+                                         BidirIt2 begin2, BidirIt2 end2,
+                                         BinaryPred pred = {})
+    -> enable_if_t<std::is_base_of<std::random_access_iterator_tag,
+                                   typename std::iterator_traits<
+                                       BidirIt1>::iterator_category>::value and
+                       std::is_base_of<std::random_access_iterator_tag,
+                                       typename std::iterator_traits<
+                                           BidirIt2>::iterator_category>::value,
+                   bool> {
+	if (end2 - begin2 > end1 - begin1) {
+		return false;
+	}
+	auto N = end2 - begin2;
+	return kblib::equal(end1 - N, end1, begin2, pred);
+}
+
+template <typename InputIt, typename EndIt, typename T, typename UnaryTransform>
+KBLIB_NODISCARD constexpr auto first_result(InputIt begin, EndIt end, T def,
+                                            UnaryTransform op)
+    -> enable_if_t<is_input_iterator<InputIt>::value,
+                   std::decay_t<decltype(op(*begin))>> {
+	for (; begin != end; ++begin) {
+		auto cur = op(*begin);
+		if (cur != def) {
+			return cur;
+		}
+	}
+	return def;
+}
+template <typename InputIt1, typename EndIt1, typename InputIt2, typename T,
+          typename BinaryTransform>
+KBLIB_NODISCARD constexpr auto first_result(InputIt1 begin1, EndIt1 end1,
+                                            InputIt2 begin2, T def,
+                                            BinaryTransform op)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value,
+                   std::decay_t<decltype(op(*begin1, *begin2))>> {
+	for (; begin1 != end1; ++begin1, ++begin2) {
+		auto cur = op(*begin1, *begin2);
+		if (cur != def) {
+			return cur;
+		}
+	}
+	return def;
+}
+template <typename InputIt1, typename EndIt1, typename InputIt2,
+          typename EndIt2, typename T, typename BinaryTransform>
+KBLIB_NODISCARD constexpr auto first_result(InputIt1 begin1, EndIt1 end1,
+                                            InputIt2 begin2, EndIt2 end2, T def,
+                                            BinaryTransform op)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value,
+                   std::decay_t<decltype(op(*begin1, *begin2))>> {
+	for (; begin1 != end1 and begin2 != end2; ++begin1, ++begin2) {
+		auto cur = op(*begin1, *begin2);
+		if (cur != def) {
+			return cur;
+		}
+	}
+	return def;
+}
+
+template <typename InputIt, typename EndIt, typename T, typename UnaryTransform,
+          typename UnaryPredicate>
+KBLIB_NODISCARD constexpr auto first_result_if(InputIt begin, EndIt end, T def,
+                                               UnaryTransform op,
+                                               UnaryPredicate ch)
+    -> enable_if_t<is_input_iterator<InputIt>::value, decltype(op(*begin))> {
+	for (; begin != end; ++begin) {
+		if (ch(*begin)) {
+			return op(*begin);
+		}
+	}
+	return def;
+}
+template <typename InputIt1, typename EndIt1, typename InputIt2, typename T,
+          typename BinaryTransform, typename BinaryPredicate>
+KBLIB_NODISCARD constexpr auto
+first_result_if(InputIt1 begin1, EndIt1 end1, InputIt2 begin2, T def,
+                BinaryTransform op, BinaryPredicate ch)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value,
+                   decltype(op(*begin1, *begin2))> {
+	for (; begin1 != end1; ++begin1, ++begin2) {
+		if (ch(*begin1, *begin2)) {
+			return op(*begin1, *begin2);
+		}
+	}
+	return def;
+}
+template <typename InputIt1, typename EndIt1, typename InputIt2,
+          typename EndIt2, typename T, typename BinaryTransform,
+          typename BinaryPredicate>
+KBLIB_NODISCARD constexpr auto
+first_result_if(InputIt1 begin1, EndIt1 end1, InputIt2 begin2, EndIt2 end2,
+                T def, BinaryTransform op, BinaryPredicate ch)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value,
+                   decltype(op(*begin1, *begin2))> {
+	for (; begin1 != end1 and begin2 != end2; ++begin1, ++begin2) {
+		if (ch(*begin1, *begin2)) {
+			return op(*begin1, *begin2);
+		}
+	}
+	return def;
+}
+
+#if KBLIB_USE_CXX17
+template <typename T>
+struct is_optional : std::false_type {};
+template <typename U>
+struct is_optional<std::optional<U>> : std::true_type {};
+
+template <typename InputIt, typename EndIt, typename T, typename UnaryTransform>
+KBLIB_NODISCARD constexpr auto first_result_opt(InputIt begin, EndIt end, T def,
+                                                UnaryTransform op)
+    -> enable_if_t<is_input_iterator<InputIt>::value,
+                   std::decay_t<decltype(op(*begin))>> {
+	for (; begin != end; ++begin) {
+		auto cur = op(*begin);
+		if (cur) {
+			return cur;
+		}
+	}
+	return def;
+}
+template <typename InputIt1, typename EndIt1, typename InputIt2, typename T,
+          typename BinaryTransform>
+KBLIB_NODISCARD constexpr auto first_result_opt(InputIt1 begin1, EndIt1 end1,
+                                                InputIt2 begin2, T def,
+                                                BinaryTransform op)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value,
+                   std::decay_t<decltype(op(*begin1, *begin2))>> {
+	for (; begin1 != end1; ++begin1, ++begin2) {
+		auto cur = op(*begin1, *begin2);
+		if (cur) {
+			return cur;
+		}
+	}
+	return def;
+}
+template <typename InputIt1, typename EndIt1, typename InputIt2,
+          typename EndIt2, typename T, typename BinaryTransform>
+KBLIB_NODISCARD constexpr auto first_result_opt(InputIt1 begin1, EndIt1 end1,
+                                                InputIt2 begin2, EndIt2 end2,
+                                                T def, BinaryTransform op)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value,
+                   std::decay_t<decltype(op(*begin1, *begin2))>> {
+	for (; begin1 != end1 and begin2 != end2; ++begin1, ++begin2) {
+		auto cur = op(*begin1, *begin2);
+		if (cur) {
+			return cur;
+		}
+	}
+	return def;
+}
+#endif
+
+/**
+ * @brief Determine if pred is true for every element of the range.
+ */
+template <typename InputIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr auto all_of(InputIt begin, InputIt end,
+                                      UnaryPredicate pred)
+    -> enable_if_t<is_input_iterator<InputIt>::value, bool> {
+	for (; begin != end; ++begin) {
+		if (not kblib::invoke(pred, *begin)) {
+			return false;
+		}
+	}
+	return true;
+}
+/**
+ * @brief Determine if pred is true for every element of the range.
+ */
+template <typename Range, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr auto all_of(Range&& rng, UnaryPredicate pred)
+    -> enable_if_t<is_iterable<Range>::value, bool> {
+	for (auto&& el : std::forward<Range>(rng)) {
+		if (not kblib::invoke(pred, static_cast<decltype(el)>(el))) {
+			return false;
+		}
+	}
+	return true;
+}
+/**
+ * @brief Determine if pred is false for every element of the range.
+ */
+template <typename InputIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr auto none_of(InputIt begin, InputIt end,
+                                       UnaryPredicate pred)
+    -> enable_if_t<is_input_iterator<InputIt>::value, bool> {
+	for (; begin != end; ++begin) {
+		if (kblib::invoke(pred, *begin)) {
+			return false;
+		}
+	}
+	return true;
+}
+/**
+ * @brief Determine if pred is true for every element of the range.
+ */
+template <typename Range, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr auto none_of(Range&& rng, UnaryPredicate pred)
+    -> enable_if_t<is_iterable<Range>::value, bool> {
+	for (auto&& el : std::forward<Range>(rng)) {
+		if (kblib::invoke(pred, static_cast<decltype(el)>(el))) {
+			return false;
+		}
+	}
+	return true;
+}
+/**
+ * @brief Determine if pred is true for at least one element of the range.
+ */
+template <typename InputIt, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr auto any_of(InputIt begin, InputIt end,
+                                      UnaryPredicate pred)
+    -> enable_if_t<is_input_iterator<InputIt>::value, bool> {
+	for (; begin != end; ++begin) {
+		if (kblib::invoke(pred, *begin)) {
+			return true;
+		}
+	}
+	return false;
+}
+/**
+ * @brief Determine if pred is true for every element of the range.
+ */
+template <typename Range, typename UnaryPredicate>
+KBLIB_NODISCARD constexpr auto any_of(Range&& rng, UnaryPredicate pred)
+    -> enable_if_t<is_iterable<Range>::value, bool> {
+	for (auto&& el : std::forward<Range>(rng)) {
+		if (kblib::invoke(pred, static_cast<decltype(el)>(el))) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
  * @brief Determine if a range contains a value.
- *
- * @param set The range to check.
- * @param val The value to search for.
+ */
+template <typename InputIt, typename Value>
+KBLIB_NODISCARD constexpr auto
+contains(InputIt begin, InputIt end,
+         const Value& val) noexcept(noexcept(*begin == val))
+    -> enable_if_t<is_input_iterator<InputIt>::value, bool> {
+	return kblib::any_of(begin, end, [&](const auto& e) { return e == val; });
+}
+
+/**
+ * @brief Determine if a range contains a value.
  */
 template <typename Set, typename Value>
 KBLIB_NODISCARD constexpr auto
 contains(const Set& set, const Value& val) noexcept(
-    noexcept(*std::declval<iterator_type_for_t<const Set>&>() == val)) -> bool {
+    noexcept(*std::declval<iterator_type_for_t<const Set>&>() == val))
+    -> enable_if_t<is_iterable<Set>::value, bool> {
 	using std::begin;
 	using std::end;
-	return kblib::find(begin(set), end(set), val) != end(set);
+	return kblib::any_of(begin(set), end(set),
+	                     [&](const auto& e) { return e == val; });
 }
 
 /**
@@ -697,9 +1049,9 @@ KBLIB_NODISCARD constexpr auto get_max_n_old(It first, It last,
 	assert(first + count <= last);
 	SequenceContainer c{first, first + count};
 	std::for_each(first + count, last, [&](const auto& v) {
-		auto& min = *std::min_element(begin(c), end(c), cmp);
-		if (cmp(min, v)) {
-			min = v;
+		auto& min_v = *std::min_element(begin(c), end(c), cmp);
+		if (kblib::invoke(cmp, min_v, v)) {
+			min_v = v;
 		}
 	});
 	return c;
@@ -752,8 +1104,10 @@ KBLIB_NODISCARD constexpr auto get_max_n(It first, It last, std::size_t count,
 	using std::end;
 	SequenceContainer c(count);
 	std::partial_sort_copy(first, last, begin(c), end(c),
-	                       [&](auto&&... args) -> decltype(auto) {
-		                       return !cmp(std::forward<decltype(args)>(args)...);
+	                       [&](auto&& a, auto&& b) -> decltype(auto) {
+		                       return kblib::invoke(cmp,
+		                                            std::forward<decltype(b)>(b),
+		                                            std::forward<decltype(a)>(a));
 	                       });
 	return c;
 }
@@ -794,14 +1148,14 @@ KBLIB_NODISCARD constexpr auto get_max_n(It first, It last, std::size_t count,
  * @param d_begin The beginning of the output range.
  * @param count The number of elements to copy out of the range.
  * @param cmp The comparison function to use.
- * @return return_assert_t<is_output_iterator<OutputIt, ElementT>::value,
- * OutputIt> An iterator to past the last element written.
+ * @return OutputIt An iterator to past the last element written.
  */
 template <typename Comp = std::less<>, typename InputIt, typename OutputIt,
           typename Elem = typename std::iterator_traits<InputIt>::value_type>
 constexpr auto get_max_n(InputIt first, InputIt last, OutputIt d_begin,
                          std::size_t count, Comp cmp = {})
-    -> return_assert_t<is_output_iterator<OutputIt, Elem>::value, OutputIt> {
+    -> return_assert_t<is_output_iterator_for<OutputIt, Elem>::value,
+                       OutputIt> {
 	auto temp = get_max_n<std::vector<Elem>>(first, last, count, cmp);
 	return std::move(temp.begin(), temp.end(), d_begin);
 }
@@ -824,7 +1178,7 @@ template <typename ForwardIt, typename EndIt, typename ForwardIt2,
 constexpr auto for_each(ForwardIt first, EndIt last, ForwardIt2 second,
                         BinaryFunction f) -> BinaryFunction {
 	for (; first != last; (void)++first, (void)++second) {
-		f(*first, *second);
+		kblib::invoke(f, *first, *second);
 	}
 	return std::move(f);
 }
@@ -846,7 +1200,7 @@ constexpr auto for_each_n(ForwardIt first, Size n, ForwardIt2 second,
                           BinaryFunction f)
     -> std::pair<ForwardIt, ForwardIt2> {
 	for (Size i = 0; i < n; (void)++first, (void)++second, (void)++i) {
-		f(*first, *second);
+		kblib::invoke(f, *first, *second);
 	}
 	return {first, second};
 }
@@ -1025,6 +1379,8 @@ constexpr auto rotate(ForwardIt first, ForwardIt n_first,
 	while (read != last) {
 		if (write == next_read)
 			next_read = read; // track where "first" went
+		// iter_swap is not constexpr
+		// std::iter_swap(write++, read++);
 		swap(*(write++), *(read++));
 	}
 
@@ -1044,8 +1400,9 @@ constexpr auto rotate(ForwardIt first, ForwardIt n_first,
  * @return ForwardIt The iterator pointing past the last element written.
  */
 template <typename OutputIt, typename EndIt, typename Generator>
-constexpr auto generate(OutputIt first, EndIt last, Generator g) noexcept(
-    noexcept(first != last) and noexcept(*++first = g())) -> OutputIt {
+constexpr auto generate(OutputIt first, EndIt last,
+                        Generator g) noexcept(noexcept(*++first = g()))
+    -> OutputIt {
 	while (first != last) {
 		*first = g();
 		++first;
@@ -1072,12 +1429,32 @@ constexpr auto generate_n(OutputIt first, Size count,
 	return first;
 }
 
-template <typename InputIt, typename EndIt, typename... Params>
-constexpr auto call_each(InputIt first, EndIt last, Params&&... params)
-    -> InputIt {
+template <typename ForwardIt, typename T>
+constexpr auto iota(ForwardIt first, ForwardIt last, T value) noexcept(
+    noexcept(*first++ = value) and noexcept(++value)) -> void {
 	while (first != last) {
-		(*first)(std::forward<Params>(params)...);
-		++first;
+		*first++ = value;
+		++value;
+	}
+}
+template <typename ForwardIt, typename T, typename UnaryOperation>
+constexpr auto
+iota(ForwardIt first, ForwardIt last, T value, UnaryOperation unary_op) noexcept(
+    noexcept(*first++ = value) and noexcept(kblib::invoke(unary_op,
+                                                          std::move(value))))
+    -> void {
+	while (first != last) {
+		*first++ = value;
+		value = kblib::invoke(unary_op, std::move(value));
+	}
+}
+
+template <typename InputIt, typename EndIt, typename... Params>
+constexpr auto
+call_each(InputIt first, EndIt last, Params&&... params) noexcept(noexcept(
+    kblib::invoke(*first++, std::forward<Params>(params)...))) -> InputIt {
+	while (first != last) {
+		kblib::invoke(*first++, std::forward<Params>(params)...);
 	}
 	return first;
 }

@@ -87,11 +87,11 @@ auto max_element(Container& c, Comp comp) -> value_type_linear_t<Container>* {
  * may be written.
  */
 template <typename T, typename E, typename = void>
-struct is_output_iterator : std::false_type {};
+struct is_output_iterator_for : std::false_type {};
 
 template <typename T, typename E>
-struct is_output_iterator<
-    T, E, void_t<decltype(*std::declval<T&>() = std::declval<const E&>())>>
+struct is_output_iterator_for<
+    T, E, void_t<decltype(*std::declval<T&>()++ = std::declval<const E&>())>>
     : std::true_type {};
 
 template <typename Container>
@@ -282,7 +282,7 @@ class range_t {
 		 * @return iterator& *this.
 		 */
 		constexpr auto operator++() & noexcept(nothrow_steppable) -> iterator& {
-			val = val + step;
+			val = static_cast<Value>(val + step);
 			return *this;
 		}
 		/**
@@ -358,11 +358,11 @@ class range_t {
 			return not(l < r);
 		}
 		constexpr auto operator[](std::ptrdiff_t x) const noexcept -> Value {
-			return val + x * step;
+			return static_cast<Value>(val + x * step);
 		}
 		template <typename Integral>
 		constexpr auto operator[](Integral x) const noexcept -> Value {
-			return val + std::ptrdiff_t(x) * step;
+			return static_cast<Value>(val + std::ptrdiff_t(x) * step);
 		}
 	};
 
@@ -379,7 +379,7 @@ class range_t {
 	 * @brief Returns the distance between start() and stop().
 	 */
 	constexpr auto size() const noexcept -> std::size_t {
-		return (max - min) / step;
+		return static_cast<std::size_t>(std::abs(max - min) / step);
 	}
 
 	/**
@@ -498,6 +498,11 @@ class range_t {
 				max = min - 1;
 			}
 		} else {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
+#pragma GCC diagnostic ignored "-Wshorten-64-to-32"
 			auto difference = max - min;
 			std::ptrdiff_t sign = (step > 0) ? 1 : -1;
 			if ((sign * to_signed(difference)) <= (sign * step)) {
@@ -514,6 +519,7 @@ class range_t {
 					max = max + step;
 				}
 			}
+#pragma GCC diagnostic pop
 		}
 	}
 };
@@ -552,6 +558,11 @@ struct incrementer {
 	friend constexpr auto operator*(std::ptrdiff_t x, incrementer) {
 		return adjuster{x};
 	}
+
+	template <typename T>
+	constexpr auto operator()(T& t) -> T& {
+		return ++t;
+	}
 };
 
 /**
@@ -572,6 +583,10 @@ struct decrementer {
 	constexpr operator int() const noexcept { return -1; }
 	friend constexpr auto operator*(std::ptrdiff_t x, decrementer) {
 		return adjuster{-x};
+	}
+	template <typename T>
+	constexpr auto operator()(T& t) -> T& {
+		return --t;
 	}
 };
 
@@ -625,7 +640,7 @@ template <typename Value, typename Delta>
 class irange_t {};
 
 template <typename Value, typename Delta = int>
-constexpr auto irange(Value min, Value max, Delta step = 0) {}
+constexpr auto irange(Value, Value, Delta = 0) {}
 
 template <typename T>
 class enumerator_iterator;
@@ -731,6 +746,16 @@ template <typename T>
 class tuple_element<0, ::kblib::enumeration<T>> {
  public:
 	using type = std::size_t;
+};
+template <typename T>
+class tuple_element<0, volatile ::kblib::enumeration<T>> {
+ public:
+	using type = std::size_t;
+};
+template <typename T>
+class tuple_element<0, const volatile ::kblib::enumeration<T>> {
+ public:
+	using type = const std::size_t;
 };
 
 /**
@@ -1423,6 +1448,20 @@ KBLIB_NODISCARD auto zip(Range1&& r1, Range2&& r2) noexcept(
                     decltype(begin(r2))> {
 	return {begin(r1), end(r1), begin(r2)};
 }
+
+template <typename ForwardIt, typename EndIt>
+class adjacent_iterator {
+ public:
+	using difference_type = std::ptrdiff_t;
+	using base_reference = typename std::iterator_traits<ForwardIt>::reference;
+	using value_type = std::pair<base_reference, base_reference>;
+	using pointer = void;
+	using reference = value_type;
+	using iterator_category = std::input_iterator_tag;
+
+ private:
+	ForwardIt it;
+};
 
 /**
  * @brief An OutputIterator that transforms the values assigned to it before

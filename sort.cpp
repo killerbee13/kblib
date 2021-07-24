@@ -38,7 +38,7 @@ TEST_CASE("sort") {
 	SECTION("insertion_sort") {
 		auto input_copy = input;
 		kblib::insertion_sort(input_copy.begin(), input_copy.end());
-		REQUIRE(input_copy == goal);
+		CHECK(input_copy == goal);
 		static_assert(
 		    noexcept(kblib::insertion_sort(input_copy.begin(), input_copy.end())),
 		    "insertion_sort for array<int> should be noexcept");
@@ -47,7 +47,7 @@ TEST_CASE("sort") {
 		std::remove_const<decltype(input)>::type output;
 		kblib::insertion_sort_copy(input.begin(), input.end(), output.begin(),
 		                           output.end());
-		REQUIRE(output == goal);
+		CHECK(output == goal);
 		static_assert(
 		    noexcept(kblib::insertion_sort_copy(input.begin(), input.end(),
 		                                        output.begin(), output.end())),
@@ -57,7 +57,7 @@ TEST_CASE("sort") {
 		std::remove_const<decltype(input)>::type output;
 		kblib::adaptive_insertion_sort_copy(input.begin(), input.end(),
 		                                    output.begin(), output.end());
-		REQUIRE(output == goal);
+		CHECK(output == goal);
 	}
 	SECTION("insertion_sort is stable") {
 		std::minstd_rand rng{std::random_device{}()};
@@ -81,7 +81,7 @@ TEST_CASE("sort") {
 			{
 				std::map<int, int> counts;
 				for (auto p : inputs) {
-					REQUIRE(p.second == counts[p.first]++);
+					CHECK(p.second == counts[p.first]++);
 				}
 			}
 		}
@@ -90,16 +90,15 @@ TEST_CASE("sort") {
 		std::minstd_rand rng{std::random_device{}()};
 		std::uniform_int_distribution<int> dist(0, 65535);
 		for ([[gnu::unused]] auto _i : kblib::range(100)) {
-			std::vector<int> input;
-			std::generate_n(std::back_inserter(input), 100,
-			                [&] { return dist(rng); });
+			std::vector<int> input2(100);
+			std::generate(begin(input2), end(input2), [&] { return dist(rng); });
 
-			auto output_std = input;
+			auto output_std = input2;
 			std::sort(output_std.begin(), output_std.end());
-			decltype(input) output_kblib(input.size());
-			kblib::insertion_sort_copy(input.cbegin(), input.cend(),
+			decltype(input2) output_kblib(input2.size());
+			kblib::insertion_sort_copy(cbegin(input2), cend(input2),
 			                           output_kblib.begin(), output_kblib.end());
-			REQUIRE(output_std == output_kblib);
+			CHECK(output_std == output_kblib);
 		}
 	}
 }
@@ -121,7 +120,7 @@ TEST_CASE("insertion sort performance") {
 		             << '\t' << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
-		REQUIRE(error < 1.05);
+		CHECK(error < 1.05);
 	};
 #define TIME(...) time_and_log(__LINE__, __VA_ARGS__)
 
@@ -241,7 +240,7 @@ TEST_CASE("insertion sort performance") {
 		             << '\t' << time_fast * 30 << "\n";
 
 		// Can't overshoot the bound by more than 5%:
-		REQUIRE(error < 1.05);
+		CHECK(error < 1.05);
 	}
 	log_location << std::flush;
 #undef TIME
@@ -262,9 +261,9 @@ TEST_CASE("byte extraction") {
 	static_assert(+kblib::get_byte_index(x, 3) == 0xAB, "");
 
 	std::string str{"0123456789"};
-	REQUIRE(kblib::byte_count(str) == str.length());
+	CHECK(kblib::byte_count(str) == str.length());
 	for (auto i : kblib::range(str.length())) {
-		REQUIRE((kblib::get_byte_index(str, i)) == str[i]);
+		CHECK((kblib::get_byte_index(str, i)) == str[i]);
 	}
 
 	constexpr std::array<std::int32_t, 2> arr{0x10325476,

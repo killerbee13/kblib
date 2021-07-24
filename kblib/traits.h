@@ -328,6 +328,60 @@ struct return_type<R(Args...) const volatile> : meta_type<R> {};
 template <typename T>
 struct exists : std::true_type {};
 
+template <typename T, typename = void>
+struct is_input_iterator : std::false_type {};
+
+template <typename T>
+struct is_input_iterator<
+    T, void_if_t<std::is_base_of<
+           std::input_iterator_tag,
+           typename std::iterator_traits<T>::iterator_category>::value>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool is_input_iterator_v = is_input_iterator<T>::value;
+
+template <typename T, typename = void>
+struct is_forward_iterator : std::false_type {};
+
+template <typename T>
+struct is_forward_iterator<
+    T, void_if_t<std::is_base_of<
+           std::forward_iterator_tag,
+           typename std::iterator_traits<T>::iterator_category>::value>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool is_forward_iterator_v = is_forward_iterator<T>::value;
+
+template <typename T, typename = void>
+struct is_bidirectional_iterator : std::false_type {};
+
+template <typename T>
+struct is_bidirectional_iterator<
+    T, void_if_t<std::is_base_of<
+           std::bidirectional_iterator_tag,
+           typename std::iterator_traits<T>::iterator_category>::value>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool is_bidirectional_iterator_v =
+    is_bidirectional_iterator<T>::value;
+
+template <typename T, typename = void>
+struct is_random_access_iterator : std::false_type {};
+
+template <typename T>
+struct is_random_access_iterator<
+    T, void_if_t<std::is_base_of<
+           std::random_access_iterator_tag,
+           typename std::iterator_traits<T>::iterator_category>::value>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool is_random_access_iterator_v =
+    is_random_access_iterator<T>::value;
+
 /**
  * @brief Type trait that determines the iterator type for a range.
  *
@@ -336,7 +390,7 @@ template <typename Range, typename = void>
 struct iterator_type_for;
 template <typename T, std::size_t N>
 struct iterator_type_for<T[N], void> {
-	using type = decltype(std::begin(std::declval<T (&)[N]>()));
+	using type = T*;
 };
 template <typename Range>
 struct iterator_type_for<Range,
@@ -351,11 +405,8 @@ template <typename Range, typename = void>
 struct is_iterable : std::false_type {};
 
 template <typename Range>
-struct is_iterable<
-    Range,
-    void_if_t<std::is_base_of<std::forward_iterator_tag,
-                              typename std::iterator_traits<iterator_type_for_t<
-                                  Range>>::iterator_category>::value>>
+struct is_iterable<Range, void_if_t<is_input_iterator<decltype(
+                              begin(std::declval<Range&>()))>::value>>
     : std::true_type {};
 
 template <typename T, std::size_t N>
@@ -363,18 +414,15 @@ struct is_iterable<T[N], void> : std::true_type {};
 template <typename T, std::size_t N>
 struct is_iterable<T (&)[N], void> : std::true_type {};
 
+template <typename T>
+constexpr bool is_iterable_v = is_iterable<T>::value;
+
 template <typename T, typename = void>
 struct is_iterator : std::false_type {};
 
 template <typename T>
 struct is_iterator<
-    T,
-    void_if_t<std::is_base_of<
-                  std::input_iterator_tag,
-                  typename std::iterator_traits<T>::iterator_category>::value or
-              std::is_base_of<
-                  std::output_iterator_tag,
-                  typename std::iterator_traits<T>::iterator_category>::value>>
+    T, void_t<decltype(*std::declval<T&>(), void(), ++std::declval<T&>())>>
     : std::true_type {};
 
 template <typename T>

@@ -51,10 +51,15 @@ namespace kblib {
 namespace detail_direct_map {
 
 	template <typename T>
-	constexpr auto
-	    range_of = static_cast<std::uintmax_t>(std::numeric_limits<T>::max()) -
-	               std::numeric_limits<T>::min() + 1;
+	constexpr auto range_of =
+	    (std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed <
+	     std::numeric_limits<std::uintmax_t>::digits)
+	        ? static_cast<std::uintmax_t>(1)
+	              << to_unsigned(std::numeric_limits<T>::digits +
+	                             std::numeric_limits<T>::is_signed)
+	        : 0;
 	static_assert(range_of<unsigned char> == 1u << to_unsigned(CHAR_BIT), "");
+	static_assert(range_of<signed char> == 1u << to_unsigned(CHAR_BIT), "");
 
 	template <typename T,
 	          bool = std::is_trivially_default_constructible<T>::value and
@@ -382,8 +387,9 @@ class direct_map {
 
 	constexpr auto clear() noexcept -> void {
 		for (auto i : range(+min(), max() + 1)) {
-			if (contains(i)) {
-				unsafe_at(i).destroy();
+			auto j = static_cast<Key>(i);
+			if (contains(j)) {
+				unsafe_at(j).destroy();
 			}
 		}
 		storage.reset();
@@ -962,8 +968,9 @@ class direct_map<Key, T, void> {
 
 	constexpr auto clear() noexcept -> void {
 		for (auto i : range(+min(), max() + 1)) {
-			if (contains(i)) {
-				unsafe_at(i).destroy();
+			auto j = static_cast<Key>(i);
+			if (contains(j)) {
+				unsafe_at(j).destroy();
 			}
 		}
 		_size = 0;

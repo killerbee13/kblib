@@ -690,6 +690,13 @@ KBLIB_UNUSED constexpr inline struct {
 	}
 } swap;
 
+template <typename T, typename U = T>
+KBLIB_NODISCARD constexpr auto exchange(T& obj, U&& new_value) -> T {
+	T old_value = std::move(obj);
+	obj = std::forward<U>(new_value);
+	return old_value;
+}
+
 #if KBLIB_USE_CXX17
 
 namespace detail {

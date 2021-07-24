@@ -252,7 +252,7 @@ class compact_bit_trie {
 			return false;
 		} else {
 			values.emplace_back(std::forward<Ts>(args)...);
-			v = values.size() - 1;
+			v = static_cast<size_type>(values.size() - 1);
 			return true;
 		}
 	}
@@ -269,7 +269,7 @@ class compact_bit_trie {
 		auto& v = storage[node].val;
 		if (v != -1) {
 			values.push_back(value);
-			v = values.size() - 1;
+			v = static_cast<size_type>(values.size() - 1);
 		} else {
 			values[v] = value;
 		}
@@ -281,7 +281,7 @@ class compact_bit_trie {
 		auto& v = storage[node].val;
 		if (v != -1) {
 			values.push_back(std::move(value));
-			v = values.size() - 1;
+			v = static_cast<size_type>(values.size() - 1);
 		} else {
 			values[v] = std::move(value);
 		}
@@ -296,7 +296,7 @@ class compact_bit_trie {
 	}
 
 	KBLIB_NODISCARD auto size() const noexcept -> size_type {
-		return values.size();
+		return static_cast<size_type>(values.size());
 	}
 
 	KBLIB_NODISCARD auto memory_use() const noexcept -> std::size_t {
@@ -333,14 +333,13 @@ class compact_bit_trie {
 		const bitset_type search = key.prefix;
 		size_type node = 1;
 		do_init();
-		for (int i : range(key.bits - 1)) {
-			if (auto n = storage[node].children[search[i]]) {
+		for (std::size_t i : range<std::size_t>(key.bits - 1)) {
+			if (auto n = storage[node].children[std::as_const(search)[i]]) {
 				node = n;
 			} else {
 				storage.push_back({{0, 0}, node, max});
-				auto& n_new = storage[node].children[search[i]];
-				n_new = storage.size() - 1;
-				node = n_new;
+				node = static_cast<size_type>(storage.size() - 1);
+				storage[node].children[std::as_const(search)[i]] = node;
 			}
 		}
 		return node;
@@ -570,7 +569,9 @@ namespace detail_bits {
 			}
 		}
 		array_pun_proxy(const array_pun_proxy&) = delete;
+		array_pun_proxy(array_pun_proxy&&) = delete;
 		array_pun_proxy& operator=(const array_pun_proxy&) = delete;
+		array_pun_proxy& operator=(array_pun_proxy&&) = delete;
 	};
 
 	template <typename T>

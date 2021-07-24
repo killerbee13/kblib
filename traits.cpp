@@ -6,3 +6,4 @@ struct k {
 
 static_assert(not std::is_reference<kblib::member_of_t<decltype(&k::c)>>::value,
               "");
+static_assert(kblib::is_iterable<int[10]>::value);

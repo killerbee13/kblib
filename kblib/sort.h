@@ -37,6 +37,7 @@
 #include "simple.h"
 
 #include <bitset>
+#include <numeric>
 
 namespace kblib {
 
@@ -195,7 +196,7 @@ constexpr auto adaptive_insertion_sort_copy(
 	// counting the relative number of ascending and descending adjacent pairs
 	// within the first sqrt(n) elements.
 	const auto scan_end =
-	    begin + static_cast<std::size_t>(std::sqrt(static_cast<float>(dist)));
+	    begin + static_cast<std::ptrdiff_t>(std::sqrt(static_cast<float>(dist)));
 	std::ptrdiff_t dir{};
 	for (auto pos = begin; pos != scan_end - 1; ++pos) {
 		if (compare(*pos, *(pos + 1))) {
@@ -364,25 +365,57 @@ struct is_trivial_transformation<identity> : std::true_type {};
 namespace detail_sort {
 
 	template <typename RandomAccessIt, typename Compare>
-	constexpr auto sort(RandomAccessIt begin, const RandomAccessIt end,
-	                    Compare cmp) -> void {}
+	constexpr auto sort(RandomAccessIt, const RandomAccessIt, Compare) -> void {}
 	template <typename RandomAccessIt, typename Compare>
-	constexpr auto stable_sort(RandomAccessIt begin, const RandomAccessIt end,
-	                           Compare cmp) -> void {}
+	constexpr auto stable_sort(RandomAccessIt, const RandomAccessIt, Compare)
+	    -> void {}
+
+	template <typename RandomAccessIt, typename Compare, std::size_t small_size>
+	constexpr auto merge_sort(RandomAccessIt begin, const RandomAccessIt end,
+	                          Compare cmp) -> void {
+		if (end - begin <= small_size) {
+			insertion_sort(begin, end, cmp);
+			return;
+		} else {
+			auto middle = begin + (end - begin) / 2;
+			merge_sort(begin, middle, cmp);
+			merge_sort(middle, end, cmp);
+			std::inplace_merge(begin, middle, end, cmp);
+			return;
+		}
+	}
+
+	template <typename RandomAccessIt, typename Compare, std::size_t small_size>
+	constexpr auto heap_sort(RandomAccessIt begin, const RandomAccessIt end,
+	                         Compare cmp) -> void {
+		std::make_heap(begin, end, cmp);
+		while (begin != end) {
+			std::pop_heap(begin, end--, cmp);
+		}
+		return;
+	}
 
 	enum class sort_direction { ascending, descending };
 
-	template <sort_direction dir, typename RandomAccessIt>
-	constexpr auto radix_sort_i(RandomAccessIt begin, const RandomAccessIt end)
-	    -> void {
-		using E = decay_t<decltype(*begin)>;
+	template <sort_direction dir, typename RandomAccessIt, typename Projection>
+	constexpr auto radix_sort_i(RandomAccessIt begin, const RandomAccessIt end,
+	                            Projection proj) -> void {
+		using E = decay_t<decltype(proj(*begin))>;
 		const auto max_bytes = byte_count(E{});
 		for (const auto byte : range(max_bytes)) {
+			for (auto it = begin; it != end; ++it) {
+			}
 		}
 	}
-	template <sort_direction dir, typename RandomAccessIt>
-	constexpr auto radix_sort_s(RandomAccessIt begin, const RandomAccessIt end)
-	    -> void {
+	template <sort_direction dir, typename RandomAccessIt, typename Projection>
+	constexpr auto radix_sort_s(RandomAccessIt begin, const RandomAccessIt end,
+	                            Projection proj) -> void {
+		if (begin != end) {
+			const auto max_bytes = kblib::accumulate(
+			    begin, end, std::size_t{}, [&](auto m, const auto& el) {
+				    return max(m, byte_count(proj(*el)));
+			    });
+		}
 		const auto max_bytes = [&] {
 			std::size_t max_bytes{};
 			for (const auto v : indirect(begin, end)) {
@@ -392,6 +425,41 @@ namespace detail_sort {
 		}();
 	}
 
+	template <std::size_t size>
+	constexpr auto make_array_for(std::false_type)
+	    -> kblib::containing_ptr<std::array<std::size_t, size>> {
+		return {};
+	}
+	template <std::size_t size>
+	auto make_array_for(std::true_type)
+	    -> kblib::heap_value<std::array<std::size_t, size + 1>> {
+		return {in_place_agg};
+	}
+
+	template <sort_direction dir, typename RandomAccessIt1,
+	          typename RandomAccessIt2, typename Projection>
+	constexpr auto counting_sort(RandomAccessIt1 begin,
+	                             const RandomAccessIt1 end,
+	                             RandomAccessIt2 d_begin, Projection proj)
+	    -> void {
+		using E = decay_t<decltype(proj(*begin))>;
+		constexpr auto size = std::numeric_limits<std::make_unsigned_t<E>>::max();
+		auto count = make_array_for<size>(std::bool_constant<(size > 256)>{});
+
+		for (auto cur = begin; cur != end; ++cur) {
+			++count->at(proj(*cur));
+		}
+		kblib::transform_exclusive_scan(begin(*count), end(*count), begin(*count),
+		                                std::size_t{}, std::plus<>{}, proj);
+
+		for (auto cur = end; cur != begin; --cur) {
+			auto el = std::prev(cur);
+			d_begin[--count->at(proj(*el))] = *el;
+		}
+
+		return;
+	}
+
 	/**
 	 * @brief Sort data after applying an arbitrary transformation to it. The
 	 * primary template handles the general case of arbitrary transformation
@@ -399,6 +467,7 @@ namespace detail_sort {
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation,
 	          typename BinaryPredicate, typename SortKey,
+	          std::size_t small_size = 8,
 	          bool = is_trivial_transformation<UnaryOperation>::value,
 	          bool = std::is_fundamental<SortKey>::value,
 	          bool = is_radix_sortable_v<SortKey>,
@@ -413,7 +482,7 @@ namespace detail_sort {
 				return kblib::invoke(compare, kblib::invoke(transform, *a),
 				                     kblib::invoke(transform, *b));
 			};
-			if (end - begin < 8) {
+			if (end - begin < small_size) {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
@@ -430,7 +499,7 @@ namespace detail_sort {
 				return kblib::invoke(compare, kblib::invoke(transform, *a),
 				                     kblib::invoke(transform, *b));
 			};
-			if (end - begin < 8) {
+			if (end - begin < small_size) {
 				insertion_sort(begin, end, comp);
 				return;
 			} else {
@@ -448,7 +517,7 @@ namespace detail_sort {
 				return kblib::invoke(compare, kblib::invoke(transform, *a),
 				                     kblib::invoke(transform, *b));
 			};
-			if (end - begin < 8) {
+			if (end - begin < small_size) {
 				insertion_sort_copy(begin, end, d_begin, d_end, comp);
 				return;
 			} else {
@@ -464,9 +533,9 @@ namespace detail_sort {
 	 * a general sort())
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation,
-	          typename BinaryPredicate, typename SortKey>
+	          typename BinaryPredicate, typename SortKey, std::size_t small_size>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation, BinaryPredicate,
-	                           SortKey, true, false, false, false> {
+	                           SortKey, small_size, true, false, false, false> {
 		static constexpr auto inplace(KBLIB_UNUSED RandomAccessIt begin,
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
@@ -488,9 +557,9 @@ namespace detail_sort {
 	 * to extract and compare
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
-	          typename SortKey>
+	          typename SortKey, std::size_t small_size>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
-	                           SortKey, true, true, false, false> {
+	                           SortKey, small_size, true, true, false, false> {
 		static constexpr auto inplace(KBLIB_UNUSED RandomAccessIt begin,
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
@@ -505,10 +574,10 @@ namespace detail_sort {
 	 * to extract and compare
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
-	          typename SortKey>
+	          typename SortKey, std::size_t small_size>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
-	                           std::greater<LessT>, SortKey, true, true, false,
-	                           false> {
+	                           std::greater<LessT>, SortKey, small_size, true,
+	                           true, false, false> {
 		static constexpr auto inplace(KBLIB_UNUSED RandomAccessIt begin,
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
@@ -523,9 +592,9 @@ namespace detail_sort {
 	 * type with default sorting, so we can do radix sort
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
-	          typename SortKey>
+	          typename SortKey, std::size_t small_size>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
-	                           SortKey, true, true, true, true> {
+	                           SortKey, small_size, true, true, true, true> {
 		static constexpr auto inplace(KBLIB_UNUSED RandomAccessIt begin,
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
@@ -539,10 +608,10 @@ namespace detail_sort {
 	 * type with reverse sorting, so we can do radix sort
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
-	          typename SortKey>
+	          typename SortKey, std::size_t small_size>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
-	                           std::greater<LessT>, SortKey, true, true, true,
-	                           true> {
+	                           std::greater<LessT>, SortKey, small_size, true,
+	                           true, true, true> {
 		static constexpr auto inplace(KBLIB_UNUSED RandomAccessIt begin,
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
@@ -558,9 +627,9 @@ namespace detail_sort {
 	 * type with default sorting
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
-	          typename SortKey, bool M>
+	          typename SortKey, std::size_t small_size, bool M>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation, std::less<LessT>,
-	                           SortKey, M, false, true, false> {
+	                           SortKey, small_size, M, false, true, false> {
 		static constexpr auto inplace(KBLIB_UNUSED RandomAccessIt begin,
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,
@@ -574,10 +643,10 @@ namespace detail_sort {
 	 * type with reverse sorting
 	 */
 	template <typename RandomAccessIt, typename UnaryOperation, typename LessT,
-	          typename SortKey, bool M>
+	          typename SortKey, std::size_t small_size, bool M>
 	struct sort_transform_impl<RandomAccessIt, UnaryOperation,
-	                           std::greater<LessT>, SortKey, M, false, true,
-	                           false> {
+	                           std::greater<LessT>, SortKey, small_size, M,
+	                           false, true, false> {
 		static constexpr auto inplace(KBLIB_UNUSED RandomAccessIt begin,
 		                              KBLIB_UNUSED const RandomAccessIt end,
 		                              KBLIB_UNUSED UnaryOperation&& transform,

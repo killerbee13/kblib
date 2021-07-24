@@ -46,7 +46,7 @@ TEST_CASE("build family", "[build]") {
 	const arr iota = {0, 1, 2, 3, 4, 5, 6, 7};
 	SECTION("dynamic generator build") {
 		auto built =
-		    kblib::build<std::vector<int>>([x = 0]() mutable { return x++; }, 8);
+		    kblib::build<std::vector<int>>([x = 0]() mutable { return x++; }, 8u);
 		REQUIRE(equal(iota, built));
 	}
 	SECTION("array generator build") {
@@ -54,7 +54,7 @@ TEST_CASE("build family", "[build]") {
 		REQUIRE(equal(iota, built));
 	}
 	SECTION("dynamic buildiota") {
-		auto built = kblib::buildiota<std::vector<int>>(8, 0);
+		auto built = kblib::buildiota<std::vector<int>>(8u, 0);
 		REQUIRE(equal(iota, built));
 	}
 	SECTION("array buildiota") {
@@ -74,8 +74,8 @@ TEST_CASE("buildiota") {
 	};
 
 	constexpr auto target = std::array<int, 10>{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
-	auto i1 = kblib::buildiota<std::vector<int>>(10, 0);
-	auto i2 = kblib::buildiota<std::vector<int>>(10, 0, 1);
+	auto i1 = kblib::buildiota<std::vector<int>>(10u, 0);
+	auto i2 = kblib::buildiota<std::vector<int>>(10u, 0, 1);
 	auto i3 = kblib::buildiota<std::array<int, 10>>(0);
 	auto i4 = kblib::buildiota<std::array<int, 10>>(0, 1);
 	auto i5 =

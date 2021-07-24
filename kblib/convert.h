@@ -54,7 +54,10 @@
 #if KBLIB_USE_STRING_VIEW
 
 #include <string_view>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-W#warnings"
 #include <strstream>
+#pragma GCC diagnostic pop
 
 #include "stringops.h"
 
@@ -117,7 +120,7 @@ namespace detail_convert {
 
 	template <typename Result, unsigned variants, std::size_t N>
 	KBLIB_NODISCARD constexpr auto read_digits(const char* begin,
-	                                           const char* end, int base,
+	                                           const char* end, unsigned base,
 	                                           const char (&digits)[N])
 	    -> Result {
 		if (begin == end) {
@@ -173,12 +176,12 @@ KBLIB_NODISCARD constexpr auto parse_integer(const char* begin, const char* end,
 			    "base must be either 0 or a positive number between 2 and 62");
 		} else if (base <= 36) {
 			return detail_convert::read_digits<Result, 2>(
-			    begin, end, base,
+			    begin, end, to_unsigned(base),
 			    "00112233445566778899AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRr"
 			    "SsTtUuVvWwXxYyZz");
 		} else if (base <= 62) {
 			return detail_convert::read_digits<Result, 1>(
-			    begin, end, base,
+			    begin, end, to_unsigned(base),
 			    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 		}
 	}

@@ -112,7 +112,7 @@ TEST_CASE("range comparison") {
 	}
 
 	SECTION("buildiota equivalency") {
-		auto l = kblib::buildiota<std::list<int>>(10, 10, -1);
+		auto l = kblib::buildiota<std::list<int>>(10u, 10, -1);
 		CHECK(equal(kblib::range(10, 0, -1), l));
 	}
 }
@@ -216,7 +216,7 @@ TEST_CASE("magic_enumerate") {
 		int last = -1;
 		for (auto&& [i, v] :
 		     kblib::magic_enumerate(reversed.rbegin(), reversed.rend())) {
-			REQUIRE(v == i);
+			REQUIRE(v == static_cast<int>(i));
 			++v;
 			last = v;
 		}
@@ -256,8 +256,10 @@ TEST_CASE("magic_enumerate") {
 		int arr[5] = {0, 1, 2, 3, 4};
 		for (auto [i, v] : kblib::magic_enumerate(arr)) {
 			REQUIRE(&arr[i] != &v);
-			REQUIRE(i == v);
+			REQUIRE(static_cast<int>(i) == v);
 			REQUIRE(arr[i] == v);
+			++v;
+			REQUIRE(arr[i] != v);
 		}
 	}
 
@@ -371,7 +373,7 @@ TEST_CASE("cry_enumerate") {
 		std::vector<int> reversed{7, 6, 5, 4, 3, 2, 1, 0};
 		for (auto&& [i, v] :
 		     kblib::cry_enumerate(reversed.rbegin(), reversed.rend())) {
-			REQUIRE(v == i);
+			REQUIRE(v == static_cast<int>(i));
 		}
 	}
 
@@ -406,28 +408,28 @@ TEST_CASE("cry_enumerate") {
 	SECTION("array") {
 		int arr[5] = {0, 1, 2, 3, 4};
 		for (auto [i, v] : kblib::cry_enumerate(arr)) {
-			REQUIRE(i == v);
+			REQUIRE(static_cast<int>(i) == v);
 		}
 	}
 
 	SECTION("array by ref") {
 		int arr[5] = {0, 1, 2, 3, 4};
 		for (auto& [i, v] : kblib::cry_enumerate(arr)) {
-			REQUIRE(i == v);
+			REQUIRE(static_cast<int>(i) == v);
 		}
 	}
 
 	SECTION("array by const ref") {
 		int arr[5] = {0, 1, 2, 3, 4};
 		for (const auto& [i, v] : kblib::cry_enumerate(arr)) {
-			REQUIRE(i == v);
+			REQUIRE(static_cast<int>(i) == v);
 		}
 	}
 
 	SECTION("array by forwarding ref") {
 		int arr[5] = {0, 1, 2, 3, 4};
 		for (auto&& [i, v] : kblib::cry_enumerate(arr)) {
-			REQUIRE(i == v);
+			REQUIRE(static_cast<int>(i) == v);
 		}
 	}
 }

@@ -177,7 +177,7 @@ template <typename U = std::uintmax_t>
 KBLIB_NODISCARD constexpr auto fibonacci(int n) noexcept -> U {
 	constexpr auto arr = make_fib_arr<U>();
 	assert(n >= 0 and static_cast<std::size_t>(n) < arr.size());
-	return arr[n];
+	return arr[to_unsigned(n)];
 }
 
 inline namespace nums {
@@ -318,7 +318,7 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
 	} else if (to_unsigned(x) > A(max)) {
 		return max;
 	} else {
-		return x;
+		return static_cast<A>(x);
 	}
 }
 
@@ -362,10 +362,10 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-KBLIB_NODISCARD constexpr auto quantize_step(F min, F delta, F val) noexcept
+KBLIB_NODISCARD constexpr auto quantize_step(F low, F delta, F val) noexcept
     -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
-	return static_cast<T>((val - min) * static_cast<T>(nums::max) * delta);
+	return static_cast<T>((val - low) * static_cast<T>(max) * delta);
 }
 
 /**
@@ -378,11 +378,11 @@ KBLIB_NODISCARD constexpr auto quantize_step(F min, F delta, F val) noexcept
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-KBLIB_NODISCARD constexpr auto quantize_range(F min, F max, F val) noexcept
+KBLIB_NODISCARD constexpr auto quantize_range(F low, F high, F val) noexcept
     -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
-	auto delta = (max - min) / static_cast<T>(nums::max);
-	return static_cast<T>((val - min) * static_cast<T>(nums::max) * delta);
+	auto delta = (high - low) / static_cast<T>(max);
+	return static_cast<T>((val - low) * static_cast<T>(max) * delta);
 }
 
 } // namespace kblib
