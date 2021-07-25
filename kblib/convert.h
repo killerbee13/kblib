@@ -216,9 +216,9 @@ KBLIB_NODISCARD constexpr auto parse_integer(std::string_view in, int base = 0)
 
 #endif
 
-template <std::intmax_t V>
-struct constant : std::integral_constant<decltype(V), V> {
-	constexpr auto operator-() -> constant<-V> { return {}; }
+template <typename T, T V>
+struct constant : std::integral_constant<T, V> {
+	constexpr auto operator-() -> constant<T, -V> { return {}; }
 };
 
 inline namespace literals {
@@ -226,12 +226,12 @@ inline namespace literals {
 	template <char... Cs>
 	KBLIB_NODISCARD constexpr auto operator""_c() {
 		constexpr char arr[] = {Cs...};
-		return constant<parse_integer<std::intmax_t>(arr)>{};
+		return constant<std::intmax_t, parse_integer<std::intmax_t>(arr)>{};
 	}
 	template <char... Cs>
 	KBLIB_NODISCARD constexpr auto operator""_cu() {
 		constexpr char arr[] = {Cs...};
-		return constant<parse_integer<std::uintmax_t>(arr)>{};
+		return constant<std::uintmax_t, parse_integer<std::uintmax_t>(arr)>{};
 	}
 
 } // namespace literals
