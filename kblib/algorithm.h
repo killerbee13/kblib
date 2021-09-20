@@ -1354,6 +1354,31 @@ constexpr auto replace_copy_n_if(InputIt first, Size count, OutputIt out,
 	return out;
 }
 
+template <typename ForwardIt1, typename ForwardIt2, typename ForwardIt3,
+          typename OutputIt, typename BinaryPredicate = std::equal_to<>>
+constexpr auto search_replace_copy(ForwardIt1 h_begin, ForwardIt1 h_end,
+                                   ForwardIt2 n_begin, ForwardIt2 n_end,
+                                   ForwardIt3 r_begin, ForwardIt3 r_end,
+                                   OutputIt d_begin,
+                                   BinaryPredicate Compare = {}) -> OutputIt {
+	if (n_begin == n_end) {
+		return copy(h_begin, h_end, d_begin);
+	} else {
+		const auto needle_length = std::distance(n_begin, n_end);
+		while (h_begin != h_end) {
+			const auto found =
+			    std::search(h_begin, h_end, n_begin, n_end, Compare);
+			d_begin = kblib::copy(h_begin, found, d_begin);
+			h_begin = found;
+			if (h_begin != h_end) {
+				d_begin = copy(r_begin, r_end, d_begin);
+				std::advance(h_begin, needle_length);
+			}
+		}
+		return d_begin;
+	}
+}
+
 /**
  * @brief Rotates the input range. This is just a constexpr-in-C++14 version of
  * std::rotate.

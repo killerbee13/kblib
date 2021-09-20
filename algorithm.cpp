@@ -94,6 +94,101 @@ TEST_CASE("find_in") {
 	        size);
 }
 
+TEST_CASE("search_replace") {
+	using namespace std::literals;
+	using std::begin, std::end;
+	SECTION("search_replace_copy_1") {
+		const auto haystack = "a string with words"s;
+		const auto needle = "with"s;
+		const auto replace = "comprising"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == "a string comprising words");
+	}
+	SECTION("search_replace_copy_2(no match)") {
+		const auto haystack = "a string with words"s;
+		const auto needle = "without"s;
+		const auto replace = "comprising"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == haystack);
+	}
+	SECTION("search_replace_copy_3(multiple matches)") {
+		const auto haystack = "a string with multiple 'with's"s;
+		const auto needle = "with"s;
+		const auto replace = "containing"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == "a string containing multiple 'containing's");
+	}
+	SECTION("search_replace_copy_4(empty match)") {
+		const auto haystack = "a string with words"s;
+		const auto needle = ""s;
+		const auto replace = "comprising"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == haystack);
+	}
+	SECTION("search_replace_copy_5(match at beginning)") {
+		const auto haystack = "a string with words"s;
+		const auto needle = "a"s;
+		const auto replace = "another"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == "another string with words");
+	}
+	SECTION("search_replace_copy_6(match at end)") {
+		const auto haystack = "a string with words"s;
+		const auto needle = "words"s;
+		const auto replace = "letters"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == "a string with letters");
+	}
+	SECTION("search_replace_copy_7(only matches)") {
+		const auto haystack = "abababababab"s;
+		const auto needle = "ab"s;
+		const auto replace = "ba"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == "babababababa");
+	}
+	SECTION("search_replace_copy_8(match is whole string)") {
+		const auto haystack = "string"s;
+		const auto needle = haystack;
+		const auto replace = "replace"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == replace);
+	}
+	SECTION("search_replace_copy_9(overlap)") {
+		const auto haystack = "abcabcab"s;
+		const auto needle = "abcab"s;
+		const auto replace = "a"s;
+		std::string result;
+		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),
+		                           end(needle), begin(replace), end(replace),
+		                           std::back_inserter(result));
+		CHECK(result == "acab");
+	}
+}
+
 TEST_CASE("get_max family") {
 	/// TODO(killerbee13): tests for get_max_*
 	std::array<int, 11> arr{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};

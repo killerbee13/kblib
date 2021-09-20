@@ -96,8 +96,8 @@ CONFIG(build_trace) {
 	QMAKE_CXXFLAGS += -ftime-trace
 }
 
-QMAKE_CXXFLAGS_RELEASE += -flto
-QMAKE_LFLAGS_RELEASE += -flto
+#QMAKE_CXXFLAGS_RELEASE += -flto
+#QMAKE_LFLAGS_RELEASE += -flto
 
 medfile.target = medfile
 medfile.commands = rm $$medfile.target; \
