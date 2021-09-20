@@ -70,7 +70,11 @@ DISTFILES += \
     LICENSE.txt \
     var_timings.log \
     medfile \
-    Doxyfile
+    Doxyfile \
+    doc/algorithm_intuition_ana.html \
+    doc/algorithm_intuition_cata.html \
+    doc/algorithm_intuition.html \
+    doc/Doxyfile
 
 VERSION = 0.2.1
 
