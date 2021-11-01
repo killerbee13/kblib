@@ -1020,6 +1020,36 @@ contains(const Set& set, const Value& val) noexcept(
 	                     [&](const auto& e) { return e == val; });
 }
 
+template <typename InputIt1, typename InputIt2>
+KBLIB_NODISCARD constexpr auto contains_any(InputIt1 begin, InputIt1 end,
+                                            InputIt2 n_begin, InputIt2 n_end)
+    -> enable_if_t<is_input_iterator<InputIt1>::value and
+                       is_input_iterator<InputIt2>::value,
+                   bool> {
+	return kblib::any_of(begin, end, [=](const auto& v) {
+		return kblib::contains(n_begin, n_end, v);
+	});
+}
+
+template <typename InputIt, typename Range2>
+KBLIB_NODISCARD constexpr auto
+contains_any(InputIt begin, InputIt end, Range2&& needle) -> enable_if_t<
+    is_input_iterator<InputIt>::value and is_iterable<Range2>::value, bool> {
+	return kblib::any_of(begin, end, [&needle](const auto& v) {
+		return kblib::contains(needle, v);
+	});
+}
+
+template <typename Range1, typename Range2>
+KBLIB_NODISCARD constexpr auto contains_any(Range1&& haystack, Range2&& needle)
+    -> enable_if_t<is_iterable<Range1>::value and is_iterable<Range2>::value,
+                   bool> {
+	using std::begin, std::end;
+	return kblib::any_of(
+	    begin(haystack), end(haystack),
+	    [&needle](const auto& v) { return kblib::contains(needle, v); });
+}
+
 /**
  * @brief Returns a container of the greatest count elements according to cmp of
  * the range [first, last), in arbitrary order. This overload works for linear
