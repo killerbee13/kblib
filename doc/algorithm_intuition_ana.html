@@ -1,113 +1,573 @@
 <tr><th scope="row" class="rowname"><code class="code-word std">transform_<wbr>inclusive_<wbr>scan</code></th>
-	<td>1</td><td>First, Arg</td><td>1</td><td>aR, uT</td><td></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">20</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">First, Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops">aR, uT</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">20</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">transform_<wbr>exclusive_<wbr>scan</code></th>
-	<td>1</td><td>Arg</td><td>1</td><td>aR, uT</td><td></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">20</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops">aR, uT</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">20</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">partial_<wbr>sum</code></th>
-	<td>1</td><td>First</td><td>1</td><td>A</td><td><code class="code-word std">plus</code></td><td>Fwd.</td><td></td><td class="hidden">30</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">First</td>
+	<td class="Ret">1</td>
+	<td class="Ops">A</td>
+	<td class="Def"><code class="code-word std">plus</code></td>
+	<td class="Cpx">O(N), =(N - 1)</td>
+	<td class="Dir">Fwd.</td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">30</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">inclusive_<wbr>scan</code></th>
-	<td>1</td><td>First, Arg</td><td>1</td><td>aR</td><td><code class="code-word std">plus</code></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">30</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">First, Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops">aR</td>
+	<td class="Def"><code class="code-word std">plus</code></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">30</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">exclusive_<wbr>scan</code></th>
-	<td>1</td><td>Arg</td><td>1</td><td>aR</td><td><code class="code-word std">plus</code></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">30</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops">aR</td>
+	<td class="Def"><code class="code-word std">plus</code></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">30</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">adjacent_<wbr>difference</code></th>
-	<td>1s</td><td>Quasi</td><td>1</td><td>fD</td><td><code class="code-word std">minus</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word CH">adjacent_<wbr>transform</code></td><td class="hidden">40</td></tr>
-<tr><th scope="row" class="rowname"><code class="code-word CH">adjacent_<wbr>transform</code></th>
-	<td>1s</td><td>Quasi</td><td>1</td><td>D</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">adjacent_<wbr>difference</code></td><td class="hidden">40</td></tr>
+	<td class="Inp">1s</td>
+	<td class="Acc">Quasi</td>
+	<td class="Ret">1</td>
+	<td class="Ops">fD</td>
+	<td class="Def"><code class="code-word std">minus</code></td>
+	<td class="Cpx">O(N), =(N - 1)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word CH">adjacent_<wbr>transform</code></td>
+	<td class="Family hidden">40</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word CH">adjacent_<wbr>transform</code><a href="https://www.youtube.com/watch?v=sEvYmb3eKsw?t=" class="ext-ref" target="_blank" rel="noopener noreferrer">&rtrif;</a></th>
+	<td class="Inp">1s</td>
+	<td class="Acc">Quasi</td>
+	<td class="Ret">1</td>
+	<td class="Ops">D</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N), =(N - 1)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">adjacent_<wbr>difference</code></td>
+	<td class="Family hidden">40</td></tr>
 
-<tr><th scope="row" class="rowname"><code class="code-word CH">adjacent_<wbr>inclusive_<wbr>scan</code></th>
-	<td>1s</td><td>First</td><td>1</td><td>A, D</td><td></td><td>Fwd.</td><td></td><td class="hidden">50</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word CH">adjacent_<wbr>inclusive_<wbr>scan</code><a href="https://www.youtube.com/watch?v=sEvYmb3eKsw?t=51m" class="ext-ref" target="_blank" rel="noopener noreferrer">&rtrif;</a></th>
+	<td class="Inp">1s</td>
+	<td class="Acc">First</td>
+	<td class="Ret">1</td>
+	<td class="Ops">A, D</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.</td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">50</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">transform</code></th>
-	<td>1 / 2</td><td></td><td>1</td><td>uT / bT</td><td></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">60</td></tr>
+	<td class="Inp">1 / 2</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">uT / bT</td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">copy</code>, <code class="code-word std">copy_n</code></th>
-	<td>1</td><td></td><td>1</td><td></td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">transform</code></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">transform</code></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">copy_<wbr>backward</code></th>
-	<td>1</td><td></td><td>1</td><td></td><td></td><td>Rev.</td><td></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Rev.</td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">move</code></th>
-	<td>1</td><td></td><td>1</td><td></td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">shift_left</code></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">shift_left</code></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">move_<wbr>backward</code></th>
-	<td>1</td><td></td><td>1</td><td></td><td></td><td>Rev.</td><td><code class="code-word std">shift_<wbr>right</code></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Rev.</td>
+	<td class="Cmp"><code class="code-word std">shift_<wbr>right</code></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">replace_<wbr>copy</code></th>
-	<td>1+Value</td><td>Arg</td><td>1</td><td></td><td><code class="code-word std">equal_to</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">transform</code></td><td class="hidden">60</td></tr>
+	<td class="Inp">1+Value</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"><code class="code-word std">equal_to</code></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">transform</code></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">replace_<wbr>copy_if</code></th>
-	<td>1</td><td>Arg</td><td>1</td><td>uP</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">transform</code></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops">uP</td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">transform</code></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">reverse_<wbr>copy</code></th>
-	<td>1</td><td></td><td>1</td><td></td><td></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">transform</code></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">transform</code></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">rotate_<wbr>copy</code></th>
-	<td>1d</td><td></td><td>1</td><td></td><td></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">60</td></tr>
+	<td class="Inp">1d</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">sample</code></th>
-	<td>1</td><td>Arg</td><td>1</td><td></td><td></td><td>Fwd.</td><td></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.</td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">60</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">partial_<wbr>sort_<wbr>copy</code></th>
-	<td>1</td><td></td><td>1</td><td>bP</td><td><code class="code-word std">less</code></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">60</td></tr>
-<tr><th scope="row" class="rowname"><code class="code-word std">merge</code></th>
-	<td>2</td><td></td><td>1</td><td>bP</td><td><code class="code-word std">less</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">60</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N log(min(D,N))</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">60</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">partition_<wbr>copy</code></th>
-	<td>1</td><td></td><td>2</td><td>uP</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">63</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">2</td>
+	<td class="Ops">uP</td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">63</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word kblib">transform_if</code></th>
-	<td>1</td><td></td><td>1</td><td>uP, uT</td><td></td><td>Fwd.</td><td></td><td class="hidden">65</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">uP, uT</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.</td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">65</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">copy_if</code>, <code class="code-word std">remove_<wbr>copy_if</code></th>
-	<td>1</td><td></td><td>1</td><td>uP</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word kblib">transform_if</code></td><td class="hidden">65</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">uP</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word kblib">transform_if</code></td>
+	<td class="Family hidden">65</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">remove_<wbr>copy</code></th>
-	<td>1+Value</td><td></td><td>1</td><td></td><td><code class="code-word std">equal_to</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word kblib">transform_if</code></td><td class="hidden">65</td></tr>
+	<td class="Inp">1+Value</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"><code class="code-word std">equal_to</code></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word kblib">transform_if</code></td>
+	<td class="Family hidden">65</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">unique_<wbr>copy</code></th>
-	<td>1</td><td>First</td><td>1</td><td>bP</td><td><code class="code-word std">equal_to</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">65</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc">First</td>
+	<td class="Ret">1</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">equal_to</code></td>
+	<td class="Cpx"></td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp">O(N)</td>
+	<td class="Family hidden">65</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">set_<wbr>difference</code>, <code class="code-word std">set_<wbr>intersection</code>, <code class="code-word std">set_<wbr>symmetric_<wbr>difference</code>, <code class="code-word std">set_<wbr>union</code></th>
-	<td>2</td><td></td><td>1</td><td>bP</td><td><code class="code-word std">less</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">67</td></tr>
+	<td class="Inp">2</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N+M), &leq;(2⋅(N+M)−1)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">67</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">merge</code></th>
+	<td class="Inp">2</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N+M)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">67</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">regex_<wbr>replace<a href="#fn-re" class="fn-ref">&lozf;</a></code></th>
-	<td>2</td><td></td><td>1</td><td>Regex<a href="#fn-re" class="fn-ref">&lozf;</a></td><td></td><td></td><td>See note<a href="#fn-re" class="fn-ref">&lozf;</a></td><td class="hidden">68</td></tr>
+	<td class="Inp">2</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">Regex<a href="#fn-re" class="fn-ref">&lozf;</a></td>
+	<td class="Def"></td>
+	<td class="Cpx">Unspc.</td>
+	<td class="Dir"></td>
+	<td class="Cmp">See note<a href="#fn-re" class="fn-ref">&lozf;</a></td>
+	<td class="Family hidden">68</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word kblib">search_<wbr>replace_<wbr>copy</code></th>
-	<td>3</td><td></td><td>1</td><td>bP</td><td><code class="code-word std">equal_to</code></td><td></td><td><code class="code-word std">regex_<wbr>replace</code><a href="#fn-re" class="fn-ref">&lozf;</a></td><td class="hidden">68</td></tr>
+	<td class="Inp">3</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">equal_to</code></td>
+	<td class="Cpx">O(N×(S+R))</td>
+	<td class="Dir"></td>
+	<td class="Cmp"><code class="code-word std">regex_<wbr>replace</code><a href="#fn-re" class="fn-ref">&lozf;</a></td>
+	<td class="Family hidden">68</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">generate</code>, <code class="code-word std">generate_n</code></th>
-	<td>0</td><td></td><td>1</td><td>G</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">100</td></tr>
+	<td class="Inp">0</td>
+	<td class="Acc"></td>
+	<td class="Ret">1</td>
+	<td class="Ops">G</td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">100</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">iota</code></th>
-	<td>0</td><td>Arg</td><td>1</td><td></td><td><code class="code-word red">++</code></td><td>Fwd.</td><td><code class="code-word std">generate</code></td><td class="hidden">100</td></tr>
+	<td class="Inp">0</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"><code class="code-word red">++</code></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.</td>
+	<td class="Cmp"><code class="code-word std">generate</code></td>
+	<td class="Family hidden">100</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word kblib">iota</code></th>
-	<td>0</td><td>Arg</td><td>1</td><td>uT</td><td><code class="code-word">++</code></td><td>Fwd.</td><td><code class="code-word std">generate</code></td><td class="hidden">100</td></tr>
+	<td class="Inp">0</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops">uT</td>
+	<td class="Def"><code class="code-word">++</code></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.</td>
+	<td class="Cmp"><code class="code-word std">generate</code></td>
+	<td class="Family hidden">100</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">fill</code>, <code class="code-word std">fill_n</code></th>
-	<td>0</td><td>Arg</td><td>1</td><td></td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">generate</code>, <code class="code-word std">generate_n</code></td><td class="hidden">100</td></tr>
+	<td class="Inp">0</td>
+	<td class="Acc">Arg</td>
+	<td class="Ret">1</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">generate</code>, <code class="code-word std">generate_n</code></td>
+	<td class="Family hidden">100</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">for_<wbr>each</code>, <code class="code-word std">for_<wbr>each_n</code></th>
-	<td>1</td><td></td><td>0<a href="#fn-for-each" class="fn-ref">&empty;</a></td><td>muT</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">140</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">0<a href="#fn-for-each" class="fn-ref">&empty;</a></td>
+	<td class="Ops">muT</td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">140</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word kblib">for_<wbr>each</code>, <code class="code-word kblib">for_<wbr>each_n</code></th>
-	<td>1 / 2</td><td></td><td>0<a href="#fn-for-each" class="fn-ref">&empty;</a></td><td>muT / mbT</td><td></td><td>Fwd.</td><td></td><td class="hidden">140</td></tr>
+	<td class="Inp">1 / 2</td>
+	<td class="Acc"></td>
+	<td class="Ret">0<a href="#fn-for-each" class="fn-ref">&empty;</a></td>
+	<td class="Ops">muT / mbT</td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.</td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">140</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">swap_<wbr>ranges</code></th>
-	<td>2</td><td></td><td>Self</td><td></td><td><code class="code-word std red">swap</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word kblib">for_<wbr>each</code></td><td class="hidden">140</td></tr>
+	<td class="Inp">2</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"><code class="code-word std red">swap</code></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word kblib">for_<wbr>each</code></td>
+	<td class="Family hidden">140</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">remove</code></th>
-	<td>1+Value</td><td></td><td>Self</td><td></td><td><code class="code-word std">equal_to</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">150</td></tr>
+	<td class="Inp">1+Value</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"><code class="code-word std">equal_to</code></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">150</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">remove_if</code></th>
-	<td>1</td><td></td><td>Self</td><td>uP</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">150</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">uP</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">150</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">unique</code></th>
-	<td>1</td><td></td><td>Self</td><td>bP</td><td><code class="code-word std">equal_to</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">150</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">equal_to</code></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">150</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">replace</code></th>
-	<td>1+Value</td><td></td><td>Self</td><td></td><td><code class="code-word std">equal_to</code></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">transform</code></td><td class="hidden">160</td></tr>
+	<td class="Inp">1+Value</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"><code class="code-word std">equal_to</code></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">transform</code></td>
+	<td class="Family hidden">160</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">replace_if</code></th>
-	<td>1</td><td></td><td>Self</td><td>uP</td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">transform</code></td><td class="hidden">160</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">uP</td>
+	<td class="Def"></td>
+	<td class="Cpx">=(N)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">transform</code></td>
+	<td class="Family hidden">160</td></tr>
 
 <tr><th scope="row" class="rowname"><code class="code-word std">reverse</code></th>
-	<td>1</td><td></td><td>Self</td><td></td><td></td><td>Yes<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">swap_ranges</code></td><td class="hidden">170</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N), =(N/2)</td>
+	<td class="Dir">Yes<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">swap_ranges</code></td>
+	<td class="Family hidden">170</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">rotate</code></th>
-	<td>1d</td><td></td><td>Self</td><td></td><td></td><td>Yes<a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">170</td></tr>
+	<td class="Inp">1d</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir">Yes<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">shift_<wbr>left</code></th>
-	<td>1d</td><td></td><td>Self</td><td></td><td></td><td>Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">move</code></td><td class="hidden">170</td></tr>
+	<td class="Inp">1d</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">&leq;(N-n)</td>
+	<td class="Dir">Fwd.<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">move</code></td>
+	<td class="Family hidden">170</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">shift_<wbr>right</code></th>
-	<td>1d</td><td></td><td>Self</td><td></td><td></td><td>Yes<a href="#fn-par" class="fn-ref">&par;</a></td><td><code class="code-word std">move_<wbr>backward</code></td><td class="hidden">170</td></tr>
+	<td class="Inp">1d</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">&leq;(N-n)</td>
+	<td class="Dir">Yes<a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"><code class="code-word std">move_<wbr>backward</code></td>
+	<td class="Family hidden">170</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">shuffle</code></th>
-	<td>1+URBG</td><td></td><td>Self</td><td></td><td></td><td></td><td></td><td class="hidden">170</td></tr>
+	<td class="Inp">1+URBG</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N)</td>
+	<td class="Dir"></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">next_<wbr>permutation</code>, <code class="code-word std">prev_<wbr>permutation</code></th>
-	<td>1</td><td></td><td>Self</td><td></td><td></td><td></td><td></td><td class="hidden">170</td></tr>
-<tr><th scope="row" class="rowname"><code class="code-word std">partition</code>, <code class="code-word std">stable_<wbr>partition</code></th>
-	<td>1</td><td></td><td>Self</td><td>uP</td><td></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">170</td></tr>
-<tr><th scope="row" class="rowname"><code class="code-word std">sort</code>, <code class="code-word std">partial_<wbr>sort</code>, <code class="code-word std">stable_<wbr>sort</code>, <code class="code-word std">nth_<wbr>element</code></th>
-	<td>1</td><td></td><td>Self</td><td>bP</td><td><code class="code-word std">less</code></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">170</td></tr>
-<tr><th scope="row" class="rowname"><code class="code-word std">make_<wbr>heap</code>, <code class="code-word std">push_<wbr>heap</code>, <code class="code-word std">pop_<wbr>heap</code>, <code class="code-word std">sort_<wbr>heap</code></th>
-	<td>1</td><td></td><td>Self</td><td>bP</td><td><code class="code-word std">less</code></td><td></td><td></td><td class="hidden">170</td></tr>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops"></td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N), &leq;(N/2)</td>
+	<td class="Dir"></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">partition</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">uP</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N); O(N log N)<a href="#fn-raccess", class="fn-ref">&darr;&par;</a></td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">stable_<wbr>partition</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">uP</td>
+	<td class="Def"></td>
+	<td class="Cpx">O(N) w/ memory, else O(N log N); O(N log N)<a href="#fn-raccess", class="fn-ref">&darr;&par;</a></td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">sort</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N log N)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">partial_<wbr>sort</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N log M)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">stable_<wbr>sort</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N log N) w/ memory, else O(N log(N)<sup>2</sup>)</td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">nth_<wbr>element</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N); O(N log N)<a href="#fn-raccess", class="fn-ref">&darr;&par;</a></td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">make_<wbr>heap</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N), &leq;(3N)</td>
+	<td class="Dir"></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">push_<wbr>heap</code>, <code class="code-word std">pop_<wbr>heap</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(log N)</td>
+	<td class="Dir"></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
+<tr><th scope="row" class="rowname"><code class="code-word std">sort_<wbr>heap</code></th>
+	<td class="Inp">1</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">O(N log N)</td>
+	<td class="Dir"></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>
 <tr><th scope="row" class="rowname"><code class="code-word std">inplace_<wbr>merge</code></th>
-	<td>1d</td><td></td><td>Self</td><td>bP</td><td><code class="code-word std">less</code></td><td><a href="#fn-par" class="fn-ref">&par;</a></td><td></td><td class="hidden">170</td></tr>
+	<td class="Inp">1d</td>
+	<td class="Acc"></td>
+	<td class="Ret">Self</td>
+	<td class="Ops">bP</td>
+	<td class="Def"><code class="code-word std">less</code></td>
+	<td class="Cpx">=(N-1) w/ memory, O(N log N); O(N log N)<a href="#fn-raccess", class="fn-ref">&darr;&par;</a></td>
+	<td class="Dir"><a href="#fn-par" class="fn-ref">&par;</a></td>
+	<td class="Cmp"></td>
+	<td class="Family hidden">170</td></tr>

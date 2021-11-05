@@ -257,6 +257,25 @@ constexpr auto transform_exclusive_scan(InputIt first, EndIt last,
 	return d_first;
 }
 
+#if 0
+template <typename InputIt, typename BinaryAccumulation,
+          typename BinaryTransform>
+KBLIB_NODISCARD constexpr auto
+adjacent_reduce(InputIt begin, InputIt begin1, InputIt end,
+                BinaryAccumulation acc, BinaryTransform op) {}
+
+template <typename InputIt, typename BinaryTransform>
+KBLIB_NODISCARD constexpr auto adjacent_transform(InputIt begin, InputIt begin1,
+                                                  InputIt end,
+                                                  BinaryTransform op) {}
+
+template <typename InputIt, typename BinaryAccumulation,
+          typename BinaryTransform>
+KBLIB_NODISCARD constexpr auto
+adjacent_inclusive_scan(InputIt begin, InputIt begin1, InputIt end,
+                        BinaryAccumulation acc, BinaryTransform op) {}
+#endif
+
 /**
  * @brief Finds a value in range [begin, end). If not found, returns end. It
  * also allows for a sentinel end iterator.
@@ -708,13 +727,51 @@ template <typename InputIt1, typename EndIt1, typename InputIt2,
           typename EndIt2, typename BinaryPred>
 KBLIB_NODISCARD constexpr auto starts_with(InputIt1 begin1, EndIt1 end1,
                                            InputIt2 begin2, EndIt2 end2,
-                                           BinaryPred pred) -> bool {
+                                           BinaryPred pred)
+    -> enable_if_t<
+        (std::is_base_of<std::input_iterator_tag,
+                         typename std::iterator_traits<
+                             InputIt1>::iterator_category>::value and
+         std::is_base_of<std::input_iterator_tag,
+                         typename std::iterator_traits<
+                             InputIt2>::iterator_category>::value) and
+            not(std::is_base_of<std::random_access_iterator_tag,
+                                typename std::iterator_traits<
+                                    InputIt1>::iterator_category>::value and
+                std::is_base_of<std::random_access_iterator_tag,
+                                typename std::iterator_traits<
+                                    InputIt2>::iterator_category>::value),
+        bool> {
 	while (begin1 != end1 and begin2 != end2) {
 		if (not kblib::invoke(pred, *begin1++, *begin2++)) {
 			return false;
 		}
 	}
 	return begin2 == end2;
+}
+
+/**
+ * @brief Checks if a given range ends with a particular subrange.
+ */
+template <typename RandomAccessIt1, typename RandomAccessIt2,
+          typename BinaryPred = std::equal_to<>>
+KBLIB_NODISCARD constexpr auto
+starts_with(RandomAccessIt1 begin1, RandomAccessIt1 end1,
+            RandomAccessIt2 begin2, RandomAccessIt2 end2, BinaryPred pred = {})
+    -> enable_if_t<
+        std::is_base_of<std::random_access_iterator_tag,
+                        typename std::iterator_traits<
+                            RandomAccessIt1>::iterator_category>::value and
+            std::is_base_of<std::random_access_iterator_tag,
+                            typename std::iterator_traits<
+                                RandomAccessIt2>::iterator_category>::value,
+        bool> {
+	if (end2 - begin2 > end1 - begin1) {
+		return false;
+	} else {
+		auto N = end2 - begin2;
+		return kblib::equal(begin1, begin1 + N, begin2, pred);
+	}
 }
 
 /**
@@ -750,23 +807,25 @@ KBLIB_NODISCARD constexpr auto ends_with(BidirIt1 begin1, BidirIt1 end1,
 /**
  * @brief Checks if a given range ends with a particular subrange.
  */
-template <typename BidirIt1, typename BidirIt2,
+template <typename RandomAccessIt1, typename RandomAccessIt2,
           typename BinaryPred = std::equal_to<>>
-KBLIB_NODISCARD constexpr auto ends_with(BidirIt1 begin1, BidirIt1 end1,
-                                         BidirIt2 begin2, BidirIt2 end2,
-                                         BinaryPred pred = {})
-    -> enable_if_t<std::is_base_of<std::random_access_iterator_tag,
-                                   typename std::iterator_traits<
-                                       BidirIt1>::iterator_category>::value and
-                       std::is_base_of<std::random_access_iterator_tag,
-                                       typename std::iterator_traits<
-                                           BidirIt2>::iterator_category>::value,
-                   bool> {
+KBLIB_NODISCARD constexpr auto
+ends_with(RandomAccessIt1 begin1, RandomAccessIt1 end1, RandomAccessIt2 begin2,
+          RandomAccessIt2 end2, BinaryPred pred = {})
+    -> enable_if_t<
+        std::is_base_of<std::random_access_iterator_tag,
+                        typename std::iterator_traits<
+                            RandomAccessIt1>::iterator_category>::value and
+            std::is_base_of<std::random_access_iterator_tag,
+                            typename std::iterator_traits<
+                                RandomAccessIt2>::iterator_category>::value,
+        bool> {
 	if (end2 - begin2 > end1 - begin1) {
 		return false;
+	} else {
+		auto N = end2 - begin2;
+		return kblib::equal(end1 - N, end1, begin2, pred);
 	}
-	auto N = end2 - begin2;
-	return kblib::equal(end1 - N, end1, begin2, pred);
 }
 
 template <typename InputIt, typename EndIt, typename T, typename UnaryTransform>

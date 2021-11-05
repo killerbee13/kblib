@@ -74,7 +74,8 @@ DISTFILES += \
     doc/algorithm_intuition_ana.html \
     doc/algorithm_intuition_cata.html \
     doc/algorithm_intuition.html \
-    doc/Doxyfile
+    doc/Doxyfile \
+    doc/algorithm_intuition_named_ops.html
 
 VERSION = 0.2.1
 
