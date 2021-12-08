@@ -94,6 +94,16 @@
 #define KBLIB_UNUSED [[gnu::unused]]
 #endif
 
+#if KBLIB_USE_CXX17
+#define KBLIB_CONSTANT constexpr inline
+#define KBLIB_CONSTANT_V constexpr inline bool
+#define KBLIB_CONSTANT_M constexpr inline static
+#else
+#define KBLIB_CONSTANT constexpr static
+#define KBLIB_CONSTANT_V constexpr static bool
+#define KBLIB_CONSTANT_M constexpr static
+#endif
+
 /**
  * @def KBLIB_CXX20
  * @brief This internal macro is used to selectively use C++20 features.

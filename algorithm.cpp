@@ -94,7 +94,8 @@ TEST_CASE("find_in") {
 
 TEST_CASE("search_replace") {
 	using namespace std::literals;
-	using std::begin, std::end;
+	using std::begin;
+	using std::end;
 	SECTION("search_replace_copy_1") {
 		const auto haystack = "a string with words"s;
 		const auto needle = "with"s;

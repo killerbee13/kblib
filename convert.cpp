@@ -20,8 +20,8 @@ TEST_CASE("bases") {
 
 	using namespace kblib::literals;
 	auto one = 1_c;
-	static_assert(decltype(one)::value == 1);
-	static_assert(one == 1);
+	static_assert(decltype(one)::value == 1, "");
+	static_assert(one == 1, "");
 }
 
 TEST_CASE("parse_integer") {

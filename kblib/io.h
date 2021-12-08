@@ -285,16 +285,18 @@ auto unformatted_expect(CharT c) -> auto {
 			     std::is_same<CharT, char>::value),
 			    "Stream character type incompatible with argument type.");
 #if KBLIB_USE_CXX17
-			if constexpr (std::is_same<CharT, SCharT>::value) {
+#define IF_CONSTEXPR constexpr
 #else
-			if (std::is_same<CharT, SCharT>::value) {
+#define IF_CONSTEXPR
 #endif
+			if IF_CONSTEXPR (std::is_same<CharT, SCharT>::value) {
 				return c == d;
-			} else if (unicode_widen_v<CharT, SCharT>) {
+			} else if IF_CONSTEXPR (unicode_widen_v<CharT, SCharT>) {
 				return c == d;
 			} else {
 				return istream.widen(c) == d;
 			}
+#undef IF_CONSTEXPR
 		};
 
 		if (widen_equal(istream.peek())) {

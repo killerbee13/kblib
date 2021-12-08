@@ -444,7 +444,7 @@ namespace detail_sort {
 	    -> void {
 		using E = decay_t<decltype(proj(*begin))>;
 		constexpr auto size = std::numeric_limits<std::make_unsigned_t<E>>::max();
-		auto count = make_array_for<size>(std::bool_constant<(size > 256)>{});
+		auto count = make_array_for<size>(bool_constant<(size > 256)>{});
 
 		for (auto cur = begin; cur != end; ++cur) {
 			++count->at(proj(*cur));

@@ -257,11 +257,12 @@ struct shift_mask {
 	    -> UIntType {
 		return g(in);
 	}
-	KBLIB_NODISCARD static constexpr auto
-	min(UIntType min, [[maybe_unused]] UIntType max) noexcept -> UIntType {
+	KBLIB_NODISCARD static constexpr auto min(UIntType min,
+	                                          KBLIB_UNUSED UIntType max) noexcept
+	    -> UIntType {
 		return g(min);
 	}
-	KBLIB_NODISCARD static constexpr auto max([[maybe_unused]] UIntType min,
+	KBLIB_NODISCARD static constexpr auto max(KBLIB_UNUSED UIntType min,
 	                                          UIntType max) noexcept
 	    -> UIntType {
 		return g(max);

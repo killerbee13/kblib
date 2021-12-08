@@ -479,7 +479,8 @@ namespace detail_bits {
  * @note This macro is defined unconditionally.
  */
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
-	static_assert(offset >= 0 and size > 0);                                    \
+	static_assert(offset >= 0 and size > 0,                                     \
+	              "BITFIELD cannot have negative offset or size");              \
                                                                                \
  private:                                                                      \
 	constexpr auto name##_get_impl() const noexcept->decltype(raw) {            \

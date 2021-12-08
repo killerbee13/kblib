@@ -631,7 +631,7 @@ namespace detail {
 
 } // namespace detail
 
-KBLIB_UNUSED constexpr inline struct {
+KBLIB_UNUSED KBLIB_CONSTANT struct {
 	/**
 	 * @brief Swaps two objects, using move operations.
 	 *

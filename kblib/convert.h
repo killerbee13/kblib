@@ -130,9 +130,9 @@ namespace detail_convert {
 		for (auto c : indirect(begin, end)) {
 			if (c != '\'') {
 				result *= base;
-				if (auto pos = find_in(std::begin(digits),
-				                       std::begin(digits) + base * variants, c);
-				    pos != base * variants) {
+				auto pos = find_in(std::begin(digits),
+				                   std::begin(digits) + base * variants, c);
+				if (pos != base * variants) {
 					result += pos / variants;
 				} else {
 					throw std::invalid_argument("invalid character in integer");

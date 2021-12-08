@@ -213,7 +213,7 @@ namespace detail_memory {
 
 	template <typename T>
 	struct template_param;
-	template <template <typename T> typename C, typename T>
+	template <template <typename T> class C, typename T>
 	struct template_param<C<T>> {
 		using type = T;
 	};

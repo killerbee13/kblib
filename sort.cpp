@@ -105,15 +105,15 @@ TEST_CASE("sort") {
 
 static std::ostream& log_location = std::cout;
 
-auto linear(std::size_t i) -> std::size_t { return i; }
+auto linear(std::size_t i) { return static_cast<double>(i); }
 
 TEST_CASE("insertion sort performance") {
 	auto time_and_log = [&](auto line, auto&& f, std::size_t quick = 30,
 	                        std::size_t slow = 10000,
-	                        std::size_t(*O)(std::size_t) = linear) {
+	                        double (*O)(std::size_t) = linear) {
 		auto time_fast = f(quick) / O(quick);
-		double time_slow = f(slow) / O(slow);
-		double error = time_slow / time_fast;
+		auto time_slow = f(slow) / O(slow);
+		auto error = time_slow / time_fast;
 		log_location << __FILE__ ":" << std::left << line << ": \t" << time_fast
 		             << "\t " << std::setw(12) << time_slow << '\t'
 		             << std::setw(14) << error << '\t' << time_slow * 10000
@@ -164,7 +164,8 @@ TEST_CASE("insertion sort performance") {
 		};
 
 		TIME(
-		    time_per, 30, 1000, +[](std::size_t i) { return i * i; });
+		    time_per, 30, 1000,
+		    +[](std::size_t i) { return static_cast<double>(i) * i; });
 	}
 	SECTION("adaptive_insertion_sort_copy on sorted data is fast") {
 		auto time_per = [](std::size_t size) {

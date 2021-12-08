@@ -274,7 +274,8 @@ KBLIB_NODISCARD auto build_dy(Functor f, size_t size) -> Container {
 template <typename Container, typename Range, typename UnaryFunction,
           enable_if_t<is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD auto build_dy(Range&& r, UnaryFunction f) -> Container {
-	using std::begin, std::end;
+	using std::begin;
+	using std::end;
 	Container out(kblib::size(r));
 	std::transform(begin(r), end(r), begin(out), std::ref(f));
 	return out;
@@ -454,7 +455,8 @@ KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last,
 template <typename Container, typename Range,
           enable_if_t<is_resizable_v<Container>, int> = 0>
 KBLIB_NODISCARD auto build_copy(Range&& r) -> Container {
-	using std::size, std::begin, std::end;
+	using std::begin;
+	using std::end;
 	Container out(kblib::size(r));
 	std::copy(begin(r), end(r), begin(out));
 	return out;

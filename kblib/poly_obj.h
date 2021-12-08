@@ -174,10 +174,11 @@ namespace detail_poly {
 
 	template <typename T>
 	constexpr construct_type construct_traits =
-	    construct_type::copy_only* std::is_copy_constructible_v<T> |
-	    construct_type::move* std::is_move_constructible_v<T> |
-	    construct_type::throw_move*(std::is_move_constructible_v<T> &
-	                                not std::is_nothrow_move_constructible_v<T>);
+	    construct_type::copy_only* std::is_copy_constructible<T>::value |
+	    construct_type::move* std::is_move_constructible<T>::value |
+	    construct_type::throw_move*(
+	        std::is_move_constructible<T>::value &
+	        not std::is_nothrow_move_constructible<T>::value);
 
 	template <typename T, typename hash = void>
 	struct erased_hash_t {};
@@ -347,7 +348,7 @@ struct default_destroy {
 	explicit default_destroy(T*) noexcept {}
 
 	auto destroy(Obj* obj) -> void { obj->~Obj(); }
-	static_assert(std::has_virtual_destructor_v<Obj>,
+	static_assert(std::has_virtual_destructor<Obj>::value,
 	              "Obj must have a virtual destructor");
 };
 
@@ -436,7 +437,7 @@ struct poly_obj_traits {
 	 * @see kblib::default_destroy
 	 */
 	using destroy_t = default_destroy<Obj>;
-	static_assert(std::is_empty_v<destroy_t>);
+	static_assert(std::is_empty<destroy_t>::value, "");
 };
 
 template <typename Obj>

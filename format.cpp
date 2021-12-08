@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string_view>
 
+#if KBLIB_USE_CXX17
 template <typename T>
 auto pred_count_digits(T v) {
 	return Catch::Predicate<T>(
@@ -96,3 +97,4 @@ TEST_CASE("count_digits") {
 		CHECK(kblib::count_digits(10.1) == 4);
 	}
 }
+#endif

@@ -62,7 +62,7 @@ template <typename T>
 struct contains_type<std::tuple<>, T> : std::false_type {};
 
 template <typename... Ts>
-constexpr bool contains_type_v = contains_type<Ts...>::value;
+KBLIB_CONSTANT_V contains_type_v = contains_type<Ts...>::value;
 
 /**
  * @brief Determines if Lhs contains all of the types in Rhs, where both are
@@ -81,7 +81,7 @@ template <typename Tuple>
 struct contains_types<Tuple, std::tuple<>> : std::true_type {};
 
 template <typename... Ts>
-constexpr bool contains_types_v = contains_types<Ts...>::value;
+KBLIB_CONSTANT_V contains_types_v = contains_types<Ts...>::value;
 
 template <typename T>
 struct list_as_tuple;
@@ -211,18 +211,16 @@ namespace detail {
  * True if and only if C is a resizable container.
  */
 template <typename C>
-constexpr bool is_resizable_v = decltype(detail::calc_resizable<C>(0))::value;
+KBLIB_CONSTANT_V is_resizable_v = decltype(detail::calc_resizable<C>(0))::value;
 
 template <typename C>
-struct is_resizable {
-	constexpr static bool value = is_resizable_v<C>;
-};
+struct is_resizable : bool_constant<is_resizable_v<C>> {};
 
 template <typename C, typename = void>
-constexpr bool has_reserve_v = false;
+KBLIB_CONSTANT_V has_reserve_v = false;
 
 template <typename C>
-constexpr bool
+KBLIB_CONSTANT_V
     has_reserve_v<C, void_t<decltype(std::declval<C&>().reserve(0))>> = true;
 
 /**
@@ -260,11 +258,11 @@ auto try_reserve(C&, std::size_t) noexcept -> void {
  *
  */
 template <typename C, typename = void>
-constexpr bool is_contiguous_v = false;
+KBLIB_CONSTANT_V is_contiguous_v = false;
 
 template <typename C>
-constexpr bool is_contiguous_v<C, void_t<decltype(std::declval<C&>().data())>> =
-    true;
+KBLIB_CONSTANT_V
+    is_contiguous_v<C, void_t<decltype(std::declval<C&>().data())>> = true;
 
 template <typename C>
 struct is_contiguous : bool_constant<is_contiguous_v<C>> {};
@@ -339,7 +337,7 @@ struct is_input_iterator<
     : std::true_type {};
 
 template <typename T>
-constexpr bool is_input_iterator_v = is_input_iterator<T>::value;
+KBLIB_CONSTANT_V is_input_iterator_v = is_input_iterator<T>::value;
 
 template <typename T, typename = void>
 struct is_forward_iterator : std::false_type {};
@@ -352,7 +350,7 @@ struct is_forward_iterator<
     : std::true_type {};
 
 template <typename T>
-constexpr bool is_forward_iterator_v = is_forward_iterator<T>::value;
+KBLIB_CONSTANT_V is_forward_iterator_v = is_forward_iterator<T>::value;
 
 template <typename T, typename = void>
 struct is_bidirectional_iterator : std::false_type {};
@@ -365,7 +363,7 @@ struct is_bidirectional_iterator<
     : std::true_type {};
 
 template <typename T>
-constexpr bool is_bidirectional_iterator_v =
+KBLIB_CONSTANT_V is_bidirectional_iterator_v =
     is_bidirectional_iterator<T>::value;
 
 template <typename T, typename = void>
@@ -379,7 +377,7 @@ struct is_random_access_iterator<
     : std::true_type {};
 
 template <typename T>
-constexpr bool is_random_access_iterator_v =
+KBLIB_CONSTANT_V is_random_access_iterator_v =
     is_random_access_iterator<T>::value;
 
 /**
@@ -415,7 +413,7 @@ template <typename T, std::size_t N>
 struct is_iterable<T (&)[N], void> : std::true_type {};
 
 template <typename T>
-constexpr bool is_iterable_v = is_iterable<T>::value;
+KBLIB_CONSTANT_V is_iterable_v = is_iterable<T>::value;
 
 template <typename T, typename = void>
 struct is_iterator : std::false_type {};
@@ -426,14 +424,14 @@ struct is_iterator<
     : std::true_type {};
 
 template <typename T>
-constexpr bool is_iterator_v = is_iterator<T>::value;
+KBLIB_CONSTANT_V is_iterator_v = is_iterator<T>::value;
 
 /**
  * @brief Abbreviated name for std::is_reference<T>::value for C++14.
  *
  */
 template <typename T>
-constexpr bool is_reference_v = std::is_reference<T>::value;
+KBLIB_CONSTANT_V is_reference_v = std::is_reference<T>::value;
 
 /**
  * @brief Abbreviated name for std::remove_reference<T>::type for C++14.
@@ -446,7 +444,7 @@ using remove_reference_t = typename std::remove_reference<T>::type;
  * @brief Names the EOF value for the given character type in std::char_traits.
  */
 template <typename CharT = char>
-constexpr auto eof = std::char_traits<CharT>::eof();
+KBLIB_CONSTANT auto eof = std::char_traits<CharT>::eof();
 
 template <typename T, T V>
 struct type_constant {
@@ -473,7 +471,7 @@ struct is_aliasing_type<std::byte> : std::true_type {};
 #endif
 
 template <typename T>
-constexpr bool is_aliasing_type_v = is_aliasing_type<T>::value;
+KBLIB_CONSTANT_V is_aliasing_type_v = is_aliasing_type<T>::value;
 
 } // namespace kblib
 

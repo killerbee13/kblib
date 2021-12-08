@@ -234,7 +234,8 @@ KBLIB_NODISCARD constexpr auto sum(InputIt first, InputIt last,
  */
 template <typename Range>
 KBLIB_NODISCARD constexpr auto sum(Range&& r) -> auto {
-	using std::begin, std::end;
+	using std::begin;
+	using std::end;
 	auto first = begin(r);
 	auto last = end(r);
 	if (first == last) {
@@ -1103,7 +1104,8 @@ template <typename Range1, typename Range2>
 KBLIB_NODISCARD constexpr auto contains_any(Range1&& haystack, Range2&& needle)
     -> enable_if_t<is_iterable<Range1>::value and is_iterable<Range2>::value,
                    bool> {
-	using std::begin, std::end;
+	using std::begin;
+	using std::end;
 	return kblib::any_of(
 	    begin(haystack), end(haystack),
 	    [&needle](const auto& v) { return kblib::contains(needle, v); });
