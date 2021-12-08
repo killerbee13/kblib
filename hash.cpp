@@ -69,6 +69,9 @@ TEST_CASE("FNV_hash") {
 	// kblib::FNV_hash<std::vector<has_padding>>{}({});
 	// fails because of unorderedness:
 	// kblib::FNV_hash<std::unordered_map<int, int>>{}({});
+
+	kblib::FNV_hash<int has_padding::*> test_hash4;
+	CHECK(test_hash4(nullptr) != test_hash4(&has_padding::i));
 #if KBLIB_USE_CXX17
 	kblib::FNV_hash<std::optional<int>> test_opt_hash;
 	(void)test_opt_hash(std::nullopt);
@@ -128,6 +131,9 @@ TEST_CASE("FNV_hash (32 bit)") {
 	// kblib::FNV_hash<std::vector<has_padding>>{}({});
 	// fails because of unorderedness:
 	// kblib::FNV_hash<std::unordered_map<int, int>>{}({});
+
+	kblib::FNV_hash<int has_padding::*, std::uint32_t> test_hash4;
+	CHECK(test_hash4(nullptr) != test_hash4(&has_padding::i));
 #if KBLIB_USE_CXX17
 	kblib::FNV_hash<std::optional<int>, std::uint32_t> test_opt_hash;
 	(void)test_opt_hash(std::nullopt);

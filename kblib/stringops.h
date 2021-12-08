@@ -37,6 +37,8 @@
 #include "traits.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cwctype>
 #include <initializer_list>
 #include <numeric>
 #include <string>

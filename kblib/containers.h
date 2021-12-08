@@ -339,9 +339,9 @@ namespace std {
 #pragma clang diagnostic ignored "-Wmismatched-tags"
 #endif
 
-template <typename C, std::size_t size>
-struct tuple_size<::kblib::construct_with_size<C, size>>
-    : public integral_constant<size_t, size> {};
+template <typename C, std::size_t Size>
+struct tuple_size<::kblib::construct_with_size<C, Size>>
+    : public integral_constant<size_t, Size> {};
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
