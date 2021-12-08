@@ -409,6 +409,31 @@ struct thrower final : Base {
 		}
 	}
 };
+
+struct fptr {
+	unsigned member;
+	auto (*p)(const fptr*) noexcept -> unsigned;
+	auto operator()() const noexcept -> unsigned { return p(this); }
+};
+
+auto fptr_d1(const fptr* p) noexcept -> unsigned { return p->member; }
+auto fptr_d2(const fptr* p) noexcept -> unsigned { return p->member * 2; }
+auto fptr_d3(const fptr* p) noexcept -> unsigned { return p->member / 2; }
+auto fptr_d4(const fptr* p) noexcept -> unsigned { return ~p->member; }
+
+auto make_fptr(unsigned v) noexcept -> fptr {
+	switch (v % 4u) {
+	case 0:
+		return {v, &fptr_d1};
+	case 1:
+		return {v, &fptr_d2};
+	case 2:
+		return {v, &fptr_d3};
+	case 3:
+		return {v, &fptr_d4};
+	}
+}
+
 } // namespace
 
 #ifndef FAST_TEST
@@ -633,6 +658,41 @@ TEST_CASE("poly_obj performance") {
 			return accum;
 		});
 		push_checksum(accum, "poly_obj");
+	};
+	BENCHMARK_ADVANCED("function pointer")(Catch::Benchmark::Chronometer meter) {
+		std::vector<fptr> d;
+		kblib::FNV_hash<unsigned> h;
+		for (auto i : kblib::range(count)) {
+			auto v = static_cast<unsigned>(h(i));
+			d.push_back(make_fptr(v));
+		}
+
+		unsigned accum{};
+		meter.measure([&] {
+			for (auto x : d) {
+				accum += x.p(&x);
+			}
+			return accum;
+		});
+		push_checksum(accum, "raw pointer");
+	};
+	BENCHMARK_ADVANCED("function pointer (wrapped)")
+	(Catch::Benchmark::Chronometer meter) {
+		std::vector<fptr> d;
+		kblib::FNV_hash<unsigned> h;
+		for (auto i : kblib::range(count)) {
+			auto v = static_cast<unsigned>(h(i));
+			d.push_back(make_fptr(v));
+		}
+
+		unsigned accum{};
+		meter.measure([&] {
+			for (auto x : d) {
+				accum += x();
+			}
+			return accum;
+		});
+		push_checksum(accum, "raw pointer");
 	};
 	BENCHMARK_ADVANCED("std::function")(Catch::Benchmark::Chronometer meter) {
 		std::vector<std::function<unsigned()>> d;
