@@ -349,12 +349,20 @@ struct is_space {
  * @return string The joined string.
  */
 template <typename range, typename string = std::string>
-KBLIB_NODISCARD auto join(const range& in, const string& joiner = "")
-    -> string {
-	return kblib::sum(begin(in), end(in),
-	                  [&joiner](const string& a, const string& b) -> string {
-		                  return concat(a, joiner, b);
-	                  });
+KBLIB_NODISCARD auto join(const range& in, const string& joiner = "") {
+	if (fakestd::size(in) > 0) {
+
+		auto len = kblib::accumulate(
+		    begin(in), end(in), std::size_t{},
+		    [](std::size_t l, const auto& x) { return l + strsize(x); });
+		auto ret = *begin(in);
+		try_reserve(ret, len);
+		kblib::copy(next(begin(in)), end(in),
+		            consumer([&](const auto& x) { append(ret, joiner, x); }));
+		return ret;
+	} else {
+		return typename value_type_linear<range>::type{};
+	}
 }
 #endif // KBLIB_USE_CXX17
 

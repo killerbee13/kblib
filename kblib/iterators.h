@@ -637,7 +637,15 @@ constexpr auto range(Value max) -> range_t<Value, incrementer> {
 #if KBLIB_USE_CXX17
 
 template <typename Value, typename Delta>
-class irange_t {};
+class irange_t {
+ public:
+	Value min, max;
+	Delta step;
+
+	constexpr static bool nothrow_copyable =
+	    std::is_nothrow_copy_constructible<Value>::value;
+	constexpr static bool nothrow_steppable = noexcept(min + step);
+};
 
 template <typename Value, typename Delta = int>
 constexpr auto irange(Value, Value, Delta = 0) {}
@@ -1559,6 +1567,10 @@ class consume_iterator {
 	 * @brief A no-op.
 	 */
 	auto operator++() -> consume_iterator& { return *this; }
+	/**
+	 * @brief A no-op.
+	 */
+	auto operator++(int) -> consume_iterator& { return *this; }
 };
 
 /**

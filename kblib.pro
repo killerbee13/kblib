@@ -68,6 +68,8 @@ HEADERS += \
 
 DISTFILES += \
     LICENSE.txt \
+    doc/table_ana.yml \
+    doc/table_cata.yml \
     var_timings.log \
     medfile \
     Doxyfile \
