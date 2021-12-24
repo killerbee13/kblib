@@ -167,7 +167,7 @@ data:
     Cmp: ''
     Family: '80'
 
-  - name: '{search (C++17)|std:search}'
+  - name: '{%search (C++17)|std:search}'
     Inp: '1'
     Acc: ''
     Ret: 'Position'
