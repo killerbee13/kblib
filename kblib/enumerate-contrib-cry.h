@@ -59,8 +59,8 @@ namespace detail_cry {
 
 	template <typename Iterator>
 	struct value_index_pair {
-		using value_type =
-		    std::remove_reference_t<decltype(*std::declval<Iterator&>())>;
+		using value_type
+		    = std::remove_reference_t<decltype(*std::declval<Iterator&>())>;
 
 		std::size_t index;
 		Iterator iter;
@@ -72,7 +72,8 @@ namespace detail_cry {
 		using iterator_type = decltype(std::begin(std::declval<Range&>()));
 
 		value_and_index_base(Range& range)
-		    : range_begin_(std::begin(range)), range_end_(std::end(range)) {}
+		    : range_begin_(std::begin(range))
+		    , range_end_(std::end(range)) {}
 
 		auto range_begin() -> iterator_type { return range_begin_; }
 
@@ -88,7 +89,8 @@ namespace detail_cry {
 	 public:
 		using iterator_type = decltype(std::begin(std::declval<Range&>()));
 
-		value_and_index_base(Range& range) : range_(std::move(range)) {}
+		value_and_index_base(Range& range)
+		    : range_(std::move(range)) {}
 
 		auto range_begin() -> iterator_type { return std::begin(range_); }
 
@@ -102,8 +104,9 @@ namespace detail_cry {
 		using iterator_type = typename value_and_index_base<Range>::iterator_type;
 
 		value_and_index_impl(Range& range)
-		    : value_and_index_base<Range>(range), begin_(this->range_begin(), 0),
-		      end_(this->range_end(), 0) {}
+		    : value_and_index_base<Range>(range)
+		    , begin_(this->range_begin(), 0)
+		    , end_(this->range_end(), 0) {}
 
 		struct iterator {
 		 private:
@@ -131,7 +134,7 @@ namespace detail_cry {
 			}
 
 			auto operator!=(const iterator& other) const -> bool {
-				return not(other == *this);
+				return not (other == *this);
 			}
 		};
 
@@ -146,11 +149,11 @@ namespace detail_cry {
 } // namespace detail_cry
 } // namespace kblib
 namespace std {
-#if defined(__clang__)
+#	if defined(__clang__)
 // Fix from: https://github.com/nlohmann/json/issues/1401
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmismatched-tags"
-#endif
+#		pragma clang diagnostic push
+#		pragma clang diagnostic ignored "-Wmismatched-tags"
+#	endif
 template <typename T>
 struct tuple_size<kblib::detail_cry::value_index_pair<T>> {
 	static constexpr std::size_t value = 2;
@@ -166,9 +169,9 @@ struct tuple_element<1, kblib::detail_cry::value_index_pair<T>> {
 	using type = std::remove_reference_t<decltype(*std::declval<T&>())>;
 };
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#	if defined(__clang__)
+#		pragma clang diagnostic pop
+#	endif
 } // namespace std
 
 namespace kblib {

@@ -45,9 +45,9 @@
 #include <unordered_set>
 
 #if KBLIB_USE_CXX17
-#include <optional>
-#include <string_view>
-#include <variant>
+#	include <optional>
+#	include <string_view>
+#	include <variant>
 #endif
 
 namespace kblib {
@@ -55,32 +55,32 @@ namespace kblib {
 template <typename Integral, typename CharT>
 constexpr auto to_bytes_le(Integral ival,
                            CharT (&dest)[sizeof(Integral)]) noexcept -> void {
-	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
-	                  not std::is_same<CharT, bool>::value,
+	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1
+	                  and not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	for (int byte = 0; byte != sizeof(Integral); ++byte) {
-		dest[byte] =
-		    static_cast<CharT>(to_unsigned(ival) >> to_unsigned(CHAR_BIT * byte));
+		dest[byte] = static_cast<CharT>(to_unsigned(ival)
+		                                >> to_unsigned(CHAR_BIT * byte));
 	}
 }
 
 template <typename Integral, typename CharT>
 constexpr auto to_bytes_be(Integral ival,
                            CharT (&dest)[sizeof(Integral)]) noexcept -> void {
-	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
-	                  not std::is_same<CharT, bool>::value,
+	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1
+	                  and not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	for (auto byte : range(sizeof(Integral))) {
-		dest[(sizeof(Integral) - 1) - byte] =
-		    static_cast<CharT>(ival >> (CHAR_BIT * byte));
+		dest[(sizeof(Integral) - 1) - byte]
+		    = static_cast<CharT>(ival >> (CHAR_BIT * byte));
 	}
 }
 
 template <typename Integral, typename CharT>
 constexpr auto to_bytes(Integral val, CharT (&dest)[sizeof(Integral)]) noexcept
     -> void {
-	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1 and
-	                  not std::is_same<CharT, bool>::value,
+	static_assert(std::is_integral<CharT>::value and sizeof(CharT) == 1
+	                  and not std::is_same<CharT, bool>::value,
 	              "CharT must be a char-like type.");
 	if (hash_order == endian::little) {
 		to_bytes_le(val, dest);
@@ -144,8 +144,9 @@ namespace fnv {
  * @return HashInt The FNVa hash of the input range.
  */
 template <typename HashInt, typename Span>
-KBLIB_NODISCARD constexpr auto
-FNVa(Span&& s, HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept
+KBLIB_NODISCARD constexpr auto FNVa(Span&& s,
+                                    HashInt hval
+                                    = fnv::fnv_offset<HashInt>::value) noexcept
     -> HashInt {
 	static_assert(sizeof(*std::begin(s)) == 1,
 	              "Can only hash char-like objects.");
@@ -169,9 +170,9 @@ FNVa(Span&& s, HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept
  * @return HashInt The FNVa hash of the input range.
  */
 template <typename HashInt, typename CharT, std::size_t N>
-KBLIB_NODISCARD constexpr auto
-FNVa_a(const CharT (&s)[N],
-       HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept -> HashInt {
+KBLIB_NODISCARD constexpr auto FNVa_a(
+    const CharT (&s)[N],
+    HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept -> HashInt {
 	static_assert(sizeof(s[0]) == 1, "Can only hash char-like objects.");
 	const HashInt prime = fnv::fnv_prime<HashInt>::value;
 	for (auto&& c : s) {
@@ -190,9 +191,9 @@ FNVa_a(const CharT (&s)[N],
  * value to create a hash of the concatenation of the two ranges.
  * @return std::uint32_t The FNV32a hash of the input range.
  */
-KBLIB_NODISCARD constexpr auto
-FNV32a(std::string_view s,
-       uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
+KBLIB_NODISCARD constexpr auto FNV32a(
+    std::string_view s,
+    uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
     -> std::uint32_t {
 	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (auto&& c : s) {
@@ -204,9 +205,9 @@ FNV32a(std::string_view s,
 #endif
 
 template <typename HashInt>
-KBLIB_NODISCARD constexpr auto
-FNVa_s(const char* begin, std::size_t length,
-       HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept -> HashInt {
+KBLIB_NODISCARD constexpr auto FNVa_s(
+    const char* begin, std::size_t length,
+    HashInt hval = fnv::fnv_offset<HashInt>::value) noexcept -> HashInt {
 	const HashInt prime = fnv::fnv_prime<HashInt>::value;
 	//  for (const char* pos = begin; pos != begin + length; ++pos) {
 	//    hval ^= static_cast<HashInt>(static_cast<unsigned char>(*pos));
@@ -229,9 +230,9 @@ FNVa_s(const char* begin, std::size_t length,
  * @return HashInt The FNV32a hash of the input range.
  */
 template <std::size_t N>
-KBLIB_NODISCARD constexpr auto
-FNV32a_a(const char (&s)[N],
-         uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
+KBLIB_NODISCARD constexpr auto FNV32a_a(
+    const char (&s)[N],
+    uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
     -> std::uint32_t {
 	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (auto&& c : s) {
@@ -241,9 +242,9 @@ FNV32a_a(const char (&s)[N],
 	return hval;
 }
 
-KBLIB_NODISCARD constexpr auto
-FNV32a_s(const char* begin, std::size_t length,
-         uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
+KBLIB_NODISCARD constexpr auto FNV32a_s(
+    const char* begin, std::size_t length,
+    uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
     -> std::uint32_t {
 	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (const char* pos = begin; pos != begin + length; ++pos) {
@@ -295,9 +296,9 @@ inline namespace literals {
  */
 template <typename T>
 struct padding_bits
-    : std::integral_constant<int, CHAR_BIT * sizeof(T) -
-                                      std::numeric_limits<T>::digits -
-                                      std::numeric_limits<T>::is_signed> {};
+    : std::integral_constant<int, CHAR_BIT * sizeof(T)
+                                      - std::numeric_limits<T>::digits
+                                      - std::numeric_limits<T>::is_signed> {};
 
 template <typename T>
 constexpr int padding_bits_v = padding_bits<T>::value;
@@ -333,10 +334,9 @@ KBLIB_CONSTANT_V is_hashable_v = is_hashable<Key>::value;
  */
 template <typename HashInt>
 struct FNV_hash<bool, HashInt, void> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(bool key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
-	    -> HashInt {
+	KBLIB_NODISCARD constexpr auto operator()(
+	    bool key, HashInt offset
+	              = fnv::fnv_offset<HashInt>::value) const noexcept -> HashInt {
 		char tmp[1] = {key};
 		return FNVa_a(tmp, offset);
 	}
@@ -348,10 +348,9 @@ struct FNV_hash<bool, HashInt, void> {
  */
 template <typename HashInt>
 struct FNV_hash<char, HashInt, void> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(char key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
-	    -> HashInt {
+	KBLIB_NODISCARD constexpr auto operator()(
+	    char key, HashInt offset
+	              = fnv::fnv_offset<HashInt>::value) const noexcept -> HashInt {
 		char tmp[1] = {key};
 		return FNVa_a(tmp, offset);
 	}
@@ -363,9 +362,9 @@ struct FNV_hash<char, HashInt, void> {
  */
 template <typename HashInt>
 struct FNV_hash<signed char, HashInt, void> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(signed char key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+	KBLIB_NODISCARD constexpr auto operator()(
+	    signed char key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		signed char tmp[1] = {key};
 		return FNVa_a(tmp, offset);
@@ -378,9 +377,9 @@ struct FNV_hash<signed char, HashInt, void> {
  */
 template <typename HashInt>
 struct FNV_hash<unsigned char, HashInt, void> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(unsigned char key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+	KBLIB_NODISCARD constexpr auto operator()(
+	    unsigned char key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		unsigned char tmp[1] = {key};
 		return FNVa_a(tmp, offset);
@@ -392,26 +391,24 @@ struct FNV_hash<unsigned char, HashInt, void> {
  */
 template <typename T, typename HashInt>
 struct FNV_hash<T, HashInt, void_if_t<std::is_empty<T>::value>> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(const T&,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
-	    -> HashInt {
+	KBLIB_NODISCARD constexpr auto operator()(
+	    const T&, HashInt offset
+	              = fnv::fnv_offset<HashInt>::value) const noexcept -> HashInt {
 		return FNVa_a("", offset); // hashes the null terminator
 	}
 };
 
 #if KBLIB_USE_CXX17
 template <typename T>
-KBLIB_CONSTANT_V
-    is_trivially_hashable_v = (std::is_trivially_copyable_v<T> and
-                               std::has_unique_object_representations_v<T> and
-                               not std::is_empty<T>::value);
+KBLIB_CONSTANT_V is_trivially_hashable_v
+    = (std::is_trivially_copyable_v<
+           T> and std::has_unique_object_representations_v<T> and not std::is_empty<T>::value);
 #else
 template <typename T>
-KBLIB_CONSTANT_V is_trivially_hashable_v =
-    (std::is_integral<T>::value and padding_bits<T>::value == 0) or
-    std::is_pointer<T>::value or std::is_member_object_pointer<T>::value
-    or std::is_member_function_pointer<T>::value;
+KBLIB_CONSTANT_V is_trivially_hashable_v
+    = (std::is_integral<T>::value and padding_bits<T>::value == 0)
+      or std::is_pointer<T>::value or std::is_member_object_pointer<T>::value
+      or std::is_member_function_pointer<T>::value;
 #endif
 template <typename T>
 struct is_trivially_hashable : bool_constant<is_trivially_hashable_v<T>> {};
@@ -424,9 +421,8 @@ template <typename T, typename HashInt>
 struct FNV_hash<
     T, HashInt,
     void_if_t<std::is_integral<T>::value and is_trivially_hashable_v<T>>> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(T key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+	KBLIB_NODISCARD constexpr auto operator()(
+	    T key, HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		unsigned char tmp[sizeof(T)]{};
 		to_bytes(key, tmp);
@@ -443,10 +439,9 @@ struct FNV_hash<
 // uses std::is_pointer instead of just specializing on T* for cv pointers
 template <typename T, typename HashInt>
 struct FNV_hash<T, HashInt, void_if_t<std::is_pointer<T>::value>> {
-	KBLIB_NODISCARD auto
-	operator()(T key_in,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
-	    -> HashInt {
+	KBLIB_NODISCARD auto operator()(
+	    T key_in, HashInt offset
+	              = fnv::fnv_offset<HashInt>::value) const noexcept -> HashInt {
 		return FNV_hash<std::uintptr_t, HashInt>{}(
 		    reinterpret_cast<std::uintptr_t>(key_in), offset);
 	}
@@ -467,12 +462,11 @@ struct FNV_hash<T, HashInt,
                            not is_trivially_hashable_v<T> and
                            std::is_pointer<typename fakestd::invoke_result<
                                decltype(&T::operator->), T>::type>::value)>> {
-	KBLIB_NODISCARD auto
-	operator()(T key_in,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
-	    -> HashInt {
-		if (key_in ==
-		    T{}) { // avoid calling to_pointer on a value-initialized iterator
+	KBLIB_NODISCARD auto operator()(
+	    T key_in, HashInt offset
+	              = fnv::fnv_offset<HashInt>::value) const noexcept -> HashInt {
+		if (key_in
+		    == T{}) { // avoid calling to_pointer on a value-initialized iterator
 			return FNV_hash<std::uintptr_t, HashInt>{}(0, offset);
 		} else {
 			return FNV_hash<std::uintptr_t, HashInt>{}(
@@ -487,9 +481,9 @@ struct FNV_hash<T, HashInt,
 namespace asserts {
 
 	template <typename Container>
-	KBLIB_CONSTANT_V is_trivial_container =
-	    (is_contiguous<Container>::value and
-	     is_trivially_hashable_v<typename Container::value_type>);
+	KBLIB_CONSTANT_V is_trivial_container
+	    = (is_contiguous<Container>::value
+	       and is_trivially_hashable_v<typename Container::value_type>);
 	static_assert(is_trivial_container<std::string>,
 	              "kblib bug: std::string should be trivially hashable");
 
@@ -502,8 +496,9 @@ namespace asserts {
 template <typename Container, typename HashInt>
 struct FNV_hash<
     Container, HashInt,
-    void_if_t<(is_contiguous_v<Container> and
-               is_trivially_hashable_v<typename Container::value_type>)>> {
+    void_if_t<(
+        is_contiguous_v<
+            Container> and is_trivially_hashable_v<typename Container::value_type>)>> {
 
 	KBLIB_NODISCARD auto hash_fast(const Container& key,
 	                               HashInt offset) const noexcept -> HashInt {
@@ -511,9 +506,9 @@ struct FNV_hash<
 		                       key.size() * sizeof(*key.begin()), offset);
 	}
 
-	KBLIB_NODISCARD auto
-	operator()(const Container& key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+	KBLIB_NODISCARD auto operator()(
+	    const Container& key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 #if KBLIB_USE_CXX20
 		if (std::is_constant_evaluated()) {
@@ -541,11 +536,11 @@ struct FNV_hash<
 template <typename T, typename HashInt>
 struct FNV_hash<
     T, HashInt,
-    void_if_t<not is_contiguous<T>::value and not std::is_integral<T>::value and
-              not std::is_pointer<T>::value and is_trivially_hashable_v<T>>> {
-	KBLIB_NODISCARD KBLIB_CXX20(constexpr) auto
-	operator()(T key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+    void_if_t<not is_contiguous<T>::value and not std::is_integral<T>::value
+              and not std::is_pointer<T>::value
+              and is_trivially_hashable_v<T>>> {
+	KBLIB_NODISCARD KBLIB_CXX20(constexpr) auto operator()(
+	    T key, HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		char tmp[sizeof(T)];
 		std::memcpy(tmp, &key, sizeof(T));
@@ -560,16 +555,17 @@ struct FNV_hash<
 template <typename Container, typename HashInt>
 struct FNV_hash<
     Container, HashInt,
-    void_if_t<value_detected<Container>::value and
-              is_hashable_v<value_detected_t<Container>> and
-              not hash_detected<Container>::value and
-              is_iterable<Container>::value and
-              not(is_contiguous<Container>::value and
-                  is_trivially_hashable_v<typename Container::value_type>) and
-              not is_iterator_v<Container>>> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(const Container& key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+    void_if_t<
+        value_detected<Container>::value
+        and is_hashable_v<
+            value_detected_t<Container>> and not hash_detected<Container>::value
+        and is_iterable<Container>::value
+        and not (is_contiguous<Container>::value
+                 and is_trivially_hashable_v<typename Container::value_type>)
+        and not is_iterator_v<Container>>> {
+	KBLIB_NODISCARD constexpr auto operator()(
+	    const Container& key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		using Elem = typename Container::value_type;
 		return std::accumulate(cbegin(key), cend(key), offset,
@@ -613,8 +609,8 @@ namespace detail_hash {
 	constexpr auto hash_tuple_impl(const Tuple& tuple, HashInt offset,
 	                               std::index_sequence<I, I2, Is...>) noexcept
 	    -> HashInt {
-		HashInt first_hash =
-		    FNV_hash<typename std::tuple_element<I, Tuple>::type, HashInt>{}(
+		HashInt first_hash
+		    = FNV_hash<typename std::tuple_element<I, Tuple>::type, HashInt>{}(
 		        std::get<I>(tuple), offset);
 		return hash_tuple_impl(tuple, first_hash,
 		                       std::index_sequence<I2, Is...>{});
@@ -623,8 +619,8 @@ namespace detail_hash {
 #if KBLIB_USE_CXX17
 	template <typename Tuple, std::size_t... Is>
 	constexpr auto all_hashable_impl(std::index_sequence<Is...>) -> bool {
-		return (... and
-		        is_hashable_v<typename std::tuple_element<Is, Tuple>::type>);
+		return (...
+		        and is_hashable_v<typename std::tuple_element<Is, Tuple>::type>);
 	}
 #else
 
@@ -634,8 +630,10 @@ namespace detail_hash {
 	template <typename Tuple, std::size_t I, std::size_t... Is>
 	struct all_hashable_impl_t<Tuple, std::index_sequence<I, Is...>>
 	    : bool_constant<(
-	          is_hashable_v<typename std::tuple_element<I, Tuple>::type> and
-	          all_hashable_impl_t<Tuple, std::index_sequence<Is...>>::value)> {};
+	          is_hashable_v<
+	              typename std::tuple_element<I, Tuple>::
+	                  type> and all_hashable_impl_t<Tuple, std::index_sequence<Is...>>::value)> {
+	};
 
 	template <typename Tuple, std::size_t I>
 	struct all_hashable_impl_t<Tuple, std::index_sequence<I>>
@@ -648,9 +646,10 @@ namespace detail_hash {
 	}
 #endif
 
-	template <typename Tuple,
-	          typename std::enable_if<(std::tuple_size<Tuple>::value > 0u),
-	                                  int>::type = 0>
+	template <
+	    typename Tuple,
+	    typename std::enable_if<(std::tuple_size<Tuple>::value > 0u), int>::type
+	    = 0>
 	constexpr auto all_hashable() -> bool {
 		return all_hashable_impl<Tuple>(
 		    std::make_index_sequence<std::tuple_size<Tuple>::value>{});
@@ -664,13 +663,13 @@ namespace detail_hash {
  */
 template <typename Tuple, typename HashInt>
 struct FNV_hash<Tuple, HashInt,
-                void_if_t<detail_hash::all_hashable<Tuple>() and
-                          not is_trivially_hashable_v<Tuple> and
-                          (std::tuple_size<Tuple>::value > 0u) and
-                          not is_linear_container_v<Tuple>>> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(const Tuple& key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+                void_if_t<detail_hash::all_hashable<Tuple>()
+                          and not is_trivially_hashable_v<
+                              Tuple> and (std::tuple_size<Tuple>::value > 0u)
+                          and not is_linear_container_v<Tuple>>> {
+	KBLIB_NODISCARD constexpr auto operator()(
+	    const Tuple& key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		return detail_hash::hash_tuple_impl(
 		    key, offset,
@@ -682,9 +681,9 @@ struct FNV_hash<Tuple, HashInt,
 
 template <typename T, typename HashInt>
 struct FNV_hash<std::optional<T>, HashInt, void> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(const std::optional<T>& key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+	KBLIB_NODISCARD constexpr auto operator()(
+	    const std::optional<T>& key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		if (key) {
 			return FNV_hash<T, HashInt>{}(key.value(), offset);
@@ -697,9 +696,9 @@ struct FNV_hash<std::optional<T>, HashInt, void> {
 template <typename... Ts, typename HashInt>
 struct FNV_hash<std::variant<Ts...>, HashInt,
                 void_if_t<detail_hash::all_hashable<std::tuple<Ts...>>()>> {
-	KBLIB_NODISCARD constexpr auto
-	operator()(const std::variant<Ts...>& key,
-	           HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
+	KBLIB_NODISCARD constexpr auto operator()(
+	    const std::variant<Ts...>& key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
 		// Variant index is hashed alongside the value
 		offset = FNV_hash<HashInt>{}(key.index(), offset);

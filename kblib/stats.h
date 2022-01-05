@@ -99,13 +99,13 @@ struct trivial_array {
 		return arr + N;
 	}
 
-	KBLIB_NODISCARD constexpr friend auto
-	operator==(const trivial_array& a, const trivial_array& b) noexcept -> bool {
+	KBLIB_NODISCARD constexpr friend auto operator==(
+	    const trivial_array& a, const trivial_array& b) noexcept -> bool {
 		return equal(a.begin(), a.end(), b.begin());
 	}
-	KBLIB_NODISCARD constexpr friend auto
-	operator!=(const trivial_array& a, const trivial_array& b) noexcept -> bool {
-		return not(a == b);
+	KBLIB_NODISCARD constexpr friend auto operator!=(
+	    const trivial_array& a, const trivial_array& b) noexcept -> bool {
+		return not (a == b);
 	}
 };
 
@@ -310,8 +310,8 @@ KBLIB_NODISCARD constexpr auto phi() -> T {
 // saturating to_unsigned
 template <typename A, typename F>
 KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
-    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
-                       std::is_unsigned<A>::value,
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value
+                       and std::is_unsigned<A>::value,
                    A> {
 	if (x < 0) {
 		return 0;
@@ -325,8 +325,9 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
 // saturating to_signed(signed)
 template <typename A, typename F>
 KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
-    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
-                       std::is_signed<A>::value and std::is_signed<F>::value,
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value
+                       and std::is_signed<A>::value
+                       and std::is_signed<F>::value,
                    A> {
 	if (x < A(min)) {
 		return min;
@@ -339,8 +340,9 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
 // saturating to_signed(unsigned)
 template <typename A, typename F>
 KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
-    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value and
-                       std::is_signed<A>::value and std::is_unsigned<F>::value,
+    -> enable_if_t<std::is_integral<A>::value and std::is_integral<F>::value
+                       and std::is_signed<A>::value
+                       and std::is_unsigned<F>::value,
                    A> {
 	if (x > to_unsigned(A(max))) {
 		return max;

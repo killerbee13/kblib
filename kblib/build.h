@@ -44,7 +44,7 @@
 #include <tuple>
 
 #if __cplusplus >= 201703L
-#include <optional>
+#	include <optional>
 #endif
 
 namespace kblib {
@@ -64,8 +64,8 @@ namespace kblib {
  */
 template <typename Container, typename InputIt, typename UnaryFunction>
 KBLIB_NODISCARD auto build(InputIt first, InputIt last, UnaryFunction f,
-                           typename Container::allocator_type allocator =
-                               typename Container::allocator_type{})
+                           typename Container::allocator_type allocator
+                           = typename Container::allocator_type{})
     -> Container {
 	Container out(allocator);
 	std::transform(first, last, std::back_inserter(out), f);
@@ -91,8 +91,8 @@ template <typename Container, typename InputIt, typename InputIt2,
           typename BinaryFunction>
 KBLIB_NODISCARD auto build(InputIt first, InputIt last, InputIt2 first2,
                            BinaryFunction f,
-                           typename Container::allocator_type allocator =
-                               typename Container::allocator_type{})
+                           typename Container::allocator_type allocator
+                           = typename Container::allocator_type{})
     -> Container {
 	Container out(allocator);
 	std::transform(first, last, first2, std::back_inserter(out), f);
@@ -166,8 +166,8 @@ KBLIB_NODISCARD auto build(InputIt first, InputIt last, InputIt2 first2,
  */
 template <typename Container, typename Functor>
 KBLIB_NODISCARD auto build(Functor f, size_t size,
-                           typename Container::allocator_type allocator =
-                               typename Container::allocator_type{})
+                           typename Container::allocator_type allocator
+                           = typename Container::allocator_type{})
     -> Container {
 	Container out(allocator);
 	try_reserve(out, size);
@@ -437,8 +437,8 @@ KBLIB_NODISCARD constexpr auto buildiota(Args&&... args) -> auto {
  */
 template <typename Container, typename InputIt>
 KBLIB_NODISCARD auto build_copy(InputIt first, InputIt last,
-                                typename Container::allocator_type allocator =
-                                    typename Container::allocator_type{})
+                                typename Container::allocator_type allocator
+                                = typename Container::allocator_type{})
     -> Container {
 	Container out(allocator);
 	std::copy(first, last, std::back_inserter(out));
@@ -471,8 +471,8 @@ KBLIB_NODISCARD auto build_copy(Range&& r) -> Container {
  */
 template <typename Container, typename Range>
 KBLIB_NODISCARD auto build_copy(Range&& r,
-                                typename Container::allocator_type allocator =
-                                    typename Container::allocator_type{})
+                                typename Container::allocator_type allocator
+                                = typename Container::allocator_type{})
     -> Container {
 	Container out(allocator);
 	std::copy(std::begin(r), std::end(r), std::back_inserter(out));
@@ -573,10 +573,10 @@ KBLIB_NODISCARD auto build_copy(Range&& r, std::size_t size) -> Container {
  * @return Container
  */
 template <typename Container, typename InputIt, typename Predicate>
-KBLIB_NODISCARD auto
-build_copy_if(InputIt first, InputIt last, Predicate f,
-              typename Container::allocator_type allocator =
-                  typename Container::allocator_type{}) -> Container {
+KBLIB_NODISCARD auto build_copy_if(InputIt first, InputIt last, Predicate f,
+                                   typename Container::allocator_type allocator
+                                   = typename Container::allocator_type{})
+    -> Container {
 	Container out(allocator);
 	kblib::copy_if(first, last, std::back_inserter(out), f);
 	return out;
@@ -592,8 +592,8 @@ build_copy_if(InputIt first, InputIt last, Predicate f,
  */
 template <typename Container, typename InputIt, typename Size>
 KBLIB_NODISCARD auto build_copy_n(InputIt first, Size count,
-                                  typename Container::allocator_type allocator =
-                                      typename Container::allocator_type{})
+                                  typename Container::allocator_type allocator
+                                  = typename Container::allocator_type{})
     -> Container {
 	Container out(allocator);
 	std::copy_n(first, count, std::back_inserter(out));
@@ -611,10 +611,10 @@ KBLIB_NODISCARD auto build_copy_n(InputIt first, Size count,
  */
 template <typename Container, typename InputIt, typename Size,
           typename Predicate>
-KBLIB_NODISCARD auto
-build_copy_n_if(InputIt first, Size count, Predicate f,
-                typename Container::allocator_type allocator =
-                    typename Container::allocator_type{}) -> Container {
+KBLIB_NODISCARD auto build_copy_n_if(
+    InputIt first, Size count, Predicate f,
+    typename Container::allocator_type allocator
+    = typename Container::allocator_type{}) -> Container {
 	Container out(allocator);
 	kblib::copy_n_if(first, count, std::back_inserter(out), f);
 	return out;

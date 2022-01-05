@@ -45,7 +45,7 @@
 #include <type_traits>
 
 #if KBLIB_USE_CXX17
-#include <string_view>
+#	include <string_view>
 #endif
 
 namespace kblib {
@@ -59,13 +59,14 @@ namespace kblib {
  * in C++20, char8_t.
  */
 template <typename C>
-struct is_character : contains_type<std::tuple<char, wchar_t, char16_t, char32_t
-#ifdef __cpp_char8_t
-                                               ,
-                                               char8_t
-#endif
-                                               >,
-                                    std::decay_t<C>> {
+struct is_character
+    : contains_type<std::tuple<char, wchar_t, char16_t, char32_t
+#	ifdef __cpp_char8_t
+                               ,
+                               char8_t
+#	endif
+                               >,
+                    std::decay_t<C>> {
 };
 
 /**
@@ -186,7 +187,7 @@ namespace detail {
 			return in;
 		}
 	};
-#ifdef __cpp_char8_t
+#	ifdef __cpp_char8_t
 	/**
 	 * @brief Override for char8_t to avoid conversion to integer
 	 */
@@ -195,7 +196,7 @@ namespace detail {
 		using type = char8_t;
 		KBLIB_NODISCARD static auto convert(char8_t in) -> char8_t { return in; }
 	};
-#endif
+#	endif
 	/**
 	 * @brief Provides the natural stringlike type for representing a T.
 	 */
@@ -204,7 +205,7 @@ namespace detail {
 
 } // namespace detail
 
-#if KBLIB_USE_CXX17
+#	if KBLIB_USE_CXX17
 /**
  * @brief Determines the size in characters of any valid argument to concat or
  * append.
@@ -280,9 +281,9 @@ namespace detail {
 		values<std::index_sequence<I...>, detail::str_type_t<S>...> buf{
 		    {detail::str_type<S>::convert(std::forward<S>(ins))}...};
 		string ret;
-		std::size_t size =
-		    (strsize(static_cast<value<I, detail::str_type_t<S>>&>(buf).v) + ... +
-		     0);
+		std::size_t size
+		    = (strsize(static_cast<value<I, detail::str_type_t<S>>&>(buf).v) + ...
+		       + 0);
 		ret.reserve(size);
 		append(ret, static_cast<value<I, detail::str_type_t<S>>&>(buf).v...);
 		return ret;
@@ -325,7 +326,7 @@ KBLIB_NODISCARD auto concat(std::initializer_list<str> ins) -> string {
 	}
 	return ret;
 }
-#endif
+#	endif
 
 KBLIB_NODISCARD inline auto isspace(char c) -> bool {
 	return std::isspace(to_unsigned(c));
@@ -376,10 +377,11 @@ KBLIB_NODISCARD auto join(const range& in, const string& joiner = "") {
  */
 template <typename Container = std::vector<std::string>, typename Predicate,
           typename String>
-KBLIB_NODISCARD auto
-split_tokens(const String& in, Predicate spacer) -> return_assert_t<
-    is_callable<Predicate, typename Container::value_type::value_type>::value,
-    Container> {
+KBLIB_NODISCARD auto split_tokens(const String& in, Predicate spacer)
+    -> return_assert_t<
+        is_callable<Predicate,
+                    typename Container::value_type::value_type>::value,
+        Container> {
 	Container ret{};
 	bool delim_run = true;
 	const char* begpos{};
@@ -423,8 +425,8 @@ KBLIB_NODISCARD auto split_tokens(const String& in) -> Container {
  * @return Container A sequence container of all substrings in the split input.
  */
 template <typename Container = std::vector<std::string>, typename String>
-KBLIB_NODISCARD auto
-split_tokens(const String& in, typename Container::value_type::value_type delim)
+KBLIB_NODISCARD auto split_tokens(
+    const String& in, typename Container::value_type::value_type delim)
     -> Container {
 	Container ret{};
 	bool delim_run = true;
@@ -500,10 +502,11 @@ KBLIB_NODISCARD auto split_dsv(const String& str, char delim) -> Container {
  */
 template <typename Container = std::vector<std::string>, typename String,
           typename Predicate>
-KBLIB_NODISCARD auto
-split_dsv(const String& str, Predicate delim) -> return_assert_t<
-    is_callable<Predicate, typename Container::value_type::value_type>::value,
-    Container> {
+KBLIB_NODISCARD auto split_dsv(const String& str, Predicate delim)
+    -> return_assert_t<
+        is_callable<Predicate,
+                    typename Container::value_type::value_type>::value,
+        Container> {
 	Container ret;
 	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
 		ret.emplace_back(str, pos1, pos2 - pos1);
@@ -603,9 +606,10 @@ KBLIB_NODISCARD inline auto repeat(char val, std::size_t count) -> std::string {
  */
 KBLIB_NODISCARD inline auto ends_with(std::string_view haystack,
                                       std::string_view needle) -> bool {
-	return haystack.size() >= needle.size() and
-	       haystack.compare(haystack.size() - needle.size(),
-	                        std::string_view::npos, needle) == 0;
+	return haystack.size() >= needle.size()
+	       and haystack.compare(haystack.size() - needle.size(),
+	                            std::string_view::npos, needle)
+	               == 0;
 }
 
 /**
@@ -627,8 +631,8 @@ KBLIB_NODISCARD inline auto ends_with(std::string_view haystack, char needle)
  */
 KBLIB_NODISCARD inline auto starts_with(std::string_view haystack,
                                         std::string_view needle) -> bool {
-	return haystack.size() >= needle.size() and
-	       haystack.compare(0, needle.size(), needle) == 0;
+	return haystack.size() >= needle.size()
+	       and haystack.compare(0, needle.size(), needle) == 0;
 }
 
 /**

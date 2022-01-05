@@ -52,8 +52,8 @@ template <typename Container>
 struct indexer_extractor : iterator_extractor<Container> {
 
 	template <typename index_type>
-	KBLIB_NODISCARD constexpr static auto
-	subscript(Container&& c, index_type index) noexcept(noexcept(c[index]))
+	KBLIB_NODISCARD constexpr static auto subscript(
+	    Container&& c, index_type index) noexcept(noexcept(c[index]))
 	    -> decltype(auto) {
 		return c[index];
 	}
@@ -61,8 +61,8 @@ struct indexer_extractor : iterator_extractor<Container> {
 
 template <typename Container, typename = void>
 struct extractor_policy_for {
-	constexpr static extractor_policy value =
-	    extractor_policy::forward_iteration;
+	constexpr static extractor_policy value
+	    = extractor_policy::forward_iteration;
 };
 
 template <typename Container>

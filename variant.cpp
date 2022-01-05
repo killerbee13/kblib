@@ -45,8 +45,8 @@ TEST_CASE("visit_indexed") {
 
 TEST_CASE("variant_cast") {
 	std::variant<int, std::string> from(std::in_place_type<int>, 10);
-	auto to =
-	    kblib::variant_cast<std::variant<std::monostate, int, std::string>>(
+	auto to
+	    = kblib::variant_cast<std::variant<std::monostate, int, std::string>>(
 	        from);
 	REQUIRE(to.index() == 1);
 }

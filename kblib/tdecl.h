@@ -34,7 +34,7 @@
 #include <cstddef>
 
 #if __cplusplus < 201402L
-#error kblib requires C++14 or higher
+#	error kblib requires C++14 or higher
 #endif
 
 // 1MMmmrr
@@ -67,7 +67,7 @@
  * std::string_view.
  */
 #ifndef KBLIB_USE_STRING_VIEW
-#define KBLIB_USE_STRING_VIEW KBLIB_USE_CXX17
+#	define KBLIB_USE_STRING_VIEW KBLIB_USE_CXX17
 #endif
 
 // Note that has_cpp_attribute(nodiscard) does not work with at least certain
@@ -78,9 +78,9 @@
  * in C++14.
  */
 #if KBLIB_USE_CXX17
-#define KBLIB_NODISCARD [[nodiscard]]
+#	define KBLIB_NODISCARD [[nodiscard]]
 #else
-#define KBLIB_NODISCARD [[gnu::warn_unused_result]]
+#	define KBLIB_NODISCARD [[gnu::warn_unused_result]]
 #endif
 
 /**
@@ -89,19 +89,19 @@
  * in C++14.
  */
 #if KBLIB_USE_CXX17
-#define KBLIB_UNUSED [[maybe_unused]]
+#	define KBLIB_UNUSED [[maybe_unused]]
 #else
-#define KBLIB_UNUSED [[gnu::unused]]
+#	define KBLIB_UNUSED [[gnu::unused]]
 #endif
 
 #if KBLIB_USE_CXX17
-#define KBLIB_CONSTANT constexpr inline
-#define KBLIB_CONSTANT_V constexpr inline bool
-#define KBLIB_CONSTANT_M constexpr inline static
+#	define KBLIB_CONSTANT constexpr inline
+#	define KBLIB_CONSTANT_V constexpr inline bool
+#	define KBLIB_CONSTANT_M constexpr inline static
 #else
-#define KBLIB_CONSTANT constexpr static
-#define KBLIB_CONSTANT_V constexpr static bool
-#define KBLIB_CONSTANT_M constexpr static
+#	define KBLIB_CONSTANT constexpr static
+#	define KBLIB_CONSTANT_V constexpr static bool
+#	define KBLIB_CONSTANT_M constexpr static
 #endif
 
 /**
@@ -109,9 +109,9 @@
  * @brief This internal macro is used to selectively use C++20 features.
  */
 #if KBLIB_USE_CXX20
-#define KBLIB_CXX20(args) args
+#	define KBLIB_CXX20(args) args
 #else
-#define KBLIB_CXX20(args)
+#	define KBLIB_CXX20(args)
 #endif
 
 #if defined(_DOXYGEN_) and not defined(KBLIB_DEF_MACROS)
@@ -120,7 +120,7 @@
  * @brief If this macro is defined, kblib will define certain macros without the
  * KBLIB_ prefix.
  */
-#define KBLIB_DEF_MACROS
+#	define KBLIB_DEF_MACROS
 #endif
 
 /**

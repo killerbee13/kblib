@@ -14,11 +14,11 @@ struct has_padding {
 
 struct empty_t {};
 
-static_assert(kblib::is_linear_container_v<std::string> and
-                  kblib::is_contiguous_v<std::string> and
-                  kblib::is_trivially_hashable_v<std::string::value_type> and
-                  kblib::is_trivially_hashable_v<int*>,
-              "");
+static_assert(
+    kblib::is_linear_container_v<
+        std::
+            string> and kblib::is_contiguous_v<std::string> and kblib::is_trivially_hashable_v<std::string::value_type> and kblib::is_trivially_hashable_v<int*>,
+    "");
 static_assert(kblib::asserts::is_trivial_container<std::vector<char>>, "");
 
 TEST_CASE("FNV_hash") {
@@ -81,8 +81,8 @@ TEST_CASE("FNV_hash") {
 	std::variant<int, int, std::string> var(std::in_place_index<1>, 42);
 	kblib::FNV_hash<decltype(var)> test_var_hash;
 	CHECK_FALSE(test_var_hash(var) == kblib::FNV_hash<int>{}(42));
-	CHECK_FALSE(test_var_hash(var) ==
-	            test_var_hash(decltype(var){std::in_place_index<0>, 42}));
+	CHECK_FALSE(test_var_hash(var)
+	            == test_var_hash(decltype(var){std::in_place_index<0>, 42}));
 #endif
 }
 TEST_CASE("FNV_hash (32 bit)") {
@@ -143,7 +143,7 @@ TEST_CASE("FNV_hash (32 bit)") {
 	std::variant<int, int, std::string> var(std::in_place_index<1>, 42);
 	kblib::FNV_hash<decltype(var)> test_var_hash;
 	CHECK_FALSE(test_var_hash(var) == kblib::FNV_hash<int, std::uint32_t>{}(42));
-	CHECK_FALSE(test_var_hash(var) ==
-	            test_var_hash(decltype(var){std::in_place_index<0>, 42}));
+	CHECK_FALSE(test_var_hash(var)
+	            == test_var_hash(decltype(var){std::in_place_index<0>, 42}));
 #endif
 }

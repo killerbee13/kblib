@@ -70,11 +70,11 @@ chooseCategorical(Array&& cats, RandomGenerator& r) -> decltype(cats.size()) {
 		}
 	}
 #ifdef __has_builtin
-#if __has_builtin(__builtin_unreachable)
+#	if __has_builtin(__builtin_unreachable)
 	__builtin_unreachable();
-#else
+#	else
 	return cats.size() - 1;
-#endif
+#	endif
 #else
 	return cats.size() - 1;
 #endif
@@ -86,12 +86,14 @@ class KBLIB_NODISCARD trivial_seed_seq {
 
 	trivial_seed_seq() = default;
 	template <typename InputIt>
-	trivial_seed_seq(InputIt begin, InputIt end) : data(begin, end) {}
+	trivial_seed_seq(InputIt begin, InputIt end)
+	    : data(begin, end) {}
 	template <typename T>
 	trivial_seed_seq(std::initializer_list<T> il)
 	    : trivial_seed_seq(il.begin(), il.end()) {}
 	template <typename Generator>
-	trivial_seed_seq(Generator gen, std::size_t count) : data(count) {
+	trivial_seed_seq(Generator gen, std::size_t count)
+	    : data(count) {
 		kblib::generate_n(data.begin(), count, std::ref(gen));
 	}
 
@@ -108,8 +110,8 @@ class KBLIB_NODISCARD trivial_seed_seq {
 			}
 			auto dpos = begin;
 			do {
-				auto blk_size =
-				    saturating_cast<std::size_t>(std::min(d_size, o_size));
+				auto blk_size
+				    = saturating_cast<std::size_t>(std::min(d_size, o_size));
 				dpos = std::copy_n(data.begin(), blk_size, dpos);
 			} while ((o_size -= d_size) > 0);
 		}
@@ -191,13 +193,18 @@ class KBLIB_NODISCARD transform_engine : URBG {
 
 	transform_engine() = default;
 	transform_engine(const transform_engine&) noexcept(
-	    std::is_nothrow_copy_constructible<URBG>::value) = default;
+	    std::is_nothrow_copy_constructible<URBG>::value)
+	    = default;
 	transform_engine(transform_engine&&) noexcept(
-	    std::is_nothrow_move_constructible<URBG>::value) = default;
-	transform_engine(result_type s) : E(s) {}
-	template <typename SSeq, typename = enable_if_t<
-	                             !std::is_same<SSeq, transform_engine>::value>>
-	transform_engine(SSeq& s) : E(s) {}
+	    std::is_nothrow_move_constructible<URBG>::value)
+	    = default;
+	transform_engine(result_type s)
+	    : E(s) {}
+	template <typename SSeq,
+	          typename
+	          = enable_if_t<! std::is_same<SSeq, transform_engine>::value>>
+	transform_engine(SSeq& s)
+	    : E(s) {}
 
 	KBLIB_NODISCARD auto operator=(const transform_engine&)
 	    -> transform_engine& = delete;
@@ -229,7 +236,7 @@ class KBLIB_NODISCARD transform_engine : URBG {
 	KBLIB_NODISCARD friend auto operator!=(const transform_engine& lhs,
 	                                       const transform_engine& rhs) noexcept
 	    -> bool {
-		return !(lhs == rhs);
+		return ! (lhs == rhs);
 	}
 
 	friend auto operator<<(std::ostream& os, const transform_engine& e)
@@ -283,9 +290,9 @@ inline namespace lcgs {
 	using lcg_p2 = std::linear_congruential_engine<UIntType, a, c, ipow2(b)>;
 
 	inline namespace common_lcgs {
-		using rand48 =
-		    transform_engine<lcg_p2<std::uint_fast64_t, 25214903917u, 11u, 48u>,
-		                     shift_mask<std::uint_fast32_t, 16u>>;
+		using rand48
+		    = transform_engine<lcg_p2<std::uint_fast64_t, 25214903917u, 11u, 48u>,
+		                       shift_mask<std::uint_fast32_t, 16u>>;
 
 	} // namespace common_lcgs
 

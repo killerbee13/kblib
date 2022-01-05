@@ -91,9 +91,8 @@ struct exists_t {
 };
 
 template <typename M, typename K>
-KBLIB_NODISCARD constexpr auto
-get_check(M&& m, const K& key) noexcept(noexcept(m.find(key) != m.end()))
-    -> exists_t<decltype(m.find(key))> {
+KBLIB_NODISCARD constexpr auto get_check(M&& m, const K& key) noexcept(
+    noexcept(m.find(key) != m.end())) -> exists_t<decltype(m.find(key))> {
 	auto it = m.find(key);
 	return {it, it != m.end()};
 }
@@ -180,9 +179,8 @@ class KBLIB_NODISCARD build_iterator {
 	build_iterator(Args&&... args)
 	    : range(std::make_shared<Container>(std::forward<Args>(args)...)) {}
 
-	KBLIB_NODISCARD constexpr auto
-	base() noexcept(std::is_nothrow_move_constructible<Container>::value)
-	    -> Container {
+	KBLIB_NODISCARD constexpr auto base() noexcept(
+	    std::is_nothrow_move_constructible<Container>::value) -> Container {
 		auto holder = std::move(range);
 		return std::move(*holder);
 	}
@@ -242,11 +240,11 @@ class KBLIB_NODISCARD build_iterator<Container, true> {
 	    : range(std::make_shared<Container>(std::forward<Args>(args)...)) {}
 
 	build_iterator(const build_end_t&)
-	    : range{nullptr}, index(std::tuple_size<Container>::value) {}
+	    : range{nullptr}
+	    , index(std::tuple_size<Container>::value) {}
 
-	KBLIB_NODISCARD auto
-	base() noexcept(std::is_nothrow_move_constructible<Container>::value)
-	    -> Container {
+	KBLIB_NODISCARD auto base() noexcept(
+	    std::is_nothrow_move_constructible<Container>::value) -> Container {
 		auto holder = std::move(range);
 		return std::move(*holder);
 	}
@@ -284,36 +282,32 @@ class KBLIB_NODISCARD build_iterator<Container, true> {
 		return kblib::size(*range);
 	}
 
-	KBLIB_NODISCARD constexpr friend auto
-	operator==(const build_iterator<Container>& it, build_end_t) noexcept
-	    -> bool {
+	KBLIB_NODISCARD constexpr friend auto operator==(
+	    const build_iterator<Container>& it, build_end_t) noexcept -> bool {
 		return it.index == it.size();
 	}
-	KBLIB_NODISCARD constexpr friend auto
-	operator!=(const build_iterator<Container>& it, build_end_t) noexcept
-	    -> bool {
+	KBLIB_NODISCARD constexpr friend auto operator!=(
+	    const build_iterator<Container>& it, build_end_t) noexcept -> bool {
 		return it.index != it.size();
 	}
 
-	KBLIB_NODISCARD constexpr friend auto
-	operator==(build_end_t, const build_iterator<Container>& it) noexcept
-	    -> bool {
+	KBLIB_NODISCARD constexpr friend auto operator==(
+	    build_end_t, const build_iterator<Container>& it) noexcept -> bool {
 		return it.index == it.size();
 	}
-	KBLIB_NODISCARD constexpr friend auto
-	operator!=(build_end_t, const build_iterator<Container>& it) noexcept
-	    -> bool {
+	KBLIB_NODISCARD constexpr friend auto operator!=(
+	    build_end_t, const build_iterator<Container>& it) noexcept -> bool {
 		return it.index != it.size();
 	}
 
-	KBLIB_NODISCARD constexpr friend auto
-	operator==(const build_iterator<Container>& it1,
-	           const build_iterator<Container>& it2) noexcept -> bool {
+	KBLIB_NODISCARD constexpr friend auto operator==(
+	    const build_iterator<Container>& it1,
+	    const build_iterator<Container>& it2) noexcept -> bool {
 		return it1.index == it2.index;
 	}
-	KBLIB_NODISCARD constexpr friend auto
-	operator!=(const build_iterator<Container>& it1,
-	           const build_iterator<Container>& it2) noexcept -> bool {
+	KBLIB_NODISCARD constexpr friend auto operator!=(
+	    const build_iterator<Container>& it1,
+	    const build_iterator<Container>& it2) noexcept -> bool {
 		return it1.index != it2.index;
 	}
 
@@ -335,8 +329,8 @@ class KBLIB_NODISCARD build_iterator<Container, true> {
 namespace std {
 #if defined(__clang__)
 // Because apparently -Wno-mismatched-tags doesn't work
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmismatched-tags"
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wmismatched-tags"
 #endif
 
 template <typename C, std::size_t Size>
@@ -344,7 +338,7 @@ struct tuple_size<::kblib::construct_with_size<C, Size>>
     : public integral_constant<size_t, Size> {};
 
 #if defined(__clang__)
-#pragma clang diagnostic pop
+#	pragma clang diagnostic pop
 #endif
 } // namespace std
 
@@ -395,33 +389,35 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
  public:
 	// Constructors
 
-	stack() : stack(Container()) {}
-	explicit stack(const Container& cont) : backing(cont) {}
+	stack()
+	    : stack(Container()) {}
+	explicit stack(const Container& cont)
+	    : backing(cont) {}
 
 	template <typename Alloc,
 	          typename std::enable_if<
-	              std::uses_allocator<container_type, Alloc>::value, int>::type =
-	              0>
+	              std::uses_allocator<container_type, Alloc>::value, int>::type
+	          = 0>
 	explicit stack(const Alloc& alloc);
 	template <typename Alloc,
 	          typename std::enable_if<
-	              std::uses_allocator<container_type, Alloc>::value, int>::type =
-	              0>
+	              std::uses_allocator<container_type, Alloc>::value, int>::type
+	          = 0>
 	stack(const Container& cont, const Alloc& alloc);
 	template <typename Alloc,
 	          typename std::enable_if<
-	              std::uses_allocator<container_type, Alloc>::value, int>::type =
-	              0>
+	              std::uses_allocator<container_type, Alloc>::value, int>::type
+	          = 0>
 	stack(Container && cont, const Alloc& alloc);
 	template <typename Alloc,
 	          typename std::enable_if<
-	              std::uses_allocator<container_type, Alloc>::value, int>::type =
-	              0>
+	              std::uses_allocator<container_type, Alloc>::value, int>::type
+	          = 0>
 	stack(const stack& cont, const Alloc& alloc);
 	template <typename Alloc,
 	          typename std::enable_if<
-	              std::uses_allocator<container_type, Alloc>::value, int>::type =
-	              0>
+	              std::uses_allocator<container_type, Alloc>::value, int>::type
+	          = 0>
 	stack(stack && cont, const Alloc& alloc);
 
 	// Element access
@@ -464,8 +460,8 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 		return;
 	}
 
-	auto swap(stack &
-	          other) noexcept(fakestd::is_nothrow_swappable<Container>::value)
+	auto swap(stack
+	          & other) noexcept(fakestd::is_nothrow_swappable<Container>::value)
 	    ->void {
 		using std::swap;
 		swap(backing, other.backing);

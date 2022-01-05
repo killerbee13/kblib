@@ -25,8 +25,8 @@ TEST_CASE("build family", "[build]") {
 	};
 
 	SECTION("unary dynamic build") {
-		auto built =
-		    kblib::build<std::vector<int>>(input.begin(), input.end(), unary_f);
+		auto built
+		    = kblib::build<std::vector<int>>(input.begin(), input.end(), unary_f);
 		REQUIRE(equal(squared, built));
 	}
 	SECTION("binary dynamic build") {
@@ -45,8 +45,8 @@ TEST_CASE("build family", "[build]") {
 	}
 	const arr iota = {0, 1, 2, 3, 4, 5, 6, 7};
 	SECTION("dynamic generator build") {
-		auto built =
-		    kblib::build<std::vector<int>>([x = 0]() mutable { return x++; }, 8u);
+		auto built = kblib::build<std::vector<int>>(
+		    [x = 0]() mutable { return x++; }, 8u);
 		REQUIRE(equal(iota, built));
 	}
 	SECTION("array generator build") {
@@ -69,8 +69,8 @@ TEST_CASE("buildiota") {
 		auto r1e = r1.end();
 		auto r2b = r2.begin();
 		auto r2e = r2.end();
-		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) and
-		       kblib::equal(r1b, r1e, r2b);
+		return (std::distance(r1b, r1e) == std::distance(r2b, r2e))
+		       and kblib::equal(r1b, r1e, r2b);
 	};
 
 	constexpr auto target = std::array<int, 10>{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}};
@@ -78,8 +78,8 @@ TEST_CASE("buildiota") {
 	auto i2 = kblib::buildiota<std::vector<int>>(10u, 0, 1);
 	auto i3 = kblib::buildiota<std::array<int, 10>>(0);
 	auto i4 = kblib::buildiota<std::array<int, 10>>(0, 1);
-	auto i5 =
-	    kblib::buildiota<kblib::construct_with_size<std::vector<int>, 10>>(0);
+	auto i5
+	    = kblib::buildiota<kblib::construct_with_size<std::vector<int>, 10>>(0);
 
 	REQUIRE((i1.size() == target.size() and equal(i1, target)));
 	REQUIRE((i2.size() == target.size() and equal(i2, target)));

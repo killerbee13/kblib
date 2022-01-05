@@ -77,8 +77,8 @@ TEST_CASE("range comparison") {
 		auto r1e = r1.end();
 		auto r2b = r2.begin();
 		auto r2e = r2.end();
-		return std::distance(r1b, r1e) == std::distance(r2b, r2e) and
-		       kblib::equal(r1b, r1e, r2b);
+		return std::distance(r1b, r1e) == std::distance(r2b, r2e)
+		       and kblib::equal(r1b, r1e, r2b);
 	};
 
 	SECTION("equivalency") {
@@ -181,20 +181,20 @@ TEST_CASE("magic_enumerate") {
 		}
 	}
 	SECTION("const copy from non-const") {
-#if defined(__clang__)
+#	if defined(__clang__)
 		// Suppress warning for intentional behavior
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wrange-loop-analysis"
-#endif
+#		pragma clang diagnostic push
+#		pragma clang diagnostic ignored "-Wrange-loop-analysis"
+#	endif
 		for (const auto [i, v] : kblib::magic_enumerate(persistent)) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
 			static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>,
 			              "v must refer to const in a const copy");
 		}
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#	if defined(__clang__)
+#		pragma clang diagnostic pop
+#	endif
 	}
 
 	SECTION("iterators") {
@@ -337,11 +337,11 @@ TEST_CASE("cry_enumerate") {
 		}
 	}
 	SECTION("const copy from non-const") {
-#if defined(__clang__)
+#	if defined(__clang__)
 		// Suppress warning for intentional behavior
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wrange-loop-analysis"
-#endif
+#		pragma clang diagnostic push
+#		pragma clang diagnostic ignored "-Wrange-loop-analysis"
+#	endif
 		for (const auto [i, v] : kblib::cry_enumerate(persistent)) {
 			REQUIRE(v == persistent[i]);
 			REQUIRE(&v != &persistent[i]);
@@ -350,9 +350,9 @@ TEST_CASE("cry_enumerate") {
 			        typename std::remove_reference<decltype(v)>::type>::value,
 			    "v must refer to const in a const copy");
 		}
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#	if defined(__clang__)
+#		pragma clang diagnostic pop
+#	endif
 	}
 
 	SECTION("iterators") {

@@ -40,18 +40,19 @@
 #include <vector>
 
 #if KBLIB_USE_CXX17
-#include <cstdio>
-#include <filesystem>
-#include <optional>
+#	include <cstdio>
+#	include <filesystem>
+#	include <optional>
 
-#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || \
-                         (defined(__APPLE__) && defined(__MACH__)))
+#	if ! defined(_WIN32)                        \
+	    && (defined(__unix__) || defined(__unix) \
+	        || (defined(__APPLE__) && defined(__MACH__)))
 /* UNIX-style OS. ------------------------------------------- */
-#include <unistd.h>
-#if defined(_POSIX_VERSION)
-#define KBLIB_POSIX_TMPFILE
-#endif
-#endif
+#		include <unistd.h>
+#		if defined(_POSIX_VERSION)
+#			define KBLIB_POSIX_TMPFILE
+#		endif
+#	endif
 #endif
 
 #include <iostream>
@@ -169,8 +170,8 @@ inline auto eat_word(std::istream& is) -> std::istream& {
  * @param is
  * @return std::istream
  */
-[[deprecated("Use std::ws instead")]] inline std::istream&
-eat_space(std::istream& is) {
+[[deprecated("Use std::ws instead")]] inline std::istream& eat_space(
+    std::istream& is) {
 	while (is and std::isspace(is.peek())) {
 		is.get();
 	}
@@ -212,8 +213,8 @@ auto nl(std::basic_istream<CharT, Traits>& is)
     -> std::basic_istream<CharT, Traits>& {
 	auto n = static_cast<typename Traits::int_type>(is.widen('\n'));
 	for (typename Traits::int_type c = is.peek();
-	     is and c != Traits::eof() and
-	     std::isspace(static_cast<CharT>(c), is.getloc()) and c != n;
+	     is and c != Traits::eof()
+	     and std::isspace(static_cast<CharT>(c), is.getloc()) and c != n;
 	     c = is.peek()) {
 		is.ignore();
 	}
@@ -262,10 +263,13 @@ auto unformatted_expect(CharT c) -> auto {
 	auto _f = [c](auto& istream) -> decltype(istream) {
 		using SCharT = typename std::decay_t<decltype(istream)>::char_type;
 #if KBLIB_USE_CHAR8_t
-		static_assert(std::is_same_v<CharT, char_type> or
-		                  (not std::is_same_v<CharT, char8_t> and
-		                   not std::is_same_v<char_type, char8_t>),
-		              "No support for char8_t conversions.");
+		// clang-format off
+		static_assert(
+		    std::is_same_v<CharT, char_type>
+			 or (not std::is_same_v<CharT, char8_t>
+			     and not std::is_same_v<char_type, char8_t>),
+		    "No support for char8_t conversions.");
+		// clang-format on
 #endif
 		auto widen_equal = [&](auto di) {
 			if (di == std::decay_t<decltype(istream)>::traits_type::eof()) {
@@ -281,13 +285,13 @@ auto unformatted_expect(CharT c) -> auto {
 			// ...             :	convert between different wide char types?
 
 			static_assert(
-			    (std::is_same<CharT, SCharT>::value or
-			     std::is_same<CharT, char>::value),
+			    (std::is_same<CharT, SCharT>::value
+			     or std::is_same<CharT, char>::value),
 			    "Stream character type incompatible with argument type.");
 #if KBLIB_USE_CXX17
-#define IF_CONSTEXPR constexpr
+#	define IF_CONSTEXPR constexpr
 #else
-#define IF_CONSTEXPR
+#	define IF_CONSTEXPR
 #endif
 			if IF_CONSTEXPR (std::is_same<CharT, SCharT>::value) {
 				return c == d;
@@ -432,7 +436,10 @@ namespace detail_io {
 		using typename base_type::pos_type;
 
 		basic_teestreambuf() = delete;
-		basic_teestreambuf(SB1_t* a, SB2_t* b) : buffer(1024), a(a), b(b) {
+		basic_teestreambuf(SB1_t* a, SB2_t* b)
+		    : buffer(1024)
+		    , a(a)
+		    , b(b) {
 			this->setp(buffer.data(), buffer.data() + buffer.size() - 1);
 		}
 
@@ -509,8 +516,8 @@ namespace detail_io {
 	};
 
 	template <typename Stream>
-	using buf_for =
-	    std::remove_pointer_t<decltype(std::declval<Stream&>().rdbuf())>;
+	using buf_for
+	    = std::remove_pointer_t<decltype(std::declval<Stream&>().rdbuf())>;
 
 } // namespace detail_io
 
@@ -534,7 +541,8 @@ class basic_teestream
 	using typename ostream_type::pos_type;
 
 	basic_teestream(StreamA& a, StreamB& b)
-	    : ostream_type(&buf), buf(a.rdbuf(), b.rdbuf()) {}
+	    : ostream_type(&buf)
+	    , buf(a.rdbuf(), b.rdbuf()) {}
 
 	auto rdbuf() const -> buf_type* { return &buf; }
 };
@@ -559,7 +567,7 @@ struct file_deleter {
 	}
 };
 
-#ifdef KBLIB_POSIX_TMPFILE
+#	ifdef KBLIB_POSIX_TMPFILE
 namespace detail_io {
 	struct fd_closer {
 		void operator()(int fd) const noexcept { close(fd); }
@@ -568,28 +576,27 @@ namespace detail_io {
 } // namespace detail_io
 
 using fd_deleter = file_deleter<int, detail_io::fd_closer>;
-#endif
+#	endif
 
 template <typename File = std::fstream>
-[[nodiscard]] auto
-scoped_file(const std::filesystem::path& path,
-            std::ios_base::openmode mode = std::ios_base::in |
-                                           std::ios_base::out) {
+[[nodiscard]] auto scoped_file(const std::filesystem::path& path,
+                               std::ios_base::openmode mode
+                               = std::ios_base::in | std::ios_base::out) {
 	return std::unique_ptr<File, file_deleter<File>>{
 	    new std::fstream{path, mode}, {path}};
 }
 
 template <typename File = std::fstream>
 [[nodiscard]] auto tmpfile(const std::filesystem::path& path,
-                           std::ios_base::openmode mode = std::ios_base::in |
-                                                          std::ios_base::out) {
-#ifdef KBLIB_POSIX_TMPFILE
+                           std::ios_base::openmode mode
+                           = std::ios_base::in | std::ios_base::out) {
+#	ifdef KBLIB_POSIX_TMPFILE
 	auto p = std::make_unique<File>(path, mode);
 	std::filesystem::remove(path);
 	return p;
-#else
+#	else
 	return scoped_file<File>(path, mode);
-#endif
+#	endif
 }
 
 #endif

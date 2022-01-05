@@ -84,8 +84,8 @@ namespace detail_memory {
 
 	template <typename T,
 	          bool = std::is_class<T>::value and not std::is_final<T>::value,
-	          bool =
-	              std::is_object<typename std::remove_reference<T>::type>::value>
+	          bool
+	          = std::is_object<typename std::remove_reference<T>::type>::value>
 	struct as_base_class;
 
 	template <typename T>
@@ -152,20 +152,26 @@ namespace detail_memory {
 	};
 
 	template <typename T, typename D>
-	struct on_destroy : as_base_class<T>, as_base_class<D> {
+	struct on_destroy
+	    : as_base_class<T>
+	    , as_base_class<D> {
 		on_destroy() noexcept = default;
 		on_destroy(const on_destroy&) noexcept(
 		    std::is_nothrow_copy_constructible<T>::value and
-		        std::is_nothrow_copy_constructible<D>::value) = default;
+		        std::is_nothrow_copy_constructible<D>::value)
+		    = default;
 		on_destroy(on_destroy&&) noexcept(
 		    std::is_nothrow_move_constructible<T>::value and
-		        std::is_nothrow_move_constructible<D>::value) = default;
+		        std::is_nothrow_move_constructible<D>::value)
+		    = default;
 		on_destroy& operator=(const on_destroy&) noexcept(
 		    std::is_nothrow_copy_assignable<T>::value and
-		        std::is_nothrow_copy_assignable<D>::value) = default;
+		        std::is_nothrow_copy_assignable<D>::value)
+		    = default;
 		on_destroy& operator=(on_destroy&&) noexcept(
 		    std::is_nothrow_move_assignable<T>::value and
-		        std::is_nothrow_move_assignable<D>::value) = default;
+		        std::is_nothrow_move_assignable<D>::value)
+		    = default;
 
 		using as_base_class<T>::base;
 		operator T&() noexcept { return base(); }
@@ -260,7 +266,10 @@ namespace detail_memory {
 		}
 
 		live_ptr_base() noexcept = default;
-		live_ptr_base(live_wrapper<mT>* p) : obj{p} { add(); }
+		live_ptr_base(live_wrapper<mT>* p)
+		    : obj{p} {
+			add();
+		}
 		auto operator=(const live_ptr_base& o) noexcept -> live_ptr_base& {
 			rem();
 			obj = o.obj;
@@ -273,7 +282,10 @@ namespace detail_memory {
 			return *this;
 		}
 
-		live_ptr_base(const live_ptr_base& o) : obj{o.obj} { add(); }
+		live_ptr_base(const live_ptr_base& o)
+		    : obj{o.obj} {
+			add();
+		}
 		live_ptr_base(live_ptr_base&& o) noexcept { move(o.as_D()); }
 		~live_ptr_base() { rem(); }
 
@@ -325,7 +337,10 @@ class live_ptr : public detail_memory::live_ptr_base<live_ptr<T>> {
 	auto operator=(const live_ptr& o) -> live_ptr& = default;
 	auto operator=(live_ptr&& o) noexcept -> live_ptr& = default;
 
-	explicit live_ptr(live_wrapper<T>& o) : base{&o} { this->add(); }
+	explicit live_ptr(live_wrapper<T>& o)
+	    : base{&o} {
+		this->add();
+	}
 	auto operator=(live_wrapper<T>& o) -> live_ptr& {
 		this->rem();
 		this->obj = &o;
@@ -349,7 +364,8 @@ class live_ptr<const mT>
 	using value_type = T;
 	live_ptr() = default;
 	live_ptr(const live_ptr<T>& o) = default;
-	live_ptr(const live_ptr<mT>& o) : base{o.obj} {}
+	live_ptr(const live_ptr<mT>& o)
+	    : base{o.obj} {}
 	live_ptr(live_ptr<T>&& o) noexcept = default;
 	live_ptr(live_ptr<mT>&& o) noexcept { this->move(o); }
 	auto operator=(const live_ptr<T>& o) -> live_ptr& = default;
@@ -366,7 +382,10 @@ class live_ptr<const mT>
 		return *this;
 	}
 
-	explicit live_ptr(const live_wrapper<mT>& o) : base{&o} { this->add(); }
+	explicit live_ptr(const live_wrapper<mT>& o)
+	    : base{&o} {
+		this->add();
+	}
 	auto operator=(const live_wrapper<mT>& o) -> live_ptr& {
 		this->rem();
 		this->obj = &o;
@@ -417,19 +436,25 @@ class cond_ptr : private detail_memory::as_base_class<Deleter> {
 
 	explicit cond_ptr(T* p, bool owner = false,
 	                  std::decay_t<Deleter> del = {}) noexcept
-	    : d_base{std::move(del)}, ptr_(p), owns_(owner) {}
+	    : d_base{std::move(del)}
+	    , ptr_(p)
+	    , owns_(owner) {}
 	explicit cond_ptr(T* p, std::decay_t<Deleter> del) noexcept
-	    : d_base{std::move(del)}, ptr_(p) {}
+	    : d_base{std::move(del)}
+	    , ptr_(p) {}
 
 	cond_ptr(unique&& p) noexcept
-	    : d_base{p.get_deleter()}, ptr_(p.release()), owns_(ptr_) {}
+	    : d_base{p.get_deleter()}
+	    , ptr_(p.release())
+	    , owns_(ptr_) {}
 
 	cond_ptr(const cond_ptr& other) = delete;
 	//	cond_ptr(const cond_ptr& other) noexcept
 	//	    : d_base{other.get_deleter()}, ptr_(other.ptr_) {}
 	cond_ptr(cond_ptr&& other) noexcept
-	    : d_base{other.get_deleter()}, ptr_(other.ptr_),
-	      owns_(std::exchange(other.owns_, false)) {}
+	    : d_base{other.get_deleter()}
+	    , ptr_(other.ptr_)
+	    , owns_(std::exchange(other.owns_, false)) {}
 
 	KBLIB_NODISCARD static auto adopt(T* p) noexcept -> cond_ptr {
 		return {p, true};
@@ -528,9 +553,8 @@ class cond_ptr : private detail_memory::as_base_class<Deleter> {
 		get_deleter() = std::move(del);
 	}
 
-	auto
-	swap(cond_ptr& other) noexcept(fakestd::is_nothrow_swappable<Deleter>::value)
-	    -> void {
+	auto swap(cond_ptr& other) noexcept(
+	    fakestd::is_nothrow_swappable<Deleter>::value) -> void {
 		using std::swap;
 		swap(ptr_, other.ptr_);
 		swap(owns_, other.owns_);
@@ -555,13 +579,13 @@ class cond_ptr : private detail_memory::as_base_class<Deleter> {
 		return ptr_;
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator==(const cond_ptr& lhs, const cond_ptr& rhs) noexcept -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator==(
+	    const cond_ptr& lhs, const cond_ptr& rhs) noexcept -> bool {
 		return lhs.ptr_ == rhs.ptr_;
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator==(const unique& lhs, const cond_ptr& rhs) noexcept -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator==(
+	    const unique& lhs, const cond_ptr& rhs) noexcept -> bool {
 		return lhs.get() == rhs.ptr_;
 	}
 
@@ -597,19 +621,25 @@ class cond_ptr<T[], Deleter> : private detail_memory::as_base_class<Deleter> {
 
 	explicit cond_ptr(T* p, bool owner = false,
 	                  std::decay_t<Deleter> del = {}) noexcept
-	    : d_base{std::move(del)}, ptr_(p), owns_(owner) {}
+	    : d_base{std::move(del)}
+	    , ptr_(p)
+	    , owns_(owner) {}
 	explicit cond_ptr(T* p, std::decay_t<Deleter> del) noexcept
-	    : d_base{std::move(del)}, ptr_(p) {}
+	    : d_base{std::move(del)}
+	    , ptr_(p) {}
 
 	cond_ptr(unique&& p) noexcept
-	    : d_base{p.get_deleter()}, ptr_(p.release()), owns_(ptr_) {}
+	    : d_base{p.get_deleter()}
+	    , ptr_(p.release())
+	    , owns_(ptr_) {}
 
 	cond_ptr(const cond_ptr& other) = delete;
 	//	cond_ptr(const cond_ptr& other) noexcept
 	//	    : d_base{other.get_deleter()}, ptr_(other.ptr_) {}
 	cond_ptr(cond_ptr&& other) noexcept
-	    : d_base{other.get_deleter()}, ptr_(other.ptr_),
-	      owns_(std::exchange(other.owns_, false)) {}
+	    : d_base{other.get_deleter()}
+	    , ptr_(other.ptr_)
+	    , owns_(std::exchange(other.owns_, false)) {}
 
 	KBLIB_NODISCARD static auto adopt(T* p) noexcept -> cond_ptr {
 		return {p, true};
@@ -725,13 +755,13 @@ class cond_ptr<T[], Deleter> : private detail_memory::as_base_class<Deleter> {
 		return ptr_[index];
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator==(const cond_ptr& lhs, const cond_ptr& rhs) noexcept -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator==(
+	    const cond_ptr& lhs, const cond_ptr& rhs) noexcept -> bool {
 		return lhs.ptr_ == rhs.ptr_;
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator==(const unique& lhs, const cond_ptr& rhs) noexcept -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator==(
+	    const unique& lhs, const cond_ptr& rhs) noexcept -> bool {
 		return lhs.get() == rhs.ptr_;
 	}
 

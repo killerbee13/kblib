@@ -79,10 +79,10 @@ struct small_base {
 	virtual auto id() const -> int { return 0; }
 };
 struct big_derived : small_base {
-	std::size_t x =
-	    (static_cast<void>(x = 1),
-	     kblib::FNVa_a<std::size_t>(
-	         reinterpret_cast<const char (&)[sizeof(big_derived)]>(*this)));
+	std::size_t x
+	    = (static_cast<void>(x = 1),
+	       kblib::FNVa_a<std::size_t>(
+	           reinterpret_cast<const char (&)[sizeof(big_derived)]>(*this)));
 	auto bark() const -> void override { bark_log.push_back(vbig_derived); }
 	~big_derived() noexcept override = default;
 	auto id() const -> int override { return 1; }
@@ -202,8 +202,8 @@ TEST_CASE("poly_obj") {
 		o8->bark();
 		expected.push_back(vsmall_base);
 		REQUIRE(bark_log == expected);
-		o7 =
-		    kblib::poly_obj<small_base, sizeof(big_derived)>::make<big_derived>();
+		o7 = kblib::poly_obj<small_base,
+		                     sizeof(big_derived)>::make<big_derived>();
 		REQUIRE(o7.has_value());
 		o7->bark();
 		expected.push_back(vbig_derived);
@@ -275,11 +275,11 @@ TEST_CASE("poly_obj") {
 		    "make_poly_obj must return the correct type.");
 	}
 	SECTION("hinted") {
-		static_assert(kblib::poly_obj_traits<hinted_base>::default_capacity ==
-		              hinted_base::max_derived_size);
+		static_assert(kblib::poly_obj_traits<hinted_base>::default_capacity
+		              == hinted_base::max_derived_size);
 		kblib::poly_obj<hinted_base> o;
-		static_assert(decltype(o)::capacity ==
-		              decltype(o)::base_type::max_derived_size);
+		static_assert(decltype(o)::capacity
+		              == decltype(o)::base_type::max_derived_size);
 		o = decltype(o)::make<hinted_derived>();
 	}
 }
@@ -360,32 +360,36 @@ struct Base {
 
 	// this is used, but the compiler doesn't think so because it's in a .cpp
 	// file
-	[[maybe_unused]] constexpr static inline std::size_t max_derived_size =
-	    sizeof(good_base) + sizeof(unsigned);
+	[[maybe_unused]] constexpr static inline std::size_t max_derived_size
+	    = sizeof(good_base) + sizeof(unsigned);
 };
 
 struct Derived1 final : Base {
 	auto operator()() const noexcept -> unsigned override { return member; }
 	unsigned member;
-	Derived1(unsigned i) : member(i) {}
+	Derived1(unsigned i)
+	    : member(i) {}
 };
 
 struct Derived2 final : Base {
 	auto operator()() const noexcept -> unsigned override { return member * 2; }
 	unsigned member;
-	Derived2(unsigned i) : member(i) {}
+	Derived2(unsigned i)
+	    : member(i) {}
 };
 
 struct Derived3 final : Base {
 	auto operator()() const noexcept -> unsigned override { return member / 2; }
 	unsigned member;
-	Derived3(unsigned i) : member(i) {}
+	Derived3(unsigned i)
+	    : member(i) {}
 };
 
 struct Derived4 final : Base {
 	auto operator()() const noexcept -> unsigned override { return ~member; }
 	unsigned member;
-	Derived4(unsigned i) : member(i) {}
+	Derived4(unsigned i)
+	    : member(i) {}
 };
 
 struct thrower final : Base {
@@ -393,7 +397,8 @@ struct thrower final : Base {
 
 	unsigned member;
 
-	thrower(unsigned i = 0) : member(i) {}
+	thrower(unsigned i = 0)
+	    : member(i) {}
 	thrower(const thrower&) = default;
 
 	auto operator=(const thrower& other) & -> thrower& {
@@ -436,14 +441,14 @@ auto make_fptr(unsigned v) noexcept -> fptr {
 
 } // namespace
 
-#ifndef FAST_TEST
+#	ifndef FAST_TEST
 TEST_CASE("poly_obj performance") {
 	const auto start = std::chrono::steady_clock::now();
-#ifdef NDEBUG
+#		ifdef NDEBUG
 	constexpr unsigned count = 1000;
-#else
+#		else
 	constexpr unsigned count = 100;
-#endif
+#		endif
 
 	std::vector<std::pair<unsigned, std::string_view>> reproducibility_test;
 	using poly_t = kblib::poly_obj<
@@ -454,9 +459,9 @@ TEST_CASE("poly_obj performance") {
 		auto begin = reproducibility_test.begin();
 		auto end = reproducibility_test.end();
 		// Take only the first result for each run type
-		if (std::find_if(begin, end, [&](const auto& p) {
-			    return p.second == name;
-		    }) == end) {
+		if (std::find_if(begin, end,
+		                 [&](const auto& p) { return p.second == name; })
+		    == end) {
 			reproducibility_test.emplace_back(s, name);
 		}
 	};
@@ -1176,6 +1181,6 @@ TEST_CASE("poly_obj performance") {
 	}
 }
 
-#endif // not defined(FAST_TEST)
+#	endif // not defined(FAST_TEST)
 
 #endif // KBLIB_USE_CXX17

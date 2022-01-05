@@ -300,8 +300,8 @@ class compact_bit_trie {
 	}
 
 	KBLIB_NODISCARD auto memory_use() const noexcept -> std::size_t {
-		return storage.capacity() * sizeof(inline_node) +
-		       values.size() * sizeof(Value);
+		return storage.capacity() * sizeof(inline_node)
+		       + values.size() * sizeof(Value);
 	}
 
 	auto shrink_to_fit() -> void {
@@ -357,7 +357,9 @@ class compact_bit_trie {
 
 		iterator_t() = default;
 		iterator_t(const compact_bit_trie& range)
-		    : tree_ptr{&range.storage}, values_ptr{&range.values}, node{0} {}
+		    : tree_ptr{&range.storage}
+		    , values_ptr{&range.values}
+		    , node{0} {}
 
 		auto operator*() const noexcept -> reference {
 			return (*values_ptr)[(*tree_ptr)[node].val];
@@ -484,8 +486,8 @@ namespace detail_bits {
                                                                                \
  private:                                                                      \
 	constexpr auto name##_get_impl() const noexcept->decltype(raw) {            \
-		return (raw >> kblib::to_unsigned(offset)) &                             \
-		       ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);             \
+		return (raw >> kblib::to_unsigned(offset))                               \
+		       & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);           \
 	}                                                                           \
                                                                                \
  public:                                                                       \
@@ -519,16 +521,17 @@ namespace detail_bits {
 	}                                                                           \
                                                                                \
 	template <decltype(raw) val, decltype(raw) basis = 0>                       \
-	constexpr static decltype(raw) set_##name##_v =                             \
-	    (basis & ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1)         \
-	               << kblib::to_unsigned(offset))) |                            \
-	    (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1))            \
-	        << kblib::to_unsigned(offset);                                      \
+	constexpr static decltype(raw) set_##name##_v                               \
+	    = (basis                                                                \
+	       & ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1)             \
+	           << kblib::to_unsigned(offset)))                                  \
+	      | (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1))        \
+	            << kblib::to_unsigned(offset);                                  \
                                                                                \
 	template <decltype(raw) basis>                                              \
-	constexpr static decltype(raw) get_##name##_v =                             \
-	    (basis >> kblib::to_unsigned(offset)) &                                 \
-	    ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);
+	constexpr static decltype(raw) get_##name##_v                               \
+	    = (basis >> kblib::to_unsigned(offset))                                 \
+	      & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);
 
 namespace detail_bits {
 
@@ -602,8 +605,8 @@ namespace detail_bits {
 	};
 
 	template <typename P, typename Type, std::size_t S, std::size_t,
-	          bool aliases =
-	              is_aliasing_type_v<typename std::remove_extent<Type>::type>>
+	          bool aliases
+	          = is_aliasing_type_v<typename std::remove_extent<Type>::type>>
 	struct pun_el {
 
 		using type = typename array_filter2<Type, S>::type;
@@ -657,8 +660,8 @@ namespace detail_bits {
 	};
 
 	template <typename... Types>
-	constexpr std::size_t
-	    max_size = std::max({sizeof(typename array_filter<Types>::type)...});
+	constexpr std::size_t max_size
+	    = std::max({sizeof(typename array_filter<Types>::type)...});
 
 } // namespace detail_bits
 
@@ -669,9 +672,9 @@ struct punner
                                        Types...> {
  private:
 	constexpr static std::size_t storage_size = detail_bits::max_size<Types...>;
-	using impl_t =
-	    detail_bits::punner_impl<storage_size, std::index_sequence_for<Types...>,
-	                             Types...>;
+	using impl_t
+	    = detail_bits::punner_impl<storage_size,
+	                               std::index_sequence_for<Types...>, Types...>;
 	using tuple_t = std::tuple<Types...>;
 	template <std::size_t I>
 	using r_element_t = typename std::tuple_element<I, tuple_t>::type;

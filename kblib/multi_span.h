@@ -35,15 +35,15 @@
 
 #if KBLIB_USE_CXX17
 
-#include <initializer_list>
-#include <optional>
-#include <ostream>
-#include <type_traits>
-#include <utility>
+#	include <initializer_list>
+#	include <optional>
+#	include <ostream>
+#	include <type_traits>
+#	include <utility>
 
-#include <boost/iterator.hpp>
-#include <boost/iterator/iterator_facade.hpp>
-#include <gsl/gsl>
+#	include <boost/iterator.hpp>
+#	include <boost/iterator/iterator_facade.hpp>
+#	include <gsl/gsl>
 
 namespace kblib {
 
@@ -61,37 +61,43 @@ namespace multi_impl {
 	                                    std::bidirectional_iterator_tag> {
 	 public:
 		mulspan_iterator() = default;
-		mulspan_iterator(const multi_span<T>& s) : parent(&s) {
+		mulspan_iterator(const multi_span<T>& s)
+		    : parent(&s) {
 			recalculate_cache();
 		}
 		mulspan_iterator(const multi_span<T>& s, std::ptrdiff_t i)
-		    : parent(&s), index(i) {}
+		    : parent(&s)
+		    , index(i) {}
 
 	 private:
 		mulspan_iterator(const multi_span<T>& s, std::ptrdiff_t i,
 		                 typename std::vector<subspan_t<T>>::const_iterator r,
 		                 typename gsl::span<T>::iterator p)
-		    : parent(&s), index(i), pos_cache(cached_iterator{r, p}) {}
+		    : parent(&s)
+		    , index(i)
+		    , pos_cache(cached_iterator{r, p}) {}
 
 	 public:
-		template <typename U, typename = std::enable_if_t<
-		                          std::is_convertible_v<U (*)[], T (*)[]>>>
+		template <typename U,
+		          typename
+		          = std::enable_if_t<std::is_convertible_v<U (*)[], T (*)[]>>>
 		mulspan_iterator(const mulspan_iterator<U>&);
-		template <typename U, typename = std::enable_if_t<
-		                          std::is_convertible_v<U (*)[], T (*)[]>>>
+		template <typename U,
+		          typename
+		          = std::enable_if_t<std::is_convertible_v<U (*)[], T (*)[]>>>
 		mulspan_iterator(mulspan_iterator<U>&&);
 
 	 private:
 		friend class boost::iterator_core_access;
 
 		auto recalculate_cache() const -> void {
-			if (!pos_cache) {
+			if (! pos_cache) {
 				if (index == 0) {
 					pos_cache = {parent->spans.begin(),
 					             parent->spans.front().second.begin()};
 				} else if (index == parent->size()) {
-					pos_cache = {parent->spans.end(),
-					             parent->spans.back().second.begin()};
+					pos_cache
+					    = {parent->spans.end(), parent->spans.back().second.begin()};
 				} else if (auto it = std::prev(parent->spans.end());
 				           index >= it->first) {
 					pos_cache = {it, it->second.begin() + (index - it->first)};
@@ -137,8 +143,8 @@ namespace multi_impl {
 		auto decrement() noexcept -> void {
 			--index;
 			if (pos_cache) {
-				if (pos_cache.value().pos ==
-				    pos_cache.value().subs->second.begin()) {
+				if (pos_cache.value().pos
+				    == pos_cache.value().subs->second.begin()) {
 					--pos_cache.value().subs;
 					pos_cache.value().pos = pos_cache.value().subs->second.end();
 				} else {
@@ -187,19 +193,23 @@ class multi_span {
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-	multi_span() noexcept : spans{{0, {}}} {}
-	template <typename U, typename = std::enable_if_t<
-	                          std::is_convertible_v<U (*)[], T (*)[]>>>
-	multi_span(gsl::span<U> o) noexcept : spans{{0, o}, {o.size(), {}}} {}
-	template <typename U, typename = std::enable_if_t<
-	                          std::is_convertible_v<U (*)[], T (*)[]>>>
+	multi_span() noexcept
+	    : spans{{0, {}}} {}
+	template <typename U,
+	          typename
+	          = std::enable_if_t<std::is_convertible_v<U (*)[], T (*)[]>>>
+	multi_span(gsl::span<U> o) noexcept
+	    : spans{{0, o}, {o.size(), {}}} {}
+	template <typename U,
+	          typename
+	          = std::enable_if_t<std::is_convertible_v<U (*)[], T (*)[]>>>
 	multi_span(std::initializer_list<gsl::span<U>> i_spans) noexcept {
-		index_type c =
-		    std::accumulate(i_spans.begin(), i_spans.end(), index_type{0},
-		                    [this](int c, gsl::span<U> s) {
-			                    spans.push_back({c, s});
-			                    return c + s.size();
-		                    });
+		index_type c
+		    = std::accumulate(i_spans.begin(), i_spans.end(), index_type{0},
+		                      [this](int c, gsl::span<U> s) {
+			                      spans.push_back({c, s});
+			                      return c + s.size();
+		                      });
 		spans.push_back({c, {}});
 	}
 	template <typename Iterator,
@@ -214,8 +224,9 @@ class multi_span {
 		spans.push_back({c, {}});
 	}
 
-	template <typename U, typename = std::enable_if_t<
-	                          std::is_convertible_v<U (*)[], T (*)[]>>>
+	template <typename U,
+	          typename
+	          = std::enable_if_t<std::is_convertible_v<U (*)[], T (*)[]>>>
 	multi_span(const multi_span<U>&);
 
 	multi_span(const multi_span&) = default;

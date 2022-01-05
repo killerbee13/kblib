@@ -41,7 +41,7 @@
 #include <vector>
 
 #if KBLIB_USE_CXX17
-#include <optional>
+#	include <optional>
 #endif
 
 namespace kblib {
@@ -113,8 +113,10 @@ class counting_back_insert_iterator {
 
 	counting_back_insert_iterator() noexcept = default;
 	explicit counting_back_insert_iterator(Container& c, std::size_t n = 0)
-	    : container(std::addressof(c)), count(n) {}
-	explicit counting_back_insert_iterator(std::size_t n) : count(n) {}
+	    : container(std::addressof(c))
+	    , count(n) {}
+	explicit counting_back_insert_iterator(std::size_t n)
+	    : count(n) {}
 
 	struct proxy_iterator {
 		using value_type = typename Container::value_type;
@@ -197,8 +199,8 @@ class counting_back_insert_iterator {
 };
 
 template <typename C>
-KBLIB_NODISCARD counting_back_insert_iterator<C>
-counting_back_inserter(C& c, std::size_t count = 0) {
+KBLIB_NODISCARD counting_back_insert_iterator<C> counting_back_inserter(
+    C& c, std::size_t count = 0) {
 	return counting_back_insert_iterator<C>{c, count};
 }
 
@@ -221,8 +223,8 @@ class range_t {
 	Value min, max;
 	Delta step;
 
-	constexpr static bool nothrow_copyable =
-	    std::is_nothrow_copy_constructible<Value>::value;
+	constexpr static bool nothrow_copyable
+	    = std::is_nothrow_copy_constructible<Value>::value;
 	constexpr static bool nothrow_steppable = noexcept(min + step);
 
  public:
@@ -235,7 +237,9 @@ class range_t {
 	 * @param step_ The difference between values in the range.
 	 */
 	constexpr range_t(Value min_, Value max_, Delta step_ = 1)
-	    : min(min_), max(max_), step(step_) {
+	    : min(min_)
+	    , max(max_)
+	    , step(step_) {
 		normalize();
 	}
 	/**
@@ -336,7 +340,7 @@ class range_t {
 		 */
 		constexpr friend auto operator<=(iterator l, iterator r) noexcept
 		    -> bool {
-			return not(r < l);
+			return not (r < l);
 		}
 		/**
 		 * @brief Compare two range iterators.
@@ -355,7 +359,7 @@ class range_t {
 		 */
 		constexpr friend auto operator>=(iterator l, iterator r) noexcept
 		    -> bool {
-			return not(l < r);
+			return not (l < r);
 		}
 		constexpr auto operator[](std::ptrdiff_t x) const noexcept -> Value {
 			return static_cast<Value>(val + x * step);
@@ -424,10 +428,11 @@ class range_t {
 	/**
 	 \brief Returns a linear container whose elements are this range
 	*/
-	template <typename Container,
-	          enable_if_t<is_linear_container_v<Container> and
-	                      std::is_constructible<Container, iterator,
-	                                            iterator>::value>* = nullptr>
+	template <
+	    typename Container,
+	    enable_if_t<
+	        is_linear_container_v<
+	            Container> and std::is_constructible<Container, iterator, iterator>::value>* = nullptr>
 	explicit operator Container() const
 	    noexcept(noexcept(Container(std::declval<iterator>(),
 	                                std::declval<iterator>()))) {
@@ -437,10 +442,11 @@ class range_t {
 	/**
 	 \brief Returns a setlike container whose elements are this range
 	*/
-	template <typename Container,
-	          enable_if_t<is_setlike_v<Container> and
-	                      std::is_constructible<Container, iterator,
-	                                            iterator>::value>* = nullptr>
+	template <
+	    typename Container,
+	    enable_if_t<
+	        is_setlike_v<
+	            Container> and std::is_constructible<Container, iterator, iterator>::value>* = nullptr>
 	explicit operator Container() const
 	    noexcept(noexcept(Container(std::declval<iterator>(),
 	                                std::declval<iterator>()))) {
@@ -453,9 +459,9 @@ class range_t {
 	 * Ranges are equal when they generate identical ranges.
 	 */
 	constexpr friend auto operator==(range_t l, range_t r) noexcept -> bool {
-		return (l.empty() and r.empty()) or
-		       ((l.begin() == r.begin()) and (l.end() == r.end()) and
-		        (l.step == r.step));
+		return (l.empty() and r.empty())
+		       or ((l.begin() == r.begin()) and (l.end() == r.end())
+		           and (l.step == r.step));
 	}
 	/**
 	 * @brief Compare l and r for inequality.
@@ -463,7 +469,7 @@ class range_t {
 	 * Ranges are equal when they generate identical ranges.
 	 */
 	constexpr friend auto operator!=(range_t l, range_t r) noexcept -> bool {
-		return not(l == r);
+		return not (l == r);
 	}
 
  private:
@@ -477,14 +483,14 @@ class range_t {
 		return v >= 0;
 	}
 	template <typename R, typename T,
-	          enable_if_t<std::is_integral<R>::value and
-	                      std::is_integral<T>::value>* = nullptr>
+	          enable_if_t<std::is_integral<R>::value
+	                      and std::is_integral<T>::value>* = nullptr>
 	static constexpr auto signed_cast(T v) {
 		return kblib::signed_cast<R>(v);
 	}
 	template <typename R, typename T,
-	          enable_if_t<not(std::is_integral<R>::value and
-	                          std::is_integral<T>::value)>* = nullptr>
+	          enable_if_t<not (std::is_integral<R>::value
+	                           and std::is_integral<T>::value)>* = nullptr>
 	static constexpr auto signed_cast(T v) {
 		return v;
 	}
@@ -512,10 +518,10 @@ class range_t {
 				auto remainder = difference % step;
 				if (remainder != 0) {
 					max = max - remainder;
-					assert(
-					    not(positive(max) and
-					        (signed_cast<Delta>(std::numeric_limits<Value>::max() -
-					                            max) < step)));
+					assert(not (positive(max)
+					            and (signed_cast<Delta>(
+					                     std::numeric_limits<Value>::max() - max)
+					                 < step)));
 					max = max + step;
 				}
 			}
@@ -536,7 +542,8 @@ namespace detail_iterators {
 
 struct adjuster {
 	std::ptrdiff_t adj;
-	constexpr adjuster(std::ptrdiff_t adj) noexcept : adj(adj) {}
+	constexpr adjuster(std::ptrdiff_t adj) noexcept
+	    : adj(adj) {}
 	constexpr operator std::ptrdiff_t() const noexcept { return adj; }
 };
 
@@ -642,8 +649,8 @@ class irange_t {
 	Value min, max;
 	Delta step;
 
-	constexpr static bool nothrow_copyable =
-	    std::is_nothrow_copy_constructible<Value>::value;
+	constexpr static bool nothrow_copyable
+	    = std::is_nothrow_copy_constructible<Value>::value;
 	constexpr static bool nothrow_steppable = noexcept(min + step);
 };
 
@@ -681,12 +688,13 @@ class enumeration {
 	enumeration() = default;
 
 	enumeration(const enumeration& other)
-	    : idx(other.idx), local([&] {
-		      assert(other.source or other.local);
-		      assert(other.source != detail_enumerate::get_magic_ptr<T>());
-		      return other.copied();
-	      }()),
-	      source(nullptr) {}
+	    : idx(other.idx)
+	    , local([&] {
+		    assert(other.source or other.local);
+		    assert(other.source != detail_enumerate::get_magic_ptr<T>());
+		    return other.copied();
+	    }())
+	    , source(nullptr) {}
 	enumeration(volatile enumeration& other)
 	    : enumeration(const_cast<const enumeration&>(other)) {}
 
@@ -697,7 +705,8 @@ class enumeration {
 	~enumeration() = default;
 
  private:
-	enumeration(detail_enumerate::force_copy_tag, std::size_t i) : idx(i) {}
+	enumeration(detail_enumerate::force_copy_tag, std::size_t i)
+	    : idx(i) {}
 
  public:
 	auto index() const noexcept -> std::size_t { return idx; }
@@ -740,11 +749,11 @@ class enumeration {
 } // namespace kblib
 
 namespace std {
-#if defined(__clang__)
+#	if defined(__clang__)
 // Fix from: https://github.com/nlohmann/json/issues/1401
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmismatched-tags"
-#endif
+#		pragma clang diagnostic push
+#		pragma clang diagnostic ignored "-Wmismatched-tags"
+#	endif
 
 template <typename T>
 class tuple_size<::kblib::enumeration<T>>
@@ -799,9 +808,9 @@ class tuple_element<1, const ::kblib::enumeration<T>> {
 	using type = const T;
 };
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#	if defined(__clang__)
+#		pragma clang diagnostic pop
+#	endif
 
 } // namespace std
 
@@ -853,9 +862,9 @@ auto get(const volatile enumeration<T>& e) -> decltype(auto) {
 template <typename It>
 class enumerator_iterator {
  public:
-	using nested_value =
-	    copy_const_t<decltype(*std::declval<It&>()),
-	                 typename std::iterator_traits<It>::value_type>;
+	using nested_value
+	    = copy_const_t<decltype(*std::declval<It&>()),
+	                   typename std::iterator_traits<It>::value_type>;
 
 	using value_type = enumeration<nested_value>;
 	using difference_type = std::ptrdiff_t;
@@ -867,7 +876,8 @@ class enumerator_iterator {
 	enumerator_iterator(const enumerator_iterator& other)
 	    : enumerator_iterator(detail_enumerate::force_copy_tag{},
 	                          other.curr_.idx, other.it_) {}
-	enumerator_iterator(It it) : it_(it) {}
+	enumerator_iterator(It it)
+	    : it_(it) {}
 
 	enumerator_iterator(enumerator_iterator&&) = default;
 	auto operator=(const enumerator_iterator&) -> enumerator_iterator& = default;
@@ -901,7 +911,8 @@ class enumerator_iterator {
  private:
 	enumerator_iterator(detail_enumerate::force_copy_tag t, std::size_t idx,
 	                    It it)
-	    : it_(it), curr_(t, idx) {}
+	    : it_(it)
+	    , curr_(t, idx) {}
 
 	It it_;
 	bool captured = false;
@@ -1042,10 +1053,8 @@ struct indirect_range {
  * @param begin,end The range to wrap.
  */
 template <typename Iter1, typename Iter2>
-constexpr auto
-indirect(Iter1 begin,
-         Iter2 end) noexcept(noexcept(indirect_range<Iter1, Iter2>{begin, end}))
-    -> indirect_range<Iter1, Iter2> {
+constexpr auto indirect(Iter1 begin, Iter2 end) noexcept(noexcept(
+    indirect_range<Iter1, Iter2>{begin, end})) -> indirect_range<Iter1, Iter2> {
 	return {begin, end};
 }
 
@@ -1141,8 +1150,8 @@ class transform_iterator {
  public:
 	using difference_type = std::ptrdiff_t;
 	using result_type = decltype(kblib::invoke(*op, *it));
-	using const_result_type =
-	    decltype(kblib::invoke(*std::as_const(op), *std::as_const(it)));
+	using const_result_type
+	    = decltype(kblib::invoke(*std::as_const(op), *std::as_const(it)));
 	using value_type = result_type;
 	using pointer = void;
 	using reference = value_type;
@@ -1157,7 +1166,8 @@ class transform_iterator {
 	 */
 	explicit transform_iterator(base_iterator _it, operation _op) noexcept(
 	    noexcept(base_iterator{_it}) and noexcept(op.emplace(std::move(_op))))
-	    : it(_it), op(std::move(_op)) {}
+	    : it(_it)
+	    , op(std::move(_op)) {}
 
 	/**
 	 * @brief constructs a non-dereferenceable sentinel iterator
@@ -1166,7 +1176,8 @@ class transform_iterator {
 	 */
 	explicit transform_iterator(base_iterator end_it) noexcept(
 	    noexcept(base_iterator{end_it}))
-	    : it(end_it), op(std::nullopt) {}
+	    : it(end_it)
+	    , op(std::nullopt) {}
 
 	/**
 	 * @brief Transforms the value obtained by dereferencing it.
@@ -1274,10 +1285,11 @@ transform_iterator(It, operation) -> transform_iterator<It, operation>;
  * @deprecated Use transformer instead
  */
 template <typename base_iterator, typename operation>
-[[deprecated("use transformer instead")]] auto
-make_transform_iterator(base_iterator it, operation op) noexcept(
-    noexcept(transform_iterator<base_iterator, operation>{it, std::move(op)}))
-    -> transform_iterator<base_iterator, operation> {
+[[deprecated("use transformer instead")]] auto make_transform_iterator(
+    base_iterator it,
+    operation
+        op) noexcept(noexcept(transform_iterator<base_iterator, operation>{
+    it, std::move(op)})) -> transform_iterator<base_iterator, operation> {
 	return {it, std::move(op)};
 }
 
@@ -1308,10 +1320,10 @@ struct zip_iterator {
 	EndIt end1{};
 	InputIt2 pos2{};
 
-	constexpr static bool is_nothrow_copyable =
-	    std::is_nothrow_copy_constructible<InputIt1>::value and
-	    std::is_nothrow_copy_constructible<EndIt>::value and
-	    std::is_nothrow_copy_constructible<InputIt2>::value;
+	constexpr static bool is_nothrow_copyable
+	    = std::is_nothrow_copy_constructible<InputIt1>::value
+	      and std::is_nothrow_copy_constructible<EndIt>::value
+	      and std::is_nothrow_copy_constructible<InputIt2>::value;
 
 	auto operator++() noexcept(noexcept(++pos1) and noexcept(++pos2))
 	    -> zip_iterator& {
@@ -1342,29 +1354,27 @@ struct zip_iterator {
 		return {end1, end1};
 	}
 
-	KBLIB_NODISCARD friend auto
-	operator==(const zip_iterator& z1,
-	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1))
-	    -> bool {
+	KBLIB_NODISCARD friend auto operator==(
+	    const zip_iterator& z1,
+	    const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1)) -> bool {
 		return z1.pos1 == z2.pos1;
 	}
-	KBLIB_NODISCARD friend auto
-	operator!=(const zip_iterator& z1,
-	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 != z2.pos1))
-	    -> bool {
+	KBLIB_NODISCARD friend auto operator!=(
+	    const zip_iterator& z1,
+	    const zip_iterator& z2) noexcept(noexcept(z1.pos1 != z2.pos1)) -> bool {
 		return z1.pos1 != z2.pos1;
 	}
 	KBLIB_NODISCARD friend auto operator==(
 	    const zip_iterator& z1,
-	    zip_iterator<EndIt, EndIt, InputIt2> end) noexcept(noexcept(z1.pos1 ==
-	                                                                end.val))
+	    zip_iterator<EndIt, EndIt, InputIt2> end) noexcept(noexcept(z1.pos1
+	                                                                == end.val))
 	    -> bool {
 		return z1.end1 == end.val;
 	}
 	KBLIB_NODISCARD friend auto operator!=(
 	    const zip_iterator& z1,
-	    zip_iterator<EndIt, EndIt, InputIt2> end) noexcept(noexcept(z1.pos1 ==
-	                                                                end.val))
+	    zip_iterator<EndIt, EndIt, InputIt2> end) noexcept(noexcept(z1.pos1
+	                                                                == end.val))
 	    -> bool {
 		return z1.end1 != end.val;
 	}
@@ -1376,9 +1386,9 @@ struct zip_iterator<It1, It1, It2> {
 	It1 end1{};
 	It2 pos2{};
 
-	constexpr static bool is_nothrow_copyable =
-	    std::is_nothrow_copy_constructible<It1>::value and
-	    std::is_nothrow_copy_constructible<It2>::value;
+	constexpr static bool is_nothrow_copyable
+	    = std::is_nothrow_copy_constructible<It1>::value
+	      and std::is_nothrow_copy_constructible<It2>::value;
 
 	auto operator++() noexcept(noexcept(++pos1)) -> zip_iterator& {
 		++pos1;
@@ -1407,16 +1417,14 @@ struct zip_iterator<It1, It1, It2> {
 		return {end1, end1, pos2};
 	}
 
-	KBLIB_NODISCARD friend auto
-	operator==(const zip_iterator& z1,
-	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1))
-	    -> bool {
+	KBLIB_NODISCARD friend auto operator==(
+	    const zip_iterator& z1,
+	    const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1)) -> bool {
 		return z1.pos1 == z2.pos1;
 	}
-	KBLIB_NODISCARD friend auto
-	operator!=(const zip_iterator& z1,
-	           const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1))
-	    -> bool {
+	KBLIB_NODISCARD friend auto operator!=(
+	    const zip_iterator& z1,
+	    const zip_iterator& z2) noexcept(noexcept(z1.pos1 == z2.pos1)) -> bool {
 		return z1.pos1 != z2.pos1;
 	}
 };
@@ -1488,7 +1496,8 @@ class back_insert_iterator_F {
 	 * @param f The tranformation to apply to each argument.
 	 */
 	explicit back_insert_iterator_F(Container& c, F f)
-	    : container(c), fun(std::move(f)) {}
+	    : container(c)
+	    , fun(std::move(f)) {}
 
 	using value_type = void;
 	using difference_type = void;
@@ -1544,7 +1553,8 @@ class consume_iterator {
 	 *
 	 * @param f The functor to pass values to.
 	 */
-	explicit consume_iterator(F f) : fun(std::move(f)) {}
+	explicit consume_iterator(F f)
+	    : fun(std::move(f)) {}
 
 	/**
 	 * @brief Pass value to F.

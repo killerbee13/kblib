@@ -42,10 +42,10 @@ TEST_CASE("find family") {
 	CHECK(kblib::find_if(begin, end, [](int) { return false; }) == end);
 	CHECK(kblib::find_if_not(begin, end, [](int) { return true; }) == end);
 
-	CHECK(kblib::find_last_if(begin, end, [](int i) { return i == 2; }) ==
-	      begin + 6);
-	CHECK(kblib::find_last_if_not(begin, end, [](int i) { return i == 2; }) ==
-	      begin + 9);
+	CHECK(kblib::find_last_if(begin, end, [](int i) { return i == 2; })
+	      == begin + 6);
+	CHECK(kblib::find_last_if_not(begin, end, [](int i) { return i == 2; })
+	      == begin + 9);
 	CHECK(kblib::find_last_if(begin, end, [](int) { return false; }) == end);
 	CHECK(kblib::find_last_if_not(begin, end, [](int) { return true; }) == end);
 
@@ -85,11 +85,11 @@ TEST_CASE("find_in") {
 	CHECK(kblib::find_in_if_not(begin, end, [](int) { return true; }) == size);
 
 	CHECK(kblib::find_last_in_if(begin, end, [](int i) { return i == 2; }) == 6);
-	CHECK(kblib::find_last_in_if_not(begin, end, [](int i) { return i == 2; }) ==
-	      9);
+	CHECK(kblib::find_last_in_if_not(begin, end, [](int i) { return i == 2; })
+	      == 9);
 	CHECK(kblib::find_last_in_if(begin, end, [](int) { return false; }) == size);
-	CHECK(kblib::find_last_in_if_not(begin, end, [](int) { return true; }) ==
-	      size);
+	CHECK(kblib::find_last_in_if_not(begin, end, [](int) { return true; })
+	      == size);
 }
 
 TEST_CASE("search_replace") {
@@ -192,22 +192,22 @@ TEST_CASE("get_max family") {
 	/// TODO(killerbee13): tests for get_max_*
 	std::array<int, 11> arr{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 	{
-		auto max_two =
-		    kblib::get_max_n_old<std::vector<int>>(arr.begin(), arr.end(), 2);
+		auto max_two
+		    = kblib::get_max_n_old<std::vector<int>>(arr.begin(), arr.end(), 2);
 		CHECK(max_two.size() == 2);
 		CHECK(std::max(max_two[0], max_two[1]) == 10);
 		CHECK(std::min(max_two[0], max_two[1]) == 9);
 	}
 	{
-		auto max_two =
-		    kblib::get_max_n_old<std::set<int>>(arr.begin(), arr.end(), 2);
+		auto max_two
+		    = kblib::get_max_n_old<std::set<int>>(arr.begin(), arr.end(), 2);
 		CHECK(max_two.size() == 2);
 		CHECK(max_two.find(10) != max_two.end());
 		CHECK(max_two.find(9) != max_two.end());
 	}
 	{
-		auto max_two =
-		    kblib::get_max_n<std::vector<int>>(arr.begin(), arr.end(), 2);
+		auto max_two
+		    = kblib::get_max_n<std::vector<int>>(arr.begin(), arr.end(), 2);
 		CHECK(max_two.size() == 2);
 		CHECK(std::max(max_two[0], max_two[1]) == 10);
 		CHECK(std::min(max_two[0], max_two[1]) == 9);
@@ -230,8 +230,8 @@ TEST_CASE("assorted algorithms") {
 		auto r1e = r1.end();
 		auto r2b = r2.begin();
 		auto r2e = r2.end();
-		return (std::distance(r1b, r1e) == std::distance(r2b, r2e)) and
-		       kblib::equal(r1b, r1e, r2b);
+		return (std::distance(r1b, r1e) == std::distance(r2b, r2e))
+		       and kblib::equal(r1b, r1e, r2b);
 	};
 	std::array<int, 10> haystack{1, 1, 2, 5, 6, 2, 4, 7, 0, 6};
 	const int N = 5;
@@ -264,8 +264,8 @@ TEST_CASE("assorted algorithms") {
 	auto range = kblib::range(0, 50, 3);
 	CHECK(equal(range, std::vector<int>{0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30,
 	                                    33, 36, 39, 42, 45, 48}));
-	auto maxN_range =
-	    kblib::get_max_n<std::vector<int>>(range.begin(), range.end(), 5);
+	auto maxN_range
+	    = kblib::get_max_n<std::vector<int>>(range.begin(), range.end(), 5);
 	CHECK(maxN_range == std::vector<int>{48, 45, 42, 39, 36});
 }
 

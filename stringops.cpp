@@ -30,14 +30,14 @@ TEST_CASE("concat") {
 	{
 		std::string val = "1";
 		const char* type = "bool";
-		REQUIRE(kblib::concat("\"", val, "\" is not a ", type) ==
-		        "\"1\" is not a bool");
+		REQUIRE(kblib::concat("\"", val, "\" is not a ", type)
+		        == "\"1\" is not a bool");
 	}
 	{
 		std::string_view val = "1";
 		const char* type = "bool";
-		REQUIRE(kblib::concat("\"", val, "\" is not a ", type) ==
-		        "\"1\" is not a bool");
+		REQUIRE(kblib::concat("\"", val, "\" is not a ", type)
+		        == "\"1\" is not a bool");
 	}
 }
 

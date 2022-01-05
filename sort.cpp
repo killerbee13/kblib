@@ -108,20 +108,20 @@ static std::ostream& log_location = std::cout;
 auto linear(std::size_t i) { return static_cast<double>(i); }
 
 TEST_CASE("insertion sort performance") {
-	auto time_and_log = [&](auto line, auto&& f, std::size_t quick = 30,
-	                        std::size_t slow = 10000,
-	                        double (*O)(std::size_t) = linear) {
-		auto time_fast = f(quick) / O(quick);
-		auto time_slow = f(slow) / O(slow);
-		auto error = time_slow / time_fast;
-		log_location << __FILE__ ":" << std::left << line << ": \t" << time_fast
-		             << "\t " << std::setw(12) << time_slow << '\t'
-		             << std::setw(14) << error << '\t' << time_slow * 10000
-		             << '\t' << time_fast * 30 << "\n";
+	auto time_and_log
+	    = [&](auto line, auto&& f, std::size_t quick = 30,
+	          std::size_t slow = 10000, double (*O)(std::size_t) = linear) {
+		      auto time_fast = f(quick) / O(quick);
+		      auto time_slow = f(slow) / O(slow);
+		      auto error = time_slow / time_fast;
+		      log_location << __FILE__ ":" << std::left << line << ": \t"
+		                   << time_fast << "\t " << std::setw(12) << time_slow
+		                   << '\t' << std::setw(14) << error << '\t'
+		                   << time_slow * 10000 << '\t' << time_fast * 30 << "\n";
 
-		// Can't overshoot the bound by more than 5%:
-		CHECK(error < 1.05);
-	};
+		      // Can't overshoot the bound by more than 5%:
+		      CHECK(error < 1.05);
+	      };
 #define TIME(...) time_and_log(__LINE__, __VA_ARGS__)
 
 	SECTION("labels") {
@@ -250,8 +250,8 @@ TEST_CASE("insertion sort performance") {
 TEST_CASE("byte extraction") {
 	constexpr std::uint32_t x{0xAB23CD67};
 
-	static_assert(std::numeric_limits<std::uint32_t>::digits ==
-	                  sizeof(uint32_t) * CHAR_BIT,
+	static_assert(std::numeric_limits<std::uint32_t>::digits
+	                  == sizeof(uint32_t) * CHAR_BIT,
 	              "these checks assume uint32_t does not have padding.");
 	static_assert(CHAR_BIT == 8, "these checks assume 8-bit bytes");
 

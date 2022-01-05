@@ -57,20 +57,20 @@ TEST_CASE("signed_cast") {
 template <class T>
 KBLIB_UNUSED constexpr auto type_name_f() -> std::string_view {
 	using namespace std;
-#ifdef __clang__
+#	ifdef __clang__
 	string_view p = __PRETTY_FUNCTION__;
 	return string_view(p.data() + 36, p.size() - 36 - 1);
-#elif defined(__GNUC__)
+#	elif defined(__GNUC__)
 	string_view p = __PRETTY_FUNCTION__;
-#if __cplusplus < 201402
+#		if __cplusplus < 201402
 	return string_view(p.data() + 36, p.size() - 36 - 1);
-#else
+#		else
 	return string_view(p.data() + 49, p.find(';', 49) - 49);
-#endif
-#elif defined(_MSC_VER)
+#		endif
+#	elif defined(_MSC_VER)
 	string_view p = __FUNCSIG__;
 	return string_view(p.data() + 84, p.size() - 84 - 7);
-#endif
+#	endif
 }
 #endif
 
@@ -86,7 +86,7 @@ TEST_CASE("next_larger") {
 	static_assert(
 	    std::is_same<kblib::detail::next_larger_signed<int>::type, long>::value,
 	    "int < long");
-#if 0
+#	if 0
 	std::cout
 	    << "Next_larger: \n"
 	    << "signed char: "
@@ -101,6 +101,6 @@ TEST_CASE("next_larger") {
 	//	    << "long long:   "
 	//	    << type_name_f<kblib::detail::next_larger_signed<long long>::type>()
 	//	    << '\n';
-#endif
+#	endif
 }
 #endif

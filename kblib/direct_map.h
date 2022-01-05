@@ -44,6 +44,7 @@
 #include <optional>
 
 namespace kblib {
+
 /**
  * @namespace detail_direct_map
  * @internal
@@ -51,19 +52,19 @@ namespace kblib {
 namespace detail_direct_map {
 
 	template <typename T>
-	constexpr auto range_of =
-	    (std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed <
-	     std::numeric_limits<std::uintmax_t>::digits)
-	        ? static_cast<std::uintmax_t>(1)
-	              << to_unsigned(std::numeric_limits<T>::digits +
-	                             std::numeric_limits<T>::is_signed)
-	        : 0;
+	constexpr auto range_of
+	    = (std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed
+	       < std::numeric_limits<std::uintmax_t>::digits)
+	          ? static_cast<std::uintmax_t>(1)
+	                << to_unsigned(std::numeric_limits<T>::digits
+	                               + std::numeric_limits<T>::is_signed)
+	          : 0;
 	static_assert(range_of<unsigned char> == 1u << to_unsigned(CHAR_BIT), "");
 	static_assert(range_of<signed char> == 1u << to_unsigned(CHAR_BIT), "");
 
-	template <typename T,
-	          bool = std::is_trivially_default_constructible<T>::value and
-	              std::is_trivially_destructible<T>::value>
+	template <typename T, bool
+	                      = std::is_trivially_default_constructible<T>::value and
+	                          std::is_trivially_destructible<T>::value>
 	struct alignas(T) storage_for : private std::array<byte, sizeof(T)> {
 		template <
 		    typename... Args,
@@ -84,9 +85,9 @@ namespace detail_direct_map {
 		constexpr auto destroy() noexcept -> void { get()->~T(); }
 
 #if KBLIB_USE_CXX17
-#define LAUNDER(x) std::launder(x)
+#	define LAUNDER(x) std::launder(x)
 #else
-#define LAUNDER(x) (x)
+#	define LAUNDER(x) (x)
 #endif
 		KBLIB_NODISCARD constexpr auto get() & noexcept -> T* {
 			return LAUNDER(reinterpret_cast<T*>(this->data()));
@@ -139,8 +140,8 @@ class direct_map {
 	constexpr static std::ptrdiff_t key_range{detail_direct_map::range_of<Key>};
 	using storage_type = detail_direct_map::storage_for<value_type>;
 
-	using held_type =
-	    std::pair<std::bitset<key_range>, std::array<storage_type, key_range>>;
+	using held_type
+	    = std::pair<std::bitset<key_range>, std::array<storage_type, key_range>>;
 
 	template <typename V>
 	class iter {
@@ -205,7 +206,7 @@ class direct_map {
 		}
 		KBLIB_NODISCARD friend constexpr auto operator!=(iter l, iter r) noexcept
 		    -> bool {
-			return not(l == r);
+			return not (l == r);
 		}
 #define DECL_OP(op)                                                           \
 	KBLIB_NODISCARD friend constexpr auto operator op(iter l,                  \
@@ -234,14 +235,16 @@ class direct_map {
 	constexpr direct_map() noexcept = default;
 
 	template <typename InputIt>
-	constexpr direct_map(InputIt first, InputIt last) : storage(in_place_agg) {
+	constexpr direct_map(InputIt first, InputIt last)
+	    : storage(in_place_agg) {
 		for (auto v : indirect(first, last)) {
 			construct(v.first, v.second);
 		}
 	}
 	// TODO(killerbee13): copy construction for allocating direct_map
 	constexpr direct_map(const direct_map& other)
-	    : storage(in_place_agg, other.storage->first), _size(other._size) {
+	    : storage(in_place_agg, other.storage->first)
+	    , _size(other._size) {
 		for (auto k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				do_construct(k, other.at(k));
@@ -251,8 +254,8 @@ class direct_map {
 	}
 
 	constexpr direct_map(direct_map&& other) noexcept
-	    : storage(std::move(other.storage)),
-	      _size(std::exchange(other._size, 0)) {}
+	    : storage(std::move(other.storage))
+	    , _size(std::exchange(other._size, 0)) {}
 
 	constexpr direct_map(std::initializer_list<value_type> init)
 	    : direct_map(init.begin(), init.end()) {}
@@ -558,9 +561,10 @@ class direct_map {
 		return std::numeric_limits<Key>::max();
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator==(const direct_map& l, const direct_map& r) noexcept(
-	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator==(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>()
+	                                           == std::declval<T&>())) -> bool {
 		if (l.size() != r.size()) {
 			return false;
 		}
@@ -576,40 +580,37 @@ class direct_map {
 		return true;
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator!=(const direct_map& l, const direct_map& r) noexcept(
-	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
-		return not(l == r);
+	KBLIB_NODISCARD friend constexpr auto operator!=(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>()
+	                                           == std::declval<T&>())) -> bool {
+		return not (l == r);
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator<(const direct_map& l,
-	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>()))
-	    -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator<(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
 		return kblib::lexicographical_compare(l.begin(), l.end(), r.begin(),
 		                                      r.end());
 	}
-	KBLIB_NODISCARD friend constexpr auto
-	operator>(const direct_map& l,
-	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>()))
-	    -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator>(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
 		return r < l;
 	}
-	KBLIB_NODISCARD friend constexpr auto
-	operator<=(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>()))
-	    -> bool {
-		return not(r < l);
+	KBLIB_NODISCARD friend constexpr auto operator<=(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
+		return not (r < l);
 	}
-	KBLIB_NODISCARD friend constexpr auto
-	operator>=(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>()))
-	    -> bool {
-		return not(l < r);
+	KBLIB_NODISCARD friend constexpr auto operator>=(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
+		return not (l < r);
 	}
 
 	KBLIB_NODISCARD constexpr static auto index(Key key) noexcept
@@ -625,8 +626,8 @@ class direct_map {
 	KBLIB_NODISCARD constexpr auto bitmap() noexcept -> std::bitset<key_range>& {
 		return storage->first;
 	}
-	KBLIB_NODISCARD constexpr const std::bitset<key_range>&
-	bitmap() const noexcept {
+	KBLIB_NODISCARD constexpr const std::bitset<key_range>& bitmap()
+	    const noexcept {
 		return storage->first;
 	}
 
@@ -636,12 +637,12 @@ class direct_map {
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) && -> storage_type&& {
 		return storage->second[index(key)];
 	}
-	KBLIB_NODISCARD constexpr auto
-	unsafe_at(Key key) const& -> const storage_type& {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const& -> const
+	    storage_type& {
 		return storage->second[index(key)];
 	}
-	KBLIB_NODISCARD constexpr auto
-	unsafe_at(Key key) const&& -> const storage_type&& {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const&& -> const
+	    storage_type&& {
 		return storage->second[index(key)];
 	}
 
@@ -759,7 +760,7 @@ class direct_map<Key, T, void> {
 		}
 		KBLIB_NODISCARD friend constexpr auto operator!=(iter l, iter r) noexcept
 		    -> bool {
-			return not(l == r);
+			return not (l == r);
 		}
 
 #define DECL_OP(op)                                                           \
@@ -797,7 +798,8 @@ class direct_map<Key, T, void> {
 	}
 
 	constexpr direct_map(const direct_map& other)
-	    : active_elems{other.active_elems}, _size(other._size) {
+	    : active_elems{other.active_elems}
+	    , _size(other._size) {
 		for (auto k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				construct(k, other.unsafe_at(k).get()->second);
@@ -809,7 +811,8 @@ class direct_map<Key, T, void> {
 
 	constexpr direct_map(direct_map&& other) noexcept(
 	    std::is_nothrow_move_constructible<value_type>::value)
-	    : active_elems{other.active_elems}, _size(other._size) {
+	    : active_elems{other.active_elems}
+	    , _size(other._size) {
 		for (auto k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				construct(k, std::move(other.unsafe_at(k).get()->second));
@@ -1149,9 +1152,10 @@ class direct_map<Key, T, void> {
 		return std::numeric_limits<Key>::max();
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator==(const direct_map& l, const direct_map& r) noexcept(
-	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator==(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>()
+	                                           == std::declval<T&>())) -> bool {
 		if (l.size() != r.size()) {
 			return false;
 		}
@@ -1167,40 +1171,37 @@ class direct_map<Key, T, void> {
 		return true;
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator!=(const direct_map& l, const direct_map& r) noexcept(
-	    noexcept(std::declval<T&>() == std::declval<T&>())) -> bool {
-		return not(l == r);
+	KBLIB_NODISCARD friend constexpr auto operator!=(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>()
+	                                           == std::declval<T&>())) -> bool {
+		return not (l == r);
 	}
 
-	KBLIB_NODISCARD friend constexpr auto
-	operator<(const direct_map& l,
-	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>()))
-	    -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator<(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
 		return kblib::lexicographical_compare(l.begin(), l.end(), r.begin(),
 		                                      r.end());
 	}
-	KBLIB_NODISCARD friend constexpr auto
-	operator>(const direct_map& l,
-	          const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                 std::declval<T&>()))
-	    -> bool {
+	KBLIB_NODISCARD friend constexpr auto operator>(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
 		return r < l;
 	}
-	KBLIB_NODISCARD friend constexpr auto
-	operator<=(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>()))
-	    -> bool {
-		return not(r < l);
+	KBLIB_NODISCARD friend constexpr auto operator<=(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
+		return not (r < l);
 	}
-	KBLIB_NODISCARD friend constexpr auto
-	operator>=(const direct_map& l,
-	           const direct_map& r) noexcept(noexcept(std::declval<T&>(),
-	                                                  std::declval<T&>()))
-	    -> bool {
-		return not(l < r);
+	KBLIB_NODISCARD friend constexpr auto operator>=(
+	    const direct_map& l,
+	    const direct_map& r) noexcept(noexcept(std::declval<T&>(),
+	                                           std::declval<T&>())) -> bool {
+		return not (l < r);
 	}
 
 	KBLIB_NODISCARD constexpr static auto index(Key key) noexcept
@@ -1227,12 +1228,12 @@ class direct_map<Key, T, void> {
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) && -> storage_type&& {
 		return elems[index(key)];
 	}
-	KBLIB_NODISCARD constexpr auto
-	unsafe_at(Key key) const& -> const storage_type& {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const& -> const
+	    storage_type& {
 		return elems[index(key)];
 	}
-	KBLIB_NODISCARD constexpr auto
-	unsafe_at(Key key) const&& -> const storage_type&& {
+	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const&& -> const
+	    storage_type&& {
 		return elems[index(key)];
 	}
 

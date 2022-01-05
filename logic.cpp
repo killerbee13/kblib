@@ -16,24 +16,24 @@ struct tag {};
 
 template <std::size_t COL, typename T, std::size_t rows, std::size_t cols,
           std::size_t... row>
-constexpr std::array<T, rows>
-get_col(const std::array<std::array<T, cols>, rows>& in,
-        std::index_sequence<row...>) {
+constexpr std::array<T, rows> get_col(
+    const std::array<std::array<T, cols>, rows>& in,
+    std::index_sequence<row...>) {
 	static_assert(rows == sizeof...(row), "");
 	return {std::get<COL>(std::get<row>(in))...};
 }
 
 template <typename T, std::size_t rows, std::size_t cols, std::size_t... row,
           std::size_t... col>
-constexpr std::array<std::array<T, rows>, cols>
-transpose_arr_impl(const std::array<std::array<T, cols>, rows>& in,
-                   std::index_sequence<col...>) {
+constexpr std::array<std::array<T, rows>, cols> transpose_arr_impl(
+    const std::array<std::array<T, cols>, rows>& in,
+    std::index_sequence<col...>) {
 	return {get_col<col>(in, std::make_index_sequence<rows>{})...};
 }
 
 template <typename T, std::size_t rows, std::size_t cols>
-constexpr std::array<std::array<T, rows>, cols>
-transpose_arr(std::array<std::array<T, cols>, rows> in) {
+constexpr std::array<std::array<T, rows>, cols> transpose_arr(
+    std::array<std::array<T, cols>, rows> in) {
 	return transpose_arr_impl(in, std::make_index_sequence<cols>{});
 	// C++17 version
 	/*
@@ -66,9 +66,9 @@ constexpr auto gen_dispatch_table() -> std::array<std::array<int (*)(), 8>, 8> {
 	return transpose_arr(tmp);
 }
 
-constexpr std::array<std::array<int (*)(), 8>, 8> dispatch_table =
-    gen_dispatch_table<tag<6, 13, 14, 19, 22, 22, 24, 27>, 1, 3, 5, 6, 18, 21,
-                       25, 31>();
+constexpr std::array<std::array<int (*)(), 8>, 8> dispatch_table
+    = gen_dispatch_table<tag<6, 13, 14, 19, 22, 22, 24, 27>, 1, 3, 5, 6, 18, 21,
+                         25, 31>();
 
 auto multi_dispatcher(int i1, int i2) -> int {
 	constexpr std::array<int, 8> i1_lookup = {6, 13, 14, 19, 22, 22, 24, 27};

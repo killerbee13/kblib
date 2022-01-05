@@ -73,9 +73,9 @@ TEST_CASE("test_trie") {
 struct buffer {
 	struct ret_proxy {
 		const char* buf;
-		template <typename T,
-		          typename std::enable_if<std::is_trivially_copyable<T>::value,
-		                                  int>::type = 0>
+		template <typename T, typename std::enable_if<
+		                          std::is_trivially_copyable<T>::value, int>::type
+		                      = 0>
 		operator T() const {
 			T t;
 			std::memcpy(&t, buf, sizeof(T));

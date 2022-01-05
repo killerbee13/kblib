@@ -56,10 +56,9 @@ namespace kblib {
 template <typename RandomAccessIt, typename Compare = std::less<>>
 constexpr auto insertion_sort(
     const RandomAccessIt begin, const RandomAccessIt end,
-    Compare&& compare =
-        {}) noexcept(noexcept(swap(*begin,
-                                   *begin)) and noexcept(compare(*begin,
-                                                                 *begin)))
+    Compare&& compare
+    = {}) noexcept(noexcept(swap(*begin, *begin)) and noexcept(compare(*begin,
+                                                                       *begin)))
     -> void {
 	// Trivial inputs are trivially already sorted.
 	if (end - begin <= 1) {
@@ -94,11 +93,11 @@ template <typename RandomAccessIt, typename RandomAccessIt2,
 constexpr auto insertion_sort_copy(
     const RandomAccessIt begin, const RandomAccessIt end,
     const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
-    Compare&& compare =
-        {}) noexcept(noexcept(detail_algorithm::
-                                  shift_backward(
-                                      d_begin, d_begin,
-                                      d_end)) and noexcept(*d_begin = *begin))
+    Compare&& compare
+    = {}) noexcept(noexcept(detail_algorithm::
+                                shift_backward(d_begin, d_begin,
+                                               d_end)) and noexcept(*d_begin
+                                                                    = *begin))
     -> void {
 	const auto dist = end - begin;
 	assert(end - begin == d_end - d_begin);
@@ -134,23 +133,22 @@ constexpr auto insertion_sort_copy(
 			// is meant to never be used for arrays large enough for binary
 			// search.
 #if 1
-			auto index =
-			    kblib::find_if(write + 1, d_end, [&compare, read](const auto& a) {
-				    return not compare(a, *read);
-			    });
+			auto index = kblib::find_if(
+			    write + 1, d_end,
+			    [&compare, read](const auto& a) { return not compare(a, *read); });
 #else
-			auto index =
-			    kblib::find_if(write + 1, d_end, [&compare, read](const auto& a) {
-				    if (stable) {
-					    // find first element greater than
-					    // *read
-					    return compare(*read, a);
-				    } else {
-					    // find first element greater than
-					    // or equal to *read
-					    return !compare(a, *read);
-				    }
-			    });
+			auto index = kblib::find_if(write + 1, d_end,
+			                            [&compare, read](const auto& a) {
+				                            if (stable) {
+					                            // find first element greater than
+					                            // *read
+					                            return compare(*read, a);
+				                            } else {
+					                            // find first element greater than
+					                            // or equal to *read
+					                            return ! compare(a, *read);
+				                            }
+			                            });
 #endif
 			detail_algorithm::shift_backward(write, write + 1, index);
 			*(index - 1) = *read;
@@ -180,11 +178,11 @@ template <typename RandomAccessIt, typename RandomAccessIt2,
 constexpr auto adaptive_insertion_sort_copy(
     const RandomAccessIt begin, const RandomAccessIt end,
     const RandomAccessIt2 d_begin, const RandomAccessIt2 d_end,
-    Compare&& compare =
-        {}) noexcept(noexcept(detail_algorithm::
-                                  shift_backward(
-                                      d_begin, d_begin,
-                                      d_end)) and noexcept(*d_begin = *begin))
+    Compare&& compare
+    = {}) noexcept(noexcept(detail_algorithm::
+                                shift_backward(d_begin, d_begin,
+                                               d_end)) and noexcept(*d_begin
+                                                                    = *begin))
     -> void {
 	const auto dist = end - begin;
 	// For trivial inputs, don't bother doing anything
@@ -195,8 +193,9 @@ constexpr auto adaptive_insertion_sort_copy(
 	// A very rudimentary way of estimating the sortedness of the input, by
 	// counting the relative number of ascending and descending adjacent pairs
 	// within the first sqrt(n) elements.
-	const auto scan_end =
-	    begin + static_cast<std::ptrdiff_t>(std::sqrt(static_cast<float>(dist)));
+	const auto scan_end
+	    = begin
+	      + static_cast<std::ptrdiff_t>(std::sqrt(static_cast<float>(dist)));
 	std::ptrdiff_t dir{};
 	for (auto pos = begin; pos != scan_end - 1; ++pos) {
 		if (compare(*pos, *(pos + 1))) {
@@ -233,8 +232,8 @@ struct is_radix_sortable<std::bitset<B>, void> : std::true_type {};
 
 template <typename T>
 struct is_radix_sortable<
-    T, void_if_t<is_linear_container_v<T> and
-                 std::is_integral<typename T::value_type>::value>>
+    T, void_if_t<is_linear_container_v<
+                     T> and std::is_integral<typename T::value_type>::value>>
     : std::true_type {};
 
 template <typename T>
@@ -242,8 +241,8 @@ constexpr bool is_radix_sortable_v = is_radix_sortable<T>::value;
 
 #if KBLIB_USE_CXX17
 template <typename T>
-constexpr bool is_byte_v =
-    std::is_same<typename std::remove_cv<T>::type, std::byte>::value;
+constexpr bool is_byte_v
+    = std::is_same<typename std::remove_cv<T>::type, std::byte>::value;
 #else
 template <typename T>
 constexpr bool is_byte_v = false;
@@ -252,16 +251,16 @@ constexpr bool is_byte_v = false;
 template <typename T>
 KBLIB_NODISCARD constexpr auto byte_count(T) noexcept
     -> enable_if_t<std::is_integral<T>::value, std::size_t> {
-	auto res =
-	    kblib::div(kblib::bits_of<T> + std::is_signed<T>::value, CHAR_BIT);
+	auto res
+	    = kblib::div(kblib::bits_of<T> + std::is_signed<T>::value, CHAR_BIT);
 	return to_unsigned(res.quot + (res.rem != 0));
 }
 template <typename T>
 KBLIB_NODISCARD constexpr auto byte_count(T) noexcept
     -> enable_if_t<std::is_enum<T>::value, std::size_t> {
 	using U = typename std::underlying_type<T>::type;
-	auto res =
-	    kblib::div(kblib::bits_of<U> + std::is_signed<U>::value, CHAR_BIT);
+	auto res
+	    = kblib::div(kblib::bits_of<U> + std::is_signed<U>::value, CHAR_BIT);
 	return to_unsigned(res.quot + (res.rem != 0));
 }
 template <typename T>
@@ -274,20 +273,18 @@ KBLIB_NODISCARD constexpr auto byte_count(const std::unique_ptr<T>&) noexcept
 	return byte_count(std::uintptr_t{});
 }
 template <typename T>
-KBLIB_NODISCARD constexpr auto byte_count(const T& x) noexcept
-    -> enable_if_t<is_linear_container_v<T> and
-                       (std::is_integral<typename T::value_type>::value or
-                        is_byte_v<T>) and
-                       sizeof(typename T::value_type) == 1,
-                   std::size_t> {
+KBLIB_NODISCARD constexpr auto byte_count(const T& x) noexcept -> enable_if_t<
+    is_linear_container_v<
+        T> and (std::is_integral<typename T::value_type>::value or is_byte_v<T>)
+        and sizeof(typename T::value_type) == 1,
+    std::size_t> {
 	return fakestd::size(x);
 }
 template <typename T>
-constexpr auto byte_count(const T& x) noexcept
-    -> enable_if_t<is_linear_container_v<T> and
-                       std::is_integral<typename T::value_type>::value and
-                       (sizeof(typename T::value_type) > 1),
-                   std::size_t> {
+constexpr auto byte_count(const T& x) noexcept -> enable_if_t<
+    is_linear_container_v<T> and std::is_integral<typename T::value_type>::value
+        and (sizeof(typename T::value_type) > 1),
+    std::size_t> {
 	using value_type = typename T::value_type;
 	return fakestd::size(x) * byte_count(value_type{});
 }
@@ -322,37 +319,36 @@ KBLIB_NODISCARD auto get_byte_index(const std::unique_ptr<T>& x,
 	return get_byte_index(byte_cast<std::uintptr_t>(x.get()), idx);
 }
 template <typename T>
-KBLIB_NODISCARD constexpr auto get_byte_index(const T& x,
-                                              std::size_t idx) noexcept
-    -> enable_if_t<is_linear_container_v<T> and
-                       (std::is_integral<typename T::value_type>::value or
-                        is_byte_v<T>) and
-                       sizeof(typename T::value_type) == 1,
-                   unsigned char> {
+KBLIB_NODISCARD constexpr auto
+get_byte_index(const T& x, std::size_t idx) noexcept -> enable_if_t<
+    is_linear_container_v<
+        T> and (std::is_integral<typename T::value_type>::value or is_byte_v<T>)
+        and sizeof(typename T::value_type) == 1,
+    unsigned char> {
 	return static_cast<unsigned char>(x[idx]);
 }
 template <typename T>
 KBLIB_NODISCARD constexpr auto get_byte_index(const T& x,
                                               std::size_t idx) noexcept
-    -> enable_if_t<is_linear_container_v<T> and
-                       std::is_integral<typename T::value_type>::value and
-                       (sizeof(typename T::value_type) > 1),
+    -> enable_if_t<is_linear_container_v<
+                       T> and std::is_integral<typename T::value_type>::value
+                       and (sizeof(typename T::value_type) > 1),
                    unsigned char> {
 	using value_type = typename T::value_type;
 	auto bytes_per = byte_count(value_type{});
-	return static_cast<unsigned char>(to_unsigned(x[idx / bytes_per]) >>
-	                                  (idx % bytes_per * CHAR_BIT));
+	return static_cast<unsigned char>(to_unsigned(x[idx / bytes_per])
+	                                  >> (idx % bytes_per * CHAR_BIT));
 }
 template <typename T>
 KBLIB_NODISCARD constexpr auto get_byte_index(const T& x,
                                               std::size_t idx) noexcept
-    -> enable_if_t<is_linear_container_v<T> and
-                       std::is_enum<typename T::value_type>::value,
+    -> enable_if_t<is_linear_container_v<
+                       T> and std::is_enum<typename T::value_type>::value,
                    unsigned char> {
 	using U = typename std::underlying_type<typename T::U>::type;
 	auto bytes_per = byte_count(U{});
-	return static_cast<unsigned char>(to_unsigned(etoi(x[idx / bytes_per])) >>
-	                                  (idx % bytes_per * CHAR_BIT));
+	return static_cast<unsigned char>(to_unsigned(etoi(x[idx / bytes_per]))
+	                                  >> (idx % bytes_per * CHAR_BIT));
 }
 
 template <typename T>
@@ -477,11 +473,11 @@ namespace detail_sort {
 		                              const RandomAccessIt end,
 		                              UnaryOperation&& transform,
 		                              BinaryPredicate&& compare) -> void {
-			auto comp = [&compare, &transform](RandomAccessIt a,
-			                                   RandomAccessIt b) {
-				return kblib::invoke(compare, kblib::invoke(transform, *a),
-				                     kblib::invoke(transform, *b));
-			};
+			auto comp
+			    = [&compare, &transform](RandomAccessIt a, RandomAccessIt b) {
+				      return kblib::invoke(compare, kblib::invoke(transform, *a),
+				                           kblib::invoke(transform, *b));
+			      };
 			if (end - begin < small_size) {
 				insertion_sort(begin, end, comp);
 				return;
@@ -494,11 +490,11 @@ namespace detail_sort {
 		                              const RandomAccessIt end,
 		                              UnaryOperation&& transform,
 		                              BinaryPredicate&& compare) -> void {
-			auto comp = [&compare, &transform](RandomAccessIt a,
-			                                   RandomAccessIt b) {
-				return kblib::invoke(compare, kblib::invoke(transform, *a),
-				                     kblib::invoke(transform, *b));
-			};
+			auto comp
+			    = [&compare, &transform](RandomAccessIt a, RandomAccessIt b) {
+				      return kblib::invoke(compare, kblib::invoke(transform, *a),
+				                           kblib::invoke(transform, *b));
+			      };
 			if (end - begin < small_size) {
 				insertion_sort(begin, end, comp);
 				return;
@@ -512,11 +508,11 @@ namespace detail_sort {
 		                           RandomAccessIt2 d_begin, RandomAccessIt2 d_end,
 		                           UnaryOperation&& transform,
 		                           BinaryPredicate&& compare) -> void {
-			auto comp = [&compare, &transform](RandomAccessIt a,
-			                                   RandomAccessIt b) {
-				return kblib::invoke(compare, kblib::invoke(transform, *a),
-				                     kblib::invoke(transform, *b));
-			};
+			auto comp
+			    = [&compare, &transform](RandomAccessIt a, RandomAccessIt b) {
+				      return kblib::invoke(compare, kblib::invoke(transform, *a),
+				                           kblib::invoke(transform, *b));
+			      };
 			if (end - begin < small_size) {
 				insertion_sort_copy(begin, end, d_begin, d_end, comp);
 				return;
@@ -541,11 +537,11 @@ namespace detail_sort {
 		                              KBLIB_UNUSED UnaryOperation&& transform,
 		                              KBLIB_UNUSED BinaryPredicate&& compare)
 		    -> void {
-			auto comp = [&compare, &transform](RandomAccessIt a,
-			                                   RandomAccessIt b) {
-				return kblib::invoke(compare, kblib::invoke(transform, *a),
-				                     kblib::invoke(transform, *b));
-			};
+			auto comp
+			    = [&compare, &transform](RandomAccessIt a, RandomAccessIt b) {
+				      return kblib::invoke(compare, kblib::invoke(transform, *a),
+				                           kblib::invoke(transform, *b));
+			      };
 			/// TODO(killerbee13): write efficient sort_transform
 		}
 	};

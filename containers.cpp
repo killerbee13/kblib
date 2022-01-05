@@ -50,19 +50,19 @@ TEST_CASE("build_iterator", "[build]") {
 	SECTION("unary dynamic build") {
 		// auto built = kblib::build<std::vector<int>>(input.begin(), input.end(),
 		// unary_f);
-		auto built =
-		    std::transform(input.begin(), input.end(),
-		                   kblib::build_iterator<std::vector<int>>{}, unary_f)
-		        .base();
+		auto built
+		    = std::transform(input.begin(), input.end(),
+		                     kblib::build_iterator<std::vector<int>>{}, unary_f)
+		          .base();
 		REQUIRE(equal(squared, built));
 	}
 	SECTION("binary dynamic build") {
 		// auto built = kblib::build<std::vector<int>>(input.begin(), input.end(),
 		// input2.begin(), binary_f);
-		auto built =
-		    std::transform(input.begin(), input.end(), input2.begin(),
-		                   kblib::build_iterator<std::vector<int>>{}, binary_f)
-		        .base();
+		auto built
+		    = std::transform(input.begin(), input.end(), input2.begin(),
+		                     kblib::build_iterator<std::vector<int>>{}, binary_f)
+		          .base();
 		REQUIRE(equal(pminusone, built));
 	}
 	SECTION("unary array build") {
@@ -91,10 +91,10 @@ TEST_CASE("build_iterator", "[build]") {
 	}
 	SECTION("array generator build") {
 		// auto built = kblib::build<arr>([x = 0]() mutable { return x++; });
-		auto built =
-		    kblib::generate(kblib::build_iterator<arr>{}, kblib::build_end,
-		                    [x = 0]() mutable { return x++; })
-		        .base();
+		auto built
+		    = kblib::generate(kblib::build_iterator<arr>{}, kblib::build_end,
+		                      [x = 0]() mutable { return x++; })
+		          .base();
 		// Using only the standard library, it would have to be this in order to
 		// avoid a magic number for the size.
 		//		auto built = std::generate_n(kblib::build_iterator<arr>{},
@@ -107,8 +107,8 @@ TEST_CASE("build_iterator", "[build]") {
 	SECTION("dynamic buildiota") {
 		// auto built = kblib::buildiota<std::vector<int>>(8, 0);
 		// auto built = ...
-		auto built =
-		    kblib::construct_from_range<std::vector<int>>(kblib::range(0, 8));
+		auto built
+		    = kblib::construct_from_range<std::vector<int>>(kblib::range(0, 8));
 		REQUIRE(equal(iota, built));
 	}
 	SECTION("array buildiota") {

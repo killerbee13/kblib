@@ -30,40 +30,40 @@
  */
 
 #if KBLIB_DEF_MACROS and not defined(pFromStr)
-#define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
+#	define pFromStr(type, val) ::kblib::fromStr<type>((val), #   type)
 #endif
 
 #ifndef KBLIB_CONVERT_H
-#define KBLIB_CONVERT_H
+#	define KBLIB_CONVERT_H
 
-#include <algorithm>
-#include <array>
-#include <cassert>
-#include <chrono>
-#include <exception>
-#include <iomanip>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <typeinfo>
+#	include <algorithm>
+#	include <array>
+#	include <cassert>
+#	include <chrono>
+#	include <exception>
+#	include <iomanip>
+#	include <sstream>
+#	include <stdexcept>
+#	include <string>
+#	include <typeinfo>
 
-#include "algorithm.h"
-#include "iterators.h"
-#include "traits.h"
+#	include "algorithm.h"
+#	include "iterators.h"
+#	include "traits.h"
 
-#if KBLIB_USE_STRING_VIEW
+#	if KBLIB_USE_STRING_VIEW
 
-#include <string_view>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-W#warnings"
-#include <strstream>
-#pragma GCC diagnostic pop
+#		include <string_view>
+#		pragma GCC diagnostic push
+#		pragma GCC diagnostic ignored "-W#warnings"
+#		include <strstream>
+#		pragma GCC diagnostic pop
 
-#include "stringops.h"
+#		include "stringops.h"
 
-#endif
+#	endif
 
-#include <iostream>
+#	include <iostream>
 
 namespace kblib {
 
@@ -205,7 +205,7 @@ KBLIB_NODISCARD constexpr auto parse_integer(const std::string& in,
 	                             base);
 }
 
-#if KBLIB_USE_STRING_VIEW
+#	if KBLIB_USE_STRING_VIEW
 
 template <typename Result>
 KBLIB_NODISCARD constexpr auto parse_integer(std::string_view in, int base = 0)
@@ -214,7 +214,7 @@ KBLIB_NODISCARD constexpr auto parse_integer(std::string_view in, int base = 0)
 	                             base);
 }
 
-#endif
+#	endif
 
 template <typename T, T V>
 struct constant : std::integral_constant<T, V> {
@@ -284,7 +284,7 @@ namespace detail_units {
 		return "hr";
 	}
 
-#if KBLIB_USE_CXX20
+#	if KBLIB_USE_CXX20
 
 	KBLIB_NODISCARD constexpr auto unit_of(std::chrono::days) noexcept -> auto {
 		return "ns";
@@ -300,19 +300,19 @@ namespace detail_units {
 		return "ns";
 	}
 
-#endif
+#	endif
 
 	struct KBLIB_NODISCARD prefix {
 		char name[16];
 		char abbr[4];
 	};
 // if std::intmax_t can represent the denominator
-#if (-1U >> 63) > (1U << 18)
+#	if (-1U >> 63) > (1U << 18)
 	constexpr auto name_of(std::yocto) -> prefix { return prefix{"yocto", "y"}; }
-#endif
-#if (-1U >> 63) > (1U << 8)
+#	endif
+#	if (-1U >> 63) > (1U << 8)
 	constexpr auto name_of(std::zepto) -> prefix { return prefix{"zepto", "z"}; }
-#endif
+#	endif
 	constexpr auto name_of(std::atto) -> prefix { return prefix{"atto", "a"}; }
 	constexpr auto name_of(std::femto) -> prefix { return prefix{"femto", "f"}; }
 	constexpr auto name_of(std::pico) -> prefix { return prefix{"pico", "p"}; }
@@ -333,12 +333,12 @@ namespace detail_units {
 	constexpr auto name_of(std::peta) -> prefix { return prefix{"peta", "P"}; }
 	constexpr auto name_of(std::exa) -> prefix { return prefix{"exa", "E"}; }
 // if std::intmax_t can represent the numerator
-#if (-1U >> 63) > (1U << 8)
+#	if (-1U >> 63) > (1U << 8)
 	constexpr auto name_of(std::zetta) -> prefix { return prefix{"zetta", "Z"}; }
-#endif
-#if (-1U >> 63) > (1U << 18)
+#	endif
+#	if (-1U >> 63) > (1U << 18)
 	constexpr auto name_of(std::yotta) -> prefix { return prefix{"yotta", "Y"}; }
-#endif
+#	endif
 
 	KBLIB_NODISCARD constexpr auto largest_power_1000(std::intmax_t in) -> int {
 		if (in % 1000 == 0) {
@@ -383,14 +383,14 @@ namespace detail_units {
 	template <typename R>
 	struct is_si_ratio : std::false_type {};
 // if std::intmax_t can represent the denominator
-#if (-1U >> 63) > (1U << 18)
+#	if (-1U >> 63) > (1U << 18)
 	template <>
 	struct is_si_ratio<std::yocto> : std::true_type {};
-#endif
-#if (-1U >> 63) > (1U << 8)
+#	endif
+#	if (-1U >> 63) > (1U << 8)
 	template <>
 	struct is_si_ratio<std::zepto> : std::true_type {};
-#endif
+#	endif
 	template <>
 	struct is_si_ratio<std::atto> : std::true_type {};
 	template <>
@@ -428,14 +428,14 @@ namespace detail_units {
 	template <>
 	struct is_si_ratio<std::exa> : std::true_type {};
 // if std::intmax_t can represent the numerator
-#if (-1U >> 63) > (1U << 8)
+#	if (-1U >> 63) > (1U << 8)
 	template <>
 	struct is_si_ratio<std::zetta> : std::true_type {};
-#endif
-#if (-1U >> 63) > (1U << 18)
+#	endif
+#	if (-1U >> 63) > (1U << 18)
 	template <>
 	struct is_si_ratio<std::yotta> : std::true_type {};
-#endif
+#	endif
 
 	template <typename M>
 	struct KBLIB_NODISCARD unit_conversion {
@@ -479,13 +479,13 @@ KBLIB_NODISCARD auto duration_to_str(std::chrono::duration<Rep, Ratio>& d)
 }
 
 template <typename Rep>
-KBLIB_NODISCARD auto
-duration_to_str(std::chrono::duration<Rep, std::ratio<60>> d) -> std::string {
+KBLIB_NODISCARD auto duration_to_str(
+    std::chrono::duration<Rep, std::ratio<60>> d) -> std::string {
 	return concat(d.count(), " min");
 }
 template <typename Rep>
-KBLIB_NODISCARD auto
-duration_to_str(std::chrono::duration<Rep, std::ratio<3600>> d) -> std::string {
+KBLIB_NODISCARD auto duration_to_str(
+    std::chrono::duration<Rep, std::ratio<3600>> d) -> std::string {
 	return concat(d.count(), " hr");
 }
 
@@ -626,7 +626,7 @@ KBLIB_NODISCARD auto fromStr(const std::string& val,
                              const char* type = typeid(T).name()) -> T {
 	std::stringstream ss(val);
 	T ret;
-	if (not(ss >> std::boolalpha >> ret).fail()) {
+	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;
 	} else {
 		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
@@ -654,7 +654,7 @@ KBLIB_NODISCARD auto fromStr(std::string&& val,
                              const char* type = typeid(T).name()) -> T {
 	std::stringstream ss(val);
 	T ret;
-	if (not(ss >> std::boolalpha >> ret).fail()) {
+	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;
 	} else {
 		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
@@ -677,7 +677,7 @@ KBLIB_NODISCARD inline auto fromStr(std::string&& val, const char* type)
 	}
 }
 
-#if KBLIB_USE_STRING_VIEW
+#	if KBLIB_USE_STRING_VIEW
 
 template <>
 KBLIB_NODISCARD inline auto fromStr(const std::string& val, const char*)
@@ -692,7 +692,7 @@ KBLIB_NODISCARD auto fromStr(std::string_view val,
                              const char* type = typeid(T).name()) -> T {
 	std::istrstream ss(val.data(), kblib::to_signed(val.size()));
 	T ret;
-	if (not(ss >> std::boolalpha >> ret).fail()) {
+	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;
 	} else {
 		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
@@ -734,7 +734,7 @@ KBLIB_NODISCARD auto fromStr(const char* val,
 	return fromStr<To>(std::string_view(val), type);
 }
 
-#endif
+#	endif
 
 template <typename T>
 KBLIB_NODISCARD auto toStr(T val) -> std::string {
@@ -752,11 +752,11 @@ struct lexical_caster {
 		std::stringstream ss;
 		ss << val;
 		To ret;
-		if (not(ss >> ret).fail()) {
+		if (not (ss >> ret).fail()) {
 			return ret;
 		} else {
-			throw std::runtime_error("Cannot convert \"" + toStr(val) + "\" to " +
-			                         type);
+			throw std::runtime_error("Cannot convert \"" + toStr(val) + "\" to "
+			                         + type);
 		}
 	}
 };
@@ -787,7 +787,7 @@ struct lexical_caster<To, std::string> {
 	}
 };
 
-#if KBLIB_USE_STRING_VIEW
+#	if KBLIB_USE_STRING_VIEW
 
 template <>
 struct lexical_caster<std::string_view, std::string_view> {
@@ -825,7 +825,7 @@ struct lexical_caster<To, std::string_view> {
 	}
 };
 
-#endif
+#	endif
 
 template <typename To, typename From>
 KBLIB_NODISCARD auto lexical_cast(const From& val,
@@ -833,7 +833,7 @@ KBLIB_NODISCARD auto lexical_cast(const From& val,
 	return lexical_caster<To, From>::cast(val, type);
 }
 
-#if 0
+#	if 0
 template <typename To, typename From>
 KBLIB_NODISCARD auto lexical_cast(const From& val,
                                   const char* type = typeid(To).name()) -> To {
@@ -855,7 +855,7 @@ KBLIB_NODISCARD auto lexical_cast(const From& val,
 			                         type);
 	}
 }
-#endif
+#	endif
 
 } // namespace kblib
 

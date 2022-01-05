@@ -40,7 +40,7 @@
 #include <new>
 
 #if KBLIB_USE_CXX17
-#include <variant>
+#	include <variant>
 #endif
 
 namespace kblib {
@@ -64,8 +64,8 @@ struct is_variant_like : std::bool_constant<is_variant_like_v<T>> {};
  * @return To The type to coerce to.
  */
 template <typename To, typename... Ts>
-KBLIB_NODISCARD [[deprecated("Use new lexical_coerce instead.")]] auto
-coerce(const std::variant<Ts...>& v) -> To {
+KBLIB_NODISCARD [[deprecated("Use new lexical_coerce instead.")]] auto coerce(
+    const std::variant<Ts...>& v) -> To {
 	return std::visit([](const auto& t) -> To { return lexical_cast<To>(t); },
 	                  v);
 }
@@ -216,39 +216,39 @@ KBLIB_NODISCARD constexpr auto visit(V&& v, F&& f, Fs&&... fs)
 namespace detail {
 
 	template <typename F, typename... Ts>
-	constexpr bool invocable_with_all_v =
-	    (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value and ...);
+	constexpr bool invocable_with_all_v
+	    = (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value and ...);
 
 	template <typename Callable, typename Variant>
 	constexpr bool v_invocable_with_all_v = false;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>> =
-	    invocable_with_all_v<F, Ts...>;
+	constexpr bool v_invocable_with_all_v<
+	    F, std::variant<Ts...>> = invocable_with_all_v<F, Ts...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>> =
-	    invocable_with_all_v<F, const Ts...>;
+	constexpr bool v_invocable_with_all_v<
+	    F, const std::variant<Ts...>> = invocable_with_all_v<F, const Ts...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&> =
-	    invocable_with_all_v<F, Ts&...>;
+	constexpr bool v_invocable_with_all_v<
+	    F, std::variant<Ts...>&> = invocable_with_all_v<F, Ts&...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&> =
-	    invocable_with_all_v<F, const Ts&...>;
+	constexpr bool v_invocable_with_all_v<
+	    F, const std::variant<Ts...>&> = invocable_with_all_v<F, const Ts&...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&&> =
-	    invocable_with_all_v<F, Ts&&...>;
+	constexpr bool v_invocable_with_all_v<
+	    F, std::variant<Ts...>&&> = invocable_with_all_v<F, Ts&&...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&&> =
-	    invocable_with_all_v<F, const Ts&&...>;
+	constexpr bool v_invocable_with_all_v<
+	    F, const std::variant<Ts...>&&> = invocable_with_all_v<F, const Ts&&...>;
 
 	template <typename V, typename F, std::size_t I, std::size_t... Is>
-	[[gnu::always_inline]] constexpr decltype(auto)
-	visit_impl(V&& v, F&& f, std::index_sequence<I, Is...>) {
+	[[gnu::always_inline]] constexpr decltype(auto) visit_impl(
+	    V&& v, F&& f, std::index_sequence<I, Is...>) {
 		static_assert(I < std::variant_size_v<std::decay_t<V>>);
 		if (auto* p = std::get_if<I>(&v)) {
 			return std::forward<F>(f)(
@@ -262,8 +262,8 @@ namespace detail {
 	}
 
 	template <typename V, typename F, std::size_t I, std::size_t... Is>
-	[[gnu::always_inline]] constexpr void
-	visit_nop_impl(V&& v, F&& f, std::index_sequence<I, Is...>) noexcept {
+	[[gnu::always_inline]] constexpr void visit_nop_impl(
+	    V&& v, F&& f, std::index_sequence<I, Is...>) noexcept {
 		static_assert(I < std::variant_size_v<std::decay_t<V>>);
 		if (auto* p = std::get_if<I>(&v)) {
 			std::forward<F>(f)(

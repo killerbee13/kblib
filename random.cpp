@@ -20,9 +20,9 @@ TEST_CASE("Random engine seeding") {
 		std::clog << '\n';
 		static_assert(kblib::state_size_v<std::minstd_rand> == 1, ".");
 		static_assert(kblib::state_size_v<std::minstd_rand0> == 1, ".");
-		using java_rand =
-		    std::linear_congruential_engine<std::uint_fast64_t, 0x5DEECE66D, 11,
-		                                    1ull << 48u>;
+		using java_rand
+		    = std::linear_congruential_engine<std::uint_fast64_t, 0x5DEECE66D, 11,
+		                                      1ull << 48u>;
 		std::clog << "LCG(64): ";
 		KBLIB_UNUSED auto gen2 = kblib::seeded<java_rand>();
 		std::clog << '\n';
@@ -39,27 +39,26 @@ TEST_CASE("Random engine seeding") {
 	}
 	SECTION("Discard Block Engine") {
 		std::clog << "DBE: ";
-		KBLIB_UNUSED auto gen =
-		    kblib::seeded<std::discard_block_engine<std::minstd_rand, 16, 8>>();
+		KBLIB_UNUSED auto gen
+		    = kblib::seeded<std::discard_block_engine<std::minstd_rand, 16, 8>>();
 		std::clog << '\n';
 		std::clog << "RANLUX 24: ";
 		KBLIB_UNUSED auto gen2 = kblib::seeded<std::ranlux24>();
 		std::clog << '\n';
-		static_assert(kblib::state_size_v<
-		                  std::discard_block_engine<std::minstd_rand, 16, 8>> ==
-		                  1,
-		              ".");
 		static_assert(
-		    kblib::state_size_v<std::discard_block_engine<std::mt19937, 16, 8>> ==
-		        624,
+		    kblib::state_size_v<
+		        std::discard_block_engine<std::minstd_rand, 16, 8>> == 1,
 		    ".");
+		static_assert(kblib::state_size_v<
+		                  std::discard_block_engine<std::mt19937, 16, 8>> == 624,
+		              ".");
 		static_assert(kblib::state_size_v<std::ranlux24> == 24, ".");
 	}
 	SECTION("Independent Bits Engine") {
 		std::clog << "IBE: ";
-		KBLIB_UNUSED auto gen =
-		    kblib::seeded<std::independent_bits_engine<std::ranlux24, 32,
-		                                               std::uint_fast32_t>>();
+		KBLIB_UNUSED auto gen
+		    = kblib::seeded<std::independent_bits_engine<std::ranlux24, 32,
+		                                                 std::uint_fast32_t>>();
 		std::clog << '\n';
 		static_assert(kblib::state_size_v<std::independent_bits_engine<
 		                      std::ranlux24, 32, std::uint_fast32_t>> == 24,
@@ -73,17 +72,15 @@ TEST_CASE("Random engine seeding") {
 	}
 	SECTION("Shuffle Order Engine") {
 		std::clog << "SOE: ";
-		KBLIB_UNUSED auto gen =
-		    kblib::seeded<std::shuffle_order_engine<std::ranlux24, 32>>();
+		KBLIB_UNUSED auto gen
+		    = kblib::seeded<std::shuffle_order_engine<std::ranlux24, 32>>();
 		std::clog << '\n';
-		static_assert(
-		    kblib::state_size_v<std::shuffle_order_engine<std::ranlux24, 32>> ==
-		        24,
-		    ".");
-		static_assert(
-		    kblib::state_size_v<std::shuffle_order_engine<std::mt19937, 32>> ==
-		        624,
-		    ".");
+		static_assert(kblib::state_size_v<
+		                  std::shuffle_order_engine<std::ranlux24, 32>> == 24,
+		              ".");
+		static_assert(kblib::state_size_v<
+		                  std::shuffle_order_engine<std::mt19937, 32>> == 624,
+		              ".");
 		static_assert(kblib::state_size_v<
 		                  std::shuffle_order_engine<std::minstd_rand, 32>> == 1,
 		              ".");
@@ -91,9 +88,9 @@ TEST_CASE("Random engine seeding") {
 }
 
 TEST_CASE("transform_engine") {
-	using E =
-	    kblib::transform_engine<std::ranlux24,
-	                            kblib::shift_mask<std::uint_fast32_t, 16u>>;
+	using E
+	    = kblib::transform_engine<std::ranlux24,
+	                              kblib::shift_mask<std::uint_fast32_t, 16u>>;
 	auto gen = kblib::seeded<E>();
 	static_assert(E::min() == 0, ".");
 	static_assert(E::max() == ((std::ranlux24::max() >> 16u)), ".");

@@ -6,10 +6,10 @@
 TEST_CASE("delayed_construct") {
 	kblib::delayed_construct<int> a(0), b(0);
 	REQUIRE(a == b);
-	REQUIRE(not(a != b));
-	REQUIRE(not(a < b));
+	REQUIRE(not (a != b));
+	REQUIRE(not (a < b));
 	REQUIRE(a <= b);
-	REQUIRE(not(a > b));
+	REQUIRE(not (a > b));
 	REQUIRE(a >= b);
 }
 

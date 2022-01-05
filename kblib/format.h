@@ -65,15 +65,15 @@ constexpr auto count_digits(Number val)
  */
 template <typename Number>
 constexpr auto count_digits(Number val)
-    -> enable_if_t<not std::is_floating_point<Number>::value and
-                       std::is_signed<Number>::value,
+    -> enable_if_t<not std::is_floating_point<Number>::value
+                       and std::is_signed<Number>::value,
                    int> {
 	if (val == 0 or val == 1) {
 		return 1;
 	} else {
 		return static_cast<int>(std::ceil(
-		           std::nextafter(std::log10(std::fabs(val)), INFINITY))) +
-		       (val < 0);
+		           std::nextafter(std::log10(std::fabs(val)), INFINITY)))
+		       + (val < 0);
 	}
 }
 
@@ -112,8 +112,8 @@ constexpr auto count_digits(Number val, int base) -> int {
 		    std::ceil(std::numeric_limits<Number>::digits * std::logb(base)));
 	} else {
 		return static_cast<int>(
-		           std::ceil(std::log(std::abs(val) + 1) / std::log(base))) +
-		       (val < 0);
+		           std::ceil(std::log(std::abs(val) + 1) / std::log(base)))
+		       + (val < 0);
 	}
 }
 

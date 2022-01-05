@@ -37,7 +37,7 @@
 
 #if KBLIB_USE_CXX17
 
-#include <optional>
+#	include <optional>
 
 namespace kblib {
 
@@ -70,46 +70,49 @@ class delayed_construct : protected std::optional<T> {
 
 	// TODO(killerbee): add C++20 operator<=> support to delayed_construct
 
-#if 0 && KBLIB_USE_CXX20
+#	if 0 && KBLIB_USE_CXX20
 
 	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs,
 	                 const delayed_construct& rhs) = default;
 	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs, std::nullopt_t rhs);
 	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs, const U& rhs);
 
-#else
+#	else
 
-#define OVERLOAD_DEFER_OP(op)                                                \
-	KBLIB_NODISCARD friend constexpr auto operator op(                        \
-	    const delayed_construct& lhs,                                         \
-	    const delayed_construct& rhs) noexcept->bool {                        \
-		return static_cast<const Base&>(lhs) op static_cast<const Base&>(rhs); \
-	}                                                                         \
-	template <typename U>                                                     \
-	KBLIB_NODISCARD friend constexpr auto operator op(                        \
-	    const delayed_construct& lhs,                                         \
-	    const delayed_construct<U>& rhs) noexcept->bool {                     \
-		return static_cast<const Base&>(lhs)                                   \
-		    op static_cast<const std::optional<U>&>(rhs);                      \
-	}                                                                         \
-	KBLIB_NODISCARD friend constexpr auto operator op(                        \
-	    const delayed_construct& lhs, std::nullopt_t rhs) noexcept->bool {    \
-		return static_cast<const Base&>(lhs) op rhs;                           \
-	}                                                                         \
-	KBLIB_NODISCARD friend constexpr auto operator op(                        \
-	    std::nullopt_t lhs, const delayed_construct& rhs) noexcept->bool {    \
-		return lhs op static_cast<const Base&>(rhs);                           \
-	}                                                                         \
-	template <typename U>                                                     \
-	KBLIB_NODISCARD friend constexpr auto operator op(                        \
-	    const delayed_construct& opt, const U& value) noexcept->bool {        \
-		return static_cast<const Base&>(opt) op value;                         \
-	}                                                                         \
-	template <typename U>                                                     \
-	KBLIB_NODISCARD friend constexpr auto operator op(                        \
-	    const U& value, const delayed_construct& opt) noexcept->bool {        \
-		return value op static_cast<const Base&>(opt);                         \
-	}
+#		define OVERLOAD_DEFER_OP(op)                                         \
+			KBLIB_NODISCARD friend constexpr auto operator op(                 \
+			    const delayed_construct& lhs,                                  \
+			    const delayed_construct& rhs) noexcept->bool {                 \
+				return static_cast<const Base&>(lhs)                            \
+				    op static_cast<const Base&>(rhs);                           \
+			}                                                                  \
+			template <typename U>                                              \
+			KBLIB_NODISCARD friend constexpr auto operator op(                 \
+			    const delayed_construct& lhs,                                  \
+			    const delayed_construct<U>& rhs) noexcept->bool {              \
+				return static_cast<const Base&>(lhs)                            \
+				    op static_cast<const std::optional<U>&>(rhs);               \
+			}                                                                  \
+			KBLIB_NODISCARD friend constexpr auto operator op(                 \
+			    const delayed_construct& lhs,                                  \
+			    std::nullopt_t rhs) noexcept->bool {                           \
+				return static_cast<const Base&>(lhs) op rhs;                    \
+			}                                                                  \
+			KBLIB_NODISCARD friend constexpr auto operator op(                 \
+			    std::nullopt_t lhs,                                            \
+			    const delayed_construct& rhs) noexcept->bool {                 \
+				return lhs op static_cast<const Base&>(rhs);                    \
+			}                                                                  \
+			template <typename U>                                              \
+			KBLIB_NODISCARD friend constexpr auto operator op(                 \
+			    const delayed_construct& opt, const U& value) noexcept->bool { \
+				return static_cast<const Base&>(opt) op value;                  \
+			}                                                                  \
+			template <typename U>                                              \
+			KBLIB_NODISCARD friend constexpr auto operator op(                 \
+			    const U& value, const delayed_construct& opt) noexcept->bool { \
+				return value op static_cast<const Base&>(opt);                  \
+			}
 
 	/**
 	 * @name Equality
@@ -136,8 +139,8 @@ class delayed_construct : protected std::optional<T> {
 	OVERLOAD_DEFER_OP(>=)
 	///@}
 
-#undef OVERLOAD_DEFER_OP
-#endif
+#		undef OVERLOAD_DEFER_OP
+#	endif
 
 	friend struct std::hash<delayed_construct<T>>;
 	friend struct FNV_hash<delayed_construct<T>>;
@@ -145,10 +148,10 @@ class delayed_construct : protected std::optional<T> {
 
 template <typename T>
 struct FNV_hash<delayed_construct<T>, void> {
-	KBLIB_NODISCARD constexpr std::size_t
-	operator()(const delayed_construct<T>& key,
-	           std::size_t offset =
-	               fnv::fnv_offset<std::size_t>::value) const noexcept {
+	KBLIB_NODISCARD constexpr std::size_t operator()(
+	    const delayed_construct<T>& key,
+	    std::size_t offset
+	    = fnv::fnv_offset<std::size_t>::value) const noexcept {
 		if (key) {
 			return FNV_hash<T>{}(key.value(), offset);
 		} else {

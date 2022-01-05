@@ -74,8 +74,8 @@ struct contains_types;
 template <typename Tuple, typename T, typename... Ts>
 struct contains_types<Tuple, std::tuple<T, Ts...>>
     : std::integral_constant<
-          bool, contains_type<Tuple, T>::value and
-                    contains_types<Tuple, std::tuple<Ts...>>::value> {};
+          bool, contains_type<Tuple, T>::value
+                    and contains_types<Tuple, std::tuple<Ts...>>::value> {};
 
 template <typename Tuple>
 struct contains_types<Tuple, std::tuple<>> : std::true_type {};
@@ -183,8 +183,8 @@ KBLIB_NODISCARD auto byte_cast(F v) noexcept -> T {
 	static_assert(
 	    sizeof(T) == sizeof(F),
 	    "Source and destination types for byte_cast must be the same size.");
-	static_assert(std::is_trivially_copyable<T>::value and
-	                  std::is_trivially_copyable<F>::value,
+	static_assert(std::is_trivially_copyable<T>::value
+	                  and std::is_trivially_copyable<F>::value,
 	              "Source and destination types for byte_cast must be trivially "
 	              "copyable.");
 	T ret{};
@@ -363,8 +363,8 @@ struct is_bidirectional_iterator<
     : std::true_type {};
 
 template <typename T>
-KBLIB_CONSTANT_V is_bidirectional_iterator_v =
-    is_bidirectional_iterator<T>::value;
+KBLIB_CONSTANT_V is_bidirectional_iterator_v
+    = is_bidirectional_iterator<T>::value;
 
 template <typename T, typename = void>
 struct is_random_access_iterator : std::false_type {};
@@ -377,8 +377,8 @@ struct is_random_access_iterator<
     : std::true_type {};
 
 template <typename T>
-KBLIB_CONSTANT_V is_random_access_iterator_v =
-    is_random_access_iterator<T>::value;
+KBLIB_CONSTANT_V is_random_access_iterator_v
+    = is_random_access_iterator<T>::value;
 
 /**
  * @brief Type trait that determines the iterator type for a range.
