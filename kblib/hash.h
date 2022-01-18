@@ -514,7 +514,7 @@ struct FNV_hash<
 		if (std::is_constant_evaluated()) {
 			using T = typename Container::value_type;
 			for (const auto& e : key) {
-				offset = FNV_hash<T>(e, offset);
+				offset = FNV_hash<T>{}(e, offset);
 			}
 		} else {
 			return hash_fast(key, offset);

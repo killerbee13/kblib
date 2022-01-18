@@ -1029,6 +1029,8 @@ struct indirect_range {
 	Iter1 begin_;
 	Iter2 end_;
 
+	using value_type = decltype(*begin_);
+
 	constexpr auto begin() const noexcept -> Iter1 { return begin_; }
 	constexpr auto end() const noexcept -> Iter2 { return end_; }
 	constexpr auto rbegin() const noexcept -> auto {
@@ -1145,13 +1147,13 @@ template <typename base_iterator, typename operation>
 class transform_iterator {
  private:
 	base_iterator it;
-	std::optional<operation> op;
+	operation op;
 
  public:
 	using difference_type = std::ptrdiff_t;
-	using result_type = decltype(kblib::invoke(*op, *it));
+	using result_type = decltype(kblib::invoke(op, *it));
 	using const_result_type
-	    = decltype(kblib::invoke(*std::as_const(op), *std::as_const(it)));
+	    = decltype(kblib::invoke(std::as_const(op), *std::as_const(it)));
 	using value_type = result_type;
 	using pointer = void;
 	using reference = value_type;
@@ -1164,8 +1166,8 @@ class transform_iterator {
 	 * @param _it An InputIterator to a range to be transformed.
 	 * @param _op The operation to apply to each element.
 	 */
-	explicit transform_iterator(base_iterator _it, operation _op) noexcept(
-	    noexcept(base_iterator{_it}) and noexcept(op.emplace(std::move(_op))))
+	transform_iterator(base_iterator _it, operation _op) noexcept(
+	    noexcept(base_iterator{_it}) and noexcept(std::is_nothrow_move_constructible<operation>::value))
 	    : it(_it)
 	    , op(std::move(_op)) {}
 
@@ -1174,19 +1176,19 @@ class transform_iterator {
 	 *
 	 * @param end_it An iterator that marks the end of the input range.
 	 */
-	explicit transform_iterator(base_iterator end_it) noexcept(
+	transform_iterator(base_iterator end_it) noexcept(
 	    noexcept(base_iterator{end_it}))
 	    : it(end_it)
-	    , op(std::nullopt) {}
+	    , op() {}
 
 	/**
 	 * @brief Transforms the value obtained by dereferencing it.
 	 *
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
-	auto operator*() noexcept(noexcept(kblib::invoke(*op, *it)))
+	auto operator*() noexcept(noexcept(kblib::invoke(op, *it)))
 	    -> decltype(auto) {
-		return kblib::invoke(*op, *it);
+		return kblib::invoke(op, *it);
 	}
 	/**
 	 * @brief Transforms the value obtained by dereferencing it.
@@ -1194,23 +1196,23 @@ class transform_iterator {
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
 	decltype(auto) operator*() const
-	    noexcept(noexcept(kblib::invoke(*op, *it))) {
-		return kblib::invoke(*op, *it);
+	    noexcept(noexcept(kblib::invoke(op, *it))) {
+		return kblib::invoke(op, *it);
 	}
 
 	/**
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator->() noexcept(noexcept(kblib::invoke(*op, *it))) -> auto {
-		return containing_ptr<result_type>{{kblib::invoke(*op, *it)}};
+	auto operator->() noexcept(noexcept(kblib::invoke(op, *it))) -> auto {
+		return containing_ptr<result_type>{{kblib::invoke(op, *it)}};
 	}
 	/**
 	 * @brief Returns a containing_ptr with the transformed value, because
 	 * operator-> expects a pointer-like return type.
 	 */
-	auto operator->() const noexcept(noexcept(kblib::invoke(*op, *it))) -> auto {
-		return containing_ptr<const_result_type>{{kblib::invoke(*op, *it)}};
+	auto operator->() const noexcept(noexcept(kblib::invoke(op, *it))) -> auto {
+		return containing_ptr<const_result_type>{{kblib::invoke(op, *it)}};
 	}
 
 	/**

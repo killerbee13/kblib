@@ -1132,6 +1132,23 @@ KBLIB_NODISCARD constexpr auto contains_any(Range1&& haystack, Range2&& needle)
 	    [&needle](const auto& v) { return kblib::contains(needle, v); });
 }
 
+template <typename ForwardIt, typename EndIt, typename Compare = std::less<>>
+constexpr auto max_element(ForwardIt first, EndIt last, Compare comp = {})
+    -> ForwardIt {
+	if (first == last) {
+		return first;
+	}
+
+	ForwardIt largest = first;
+	++first;
+	for (; first != last; ++first) {
+		if (comp(*largest, *first)) {
+			largest = first;
+		}
+	}
+	return largest;
+}
+
 /**
  * @brief Returns a container of the greatest count elements according to cmp of
  * the range [first, last), in arbitrary order. This overload works for linear

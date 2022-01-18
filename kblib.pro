@@ -81,7 +81,7 @@ DISTFILES += \
 
 VERSION = 0.2.1
 
-QMAKE_CXXFLAGS += -std=c++17
+QMAKE_CXXFLAGS += -std=c++17 -g
 QMAKE_CXXFLAGS += -march=native
 QMAKE_CXXFLAGS += -Wall -Wextra -Wpointer-to-int-cast -Wpedantic -Wshadow
 QMAKE_CXXFLAGS += -Wno-missing-braces

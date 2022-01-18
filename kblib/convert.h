@@ -625,7 +625,7 @@ template <typename T>
 KBLIB_NODISCARD auto fromStr(const std::string& val,
                              const char* type = typeid(T).name()) -> T {
 	std::stringstream ss(val);
-	T ret;
+	T ret{};
 	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;
 	} else {

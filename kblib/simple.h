@@ -76,6 +76,8 @@ struct KBLIB_NODISCARD RAII_wrapper {
 	T t;
 	~RAII_wrapper() noexcept(noexcept(t())) { t(); }
 
+	RAII_wrapper(T&& t) : t(std::move(t)) {}
+	RAII_wrapper(const T& t) : t(t) {}
 	RAII_wrapper(const RAII_wrapper&) = delete;
 	RAII_wrapper(RAII_wrapper&&) = delete;
 	RAII_wrapper& operator=(const RAII_wrapper&) = delete;
@@ -84,7 +86,7 @@ struct KBLIB_NODISCARD RAII_wrapper {
 
 template <typename F>
 auto defer(F f) {
-	return RAII_wrapper<F>{f};
+	return RAII_wrapper<F>{std::move(f)};
 }
 
 /**

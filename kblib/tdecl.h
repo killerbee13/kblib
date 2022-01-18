@@ -38,11 +38,11 @@
 #endif
 
 // 1MMmmrr
-#define KBLIB_VERS 1000202
+#define KBLIB_VERS 1000203
 
 #define KBLIB_VERS_MAJ 0
 #define KBLIB_VERS_MIN 2
-#define KBLIB_VERS_REV 2
+#define KBLIB_VERS_REV 3
 // MM_mm_rr
 #define KBLIB_VERS_S KBLIB_VERS_MAJ##_##KBLIB_VERS_MIN##_##KBLIB_VERS_REV
 // api_vMM_mm_rr
