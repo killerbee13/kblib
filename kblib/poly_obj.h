@@ -1057,19 +1057,6 @@ class poly_obj
 		};
 	}
 
-	/**
-	 * @brief Call a member function using a pointer to member
-	 * @remark const& on const&&
-	 */
-	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                     const&) const&& noexcept {
-		return [member, value = get()](Args... args) -> decltype(auto) {
-			return (value->*member)(std::forward<Args>(args)...);
-		};
-	}
-	///@}
-
  private:
 	alignas(Traits::alignment) byte data[capacity]{};
 	Obj* ptr{};
