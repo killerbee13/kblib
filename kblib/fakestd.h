@@ -601,6 +601,7 @@ KBLIB_NODISCARD constexpr auto signed_cast(F x)
 
 template <typename T>
 struct has_member_swap {
+ private:
 	using yes = char (&)[1];
 	using no = char (&)[2];
 
@@ -609,6 +610,7 @@ struct has_member_swap {
 	template <typename>
 	static auto check(...) -> no;
 
+ public:
 	constexpr static bool value = sizeof(check<T>(nullptr)) == sizeof(yes);
 };
 

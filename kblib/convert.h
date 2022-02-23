@@ -445,7 +445,9 @@ namespace detail_units {
 	};
 
 	template <std::intmax_t Num, std::intmax_t Den>
-	auto ratio_to_SI() noexcept -> unit_conversion<std::intmax_t> {}
+	auto ratio_to_SI() noexcept -> unit_conversion<std::intmax_t> {
+		return {};
+	}
 
 	template <std::intmax_t Num, std::intmax_t Den>
 	struct nearest_ratio {};

@@ -340,6 +340,24 @@ struct is_space {
 	KBLIB_NODISCARD auto operator()(wchar_t c) -> bool { return isspace(c); }
 };
 
+KBLIB_NODISCARD constexpr inline auto isAspace(char c) -> bool {
+	for (auto v : " \t\r\n\f\v") {
+		if (c == v) {
+			return true;
+		}
+	}
+	return false;
+}
+KBLIB_NODISCARD constexpr inline auto isAspace(wchar_t c) -> bool {
+	for (auto v : L" \t\r\n\f\v") {
+		if (c == v) {
+			return true;
+		}
+	}
+	return false;
+}
+
+
 /**
  * @brief Concatenates all elements of a range together with an optional joiner.
  *

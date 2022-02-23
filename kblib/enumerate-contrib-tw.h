@@ -53,35 +53,35 @@ struct enumerate_iterator {
 	using reference = value_type;
 	using iterator_category = std::input_iterator_tag;
 
-	auto operator*() -> value_type { return {*it, idx}; }
+	constexpr auto operator*() -> value_type { return {*it, idx}; }
 
-	auto operator++() & -> enumerate_iterator& {
+	constexpr auto operator++() & -> enumerate_iterator& {
 		++it;
 		++idx;
 		return *this;
 	}
-	auto operator++(int) -> enumerate_iterator {
+	constexpr auto operator++(int) -> enumerate_iterator {
 		auto tmp = *this;
 		++(*this);
 		return tmp;
 	}
 
 	template <typename OIt>
-	auto operator==(OIt rhs)
+	constexpr auto operator==(OIt rhs)
 	    -> decltype(std::declval<It&>() == std::declval<OIt&>()) {
 		return it == rhs;
 	}
 	template <typename OIt>
-	auto operator!=(OIt rhs)
+	constexpr auto operator!=(OIt rhs)
 	    -> decltype(std::declval<It&>() != std::declval<OIt&>()) {
 		return it != rhs;
 	}
 
-	friend auto operator==(enumerate_iterator lhs, enumerate_iterator rhs)
+	constexpr friend auto operator==(enumerate_iterator lhs, enumerate_iterator rhs)
 	    -> bool {
 		return lhs.it == rhs.it;
 	}
-	friend auto operator!=(enumerate_iterator lhs, enumerate_iterator rhs)
+	constexpr friend auto operator!=(enumerate_iterator lhs, enumerate_iterator rhs)
 	    -> bool {
 		return lhs.it != rhs.it;
 	}
@@ -110,17 +110,17 @@ struct enumerate_t<Range, void> {
 	using nested_const_iterator = typename range_t::const_iterator;
 	using const_iterator = enumerate_iterator<nested_const_iterator>;
 
-	auto begin() const& noexcept(noexcept(r.cbegin())) -> const_iterator {
+	constexpr auto begin() const& noexcept(noexcept(r.cbegin())) -> const_iterator {
 		return {r.cbegin(), 0};
 	}
-	auto begin() & noexcept(noexcept(r.begin())) -> iterator {
+	constexpr auto begin() & noexcept(noexcept(r.begin())) -> iterator {
 		return {r.begin(), 0};
 	}
 
-	auto end() const& noexcept(noexcept(r.cend())) -> const_iterator {
+	constexpr auto end() const& noexcept(noexcept(r.cend())) -> const_iterator {
 		return {r.cend(), -std::size_t{1}};
 	}
-	auto end() & noexcept(noexcept(r.end())) -> end_iterator {
+	constexpr auto end() & noexcept(noexcept(r.end())) -> end_iterator {
 		return {r.end(), -std::size_t{1}};
 	}
 };
@@ -138,9 +138,9 @@ struct enumerate_t {
 	using iterator = enumerate_iterator<nested_iterator>;
 	using end_iterator = enumerate_iterator<EndIt>;
 
-	auto begin() const& noexcept -> iterator { return {r_begin, 0}; }
+	constexpr auto begin() const& noexcept -> iterator { return {r_begin, 0}; }
 
-	auto end() const& noexcept -> end_iterator {
+	constexpr auto end() const& noexcept -> end_iterator {
 		return {r_end, -std::size_t{1}};
 	}
 
@@ -155,7 +155,7 @@ struct enumerate_t {
  * @param r A range to iterate over.
  */
 template <typename Range>
-auto enumerate(Range&& r) -> enumerate_t<Range&&> {
+constexpr auto enumerate(Range&& r) -> enumerate_t<Range&&> {
 	return {std::forward<Range>(r)};
 }
 
@@ -165,7 +165,7 @@ auto enumerate(Range&& r) -> enumerate_t<Range&&> {
  * @param begin,end The input range.
  */
 template <typename It, typename EIt>
-auto enumerate(It begin, EIt end) -> enumerate_t<It, EIt> {
+constexpr auto enumerate(It begin, EIt end) -> enumerate_t<It, EIt> {
 	return {begin, end};
 }
 
