@@ -739,19 +739,9 @@ KBLIB_NODISCARD constexpr auto starts_with(InputIt1 begin1, EndIt1 end1,
                                            InputIt2 begin2, EndIt2 end2,
                                            BinaryPred pred)
     -> enable_if_t<
-        (std::is_base_of<
-             std::input_iterator_tag,
-             typename std::iterator_traits<InputIt1>::iterator_category>::value
-         and std::is_base_of<
-             std::input_iterator_tag,
-             typename std::iterator_traits<InputIt2>::iterator_category>::value)
-            and not (
-                std::is_base_of<std::random_access_iterator_tag,
-                                typename std::iterator_traits<
-                                    InputIt1>::iterator_category>::value
-                and std::is_base_of<std::random_access_iterator_tag,
-                                    typename std::iterator_traits<
-                                        InputIt2>::iterator_category>::value),
+        (is_input_iterator_v<InputIt1> and is_input_iterator_v<InputIt2>) //
+        and not (is_random_access_iterator_v<
+                     InputIt1> and is_random_access_iterator_v<InputIt2>),
         bool> {
 	while (begin1 != end1 and begin2 != end2) {
 		if (not kblib::invoke(pred, *begin1++, *begin2++)) {
@@ -772,12 +762,8 @@ KBLIB_NODISCARD constexpr auto starts_with(RandomAccessIt1 begin1,
                                            RandomAccessIt2 end2,
                                            BinaryPred pred = {})
     -> enable_if_t<
-        std::is_base_of<std::random_access_iterator_tag,
-                        typename std::iterator_traits<
-                            RandomAccessIt1>::iterator_category>::value
-            and std::is_base_of<std::random_access_iterator_tag,
-                                typename std::iterator_traits<
-                                    RandomAccessIt2>::iterator_category>::value,
+        is_random_access_iterator_v<
+            RandomAccessIt1> and is_random_access_iterator_v<RandomAccessIt2>,
         bool> {
 	if (end2 - begin2 > end1 - begin1) {
 		return false;
@@ -796,19 +782,10 @@ KBLIB_NODISCARD constexpr auto ends_with(BidirIt1 begin1, BidirIt1 end1,
                                          BidirIt2 begin2, BidirIt2 end2,
                                          BinaryPred pred = {})
     -> enable_if_t<
-        (std::is_base_of<
-             std::bidirectional_iterator_tag,
-             typename std::iterator_traits<BidirIt1>::iterator_category>::value
-         and std::is_base_of<
-             std::bidirectional_iterator_tag,
-             typename std::iterator_traits<BidirIt2>::iterator_category>::value)
-            and not (
-                std::is_base_of<std::random_access_iterator_tag,
-                                typename std::iterator_traits<
-                                    BidirIt1>::iterator_category>::value
-                and std::is_base_of<std::random_access_iterator_tag,
-                                    typename std::iterator_traits<
-                                        BidirIt2>::iterator_category>::value),
+        (is_bidirectional_iterator_v<BidirIt1>      //
+         and is_bidirectional_iterator_v<BidirIt2>) //
+        and not (is_random_access_iterator_v<
+                     BidirIt1> and is_random_access_iterator_v<BidirIt2>),
         bool> {
 	while (begin1 != end1 and begin2 != end2) {
 		if (not kblib::invoke(pred, *--end1, *--end2)) {
@@ -829,12 +806,8 @@ KBLIB_NODISCARD constexpr auto ends_with(RandomAccessIt1 begin1,
                                          RandomAccessIt2 end2,
                                          BinaryPred pred = {})
     -> enable_if_t<
-        std::is_base_of<std::random_access_iterator_tag,
-                        typename std::iterator_traits<
-                            RandomAccessIt1>::iterator_category>::value
-            and std::is_base_of<std::random_access_iterator_tag,
-                                typename std::iterator_traits<
-                                    RandomAccessIt2>::iterator_category>::value,
+        is_random_access_iterator_v<
+            RandomAccessIt1> and is_random_access_iterator_v<RandomAccessIt2>,
         bool> {
 	if (end2 - begin2 > end1 - begin1) {
 		return false;
