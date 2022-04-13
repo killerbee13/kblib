@@ -450,6 +450,11 @@ TEST_CASE("poly_obj performance") {
 	constexpr unsigned count = 100;
 #		endif
 
+#		ifdef SANITIZERS
+#			define STR(s) #         s
+	std::cout << "Sanitizers active\n";
+#		endif
+
 	std::vector<std::pair<unsigned, std::string_view>> reproducibility_test;
 	using poly_t = kblib::poly_obj<
 	    Base, sizeof(Derived1),

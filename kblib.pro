@@ -97,6 +97,7 @@ QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations \
 CONFIG(debug, debug|release)|CONFIG(sanitize) {
 	QMAKE_CXXFLAGS += -fsanitize=address,undefined
 	QMAKE_LFLAGS += -fsanitize=address,undefined
+	DEFINES += "SANITIZERS=\\\"address,undefined\\\""
 }
 
 CONFIG(build_trace) {

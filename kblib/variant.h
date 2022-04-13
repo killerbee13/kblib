@@ -263,7 +263,7 @@ namespace detail {
 
 	template <typename V, typename F, std::size_t I, std::size_t... Is>
 	[[gnu::always_inline]] constexpr void visit_nop_impl(
-	    V&& v, F&& f, std::index_sequence<I, Is...>) noexcept {
+	    V&& v, F&& f, std::index_sequence<I, Is...>) {
 		static_assert(I < std::variant_size_v<std::decay_t<V>>);
 		if (auto* p = std::get_if<I>(&v)) {
 			std::forward<F>(f)(
