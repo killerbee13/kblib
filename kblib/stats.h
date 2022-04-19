@@ -229,8 +229,33 @@ inline namespace nums {
 		return t < T(max);
 	}
 	template <typename T>
+	KBLIB_NODISCARD auto operator<(max_t, T t) -> bool {
+		return T(max) < t;
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator>(T t, max_t) -> bool {
+		return t > T(max);
+	}
+	template <typename T>
 	KBLIB_NODISCARD auto operator>(max_t, T t) -> bool {
 		return T(max) > t;
+	}
+
+	template <typename T>
+	KBLIB_NODISCARD auto operator<=(T t, max_t) -> bool {
+		return t <= T(max);
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator<=(max_t, T t) -> bool {
+		return T(max) <= t;
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator>=(T t, max_t) -> bool {
+		return t >= T(max);
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator>=(max_t, T t) -> bool {
+		return T(max) >= t;
 	}
 
 	/**
@@ -276,12 +301,37 @@ inline namespace nums {
 	}
 
 	template <typename T>
+	KBLIB_NODISCARD auto operator<(T t, min_t) -> bool {
+		return t < T(min);
+	}
+	template <typename T>
 	KBLIB_NODISCARD auto operator<(min_t, T t) -> bool {
 		return T(min) < t;
 	}
 	template <typename T>
 	KBLIB_NODISCARD auto operator>(T t, min_t) -> bool {
 		return t > T(min);
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator>(min_t, T t) -> bool {
+		return T(min) > t;
+	}
+
+	template <typename T>
+	KBLIB_NODISCARD auto operator<=(T t, min_t) -> bool {
+		return t <= T(min);
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator<=(min_t, T t) -> bool {
+		return T(min) <= t;
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator>=(T t, min_t) -> bool {
+		return t >= T(min);
+	}
+	template <typename T>
+	KBLIB_NODISCARD auto operator>=(min_t, T t) -> bool {
+		return T(min) >= t;
 	}
 
 } // namespace nums
