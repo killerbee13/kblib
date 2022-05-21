@@ -193,7 +193,7 @@ KBLIB_NODISCARD constexpr auto FNVa_a(
  */
 KBLIB_NODISCARD constexpr auto FNV32a(
     std::string_view s,
-    uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
+    std::uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
     -> std::uint32_t {
 	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (auto&& c : s) {
@@ -232,7 +232,7 @@ KBLIB_NODISCARD constexpr auto FNVa_s(
 template <std::size_t N>
 KBLIB_NODISCARD constexpr auto FNV32a_a(
     const char (&s)[N],
-    uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
+    std::uint32_t hval = fnv::fnv_offset<std::uint32_t>::value) noexcept
     -> std::uint32_t {
 	const std::uint32_t prime = fnv::fnv_prime<std::uint32_t>::value;
 	for (auto&& c : s) {

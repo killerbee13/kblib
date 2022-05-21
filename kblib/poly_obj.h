@@ -112,7 +112,7 @@ namespace detail_poly {
 
 		auto operator=(const construct_conditional&)
 		    -> construct_conditional& = default;
-		auto operator=(construct_conditional &&)
+		auto operator=(construct_conditional&&)
 		    -> construct_conditional& = default;
 		~construct_conditional() = default;
 	};
@@ -125,7 +125,7 @@ namespace detail_poly {
 
 		auto operator=(const construct_conditional&)
 		    -> construct_conditional& = default;
-		auto operator=(construct_conditional &&)
+		auto operator=(construct_conditional&&)
 		    -> construct_conditional& = default;
 		~construct_conditional() = default;
 	};
@@ -138,7 +138,7 @@ namespace detail_poly {
 
 		auto operator=(const construct_conditional&)
 		    -> construct_conditional& = default;
-		auto operator=(construct_conditional &&)
+		auto operator=(construct_conditional&&)
 		    -> construct_conditional& = default;
 		~construct_conditional() = default;
 	};
@@ -154,7 +154,7 @@ namespace detail_poly {
 
 		auto operator=(const construct_conditional&)
 		    -> construct_conditional& = default;
-		auto operator=(construct_conditional &&)
+		auto operator=(construct_conditional&&)
 		    -> construct_conditional& = default;
 		~construct_conditional() = default;
 	};
@@ -167,7 +167,7 @@ namespace detail_poly {
 
 		auto operator=(const construct_conditional&)
 		    -> construct_conditional& = default;
-		auto operator=(construct_conditional &&)
+		auto operator=(construct_conditional&&)
 		    -> construct_conditional& = default;
 		~construct_conditional() = default;
 	};
