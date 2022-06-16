@@ -221,7 +221,7 @@ class KBLIB_NODISCARD build_iterator {
 KBLIB_UNUSED constexpr struct build_end_t {
 	template <typename T>
 	KBLIB_NODISCARD constexpr operator T() const
-	    noexcept(noexcept(T{build_end_t{}})) {
+	    noexcept(noexcept(T{std::declval<build_end_t&>()})) {
 		return T{this};
 	}
 } build_end;

@@ -76,8 +76,8 @@ struct KBLIB_NODISCARD RAII_wrapper {
 	T t;
 	~RAII_wrapper() noexcept(noexcept(t())) { t(); }
 
-	RAII_wrapper(T&& t) : t(std::move(t)) {}
-	RAII_wrapper(const T& t) : t(t) {}
+	RAII_wrapper(T&& t_) : t(std::move(t_)) {}
+	RAII_wrapper(const T& t_) : t(t_) {}
 	RAII_wrapper(const RAII_wrapper&) = delete;
 	RAII_wrapper(RAII_wrapper&&) = delete;
 	RAII_wrapper& operator=(const RAII_wrapper&) = delete;

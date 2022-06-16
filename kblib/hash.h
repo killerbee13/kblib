@@ -328,6 +328,9 @@ struct is_hashable<Key, void_if_t<std::is_constructible<FNV_hash<Key>>::value>>
 template <typename Key>
 KBLIB_CONSTANT_V is_hashable_v = is_hashable<Key>::value;
 
+template <typename Key>
+using FNV32_hash = FNV_hash<Key, std::uint32_t>;
+
 /**
  * @brief Hasher for bool.
  *
@@ -569,8 +572,8 @@ struct FNV_hash<
 	    -> HashInt {
 		using Elem = typename Container::value_type;
 		return std::accumulate(cbegin(key), cend(key), offset,
-		                       [](HashInt offset, const Elem& elem) {
-			                       return FNV_hash<Elem, HashInt>{}(elem, offset);
+		                       [](HashInt offset_, const Elem& elem) {
+			                       return FNV_hash<Elem, HashInt>{}(elem, offset_);
 		                       });
 	}
 };

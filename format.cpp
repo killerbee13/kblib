@@ -11,9 +11,9 @@
 template <typename T>
 auto pred_count_digits(T v) {
 	return Catch::Predicate<T>(
-	    [](T v) -> bool {
-		    return kblib::count_digits(v)
-		           == kblib::to_signed(std::to_string(v).length());
+	    [](T v_) -> bool {
+		    return kblib::count_digits(v_)
+		           == kblib::to_signed(std::to_string(v_).length());
 	    },
 	    kblib::concat(v, ": digits=", std::to_string(v).length(),
 	                  "; calc=", kblib::count_digits(v)));

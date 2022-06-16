@@ -41,12 +41,15 @@ namespace kblib {
 
 #if KBLIB_USE_CXX17
 
-template <typename Value, auto Key,
-          typename Hash = kblib::FNV_hash<member_t<Value, Key>>>
+template <typename Value, auto KeyExtract,
+          typename Hash = kblib::FNV_hash<remove_cvref_t<
+              std::invoke_result_t<decltype(KeyExtract), Value&>>>,
+          typename KeyEqual = std::equal_to<>>
 class intrusive_map {
  public:
 	using value_type = Value;
-	using key_type = member_t<Value, Key>;
+	using key_type
+	    = remove_cvref_t<std::invoke_result_t<decltype(KeyExtract), Value&>>;
 	using mapped_type = Value;
 	// etc
 
@@ -58,14 +61,20 @@ class intrusive_map {
 	double load_factor;
 };
 
-template <typename Value, auto Key1, auto Key2,
-          typename Hash1 = kblib::FNV_hash<member_t<Value, Key1>>,
-          typename Hash2 = kblib::FNV_hash<member_t<Value, Key2>>>
+template <
+    typename Value, auto KeyExtract1, auto KeyExtract2,
+    typename Hash1 = kblib::FNV_hash<
+        remove_cvref_t<std::invoke_result_t<decltype(KeyExtract1), Value&>>>,
+    typename Hash2 = kblib::FNV_hash<
+        remove_cvref_t<std::invoke_result_t<decltype(KeyExtract2), Value&>>>,
+    typename KeyEqual1 = std::equal_to<>, typename KeyEqual2 = std::equal_to<>>
 class intrusive_dual_map {
  public:
 	using value_type = Value;
-	using key_type_a = member_t<Value, Key1>;
-	using key_type_b = member_t<Value, Key2>;
+	using key_type_a
+	    = remove_cvref_t<std::invoke_result_t<decltype(KeyExtract1), Value&>>;
+	using key_type_b
+	    = remove_cvref_t<std::invoke_result_t<decltype(KeyExtract2), Value&>>;
 	using mapped_type = Value;
 	// etc
 
@@ -74,8 +83,8 @@ class intrusive_dual_map {
 
  private:
 	std::deque<Value> storage;
-	std::unordered_map<key_type_a, Value*, Hash1> map_a;
-	std::unordered_map<key_type_b, Value*, Hash2> map_b;
+	std::unordered_map<key_type_a, Value*, Hash1, KeyEqual1> map_a;
+	std::unordered_map<key_type_b, Value*, Hash2, KeyEqual2> map_b;
 };
 
 #endif

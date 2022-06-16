@@ -56,6 +56,10 @@ using enable_if_t = typename std::enable_if<B, T>::type;
 template <typename T>
 using decay_t = typename std::decay<T>::type;
 
+template <typename T>
+using remove_cvref_t =
+    typename std::remove_reference<typename std::remove_cv<T>::type>::type;
+
 template <bool v>
 using bool_constant = std::integral_constant<bool, v>;
 

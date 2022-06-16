@@ -248,8 +248,8 @@ class range_t {
 	 *
 	 * @param max The end of the range.
 	 */
-	constexpr range_t(Value max)
-	    : range_t(Value{}, max, (max >= Value{}) ? 1 : -1) {}
+	constexpr range_t(Value max_)
+	    : range_t(Value{}, max_, (max_ >= Value{}) ? 1 : -1) {}
 
 	/**
 	 * @brief A helper struct which acts as an iterator for the range elements,
@@ -506,6 +506,7 @@ class range_t {
 		} else {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
 #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
@@ -542,8 +543,8 @@ namespace detail_iterators {
 
 struct adjuster {
 	std::ptrdiff_t adj;
-	constexpr adjuster(std::ptrdiff_t adj) noexcept
-	    : adj(adj) {}
+	constexpr adjuster(std::ptrdiff_t adj_) noexcept
+	    : adj(adj_) {}
 	constexpr operator std::ptrdiff_t() const noexcept { return adj; }
 };
 
@@ -881,7 +882,7 @@ class enumerator_iterator {
 
 	enumerator_iterator(enumerator_iterator&&) = default;
 	auto operator=(const enumerator_iterator&) -> enumerator_iterator& = default;
-	auto operator=(enumerator_iterator &&) -> enumerator_iterator& = default;
+	auto operator=(enumerator_iterator&&) -> enumerator_iterator& = default;
 
 	~enumerator_iterator() = default;
 
@@ -1166,8 +1167,9 @@ class transform_iterator {
 	 * @param _it An InputIterator to a range to be transformed.
 	 * @param _op The operation to apply to each element.
 	 */
-	transform_iterator(base_iterator _it, operation _op) noexcept(
-	    noexcept(base_iterator{_it}) and noexcept(std::is_nothrow_move_constructible<operation>::value))
+	transform_iterator(base_iterator _it,
+	                   operation _op) noexcept(noexcept(base_iterator{
+	    _it}) and noexcept(std::is_nothrow_move_constructible<operation>::value))
 	    : it(_it)
 	    , op(std::move(_op)) {}
 
@@ -1176,8 +1178,8 @@ class transform_iterator {
 	 *
 	 * @param end_it An iterator that marks the end of the input range.
 	 */
-	transform_iterator(base_iterator end_it) noexcept(
-	    noexcept(base_iterator{end_it}))
+	transform_iterator(base_iterator end_it) noexcept(noexcept(base_iterator{
+	    end_it}))
 	    : it(end_it)
 	    , op() {}
 
@@ -1195,8 +1197,7 @@ class transform_iterator {
 	 *
 	 * @return decltype(auto) The result of invoking op on *it.
 	 */
-	decltype(auto) operator*() const
-	    noexcept(noexcept(kblib::invoke(op, *it))) {
+	decltype(auto) operator*() const noexcept(noexcept(kblib::invoke(op, *it))) {
 		return kblib::invoke(op, *it);
 	}
 

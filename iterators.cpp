@@ -234,14 +234,14 @@ TEST_CASE("magic_enumerate") {
 		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
 		for (auto&& [i, v] : kblib::magic_enumerate(
 		         std::istream_iterator<int>(is), std::istream_iterator<int>())) {
-			REQUIRE(v == i / 2);
+			REQUIRE(v == static_cast<int>(i) / 2);
 		}
 	}
 	SECTION("copied input iterators") {
 		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
 		for (auto [i, v] : kblib::magic_enumerate(std::istream_iterator<int>(is),
 		                                          std::istream_iterator<int>())) {
-			REQUIRE(v == i / 2);
+			REQUIRE(v == static_cast<int>(i) / 2);
 		}
 	}
 
@@ -387,14 +387,14 @@ TEST_CASE("cry_enumerate") {
 		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
 		for (auto&& [i, v] : kblib::cry_enumerate(std::istream_iterator<int>(is),
 		                                          std::istream_iterator<int>())) {
-			REQUIRE(v == i / 2);
+			REQUIRE(v == static_cast<int>(i) / 2);
 		}
 	}
 	SECTION("copied input iterators") {
 		std::istringstream is{"0 0 1 1 2 2 3 3 4 4 5 5 6 6"};
 		for (auto [i, v] : kblib::cry_enumerate(std::istream_iterator<int>(is),
 		                                        std::istream_iterator<int>())) {
-			REQUIRE(v == i / 2);
+			REQUIRE(v == static_cast<int>(i) / 2);
 		}
 	}
 

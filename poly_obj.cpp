@@ -436,6 +436,8 @@ auto make_fptr(unsigned v) noexcept -> fptr {
 		return {v, &fptr_d3};
 	case 3:
 		return {v, &fptr_d4};
+	default:
+		__builtin_unreachable();
 	}
 }
 
@@ -542,7 +544,7 @@ TEST_CASE("poly_obj performance") {
 		std::vector<Derived2> d2;
 		std::vector<Derived3> d3;
 		std::vector<Derived4> d4;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
@@ -580,7 +582,7 @@ TEST_CASE("poly_obj performance") {
 	};
 	BENCHMARK_ADVANCED("raw pointer")(Catch::Benchmark::Chronometer meter) {
 		std::vector<Base*> d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
@@ -613,7 +615,7 @@ TEST_CASE("poly_obj performance") {
 	BENCHMARK_ADVANCED("unique_ptr")
 	(Catch::Benchmark::Chronometer meter) {
 		std::vector<std::unique_ptr<Base>> d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = h(i);
 			switch (v % 4) {
@@ -642,7 +644,7 @@ TEST_CASE("poly_obj performance") {
 	};
 	BENCHMARK_ADVANCED("poly_obj")(Catch::Benchmark::Chronometer meter) {
 		std::vector<poly_t> d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = h(i);
 			switch (v % 4) {
@@ -671,7 +673,7 @@ TEST_CASE("poly_obj performance") {
 	};
 	BENCHMARK_ADVANCED("function pointer")(Catch::Benchmark::Chronometer meter) {
 		std::vector<fptr> d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			d.push_back(make_fptr(v));
@@ -689,7 +691,7 @@ TEST_CASE("poly_obj performance") {
 	BENCHMARK_ADVANCED("function pointer (wrapped)")
 	(Catch::Benchmark::Chronometer meter) {
 		std::vector<fptr> d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			d.push_back(make_fptr(v));
@@ -706,7 +708,7 @@ TEST_CASE("poly_obj performance") {
 	};
 	BENCHMARK_ADVANCED("std::function")(Catch::Benchmark::Chronometer meter) {
 		std::vector<std::function<unsigned()>> d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
@@ -735,7 +737,7 @@ TEST_CASE("poly_obj performance") {
 	};
 	{
 		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4>> d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
@@ -871,7 +873,7 @@ TEST_CASE("poly_obj performance") {
 		BENCHMARK_ADVANCED("raw pointer, ch")
 		(Catch::Benchmark::Chronometer meter) {
 			std::vector<Base*> d;
-			kblib::FNV_hash<unsigned> h;
+			kblib::FNV32_hash<unsigned> h;
 			for (auto i : kblib::range(count)) {
 				auto v = static_cast<unsigned>(h(i));
 				switch (v % 5) {
@@ -912,7 +914,7 @@ TEST_CASE("poly_obj performance") {
 		BENCHMARK_ADVANCED("unique_ptr, ch")
 		(Catch::Benchmark::Chronometer meter) {
 			std::vector<std::unique_ptr<Base>> d;
-			kblib::FNV_hash<unsigned> h;
+			kblib::FNV32_hash<unsigned> h;
 			for (auto i : kblib::range(count)) {
 				auto v = h(i);
 				switch (v % 4) {
@@ -949,7 +951,7 @@ TEST_CASE("poly_obj performance") {
 		};
 		BENCHMARK_ADVANCED("poly_obj, ch")(Catch::Benchmark::Chronometer meter) {
 			std::vector<poly_t> d;
-			kblib::FNV_hash<unsigned> h;
+			kblib::FNV32_hash<unsigned> h;
 			for (auto i : kblib::range(count)) {
 				auto v = h(i);
 				switch (v % 5) {
@@ -987,7 +989,7 @@ TEST_CASE("poly_obj performance") {
 		std::vector<std::function<unsigned()>> df;
 		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4, thrower>>
 		    d;
-		kblib::FNV_hash<unsigned> h;
+		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 5) {

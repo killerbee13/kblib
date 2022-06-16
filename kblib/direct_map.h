@@ -78,7 +78,7 @@ namespace detail_direct_map {
 		storage_for(storage_for&&) = delete;
 
 		auto operator=(const storage_for&) -> storage_for& = delete;
-		auto operator=(storage_for &&) -> storage_for& = delete;
+		auto operator=(storage_for&&) -> storage_for& = delete;
 
 		~storage_for() = default;
 
@@ -156,10 +156,10 @@ class direct_map {
 		using iterator_category = std::bidirectional_iterator_tag;
 
 		KBLIB_NODISCARD constexpr auto operator*() const noexcept -> reference {
-			return *storage->second[pos].get();
+			return *storage->second[kblib::to_unsigned(pos)].get();
 		}
 		KBLIB_NODISCARD constexpr auto operator->() const noexcept -> pointer {
-			return storage->second[pos].get();
+			return storage->second[kblib::to_unsigned(pos)].get();
 		}
 
 		constexpr auto operator++() noexcept -> iter& {
@@ -170,7 +170,7 @@ class direct_map {
 				return *this;
 			}
 			for (auto i : range(++pos, key_range)) {
-				if (storage->first.test(i)) {
+				if (storage->first.test(kblib::to_unsigned(i))) {
 					pos = i;
 					return *this;
 				}
@@ -186,7 +186,7 @@ class direct_map {
 
 		constexpr auto operator--() noexcept -> iter& {
 			for (auto i : range(pos - 1, std::ptrdiff_t(-1))) {
-				if (storage->first.test(i)) {
+				if (storage->first.test(kblib::to_unsigned(i))) {
 					pos = i;
 					return *this;
 				}
@@ -491,7 +491,7 @@ class direct_map {
 	}
 
 	KBLIB_NODISCARD constexpr auto contains(Key key) const noexcept -> bool {
-		return storage and bitmap().test(index(key));
+		return storage and bitmap().test(uindex(key));
 	}
 	KBLIB_NODISCARD constexpr auto count(Key key) const noexcept -> std::size_t {
 		return contains(key);
@@ -617,6 +617,10 @@ class direct_map {
 	    -> std::ptrdiff_t {
 		return to_unsigned(key);
 	}
+	KBLIB_NODISCARD constexpr static auto uindex(Key key) noexcept
+	    -> std::size_t {
+		return to_unsigned(key);
+	}
 	KBLIB_NODISCARD constexpr static auto to_key(std::ptrdiff_t i) noexcept
 	    -> Key {
 		return Key(i);
@@ -632,18 +636,18 @@ class direct_map {
 	}
 
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) & -> storage_type& {
-		return storage->second[index(key)];
+		return storage->second[uindex(key)];
 	}
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) && -> storage_type&& {
-		return storage->second[index(key)];
+		return storage->second[uindex(key)];
 	}
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const& -> const
 	    storage_type& {
-		return storage->second[index(key)];
+		return storage->second[uindex(key)];
 	}
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const&& -> const
 	    storage_type&& {
-		return storage->second[index(key)];
+		return storage->second[uindex(key)];
 	}
 
 	auto allocate() -> void {
@@ -656,10 +660,10 @@ class direct_map {
 	constexpr void construct(Key key, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<value_type, Args&&...>::value) {
 		allocate();
-		if (not storage->first.test(index(key))) {
+		if (not storage->first.test(uindex(key))) {
 			do_construct(key, std::forward<Args>(args)...);
 			// doing these after construction maintains exception safety.
-			storage->first.set(index(key));
+			storage->first.set(uindex(key));
 			++_size;
 		}
 	}
@@ -667,7 +671,7 @@ class direct_map {
 	template <typename... Args>
 	constexpr void do_construct(Key key, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<value_type, Args&&...>::value) {
-		storage->second[index(key)].construct(
+		storage->second[uindex(key)].construct(
 		    std::piecewise_construct, std::forward_as_tuple(key),
 		    std::forward_as_tuple(std::forward<Args>(args)...));
 	}
@@ -710,10 +714,10 @@ class direct_map<Key, T, void> {
 		using iterator_category = std::bidirectional_iterator_tag;
 
 		KBLIB_NODISCARD constexpr auto operator*() const -> reference {
-			return *map->elems[pos].get();
+			return *map->elems[kblib::to_unsigned(pos)].get();
 		}
 		KBLIB_NODISCARD constexpr auto operator->() const -> pointer {
-			return map->elems[pos].get();
+			return map->elems[kblib::to_unsigned(pos)].get();
 		}
 
 		constexpr auto operator++() -> iter& {
@@ -724,7 +728,7 @@ class direct_map<Key, T, void> {
 				return *this;
 			}
 			for (auto i : range(++pos, key_range)) {
-				if (map->active_elems.test(i)) {
+				if (map->active_elems.test(kblib::to_unsigned(i))) {
 					pos = i;
 					return *this;
 				}
@@ -740,7 +744,7 @@ class direct_map<Key, T, void> {
 
 		constexpr auto operator--() -> iter& {
 			for (auto i : range(pos - 1, std::ptrdiff_t(-1))) {
-				if (map->active_elems.test(i)) {
+				if (map->active_elems.test(kblib::to_unsigned(i))) {
 					pos = i;
 					return *this;
 				}
@@ -800,11 +804,11 @@ class direct_map<Key, T, void> {
 	constexpr direct_map(const direct_map& other)
 	    : active_elems{other.active_elems}
 	    , _size(other._size) {
-		for (auto k : range(+min(), max() + 1)) {
+		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				construct(k, other.unsafe_at(k).get()->second);
 				++_size;
-				bitmap().set(index(k));
+				bitmap().set(uindex(k));
 			}
 		}
 	}
@@ -813,11 +817,11 @@ class direct_map<Key, T, void> {
 	    std::is_nothrow_move_constructible<value_type>::value)
 	    : active_elems{other.active_elems}
 	    , _size(other._size) {
-		for (auto k : range(+min(), max() + 1)) {
+		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				construct(k, std::move(other.unsafe_at(k).get()->second));
 				++_size;
-				bitmap().set(index(k));
+				bitmap().set(uindex(k));
 			}
 		}
 	}
@@ -835,11 +839,11 @@ class direct_map<Key, T, void> {
 		}
 		clear();
 		active_elems = other.active_elems;
-		for (auto k : range(+min(), max() + 1)) {
+		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				construct(k, other.unsafe_at(k).get()->second);
 				++_size;
-				bitmap().set(index(k));
+				bitmap().set(uindex(k));
 			}
 		}
 		return *this;
@@ -850,11 +854,11 @@ class direct_map<Key, T, void> {
 			return *this;
 		}
 		active_elems = other.active_elems;
-		for (auto k : range(+min(), max() + 1)) {
+		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				construct(k, std::move(other.unsafe_at(k).get()->second));
 				++_size;
-				bitmap().set(index(k));
+				bitmap().set(uindex(k));
 			}
 		}
 		return *this;
@@ -1060,7 +1064,7 @@ class direct_map<Key, T, void> {
 	    std::is_nothrow_move_constructible<value_type>::value and
 	        fakestd::is_nothrow_swappable<T>::value) -> void {
 		using std::swap;
-		for (auto k : range(+min(), max() + 1)) {
+		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) {
 				if (other.contains(k)) {
 					kblib::swap(unsafe_at(k).get()->second,
@@ -1082,7 +1086,7 @@ class direct_map<Key, T, void> {
 	}
 
 	KBLIB_NODISCARD constexpr auto contains(Key key) const noexcept -> bool {
-		return bitmap().test(index(key));
+		return bitmap().test(uindex(key));
 	}
 	KBLIB_NODISCARD constexpr auto count(Key key) const noexcept -> std::size_t {
 		return contains(key);
@@ -1159,7 +1163,7 @@ class direct_map<Key, T, void> {
 		if (l.size() != r.size()) {
 			return false;
 		}
-		for (auto i : kblib::range(+min(), max() + 1)) {
+		for (const key_type i : kblib::range(+min(), max() + 1)) {
 			if (l.contains(i) != r.contains(i)) {
 				return false;
 			} else if (l.contains(i)) {
@@ -1208,6 +1212,10 @@ class direct_map<Key, T, void> {
 	    -> std::ptrdiff_t {
 		return to_unsigned(key);
 	}
+	KBLIB_NODISCARD constexpr static auto uindex(Key key) noexcept
+	    -> std::size_t {
+		return to_unsigned(key);
+	}
 	KBLIB_NODISCARD constexpr static auto to_key(std::ptrdiff_t i) noexcept
 	    -> Key {
 		return Key(i);
@@ -1223,27 +1231,27 @@ class direct_map<Key, T, void> {
 	}
 
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) & -> storage_type& {
-		return elems[index(key)];
+		return elems[uindex(key)];
 	}
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) && -> storage_type&& {
-		return elems[index(key)];
+		return elems[uindex(key)];
 	}
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const& -> const
 	    storage_type& {
-		return elems[index(key)];
+		return elems[uindex(key)];
 	}
 	KBLIB_NODISCARD constexpr auto unsafe_at(Key key) const&& -> const
 	    storage_type&& {
-		return elems[index(key)];
+		return elems[uindex(key)];
 	}
 
 	template <typename... Args>
 	constexpr auto construct(Key key, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<value_type, Args&&...>::value) -> void {
-		if (not active_elems.test(index(key))) {
+		if (not active_elems.test(uindex(key))) {
 			do_construct(key, std::forward<Args>(args)...);
 			// doing these after construction maintains exception safety.
-			active_elems.set(index(key));
+			active_elems.set(uindex(key));
 			++_size;
 		}
 	}
@@ -1251,7 +1259,7 @@ class direct_map<Key, T, void> {
 	template <typename... Args>
 	constexpr auto do_construct(Key key, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<value_type, Args&&...>::value) -> void {
-		elems[index(key)].construct(
+		elems[uindex(key)].construct(
 		    std::piecewise_construct, std::forward_as_tuple(key),
 		    std::forward_as_tuple(std::forward<Args>(args)...));
 	}
@@ -1259,7 +1267,7 @@ class direct_map<Key, T, void> {
 	auto destroy(Key key) -> void {
 		assert(contains(key));
 
-		bitmap().reset(index(key));
+		bitmap().reset(uindex(key));
 		unsafe_at(key).destroy();
 		--_size;
 	}
