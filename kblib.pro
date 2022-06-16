@@ -4,6 +4,7 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
+    intrusive_containers.cpp \
     main.cpp \
     build.cpp \
     containers.cpp \
@@ -23,7 +24,6 @@ SOURCES += \
     catch_main.cpp \
     algorithm.cpp \
     multi_span.cpp \
-    invasive_containers.cpp \
     delayed_construct.cpp \
     memory.cpp \
     io.cpp \
@@ -42,6 +42,7 @@ HEADERS += \
     kblib/fakestd.h \
     kblib/format.h \
     kblib/icu.h \
+    kblib/intrusive_containers.h \
     kblib/io.h \
     kblib/iterators.h \
     kblib/logic.h \
@@ -54,7 +55,6 @@ HEADERS += \
     kblib/kblib.h \
     kblib/algorithm.h \
     kblib/multi_span.h \
-    kblib/invasive_containers.h \
     kblib/delayed_construct.h \
     kblib/memory.h \
     kblib/trie.h \

@@ -29,8 +29,8 @@
  * @copyright GNU General Public Licence v3.0
  */
 
-#ifndef INVASIVE_CONTAINERS_H
-#define INVASIVE_CONTAINERS_H
+#ifndef INTRUSIVE_CONTAINERS_H
+#define INTRUSIVE_CONTAINERS_H
 
 #include "hash.h"
 #include "traits.h"
@@ -43,7 +43,7 @@ namespace kblib {
 
 template <typename Value, auto Key,
           typename Hash = kblib::FNV_hash<member_t<Value, Key>>>
-class invasive_map {
+class intrusive_map {
  public:
 	using value_type = Value;
 	using key_type = member_t<Value, Key>;
@@ -61,7 +61,7 @@ class invasive_map {
 template <typename Value, auto Key1, auto Key2,
           typename Hash1 = kblib::FNV_hash<member_t<Value, Key1>>,
           typename Hash2 = kblib::FNV_hash<member_t<Value, Key2>>>
-class invasive_dual_map {
+class intrusive_dual_map {
  public:
 	using value_type = Value;
 	using key_type_a = member_t<Value, Key1>;
@@ -82,4 +82,4 @@ class invasive_dual_map {
 
 } // namespace kblib
 
-#endif // INVASIVE_CONTAINERS_H
+#endif // INTRUSIVE_CONTAINERS_H

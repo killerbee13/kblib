@@ -608,7 +608,7 @@ data:
     Cmp: ''
     Family: '170'
   - name: '{%nth_@elements|wg21:p2375}'
-    id: 'p:nth_elements'
+    id: 'wg21:nth_elements'
     Inp: '1+positions'
     Acc: ''
     Ret: 'Self'
