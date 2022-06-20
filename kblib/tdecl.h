@@ -95,13 +95,15 @@
 #endif
 
 #if KBLIB_USE_CXX17
-#	define KBLIB_CONSTANT constexpr inline
-#	define KBLIB_CONSTANT_V constexpr inline bool
+#	define KBLIB_CONSTANT constexpr
+#	define KBLIB_CONSTANT_V constexpr bool
 #	define KBLIB_CONSTANT_M constexpr inline static
+#	define KBLIB_CONSTANT_MV constexpr inline static bool
 #else
 #	define KBLIB_CONSTANT constexpr static
 #	define KBLIB_CONSTANT_V constexpr static bool
 #	define KBLIB_CONSTANT_M constexpr static
+#	define KBLIB_CONSTANT_MV constexpr static bool
 #endif
 
 /**

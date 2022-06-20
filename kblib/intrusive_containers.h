@@ -41,16 +41,32 @@ namespace kblib {
 
 #if KBLIB_USE_CXX17
 
-template <typename Value, auto KeyExtract,
-          typename Hash = kblib::FNV_hash<remove_cvref_t<
-              std::invoke_result_t<decltype(KeyExtract), Value&>>>,
+template <typename Value, auto KeyExtract, typename Hash = kblib::FNV_hash<>,
           typename KeyEqual = std::equal_to<>>
-class intrusive_map {
+class intrusive_hash_map {
  public:
 	using value_type = Value;
 	using key_type
 	    = remove_cvref_t<std::invoke_result_t<decltype(KeyExtract), Value&>>;
 	using mapped_type = Value;
+
+	using size_type = std::size_t;
+	using difference_type = std::ptrdiff_t;
+	using hasher = Hash;
+	using key_equal = KeyEqual;
+	using allocator_type = void;
+
+	using reference = value_type&;
+	using const_reference = const value_type&;
+
+	using pointer = value_type*;
+	using const_pointer = const value_type*;
+
+	using iterator = void;
+	using const_iterator = void;
+	using local_iterator = void;
+	using const_local_iterator = void;
+
 	// etc
 
 	template <int>
@@ -63,10 +79,7 @@ class intrusive_map {
 
 template <
     typename Value, auto KeyExtract1, auto KeyExtract2,
-    typename Hash1 = kblib::FNV_hash<
-        remove_cvref_t<std::invoke_result_t<decltype(KeyExtract1), Value&>>>,
-    typename Hash2 = kblib::FNV_hash<
-        remove_cvref_t<std::invoke_result_t<decltype(KeyExtract2), Value&>>>,
+    typename Hash1 = kblib::FNV_hash<>, typename Hash2 = kblib::FNV_hash<>,
     typename KeyEqual1 = std::equal_to<>, typename KeyEqual2 = std::equal_to<>>
 class intrusive_dual_map {
  public:

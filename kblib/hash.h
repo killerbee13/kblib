@@ -305,17 +305,16 @@ constexpr int padding_bits_v = padding_bits<T>::value;
 
 /**
  * @brief The primary template has to exist, but not be constructible, in order
- * to meet the requirements of Hash.
+ * to be compatible with std::hash.
  *
  */
-template <typename Key, typename HashInt = std::size_t, typename = void>
+template <typename Key = void, typename HashInt = std::size_t, typename = void>
 struct FNV_hash {
 	FNV_hash() = delete;
 	FNV_hash(const FNV_hash&) = delete;
 	FNV_hash(FNV_hash&&) = delete;
 	FNV_hash& operator=(const FNV_hash&) = delete;
 	FNV_hash& operator=(FNV_hash&&) = delete;
-	~FNV_hash() = delete;
 };
 
 template <typename Key, typename = void>
@@ -715,6 +714,23 @@ struct FNV_hash<std::variant<Ts...>, HashInt,
 };
 
 #endif
+
+/**
+ * @brief Transparent hasher for any hashable type.
+ *
+ */
+template <typename HashInt>
+struct FNV_hash<void, HashInt, void> {
+	KBLIB_CONSTANT_MV is_transparent = true;
+
+	template <typename T>
+	KBLIB_NODISCARD constexpr auto operator()(const T& key,
+	                                          HashInt offset
+	                                          = fnv::fnv_offset<HashInt>::value)
+	    -> enable_if_t<is_hashable_v<T>, HashInt> {
+		return FNV_hash<T>{}(key, offset);
+	}
+};
 
 template <typename Key, typename Value>
 using hash_map = std::unordered_map<Key, Value, FNV_hash<Key>>;
