@@ -85,7 +85,7 @@ QMAKE_CXXFLAGS += -std=c++17 -g
 QMAKE_CXXFLAGS += -march=native
 QMAKE_CXXFLAGS += -Wall -Wextra -Wpedantic -Wshadow
 QMAKE_CXXFLAGS += -Wno-missing-braces
-QMAKE_CXXFLAGS += -I/mnt/Vers1/include
+INCLUDEPATH += /mnt/Vers1/include
 
 #QMAKE_CXXFLAGS += -stdlib=libc++ -fstandalone-debug
 QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations \

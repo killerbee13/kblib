@@ -278,7 +278,7 @@ struct class_of<M T::*> {
 template <typename T>
 using class_of_t = typename class_of<T>::type;
 
-#if KBLIB_USE_CXX17
+#if __cpp_nontype_template_parameter_auto
 
 /**
  * @brief The type of data member pointed to by M.
@@ -303,7 +303,7 @@ struct member_of<M T::*> {
 template <typename T>
 using member_of_t = typename member_of<T>::type;
 
-#if KBLIB_USE_CXX17
+#if __cpp_nontype_template_parameter_auto
 template <typename, auto M>
 using member_t = member_of_t<decltype(M)>;
 #endif
@@ -452,7 +452,7 @@ struct type_constant {
 	static constexpr T value = V;
 };
 
-#if KBLIB_USE_CXX17
+#if __cpp_nontype_template_parameter_auto
 
 template <auto V>
 using type_constant_for = type_constant<decltype(V), V>;
@@ -465,7 +465,7 @@ template <>
 struct is_aliasing_type<char> : std::true_type {};
 template <>
 struct is_aliasing_type<unsigned char> : std::true_type {};
-#if KBLIB_USE_CXX17
+#if __cpp_lib_byte
 template <>
 struct is_aliasing_type<std::byte> : std::true_type {};
 #endif

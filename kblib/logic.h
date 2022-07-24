@@ -58,7 +58,7 @@ template <bool A, bool B>
 constexpr inline bool implies_v = implies<A, B>::value;
 
 template <bool... args>
-constexpr bool conjunction_v = (args and ...);
+constexpr inline bool conjunction_v = (args and ...);
 #endif
 
 } // namespace kblib

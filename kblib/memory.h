@@ -57,7 +57,7 @@ struct null_construct<T, true> : public T {
 	    : T{} {}
 };
 
-#if KBLIB_USE_CXX17
+#if __cpp_nontype_template_parameter_auto
 template <auto FunPtr>
 struct fun_ptr_deleter;
 

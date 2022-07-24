@@ -61,7 +61,7 @@ namespace kblib {
 template <typename C>
 struct is_character
     : contains_type<std::tuple<char, wchar_t, char16_t, char32_t
-#	ifdef __cpp_char8_t
+#	if __cpp_char8_t
                                ,
                                char8_t
 #	endif
@@ -187,7 +187,7 @@ namespace detail {
 			return in;
 		}
 	};
-#	ifdef __cpp_char8_t
+#	if __cpp_char8_t
 	/**
 	 * @brief Override for char8_t to avoid conversion to integer
 	 */
@@ -356,7 +356,6 @@ KBLIB_NODISCARD constexpr inline auto isAspace(wchar_t c) -> bool {
 	}
 	return false;
 }
-
 
 /**
  * @brief Concatenates all elements of a range together with an optional joiner.

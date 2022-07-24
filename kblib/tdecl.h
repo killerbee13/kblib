@@ -67,10 +67,10 @@
  * std::string_view.
  */
 #ifndef KBLIB_USE_STRING_VIEW
-#	define KBLIB_USE_STRING_VIEW KBLIB_USE_CXX17
+#	define KBLIB_USE_STRING_VIEW __cpp_lib_string_view
 #endif
 
-// Note that has_cpp_attribute(nodiscard) does not work with at least certain
+// Note that __has_cpp_attribute(nodiscard) does not work with at least certain
 // versions of Clang
 /**
  * @def KBLIB_NODISCARD

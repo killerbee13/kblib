@@ -84,7 +84,7 @@ namespace detail_direct_map {
 
 		constexpr auto destroy() noexcept -> void { get()->~T(); }
 
-#if KBLIB_USE_CXX17
+#if __cpp_lib_launder
 #	define LAUNDER(x) std::launder(x)
 #else
 #	define LAUNDER(x) (x)

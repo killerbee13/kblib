@@ -400,7 +400,7 @@ struct FNV_hash<T, HashInt, void_if_t<std::is_empty<T>::value>> {
 	}
 };
 
-#if KBLIB_USE_CXX17
+#if __cpp_lib_has_unique_object_representations
 template <typename T>
 KBLIB_CONSTANT_V is_trivially_hashable_v
     = (std::is_trivially_copyable_v<

@@ -239,7 +239,7 @@ struct is_radix_sortable<
 template <typename T>
 constexpr bool is_radix_sortable_v = is_radix_sortable<T>::value;
 
-#if KBLIB_USE_CXX17
+#if __cpp_lib_byte
 template <typename T>
 constexpr bool is_byte_v
     = std::is_same<typename std::remove_cv<T>::type, std::byte>::value;

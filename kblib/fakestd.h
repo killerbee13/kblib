@@ -63,6 +63,22 @@ using remove_cvref_t =
 template <bool v>
 using bool_constant = std::integral_constant<bool, v>;
 
+#if __cpp_lib_constexpr_functional
+using std::invoke;
+#else
+
+#	if __cpp_lib_apply
+
+template <typename F, typename... Args>
+constexpr auto invoke(F&& f, Args&&... args) noexcept(noexcept(std::apply(
+    std::forward<F>(f), std::forward_as_tuple(std::forward<Args>(args)...))))
+    -> decltype(auto) {
+	return std::apply(std::forward<F>(f),
+	                  std::forward_as_tuple(std::forward<Args>(args)...));
+}
+
+#	else
+
 namespace detail {
 
 	template <
@@ -114,13 +130,11 @@ template <typename F, typename... Args>
 constexpr auto invoke(F&& f, Args&&... args) noexcept(noexcept(
     detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...)))
     -> decltype(auto) {
-#if KBLIB_USE_CXX17
-	return std::apply(std::forward<F>(f),
-	                  std::forward_as_tuple(std::forward<Args>(args)...));
-#else
 	return detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...);
-#endif
 }
+
+#	endif // __cpp_lib_apply
+#endif    // __cpp_lib_constexpr_functional
 
 /**
  * @namespace kblib::fakestd
