@@ -554,6 +554,33 @@ KBLIB_NODISCARD auto reverse_str(string val) -> string {
 	return val;
 }
 
+namespace detail {
+
+	template <typename CharT>
+	KBLIB_NODISCARD inline auto to_int_type(CharT ch) {
+		return std::char_traits<CharT>::to_int_type(ch);
+	}
+	template <typename CharT, typename IntT>
+	KBLIB_NODISCARD inline auto to_char_type(IntT ch) {
+		return std::char_traits<CharT>::to_char_type(ch);
+	}
+
+	KBLIB_NODISCARD inline auto tolower(char ch) {
+		return to_char_type<char>(std::tolower(to_int_type(ch)));
+	}
+
+	KBLIB_NODISCARD inline auto towlower(wchar_t ch) {
+		return to_char_type<wchar_t>(std::towlower(to_int_type(ch)));
+	}
+
+	KBLIB_NODISCARD inline auto toupper(char ch) {
+		return to_char_type<char>(std::toupper(to_int_type(ch)));
+	}
+
+	KBLIB_NODISCARD inline auto towupper(wchar_t ch) {
+		return to_char_type<wchar_t>(std::towupper(to_int_type(ch)));
+	}
+} // namespace detail
 /**
  * @brief Folds all characters in a string using the default execution character
  * set to lowercase.
@@ -561,9 +588,9 @@ KBLIB_NODISCARD auto reverse_str(string val) -> string {
  * @return string The case-folded string.
  */
 template <typename string>
-KBLIB_NODISCARD auto tolower(string str) -> string {
+KBLIB_NODISCARD constexpr auto tolower(string str) -> string {
 	std::transform(str.begin(), str.end(), str.begin(),
-	               [](auto c) { return std::tolower(c); });
+	               [](auto c) { return detail::tolower(c); });
 	return str;
 }
 
@@ -576,7 +603,7 @@ KBLIB_NODISCARD auto tolower(string str) -> string {
 template <typename string>
 KBLIB_NODISCARD auto toupper(string str) -> string {
 	std::transform(str.begin(), str.end(), str.begin(),
-	               [](auto c) { return std::toupper(c); });
+	               [](auto c) { return detail::toupper(c); });
 	return str;
 }
 
