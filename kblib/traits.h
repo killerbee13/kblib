@@ -280,13 +280,6 @@ using class_of_t = typename class_of<T>::type;
 
 #if __cpp_nontype_template_parameter_auto
 
-/**
- * @brief The type of data member pointed to by M.
- *
- */
-/*template <typename T, auto M>
-using member_t = std::remove_reference_t<decltype(std::declval<T&>().*M)>;*/
-
 template <auto M>
 using class_t = typename class_of<decltype(M)>::type;
 
@@ -304,6 +297,10 @@ template <typename T>
 using member_of_t = typename member_of<T>::type;
 
 #if __cpp_nontype_template_parameter_auto
+/**
+ * @brief The type of member pointed to by M.
+ *
+ */
 template <typename, auto M>
 using member_t = member_of_t<decltype(M)>;
 #endif

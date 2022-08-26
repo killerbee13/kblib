@@ -219,6 +219,9 @@ KBLIB_NODISCARD constexpr auto parse_integer(std::string_view in, int base = 0)
 template <typename T, T V>
 struct constant : std::integral_constant<T, V> {
 	constexpr auto operator-() -> constant<T, -V> { return {}; }
+	constexpr constant() = default;
+	constexpr /* implicit */ constant(std::integral_constant<T, V>) noexcept {}
+	// reverse conversion handled by slicing
 };
 
 inline namespace literals {

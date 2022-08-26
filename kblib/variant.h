@@ -143,12 +143,22 @@ namespace detail {
 	constexpr auto indexed_visitor_impl(std::index_sequence<Is...>) -> auto {
 		return std::array{+[](Variant&& variant, F&& f) {
 			return std::forward<F>(f)(
-			    std::integral_constant<std::size_t, Is>{},
+			    kblib::constant<std::size_t, Is>{},
 			    std::get<Is>(std::forward<Variant>(variant)));
 		}...};
 	}
 
 } // namespace detail
+
+inline namespace literals {
+
+	template <char... Cs>
+	KBLIB_NODISCARD constexpr auto operator""_vi() {
+		constexpr char arr[] = {Cs...};
+		return std::in_place_index_t<parse_integer<std::size_t>(arr)>{};
+	}
+
+} // namespace literals
 
 /**
  * @brief Visit a variant, but pass the index (as an integral_constant) to the
@@ -158,8 +168,9 @@ namespace detail {
  * @param variant The variant to visit.
  * @param fs Any number of functors, which taken together as an overload set can
  * be unambiguously called with (I, A),
- * for I = std::integral_constant<std::size_t, variant.index()>
+ * for I = kblib::constant<std::size_t, variant.index()>
  * and A = std::get<variant.index()>(variant).
+ * Note that kblib::constant implicitly converts to std::integral_constant.
  */
 template <typename Variant, typename... Fs>
 constexpr auto visit_indexed(Variant&& variant, Fs&&... fs) -> decltype(auto) {
