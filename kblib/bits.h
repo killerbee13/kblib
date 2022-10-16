@@ -479,6 +479,7 @@ namespace detail_bits {
  * @def KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
  * @sa See #BITFIELD(offset, size, name, raw) for documentation.
  * @note This macro is defined unconditionally.
+ * @note This macro resets the access level to public:
  */
 #define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
 	static_assert(offset >= 0 and size > 0,                                     \
@@ -531,7 +532,9 @@ namespace detail_bits {
 	template <decltype(raw) basis>                                              \
 	constexpr static decltype(raw) get_##name##_v                               \
 	    = (basis >> kblib::to_unsigned(offset))                                 \
-	      & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);
+	      & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);               \
+	constexpr static std::size_t name##_shift_v = offset;                       \
+	constexpr static std::size_t name##_width_v = size;
 
 namespace detail_bits {
 

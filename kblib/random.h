@@ -208,7 +208,7 @@ class KBLIB_NODISCARD transform_engine : URBG {
 
 	KBLIB_NODISCARD auto operator=(const transform_engine&)
 	    -> transform_engine& = delete;
-	KBLIB_NODISCARD auto operator=(transform_engine &&)
+	KBLIB_NODISCARD auto operator=(transform_engine&&)
 	    -> transform_engine& = delete;
 
 	~transform_engine() = default;
@@ -293,6 +293,10 @@ inline namespace lcgs {
 		using rand48
 		    = transform_engine<lcg_p2<std::uint_fast64_t, 25214903917u, 11u, 48u>,
 		                       shift_mask<std::uint_fast32_t, 16u>>;
+
+		using knuth_lcg = std::linear_congruential_engine<
+		    uint64_t, 6364136223846793005U, 1442695040888963407U,
+		    0U>; /* Knuth's preferred 64-bit LCG */
 
 	} // namespace common_lcgs
 

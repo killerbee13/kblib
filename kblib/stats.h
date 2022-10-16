@@ -188,6 +188,8 @@ inline namespace nums {
 	 * type. For unsigned destination types, -1 is shorter, but much less clear.
 	 * For signed destination types, there is no concise representation for a
 	 * generic maximum.
+	 *
+	 * Also serves as a max(a, b) function object.
 	 */
 	constexpr struct max_t {
 		template <typename T>
@@ -195,68 +197,100 @@ inline namespace nums {
 		    noexcept(noexcept(std::numeric_limits<T>::max())) {
 			return std::numeric_limits<T>::max();
 		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr static auto of() noexcept(
+		    noexcept(std::numeric_limits<T>::max())) {
+			return std::numeric_limits<T>::max();
+		}
 
 		/**
-		 @brief Return the larger of two values.
+		 @brief Return the larger of two values. Returns lhs if equal.
 		*/
 		template <typename L, typename R>
 		KBLIB_NODISCARD constexpr auto operator()(L&& lhs, R&& rhs) const noexcept
 		    -> decltype(auto) {
-			return rhs < lhs ? std::forward<R>(lhs) : std::forward<L>(rhs);
+			return std::less<>{}(lhs, rhs) ? std::forward<R>(rhs)
+			                               : std::forward<L>(lhs);
 		}
+
+		KBLIB_NODISCARD constexpr inline friend auto operator==(max_t, max_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator!=(max_t, max_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<(max_t, max_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>(max_t, max_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<=(max_t, max_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>=(max_t, max_t)
+		    -> std::true_type {
+			return {};
+		}
+
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator==(T t, max_t) -> bool {
+			return t == of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator==(max_t, T t) -> bool {
+			return t == of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator!=(T t, max_t) -> bool {
+			return t != of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator!=(max_t, T t) -> bool {
+			return t != of<T>();
+		}
+
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<(T t, max_t) -> bool {
+			return t < of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<(max_t, T t) -> bool {
+			return of<T>() < t;
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>(T t, max_t) -> bool {
+			return t > of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>(max_t, T t) -> bool {
+			return of<T>() > t;
+		}
+
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<=(T t, max_t) -> bool {
+			return t <= of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<=(max_t, T t) -> bool {
+			return of<T>() <= t;
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>=(T t, max_t) -> bool {
+			return t >= of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>=(max_t, T t) -> bool {
+			return of<T>() >= t;
+		}
+
 	} max; /**< A shorthand for the maximum value of the destination type. Also
 	          provides max(a, b). */
-
-	template <typename T>
-	KBLIB_NODISCARD auto operator==(T t, max_t) -> bool {
-		return t == T(max);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator==(max_t, T t) -> bool {
-		return t == T(max);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator!=(T t, max_t) -> bool {
-		return t != T(max);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator!=(max_t, T t) -> bool {
-		return t != T(max);
-	}
-
-	template <typename T>
-	KBLIB_NODISCARD auto operator<(T t, max_t) -> bool {
-		return t < T(max);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator<(max_t, T t) -> bool {
-		return T(max) < t;
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>(T t, max_t) -> bool {
-		return t > T(max);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>(max_t, T t) -> bool {
-		return T(max) > t;
-	}
-
-	template <typename T>
-	KBLIB_NODISCARD auto operator<=(T t, max_t) -> bool {
-		return t <= T(max);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator<=(max_t, T t) -> bool {
-		return T(max) <= t;
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>=(T t, max_t) -> bool {
-		return t >= T(max);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>=(max_t, T t) -> bool {
-		return T(max) >= t;
-	}
 
 	/**
 	 * @brief Shorthand for std::numeric_limits::min()
@@ -264,6 +298,8 @@ inline namespace nums {
 	 * Implicitly converts to the minimum representable value of any numeric
 	 * type. For unsigned destination types, this is always 0. For signed
 	 * destination types, it depends on size.
+	 *
+	 * Also serves as a min(a, b) function object.
 	 */
 	constexpr struct min_t {
 		template <typename T>
@@ -271,88 +307,169 @@ inline namespace nums {
 		    noexcept(noexcept(std::numeric_limits<T>::min())) {
 			return std::numeric_limits<T>::min();
 		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr static auto of() noexcept(
+		    noexcept(std::numeric_limits<T>::min())) {
+			return std::numeric_limits<T>::min();
+		}
 
 		/**
-		 @brief Returns the smaller of two values.
+		 @brief Returns the smaller of two values. Returns rhs if equal.
 		*/
 		template <typename L, typename R>
 		KBLIB_NODISCARD constexpr auto operator()(L&& lhs, R&& rhs) const noexcept
 		    -> decltype(auto) {
-			return lhs < rhs ? std::forward<R>(lhs) : std::forward<L>(rhs);
+			return std::less<>{}(lhs, rhs) ? std::forward<R>(lhs)
+			                               : std::forward<L>(rhs);
 		}
+
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator==(T t, min_t) -> bool {
+			return t == of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator==(min_t, T t) -> bool {
+			return t == of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator!=(T t, min_t) -> bool {
+			return t != of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator!=(min_t, T t) -> bool {
+			return t != of<T>();
+		}
+
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<(T t, min_t) -> bool {
+			return t < of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<(min_t, T t) -> bool {
+			return of<T>() < t;
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>(T t, min_t) -> bool {
+			return t > of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>(min_t, T t) -> bool {
+			return of<T>() > t;
+		}
+
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<=(T t, min_t) -> bool {
+			return t <= of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator<=(min_t, T t) -> bool {
+			return of<T>() <= t;
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>=(T t, min_t) -> bool {
+			return t >= of<T>();
+		}
+		template <typename T>
+		KBLIB_NODISCARD constexpr friend auto operator>=(min_t, T t) -> bool {
+			return of<T>() >= t;
+		}
+
+		KBLIB_NODISCARD constexpr inline friend auto operator==(min_t, min_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator!=(min_t, min_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<(min_t, min_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>(min_t, min_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<=(min_t, min_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>=(min_t, min_t)
+		    -> std::true_type {
+			return {};
+		}
+
+		KBLIB_NODISCARD constexpr inline friend auto operator==(max_t, min_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator==(min_t, max_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator!=(max_t, min_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator!=(min_t, max_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<(max_t, min_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<(min_t, max_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>(max_t, min_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>(min_t, max_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<=(max_t, min_t)
+		    -> std::false_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator<=(min_t, max_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>=(max_t, min_t)
+		    -> std::true_type {
+			return {};
+		}
+		KBLIB_NODISCARD constexpr inline friend auto operator>=(min_t, max_t)
+		    -> std::false_type {
+			return {};
+		}
+
 	} min; /**< A shorthand for the minimum value of the destination type. Also
 	          provides min(a, b). */
 
-	template <typename T>
-	KBLIB_NODISCARD auto operator==(T t, min_t) -> bool {
-		return t == T(min);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator==(min_t, T t) -> bool {
-		return t == T(min);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator!=(T t, min_t) -> bool {
-		return t != T(min);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator!=(min_t, T t) -> bool {
-		return t != T(min);
-	}
-
-	template <typename T>
-	KBLIB_NODISCARD auto operator<(T t, min_t) -> bool {
-		return t < T(min);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator<(min_t, T t) -> bool {
-		return T(min) < t;
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>(T t, min_t) -> bool {
-		return t > T(min);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>(min_t, T t) -> bool {
-		return T(min) > t;
-	}
-
-	template <typename T>
-	KBLIB_NODISCARD auto operator<=(T t, min_t) -> bool {
-		return t <= T(min);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator<=(min_t, T t) -> bool {
-		return T(min) <= t;
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>=(T t, min_t) -> bool {
-		return t >= T(min);
-	}
-	template <typename T>
-	KBLIB_NODISCARD auto operator>=(min_t, T t) -> bool {
-		return T(min) >= t;
-	}
-
 } // namespace nums
 
-template <typename T>
+template <typename T = double>
 KBLIB_NODISCARD constexpr auto pi() -> T {
 	return 3.1415926535897932384626433832795028841971693993751l;
 }
-template <typename T>
+template <typename T = double>
 KBLIB_NODISCARD constexpr auto tau() -> T {
 	return 2 * pi<T>;
 }
-template <typename T>
+template <typename T = double>
 KBLIB_NODISCARD constexpr auto e() -> T {
 	return 2.7182818284590452353602874713526624977572470937000l;
 }
-template <typename T>
+template <typename T = double>
 KBLIB_NODISCARD constexpr auto root_2() -> T {
 	return 1.4142135623730950488016887242096980785696718753769l;
 }
-template <typename T>
+template <typename T = double>
 KBLIB_NODISCARD constexpr auto phi() -> T {
 	return 1.6180339887498948482045868343656381177203091798058l;
 }

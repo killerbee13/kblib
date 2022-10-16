@@ -90,7 +90,7 @@ INCLUDEPATH += /mnt/Vers1/include
 #QMAKE_CXXFLAGS += -stdlib=libc++ -fstandalone-debug
 QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations \
  -Wold-style-cast -Wshadow -Wzero-as-null-pointer-constant \
- -Wno-mismatched-tags
+ -Wno-mismatched-tags -Wimplicit-fallthrough
 QMAKE_CXXFLAGS += -Wno-pragmas
 #QMAKE_CXXFLAGS += -Wduplicated-cond -Wlogical-op -Wreturn-std-move -Wpointer-to-int-cast
 #QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib

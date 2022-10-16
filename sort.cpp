@@ -164,8 +164,9 @@ TEST_CASE("insertion sort performance") {
 		};
 
 		TIME(
-		    time_per, 30, 1000,
-		    +[](std::size_t i) { return static_cast<double>(i) * i; });
+		    time_per, 30, 1000, +[](std::size_t i) {
+			    return static_cast<double>(i) * static_cast<double>(i);
+		    });
 	}
 	SECTION("adaptive_insertion_sort_copy on sorted data is fast") {
 		auto time_per = [](std::size_t size) {
