@@ -71,7 +71,6 @@ DISTFILES += \
     doc/table_ana.yml \
     doc/table_cata.yml \
     var_timings.log \
-    medfile \
     Doxyfile \
     doc/algorithm_intuition_ana.html \
     doc/algorithm_intuition_cata.html \
