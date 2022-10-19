@@ -4,35 +4,35 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-    intrusive_containers.cpp \
-    main.cpp \
-    build.cpp \
-    containers.cpp \
-    convert.cpp \
-    fakestd.cpp \
-    format.cpp \
-    icu.cpp \
-    iterators.cpp \
-    logic.cpp \
-    simple.cpp \
-    stats.cpp \
-    stringops.cpp \
-    tdecl.cpp \
-    traits.cpp \
-    variant.cpp \
-    bits.cpp \
-    catch_main.cpp \
-    algorithm.cpp \
-    multi_span.cpp \
-    delayed_construct.cpp \
-    memory.cpp \
-    io.cpp \
-    trie.cpp \
-    direct_map.cpp \
-    hash.cpp \
-    sort.cpp \
-    random.cpp \
-    poly_obj.cpp
+    tests/intrusive_containers.cpp \
+    tests/main.cpp \
+    tests/build.cpp \
+    tests/containers.cpp \
+    tests/convert.cpp \
+    tests/fakestd.cpp \
+    tests/format.cpp \
+    tests/icu.cpp \
+    tests/iterators.cpp \
+    tests/logic.cpp \
+    tests/simple.cpp \
+    tests/stats.cpp \
+    tests/stringops.cpp \
+    tests/tdecl.cpp \
+    tests/traits.cpp \
+    tests/variant.cpp \
+    tests/bits.cpp \
+    tests/catch_main.cpp \
+    tests/algorithm.cpp \
+    tests/multi_span.cpp \
+    tests/delayed_construct.cpp \
+    tests/memory.cpp \
+    tests/io.cpp \
+    tests/trie.cpp \
+    tests/direct_map.cpp \
+    tests/hash.cpp \
+    tests/sort.cpp \
+    tests/random.cpp \
+    tests/poly_obj.cpp
 
 HEADERS += \
     kblib/bits.h \
