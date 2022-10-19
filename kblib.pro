@@ -68,6 +68,7 @@ HEADERS += \
 
 DISTFILES += \
     LICENSE.txt \
+    README.md \
     doc/table_ana.yml \
     doc/table_cata.yml \
     var_timings.log \
