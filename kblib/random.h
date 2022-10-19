@@ -43,7 +43,9 @@
 #include <random>
 #include <vector>
 
-#include <iostream>
+#if KBLIB_DEBUG_SEED_SEQ
+#	include <iostream>
+#endif
 
 namespace kblib {
 
@@ -91,23 +93,38 @@ class KBLIB_NODISCARD trivial_seed_seq {
 	template <typename T>
 	trivial_seed_seq(std::initializer_list<T> il)
 	    : trivial_seed_seq(il.begin(), il.end()) {}
-	template <typename Generator>
-	trivial_seed_seq(Generator gen, std::size_t count)
+	template <typename Source>
+	trivial_seed_seq(Source gen, std::size_t count)
 	    : data(count) {
 		kblib::generate_n(data.begin(), count, std::ref(gen));
+	}
+	// Work around std::linear_congruential_engine without overpulling from the
+	// random source
+	template <typename Source>
+	trivial_seed_seq(Source gen, std::size_t count, std::size_t discard)
+	    : data(count + discard, 0x8b8b8b8bu) {
+		kblib::generate_n(data.begin() + discard, count, std::ref(gen));
 	}
 
 	template <typename RandomAccessIt>
 	auto generate(RandomAccessIt begin, RandomAccessIt end) const -> void {
 		auto o_size = end - begin;
 		auto d_size = to_signed(data.size());
+#if KBLIB_DEBUG_SEED_SEQ
+		if (o_size < d_size) {
+			std::clog << "trivial_seed_seq: overseeded for output size of "
+			          << o_size << ", have data size " << d_size << '\n';
+		}
+#endif
 		if (data.empty()) {
 			std::fill(begin, end, 0x8b8b8b8bu); // copied from std::seed_seq
 		} else {
+#if KBLIB_DEBUG_SEED_SEQ
 			if (o_size > d_size) {
 				std::clog << "trivial_seed_seq: unexpectedly wrapping, output size "
 				          << o_size << " greater than data size " << d_size << '\n';
 			}
+#endif
 			auto dpos = begin;
 			do {
 				auto blk_size
@@ -144,7 +161,11 @@ struct state_size<std::mersenne_twister_engine<UIntType, w, n, m, r, a, u, d, s,
 
 template <typename UIntType, UIntType a, UIntType c, UIntType m>
 struct state_size<std::linear_congruential_engine<UIntType, a, c, m>>
-    : std::integral_constant<std::size_t, (filg2(m) + 31) / 32> {};
+    : std::integral_constant<std::size_t, (filg2(m) + 31) / 32> {
+	// std::linear_congruential_engine discards 3 seed words due to hardcoded
+	// hack for std::seed_seq, so we work around that with this trait
+	KBLIB_CONSTANT_M std::size_t seed_discard = 3;
+};
 
 template <typename UIntType, std::size_t w, std::size_t s, std::size_t r>
 struct state_size<std::subtract_with_carry_engine<UIntType, w, s, r>>
@@ -164,17 +185,26 @@ struct state_size<std::shuffle_order_engine<Engine, K>> : state_size<Engine> {};
 template <typename T>
 constexpr std::size_t state_size_v = state_size<T>::value;
 
+template <typename T, typename = void>
+constexpr std::size_t seed_discard_v = 0;
+template <typename T>
+constexpr std::size_t seed_discard_v<
+    T, void_t<decltype(state_size<T>::seed_discard)>> = state_size<T>::
+    seed_discard;
+
+static_assert(seed_discard_v<std::minstd_rand> == 3,
+              "linear_congruential_engines discard 3 words of seed data");
+
 template <typename Gen, typename Source>
 KBLIB_NODISCARD auto seeded(Source&& s) -> Gen {
-	auto seed = trivial_seed_seq(std::ref(s), state_size_v<Gen>);
+	auto seed
+	    = trivial_seed_seq(std::ref(s), state_size_v<Gen>, seed_discard_v<Gen>);
 	return Gen{seed};
 }
 
 template <typename Gen>
 KBLIB_NODISCARD auto seeded() -> Gen {
-	std::random_device rd{};
-	auto seed = trivial_seed_seq(std::ref(rd), state_size_v<Gen>);
-	return Gen{seed};
+	return seeded<Gen>(std::random_device{});
 }
 
 template <typename URBG, typename Transform>
@@ -293,6 +323,9 @@ inline namespace lcgs {
 		using rand48
 		    = transform_engine<lcg_p2<std::uint_fast64_t, 25214903917u, 11u, 48u>,
 		                       shift_mask<std::uint_fast32_t, 16u>>;
+		using java_rand
+		    = std::linear_congruential_engine<std::uint_fast64_t, 0x5DEECE66D, 11,
+		                                      1ull << 48u>;
 
 		using knuth_lcg = std::linear_congruential_engine<
 		    uint64_t, 6364136223846793005U, 1442695040888963407U,

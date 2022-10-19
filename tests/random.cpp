@@ -1,6 +1,9 @@
+#define KBLIB_DEBUG_SEED_SEQ 1
+
 #include "kblib/random.h"
 #include "catch.hpp"
 
+#include <iostream>
 #include <sstream>
 
 template <std::size_t>
@@ -20,13 +23,10 @@ TEST_CASE("Random engine seeding") {
 		std::clog << '\n';
 		static_assert(kblib::state_size_v<std::minstd_rand> == 1, ".");
 		static_assert(kblib::state_size_v<std::minstd_rand0> == 1, ".");
-		using java_rand
-		    = std::linear_congruential_engine<std::uint_fast64_t, 0x5DEECE66D, 11,
-		                                      1ull << 48u>;
 		std::clog << "LCG(64): ";
-		KBLIB_UNUSED auto gen2 = kblib::seeded<java_rand>();
+		KBLIB_UNUSED auto gen2 = kblib::seeded<kblib::lcgs::java_rand>();
 		std::clog << '\n';
-		static_assert(kblib::state_size_v<java_rand> == 2, ".");
+		static_assert(kblib::state_size_v<kblib::lcgs::java_rand> == 2, ".");
 	}
 	SECTION("Subtract with Carry Engine") {
 		std::clog << "SwCE 24: ";
