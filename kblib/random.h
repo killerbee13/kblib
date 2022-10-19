@@ -60,10 +60,12 @@ namespace kblib {
  * @todo Refactor to remove the ugly unreachable stuff.
  */
 template <typename Array, typename RandomGenerator, typename freqtype = double>
-KBLIB_NODISCARD [[deprecated("Use std::discrete_distribution instead")]] auto
-chooseCategorical(Array&& cats, RandomGenerator& r) -> decltype(cats.size()) {
+KBLIB_NODISCARD
+    [[deprecated("Use std::discrete_distribution instead")]] constexpr auto
+    chooseCategorical(Array&& cats, RandomGenerator& r)
+        -> decltype(cats.size()) {
 	std::uniform_real_distribution<freqtype> uniform(
-	    0.0, std::accumulate(cats.begin(), cats.end(), 0.0));
+	    0.0, kblib::accumulate(cats.begin(), cats.end(), 0.0));
 	freqtype choose = uniform(r);
 	for (decltype(cats.size()) stop = 0; stop != cats.size(); ++stop) {
 		choose -= cats[stop];
@@ -103,7 +105,8 @@ class KBLIB_NODISCARD trivial_seed_seq {
 	template <typename Source>
 	trivial_seed_seq(Source gen, std::size_t count, std::size_t discard)
 	    : data(count + discard, 0x8b8b8b8bu) {
-		kblib::generate_n(data.begin() + discard, count, std::ref(gen));
+		kblib::generate_n(data.begin() + kblib::to_signed(discard), count,
+		                  std::ref(gen));
 	}
 
 	template <typename RandomAccessIt>
@@ -213,27 +216,29 @@ class KBLIB_NODISCARD transform_engine : URBG {
 	using E = URBG;
 	static_assert(std::is_default_constructible<Transform>::value, "");
 
-	KBLIB_NODISCARD auto engine() -> E& { return static_cast<E&>(*this); }
-	KBLIB_NODISCARD auto engine() const -> const E& {
+	KBLIB_NODISCARD constexpr auto engine() -> E& {
+		return static_cast<E&>(*this);
+	}
+	KBLIB_NODISCARD constexpr auto engine() const -> const E& {
 		return static_cast<const E&>(*this);
 	}
 
  public:
 	using result_type = typename Transform::result_type;
 
-	transform_engine() = default;
-	transform_engine(const transform_engine&) noexcept(
+	constexpr transform_engine() = default;
+	constexpr transform_engine(const transform_engine&) noexcept(
 	    std::is_nothrow_copy_constructible<URBG>::value)
 	    = default;
-	transform_engine(transform_engine&&) noexcept(
+	constexpr transform_engine(transform_engine&&) noexcept(
 	    std::is_nothrow_move_constructible<URBG>::value)
 	    = default;
-	transform_engine(result_type s)
+	constexpr transform_engine(result_type s)
 	    : E(s) {}
 	template <typename SSeq,
 	          typename
 	          = enable_if_t<! std::is_same<SSeq, transform_engine>::value>>
-	transform_engine(SSeq& s)
+	constexpr transform_engine(SSeq& s)
 	    : E(s) {}
 
 	KBLIB_NODISCARD auto operator=(const transform_engine&)
@@ -258,22 +263,22 @@ class KBLIB_NODISCARD transform_engine : URBG {
 		return Transform::max(URBG::min(), URBG::max());
 	}
 
-	KBLIB_NODISCARD friend auto operator==(const transform_engine& lhs,
-	                                       const transform_engine& rhs) noexcept
+	KBLIB_NODISCARD friend constexpr auto operator==(
+	    const transform_engine& lhs, const transform_engine& rhs) noexcept
 	    -> bool {
 		return lhs.engine() == rhs.engine();
 	}
-	KBLIB_NODISCARD friend auto operator!=(const transform_engine& lhs,
-	                                       const transform_engine& rhs) noexcept
+	KBLIB_NODISCARD friend constexpr auto operator!=(
+	    const transform_engine& lhs, const transform_engine& rhs) noexcept
 	    -> bool {
 		return ! (lhs == rhs);
 	}
 
-	friend auto operator<<(std::ostream& os, const transform_engine& e)
+	friend constexpr auto operator<<(std::ostream& os, const transform_engine& e)
 	    -> std::ostream& {
 		return os << e.engine();
 	}
-	friend auto operator>>(std::istream& is, transform_engine& e)
+	friend constexpr auto operator>>(std::istream& is, transform_engine& e)
 	    -> std::istream& {
 		return is >> e.engine();
 	}

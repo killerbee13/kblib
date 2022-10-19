@@ -99,13 +99,6 @@ namespace detail_memory {
 
 	template <typename T>
 	struct as_base_class<T, true, true> : T {
-		as_base_class() = default;
-		as_base_class(const T& x) noexcept(
-		    std::is_nothrow_copy_constructible<T>::value)
-		    : T(x) {}
-		as_base_class(T&& x) noexcept(
-		    std::is_nothrow_move_constructible<T>::value)
-		    : T(std::move(x)) {}
 		auto base() noexcept -> T& { return *this; }
 		auto base() const noexcept -> const T& { return *this; }
 	};

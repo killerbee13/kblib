@@ -120,15 +120,15 @@ TEST_CASE("bitfields1") {
 struct Addr {
 	std::uint16_t raw{};
 
-	BITFIELD(0, 5, cX, raw)
-	BITFIELD(5, 5, cY, raw)
-	BITFIELD(10, 2, nt, raw)
-	BITFIELD(12, 3, fY, raw)
+	BITFIELD(0u, 5u, cX, raw)
+	BITFIELD(5u, 5u, cY, raw)
+	BITFIELD(10u, 2u, nt, raw)
+	BITFIELD(12u, 3u, fY, raw)
 
-	BITFIELD(0, 8, l, raw)
-	BITFIELD(8, 7, h, raw)
+	BITFIELD(0u, 8u, l, raw)
+	BITFIELD(8u, 7u, h, raw)
 
-	BITFIELD(0, 14, addr, raw)
+	BITFIELD(0u, 14u, addr, raw)
 };
 
 KBLIB_NODISCARD constexpr auto test_bitfield() -> Addr {

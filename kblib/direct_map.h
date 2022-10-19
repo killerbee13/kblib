@@ -52,7 +52,7 @@ namespace kblib {
 namespace detail_direct_map {
 
 	template <typename T>
-	constexpr auto range_of
+	KBLIB_CONSTANT auto range_of
 	    = (std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed
 	       < std::numeric_limits<std::uintmax_t>::digits)
 	          ? static_cast<std::uintmax_t>(1)

@@ -45,11 +45,13 @@ template <typename C>
 constexpr const char type_name[] = "unknown";
 
 template <>
-KBLIB_UNUSED constexpr const char type_name<char>[] = "char";
+KBLIB_UNUSED static constexpr const char type_name<char>[] = "char";
 template <>
-KBLIB_UNUSED constexpr const char type_name<unsigned char>[] = "unsigned char";
+KBLIB_UNUSED static constexpr const char type_name<unsigned char>[]
+    = "unsigned char";
 template <>
-KBLIB_UNUSED constexpr const char type_name<signed char>[] = "signed char";
+KBLIB_UNUSED static constexpr const char type_name<signed char>[]
+    = "signed char";
 
 template <int depth>
 struct bad_iterator {

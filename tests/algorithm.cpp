@@ -168,7 +168,7 @@ TEST_CASE("search_replace") {
 	}
 	SECTION("search_replace_copy_8(match is whole string)") {
 		const auto haystack = "string"s;
-		const auto needle = haystack;
+		const auto& needle = haystack;
 		const auto replace = "replace"s;
 		std::string result;
 		kblib::search_replace_copy(begin(haystack), end(haystack), begin(needle),

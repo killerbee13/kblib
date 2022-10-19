@@ -26,7 +26,7 @@ TEST_CASE("direct_map") {
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
-	for (auto el : map) {
+	for (const auto& el : map) {
 		REQUIRE(el.first == 'a');
 		REQUIRE(el.second == "42");
 	}
@@ -265,7 +265,7 @@ TEST_CASE("direct_map (heap)") {
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
-	for (auto el : map) {
+	for (const auto& el : map) {
 		REQUIRE(el.first == 'a');
 		REQUIRE(el.second == "42");
 	}

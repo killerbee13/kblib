@@ -488,7 +488,7 @@ namespace detail_bits {
  private:                                                                      \
 	constexpr auto name##_get_impl() const noexcept->decltype(raw) {            \
 		return (raw >> kblib::to_unsigned(offset))                               \
-		       & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);           \
+		       & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u);          \
 	}                                                                           \
                                                                                \
  public:                                                                       \
@@ -500,10 +500,10 @@ namespace detail_bits {
 	constexpr auto name##_set_impl(const decltype(raw) val) noexcept->decltype( \
 	    raw) {                                                                  \
 		/* Clear the bits for this field */                                      \
-		raw &= ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1)            \
+		raw &= ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u)           \
 		         << kblib::to_unsigned(offset));                                 \
 		/* Set the field */                                                      \
-		raw |= (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1))      \
+		raw |= (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u))     \
 		       << kblib::to_unsigned(offset);                                    \
 		return val;                                                              \
 	}                                                                           \
@@ -524,15 +524,15 @@ namespace detail_bits {
 	template <decltype(raw) val, decltype(raw) basis = 0>                       \
 	constexpr static decltype(raw) set_##name##_v                               \
 	    = (basis                                                                \
-	       & ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1)             \
+	       & ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u)            \
 	           << kblib::to_unsigned(offset)))                                  \
-	      | (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1))        \
+	      | (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u))       \
 	            << kblib::to_unsigned(offset);                                  \
                                                                                \
 	template <decltype(raw) basis>                                              \
 	constexpr static decltype(raw) get_##name##_v                               \
 	    = (basis >> kblib::to_unsigned(offset))                                 \
-	      & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1);               \
+	      & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u);              \
 	constexpr static std::size_t name##_shift_v = offset;                       \
 	constexpr static std::size_t name##_width_v = size;
 

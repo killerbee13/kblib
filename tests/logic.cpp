@@ -16,24 +16,23 @@ struct tag {};
 
 template <std::size_t COL, typename T, std::size_t rows, std::size_t cols,
           std::size_t... row>
-constexpr std::array<T, rows> get_col(
-    const std::array<std::array<T, cols>, rows>& in,
-    std::index_sequence<row...>) {
+constexpr auto get_col(const std::array<std::array<T, cols>, rows>& in,
+                       std::index_sequence<row...>) -> std::array<T, rows> {
 	static_assert(rows == sizeof...(row), "");
 	return {std::get<COL>(std::get<row>(in))...};
 }
 
 template <typename T, std::size_t rows, std::size_t cols, std::size_t... row,
           std::size_t... col>
-constexpr std::array<std::array<T, rows>, cols> transpose_arr_impl(
+constexpr auto transpose_arr_impl(
     const std::array<std::array<T, cols>, rows>& in,
-    std::index_sequence<col...>) {
+    std::index_sequence<col...>) -> std::array<std::array<T, rows>, cols> {
 	return {get_col<col>(in, std::make_index_sequence<rows>{})...};
 }
 
 template <typename T, std::size_t rows, std::size_t cols>
-constexpr std::array<std::array<T, rows>, cols> transpose_arr(
-    std::array<std::array<T, cols>, rows> in) {
+constexpr auto transpose_arr(std::array<std::array<T, cols>, rows> in)
+    -> std::array<std::array<T, rows>, cols> {
 	return transpose_arr_impl(in, std::make_index_sequence<cols>{});
 	// C++17 version
 	/*
