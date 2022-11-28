@@ -36,7 +36,7 @@ data:
 
   - name: '{std:transform_@reduce}'
     id: 'std:transform_reduce'
-    Inp: '1 or 2{^&darr;I,&par;F|FN:raccess}'
+    Inp: '1{^&darr;I,&par;F|FN:raccess} / 2{^&darr;I,&par;F|FN:raccess}'
     Acc: 'Arg'
     Ret: 'Value'
     Ops: 'acR, uT / bT'
