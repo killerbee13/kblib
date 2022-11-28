@@ -752,7 +752,7 @@ KBLIB_NODISCARD constexpr auto starts_with(InputIt1 begin1, EndIt1 end1,
 }
 
 /**
- * @brief Checks if a given range ends with a particular subrange.
+ * @brief Checks if a given range starts with a particular subrange.
  */
 template <typename RandomAccessIt1, typename RandomAccessIt2,
           typename BinaryPred = std::equal_to<>>

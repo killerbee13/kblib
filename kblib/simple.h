@@ -76,8 +76,10 @@ struct KBLIB_NODISCARD RAII_wrapper {
 	T t;
 	~RAII_wrapper() noexcept(noexcept(t())) { t(); }
 
-	RAII_wrapper(T&& t_) : t(std::move(t_)) {}
-	RAII_wrapper(const T& t_) : t(t_) {}
+	RAII_wrapper(T&& t_)
+	    : t(std::move(t_)) {}
+	RAII_wrapper(const T& t_)
+	    : t(t_) {}
 	RAII_wrapper(const RAII_wrapper&) = delete;
 	RAII_wrapper(RAII_wrapper&&) = delete;
 	RAII_wrapper& operator=(const RAII_wrapper&) = delete;
@@ -215,7 +217,9 @@ auto safe_auto(T& in) -> T& {
  */
 template <typename LeftContainer, typename RightContainer>
 auto arraycat(LeftContainer A, RightContainer&& B) noexcept(
-    noexcept(A.insert(A.end(), B.begin(), B.end()))) -> LeftContainer {
+    noexcept(A.insert(A.end(), B.begin(), B.end()))
+    and std::is_nothrow_move_constructible<LeftContainer>::value)
+    -> LeftContainer {
 	A.insert(A.end(), B.begin(), B.end());
 	return std::move(A);
 }
