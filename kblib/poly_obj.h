@@ -297,7 +297,7 @@ struct clone_copy {
 
 	/// Invokes the clone method to copy the object
 	KBLIB_NODISCARD auto copy(void* dest, const Obj* from) -> Obj* {
-		return from->*clone(dest);
+		return (from->*clone)(dest);
 	}
 };
 /// Implements type erasure for move construction.
@@ -356,6 +356,9 @@ struct default_destroy {
 	static_assert(std::has_virtual_destructor<Obj>::value,
 	              "Obj must have a virtual destructor");
 };
+
+// TODO(killerbee13): Distinguish between pointers to T and to
+// most-derived-object
 
 /**
  * @brief poly_obj_traits is a traits class template which abstracts the allowed

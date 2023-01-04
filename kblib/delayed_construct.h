@@ -68,7 +68,7 @@ class delayed_construct : protected std::optional<T> {
 
 	using Base::emplace;
 
-	// TODO(killerbee): add C++20 operator<=> support to delayed_construct
+	// TODO(killerbee13): add C++20 operator<=> support to delayed_construct
 
 #	if 0 && KBLIB_USE_CXX20
 

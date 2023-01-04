@@ -1456,6 +1456,7 @@ constexpr auto replace_copy_n_if(InputIt first, Size count, OutputIt out,
 	return out;
 }
 
+// TODO(killerbee13): Debug and test search_replace_copy
 template <typename ForwardIt1, typename ForwardIt2, typename ForwardIt3,
           typename OutputIt, typename BinaryPredicate = std::equal_to<>>
 constexpr auto search_replace_copy(ForwardIt1 h_begin, ForwardIt1 h_end,
@@ -1479,6 +1480,19 @@ constexpr auto search_replace_copy(ForwardIt1 h_begin, ForwardIt1 h_end,
 		}
 		return d_begin;
 	}
+}
+
+template <typename Haystack, typename Needle, typename Replacement,
+          typename OutputIt, typename BinaryPredicate = std::equal_to<>>
+constexpr auto search_replace_copy(Haystack&& haystack, Needle&& needle,
+                                   Replacement&& replacement, OutputIt d_begin,
+                                   BinaryPredicate compare = {}) {
+	using std::begin, std::end;
+	return search_replace_copy(begin(haystack), end(haystack),       //
+	                           begin(needle), end(needle),           //
+	                           begin(replacement), end(replacement), //
+	                           d_begin,                              //
+	                           compare);
 }
 
 /**

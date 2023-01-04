@@ -40,6 +40,7 @@
 #include <initializer_list>
 #include <limits>
 #include <numeric>
+#include <utility>
 
 #define KBLIB_DEBUG_LOG_RANGES 0
 #if KBLIB_DEBUG_LOG_RANGES
@@ -47,6 +48,23 @@
 #endif
 
 namespace kblib {
+
+namespace detail_simple {
+	template <typename T>
+	struct simple_range {
+		const T& low;
+		const T& high;
+	};
+} // namespace detail_simple
+
+template <typename T>
+constexpr auto in_range(const T& v, detail_simple::simple_range<T> r) {
+	return (r.low <= v) and (v < r.high);
+}
+template <typename T>
+constexpr auto in_range_i(const T& v, detail_simple::simple_range<T> r) {
+	return (r.low <= v) and (v <= r.high);
+}
 
 #if KBLIB_USE_CXX17
 

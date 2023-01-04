@@ -1468,7 +1468,7 @@ KBLIB_NODISCARD auto zip(Range1&& r1, Range2&& r2) noexcept(
 	return {begin(r1), end(r1), begin(r2)};
 }
 
-/// TODO(killerbee): Implement adjacent_iterator
+/// TODO(killerbee13): Implement adjacent_iterator
 template <typename ForwardIt, typename EndIt>
 class adjacent_iterator {
  public:
