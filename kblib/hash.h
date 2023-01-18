@@ -733,13 +733,14 @@ struct FNV_hash<void, HashInt, void> {
 };
 
 template <typename Key, typename Value>
-using hash_map = std::unordered_map<Key, Value, FNV_hash<Key>>;
+using hash_map = std::unordered_map<Key, Value, FNV_hash<>, std::equal_to<>>;
 template <typename Key, typename Value>
-using hash_multimap = std::unordered_multimap<Key, Value, FNV_hash<Key>>;
+using hash_multimap
+    = std::unordered_multimap<Key, Value, FNV_hash<>, std::equal_to<>>;
 template <typename T, typename HashInt>
-using hash_set = std::unordered_set<T, FNV_hash<T>>;
+using hash_set = std::unordered_set<T, FNV_hash<>, std::equal_to<>>;
 template <typename T, typename HashInt>
-using hash_multiset = std::unordered_set<T, FNV_hash<T>>;
+using hash_multiset = std::unordered_set<T, FNV_hash<>, std::equal_to<>>;
 
 } // namespace kblib
 

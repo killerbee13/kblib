@@ -36,8 +36,8 @@ TEST_CASE("FNV_hash") {
 	(void)kblib::FNV_hash<std::set<int>::iterator>{}({});
 
 	std::unordered_map<std::tuple<std::wstring, int*>,
-	                   std::vector<std::basic_string<bool>>,
-	                   kblib::FNV_hash<std::tuple<std::wstring, int*>>>
+	                   std::vector<std::basic_string<bool>>, kblib::FNV_hash<>,
+	                   std::equal_to<>>
 	    test_map;
 	using map_t = kblib::hash_map<std::tuple<std::wstring, int*>,
 	                              std::vector<std::basic_string<bool>>>;

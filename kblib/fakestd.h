@@ -654,7 +654,7 @@ namespace detail {
 
 } // namespace detail
 
-KBLIB_UNUSED KBLIB_CONSTANT struct {
+KBLIB_UNUSED struct {
 	/**
 	 * @brief Swaps two objects, using move operations.
 	 *
@@ -712,7 +712,7 @@ KBLIB_UNUSED KBLIB_CONSTANT struct {
 	    detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{}))) -> void {
 		detail::swap_tuple_impl(a, b, std::make_index_sequence<N>{});
 	}
-} swap;
+} KBLIB_CONSTANT swap;
 
 template <typename T, typename U = T>
 KBLIB_NODISCARD constexpr auto exchange(T& obj, U&& new_value) -> T {
