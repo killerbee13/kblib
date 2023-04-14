@@ -445,7 +445,7 @@ KBLIB_CONSTANT auto eof = std::char_traits<CharT>::eof();
 
 template <typename T, T V>
 struct type_constant {
-	operator T() const noexcept { return V; }
+	constexpr operator T() const noexcept { return V; }
 	static constexpr T value = V;
 };
 

@@ -32,7 +32,8 @@ SOURCES += \
     tests/hash.cpp \
     tests/sort.cpp \
     tests/random.cpp \
-    tests/poly_obj.cpp
+    tests/poly_obj.cpp \
+    tests/visitation_benchmarks.cpp
 
 HEADERS += \
     kblib/bits.h \
