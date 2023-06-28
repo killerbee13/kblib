@@ -35,6 +35,7 @@
 #include "enumerate-contrib-cry.h"
 #include "enumerate-contrib-tw.h"
 #include "fakestd.h"
+#include "traits.h"
 
 #include <cassert>
 #include <iterator>
@@ -1559,6 +1560,12 @@ class consume_iterator {
 	explicit consume_iterator(F f)
 	    : fun(std::move(f)) {}
 
+	consume_iterator(const consume_iterator&) = default;
+	consume_iterator(consume_iterator&&) = default;
+	auto operator=(const consume_iterator&) & -> consume_iterator& = default;
+	auto operator=(consume_iterator&&) & -> consume_iterator& = default;
+	~consume_iterator() = default;
+
 	/**
 	 * @brief Pass value to F.
 	 *
@@ -1566,8 +1573,10 @@ class consume_iterator {
 	 * @return consume_iterator& *this.
 	 */
 	template <typename V>
-	auto operator=(V&& value) noexcept(noexcept(
-	    kblib::invoke(fun, std::forward<V>(value)))) -> consume_iterator& {
+	auto operator=(V&& value) noexcept(
+	    noexcept(kblib::invoke(fun, std::forward<V>(value))))
+	    -> kblib::ignore_t<decltype(kblib::invoke(fun, std::forward<V>(value))),
+	                       consume_iterator&> {
 		kblib::invoke(fun, std::forward<V>(value));
 		return *this;
 	}

@@ -290,6 +290,24 @@ inline namespace literals {
 
 } // namespace literals
 
+#if KBLIB_USE_CXX17
+/**
+ * @brief Get the number of padding bits in an integral type.
+ *
+ */
+
+template <typename T>
+constexpr int padding_bits_v
+    = CHAR_BIT * sizeof(T) - std::numeric_limits<T>::digits
+      - std::numeric_limits<T>::is_signed;
+
+template <>
+inline constexpr int padding_bits_v<void> = 0;
+
+template <typename T>
+struct padding_bits : std::integral_constant<int, padding_bits_v<T>> {};
+#else
+
 /**
  * @brief Get the number of padding bits in an integral type.
  *
@@ -299,9 +317,13 @@ struct padding_bits
     : std::integral_constant<int, CHAR_BIT * sizeof(T)
                                       - std::numeric_limits<T>::digits
                                       - std::numeric_limits<T>::is_signed> {};
+template <>
+struct padding_bits<void> : std::integral_constant<int, 0> {};
 
 template <typename T>
 constexpr int padding_bits_v = padding_bits<T>::value;
+
+#endif
 
 /**
  * @brief The primary template has to exist, but not be constructible, in order

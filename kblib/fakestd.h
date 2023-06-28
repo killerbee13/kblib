@@ -81,20 +81,21 @@ constexpr auto invoke(F&& f, Args&&... args) noexcept(noexcept(std::apply(
 
 namespace detail {
 
-	template <
-	    typename F, typename... Args,
-	    enable_if_t<not std::is_member_pointer<decay_t<F>>::value, int> = 0>
+	template <typename F, typename... Args,
+	          enable_if_t<not std::is_member_pointer<remove_cvref_t<F>>::value,
+	                      int> = 0>
 	constexpr auto do_invoke(F&& f, Args&&... args) noexcept(noexcept(
 	    std::forward<F>(f)(std::forward<Args>(args)...))) -> decltype(auto) {
 		return std::forward<F>(f)(std::forward<Args>(args)...);
 	}
 
 	template <typename F, typename Object, typename... Args,
-	          enable_if_t<not std::is_pointer<decay_t<Object>>::value
+	          enable_if_t<not std::is_pointer<remove_cvref_t<Object>>::value
 	                          and std::is_member_function_pointer<F>::value,
 	                      int> = 0>
 	constexpr auto do_invoke(F f, Object&& obj, Args&&... args) noexcept(
-	    noexcept((obj.*f)(std::forward<Args>(args)...))) -> decltype(auto) {
+	    noexcept((std::forward<Object>(obj).*f)(std::forward<Args>(args)...)))
+	    -> decltype(auto) {
 		return (obj.*f)(std::forward<Args>(args)...);
 	}
 
@@ -108,7 +109,7 @@ namespace detail {
 	}
 
 	template <typename Member, typename Object,
-	          enable_if_t<not std::is_pointer<decay_t<Object>>::value
+	          enable_if_t<not std::is_pointer<remove_cvref_t<Object>>::value
 	                          and std::is_member_object_pointer<Member>::value,
 	                      int> = 0>
 	constexpr auto do_invoke(Member mem, Object&& obj) noexcept

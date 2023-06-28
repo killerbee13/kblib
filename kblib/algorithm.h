@@ -1487,7 +1487,8 @@ template <typename Haystack, typename Needle, typename Replacement,
 constexpr auto search_replace_copy(Haystack&& haystack, Needle&& needle,
                                    Replacement&& replacement, OutputIt d_begin,
                                    BinaryPredicate compare = {}) {
-	using std::begin, std::end;
+	using std::begin;
+	using std::end;
 	return search_replace_copy(begin(haystack), end(haystack),       //
 	                           begin(needle), end(needle),           //
 	                           begin(replacement), end(replacement), //

@@ -1,7 +1,10 @@
 #include "kblib/trie.h"
-#include "catch.hpp"
 
-#include <string>
+#if KBLIB_USE_CXX17
+
+#	include "catch.hpp"
+
+#	include <string>
 
 TEST_CASE("trie") {
 	KBLIB_UNUSED auto test = kblib::trie<std::string, int>{};
@@ -18,3 +21,5 @@ TEST_CASE("trie") {
 	KBLIB_UNUSED auto test2 = kblib::trie<char, int>{};
 	KBLIB_UNUSED auto test3 = kblib::trie<char[], int>{};
 }
+
+#endif

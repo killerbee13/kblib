@@ -188,8 +188,9 @@ struct state_size<std::shuffle_order_engine<Engine, K>> : state_size<Engine> {};
 template <typename T>
 constexpr std::size_t state_size_v = state_size<T>::value;
 
-static_assert(state_size_v<std::mt19937> == std::mt19937::state_size);
-static_assert(state_size_v<std::mt19937_64> == std::mt19937_64::state_size * 2);
+static_assert(state_size_v<std::mt19937> == std::mt19937::state_size, "");
+static_assert(state_size_v<std::mt19937_64> == std::mt19937_64::state_size * 2,
+              "");
 
 template <typename T, typename = void>
 constexpr std::size_t seed_discard_v = 0;

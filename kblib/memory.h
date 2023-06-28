@@ -101,6 +101,16 @@ namespace detail_memory {
 	struct as_base_class<T, true, true> : T {
 		auto base() noexcept -> T& { return *this; }
 		auto base() const noexcept -> const T& { return *this; }
+		using T::T;
+		as_base_class(const T& t,
+		              enable_if_t<std::is_copy_constructible<T>::value,
+		                          as_base_class*> = nullptr) //
+		    noexcept(std::is_nothrow_copy_constructible<T>::value)
+		    : T(t) {}
+		as_base_class(T&& t, enable_if_t<std::is_move_constructible<T>::value,
+		                                 as_base_class*> = nullptr) //
+		    noexcept(std::is_nothrow_move_constructible<T>::value)
+		    : T(std::move(t)) {}
 	};
 
 #if KBLIB_USE_CXX17

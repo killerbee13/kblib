@@ -31,13 +31,16 @@
 #ifndef TRIE_H
 #define TRIE_H
 
-#include "sort.h"
 #include "tdecl.h"
-#include "traits.h"
 
-#include <array>
-#include <bitset>
-#include <vector>
+#if KBLIB_USE_CXX17
+
+#	include "sort.h"
+#	include "traits.h"
+
+#	include <array>
+#	include <bitset>
+#	include <vector>
 
 namespace kblib {
 
@@ -271,5 +274,7 @@ template <typename Key, typename Value,
 class sparse_trie_map {};
 
 } // namespace kblib
+
+#endif // KBLIB_USE_CXX17
 
 #endif // TRIE_H
