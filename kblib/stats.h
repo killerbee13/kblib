@@ -192,7 +192,9 @@ inline namespace nums {
 	 * Also serves as a max(a, b) function object.
 	 */
 	constexpr struct max_t {
-		template <typename T>
+		template <typename T,
+		          std::enable_if_t<std::numeric_limits<T>::is_specialized,
+		                           void>* = nullptr>
 		constexpr /* implicit*/ operator T() const
 		    noexcept(noexcept(std::numeric_limits<T>::max())) {
 			return std::numeric_limits<T>::max();
@@ -302,7 +304,8 @@ inline namespace nums {
 	 * Also serves as a min(a, b) function object.
 	 */
 	constexpr struct min_t {
-		template <typename T>
+		template <typename T, enable_if_t<std::numeric_limits<T>::is_specialized,
+		                                  void>* = nullptr>
 		constexpr /* implicit*/ operator T() const
 		    noexcept(noexcept(std::numeric_limits<T>::min())) {
 			return std::numeric_limits<T>::min();
