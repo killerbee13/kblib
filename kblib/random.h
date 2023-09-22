@@ -256,7 +256,7 @@ class KBLIB_NODISCARD transform_engine : URBG {
 		return Transform{}(engine()());
 	}
 
-	using E::seed;
+	// using E::seed;
 
 	using E::discard;
 
@@ -325,6 +325,7 @@ KBLIB_NODISCARD constexpr auto ipow2(UIntType b) noexcept -> UIntType {
 }
 
 inline namespace lcgs {
+	// shortcut alias for common case of m = 2^b
 	template <typename UIntType, UIntType a, UIntType c, UIntType b>
 	using lcg_p2 = std::linear_congruential_engine<UIntType, a, c, ipow2(b)>;
 
@@ -332,9 +333,14 @@ inline namespace lcgs {
 		using rand48
 		    = transform_engine<lcg_p2<std::uint_fast64_t, 25214903917u, 11u, 48u>,
 		                       shift_mask<std::uint_fast32_t, 16u>>;
-		using java_rand
-		    = std::linear_congruential_engine<std::uint_fast64_t, 0x5DEECE66D, 11,
-		                                      1ull << 48u>;
+		using java_rand = rand48;
+
+		using glibc_rand0
+		    = transform_engine<lcg_p2<std::uint_fast32_t, 1103515245, 12345, 31u>,
+		                       shift_mask<std::uint_fast32_t, 0, ipow2(30) - 1>>;
+		using ansic_rand
+		    = transform_engine<lcg_p2<std::uint_fast32_t, 1103515245, 12345, 31u>,
+		                       shift_mask<std::uint_fast32_t, 16, ipow2(14) - 1>>;
 
 		using knuth_lcg = std::linear_congruential_engine<
 		    uint64_t, 6364136223846793005U, 1442695040888963407U,
@@ -343,6 +349,11 @@ inline namespace lcgs {
 	} // namespace common_lcgs
 
 	inline namespace best_lcgs {
+		// mcg = multiplicative congruential generator
+		// note that for an mcg to work effectively, the seed must be coprime to m
+		// in this case, that means seeds must be odd
+
+		// lcgs do not have this restriction.
 
 		using lcg32 = lcg_p2<std::uint_fast32_t, 0xa13fc965u, 1u, 32u>;
 		using mcg32 = lcg_p2<std::uint_fast32_t, 0x93d765ddu, 0u, 32u>;
