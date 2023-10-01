@@ -1124,8 +1124,7 @@ class heap_value {
 	          enable_if_t<std::is_constructible<T, Args...>::value> = 0>
 	heap_value(fakestd::in_place_t, Args&&... args)
 	    : p{new T(args...)} {}
-	template <typename... Args,
-	          enable_if_t<std::is_constructible<T, Args...>::value> = 0>
+	template <typename... Args>
 	heap_value(in_place_agg_t, Args&&... args)
 	    : p{new T{args...}} {}
 
@@ -1171,7 +1170,8 @@ class heap_value {
 	auto assign() & -> void { p.reset(new T()); }
 	auto assign(const T& val) & -> void { p.reset(new T(val)); }
 	auto assign(T&& val) & -> void { p.reset(new T(std::move(val))); }
-	template <typename... Args>
+	template <typename... Args,
+	          enable_if_t<std::is_constructible<T, Args...>::value> = 0>
 	auto assign(fakestd::in_place_t, Args&&... args) -> void {
 		p.reset(new T(std::forward<Args>(args)...));
 	}

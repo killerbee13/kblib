@@ -368,13 +368,12 @@ TEST_CASE("direct_map (heap)") {
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
 	REQUIRE(std::distance(map.begin(), map.end()) == 3);
 	{
-		REQUIRE_FALSE(+"allocating direct_map not copyable");
-		/*auto map2 = map;
+		auto map2 = map;
 		REQUIRE(map == map2);
 		auto map3 = std::move(map);
 		REQUIRE(map2 == map3);
 		map2.swap(map);
-		REQUIRE(map == map3);*/
+		REQUIRE(map == map3);
 	}
 }
 
@@ -468,12 +467,11 @@ TEST_CASE("direct_map<trivial> (heap)") {
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
 	REQUIRE(std::distance(map.begin(), map.end()) == 3);
 	{
-		REQUIRE_FALSE(+"allocating direct_map not copyable");
-		/*auto map2 = map;
+		auto map2 = map;
 		REQUIRE(map == map2);
 		auto map3 = std::move(map);
 		REQUIRE(map2 == map3);
 		map2.swap(map);
-		REQUIRE(map == map3);*/
+		REQUIRE(map == map3);
 	}
 }

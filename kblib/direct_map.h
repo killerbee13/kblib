@@ -149,6 +149,16 @@ class direct_map {
 		copy_const_t<V, held_type>* storage;
 		std::ptrdiff_t pos;
 
+		constexpr iter(decltype(storage) s, std::ptrdiff_t p)
+		    : storage(s)
+		    , pos(p) {
+			if (not storage) {
+				pos = max();
+			}
+		}
+		constexpr iter()
+		    : iter(nullptr, max()) {}
+
 		using value_type = typename direct_map::value_type;
 		using difference_type = typename direct_map::difference_type;
 		using reference = copy_const_t<V, value_type>&;
@@ -236,18 +246,25 @@ class direct_map {
 
 	template <typename InputIt>
 	constexpr direct_map(InputIt first, InputIt last)
-	    : storage(in_place_agg) {
-		for (auto v : indirect(first, last)) {
-			construct(v.first, v.second);
+	    : storage() {
+		if (first != last) {
+			allocate();
+			for (auto v : indirect(first, last)) {
+				construct(v.first, v.second);
+			}
 		}
 	}
 	// TODO(killerbee13): copy construction for allocating direct_map
 	constexpr direct_map(const direct_map& other)
-	    : storage(in_place_agg, other.storage->first)
+	    : storage()
 	    , _size(other._size) {
-		for (auto k : range(+min(), max() + 1)) {
-			if (contains(k)) { // the bitmap is already copied from other
-				do_construct(k, other.at(k));
+		if (not other.empty()) {
+			allocate();
+			storage->first = other.storage->first;
+			for (auto k : range(+min(), max() + 1)) {
+				if (contains(k)) { // the bitmap is already copied from other
+					do_construct(k, other.at(k));
+				}
 			}
 		}
 	}
@@ -388,6 +405,9 @@ class direct_map {
 	}
 
 	constexpr auto clear() noexcept -> void {
+		if (_size == 0) {
+			return;
+		}
 		for (auto i : range(+min(), max() + 1)) {
 			auto j = static_cast<Key>(i);
 			if (contains(j)) {
@@ -705,6 +725,16 @@ class direct_map<Key, T, void> {
 	 public:
 		copy_const_t<V, direct_map>* map;
 		std::ptrdiff_t pos;
+
+		constexpr iter(decltype(map) s, std::ptrdiff_t p)
+		    : map(s)
+		    , pos(p) {
+			if (not map) {
+				pos = max();
+			}
+		}
+		constexpr iter()
+		    : iter(nullptr, max()) {}
 
 		using value_type = typename direct_map::value_type;
 		using difference_type = typename direct_map::difference_type;
