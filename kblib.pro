@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console c++17 testcase
+CONFIG += console testcase
 CONFIG -= app_bundle
 CONFIG -= qt
 
@@ -88,6 +88,8 @@ QMAKE_CXXFLAGS += -Wall -Wextra -Wpedantic -Wshadow
 QMAKE_CXXFLAGS += -Wno-missing-braces
 INCLUDEPATH += /mnt/Vers1/include
 
+#QMAKE_LFLAGS += -v
+
 #QMAKE_CXXFLAGS += -stdlib=libc++ -fstandalone-debug
 QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations \
  -Wold-style-cast -Wzero-as-null-pointer-constant \
@@ -96,11 +98,11 @@ QMAKE_CXXFLAGS += -Wno-pragmas
 #QMAKE_CXXFLAGS += -Wduplicated-cond -Wlogical-op -Wreturn-std-move -Wpointer-to-int-cast
 #QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib
 
-CONFIG(debug, debug|release)|CONFIG(sanitize) {
-	QMAKE_CXXFLAGS += -fsanitize=address,undefined
-	QMAKE_LFLAGS += -fsanitize=address,undefined
-	DEFINES += "SANITIZERS=\\\"address,undefined\\\""
-}
+#CONFIG(debug, debug|release)|CONFIG(sanitize) {
+#	QMAKE_CXXFLAGS += -fsanitize=address,undefined
+#	QMAKE_LFLAGS += -fsanitize=address,undefined
+#	DEFINES += "SANITIZERS=\\\"address,undefined\\\""
+#}
 
 CONFIG(build_trace) {
 	QMAKE_CXXFLAGS += -ftime-trace
@@ -114,5 +116,6 @@ medfile.commands = rm $$medfile.target; \
     ln -s /mnt/Vers1/assets/medfile $$medfile.target
 
 QMAKE_EXTRA_TARGETS += medfile
+QMAKE_DISTCLEAN += medfile
 
 PRE_TARGETDEPS += medfile

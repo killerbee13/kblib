@@ -26,7 +26,7 @@
 #define ENUMERATECONTRIB_H
 #include "tdecl.h"
 
-#include <memory>
+#include <iterator>
 #include <type_traits>
 
 #if KBLIB_USE_CXX17

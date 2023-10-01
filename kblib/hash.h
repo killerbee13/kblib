@@ -746,9 +746,9 @@ struct FNV_hash<void, HashInt, void> {
 	KBLIB_CONSTANT_MV is_transparent = true;
 
 	template <typename T>
-	KBLIB_NODISCARD constexpr auto operator()(const T& key,
-	                                          HashInt offset
-	                                          = fnv::fnv_offset<HashInt>::value)
+	KBLIB_NODISCARD constexpr auto operator()(
+	    const T& key,
+	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> enable_if_t<is_hashable_v<T>, HashInt> {
 		return FNV_hash<T>{}(key, offset);
 	}
