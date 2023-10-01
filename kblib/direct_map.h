@@ -156,26 +156,26 @@ class direct_map {
 		using iterator_category = std::bidirectional_iterator_tag;
 
 		KBLIB_NODISCARD constexpr auto operator*() const noexcept -> reference {
-			return *storage->second[kblib::to_unsigned(pos)].get();
+			return *storage->second[uindex(pos)].get();
 		}
 		KBLIB_NODISCARD constexpr auto operator->() const noexcept -> pointer {
-			return storage->second[kblib::to_unsigned(pos)].get();
+			return storage->second[uindex(pos)].get();
 		}
 
 		constexpr auto operator++() noexcept -> iter& {
-			if (pos == key_range) {
+			if (pos == max()) {
 				// not required in general, but direct_map::iterator guarantees that
 				// ++end() == end() because it simplifies the implementation and is
 				// unlikely to be a significant performance impact
 				return *this;
 			}
-			for (auto i : range(++pos, key_range)) {
-				if (storage->first.test(kblib::to_unsigned(i))) {
+			for (auto i : range(++pos, index(max()))) {
+				if (storage->first.test(uindex(i))) {
 					pos = i;
 					return *this;
 				}
 			}
-			pos = key_range;
+			pos = max();
 			return *this;
 		}
 		constexpr auto operator++(int) noexcept -> iter {
@@ -185,8 +185,8 @@ class direct_map {
 		}
 
 		constexpr auto operator--() noexcept -> iter& {
-			for (auto i : range(pos - 1, std::ptrdiff_t(-1))) {
-				if (storage->first.test(kblib::to_unsigned(i))) {
+			for (auto i : range(pos - 1, index(min()), -1)) {
+				if (storage->first.test(uindex(i))) {
 					pos = i;
 					return *this;
 				}
@@ -248,7 +248,6 @@ class direct_map {
 		for (auto k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				do_construct(k, other.at(k));
-				++_size;
 			}
 		}
 	}
@@ -271,10 +270,10 @@ class direct_map {
 		}
 		clear();
 		storage.assign(in_place_agg, other.storage->first);
+		_size = other._size;
 		for (auto k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
 				do_construct(k, other.at(k));
-				++_size;
 				bitmap().set(index(k));
 			}
 		}
@@ -333,24 +332,24 @@ class direct_map {
 	}
 	KBLIB_NODISCARD constexpr auto cbegin() const& noexcept -> const_iterator {
 		if (not empty()) {
-			if (contains(to_key(0))) {
-				return {storage.get(), 0};
+			if (contains(to_key(min()))) {
+				return {storage.get(), min()};
 			} else {
-				return ++const_iterator{storage.get(), 0};
+				return ++const_iterator{storage.get(), min()};
 			}
 		} else {
-			return {storage.get(), key_range};
+			return end();
 		}
 	}
 
 	KBLIB_NODISCARD constexpr auto end() & noexcept -> iterator {
-		return {storage.get(), key_range};
+		return {storage.get(), max()};
 	}
 	KBLIB_NODISCARD constexpr auto end() const& noexcept -> const_iterator {
-		return {storage.get(), key_range};
+		return {storage.get(), max()};
 	}
 	KBLIB_NODISCARD constexpr auto cend() const& noexcept -> const_iterator {
-		return {storage.get(), key_range};
+		return {storage.get(), max()};
 	}
 
 	KBLIB_NODISCARD constexpr auto rbegin() & noexcept -> auto {
@@ -450,12 +449,14 @@ class direct_map {
 	}
 
 	constexpr auto erase(iterator pos) noexcept -> iterator {
+		assert(contains(to_key(pos.pos)));
 		bitmap().reset(pos.pos);
 		unsafe_at(to_key(pos.pos)).destroy();
 		--_size;
 		return ++pos;
 	}
 	constexpr auto erase(const_iterator pos) noexcept -> iterator {
+		assert(contains(to_key(pos.pos)));
 		bitmap().reset(pos.pos);
 		unsafe_at(to_key(pos.pos)).destroy();
 		--_size;
@@ -498,13 +499,11 @@ class direct_map {
 	}
 
 	KBLIB_NODISCARD constexpr auto find(Key key) & noexcept -> iterator {
-		return contains(key) ? iterator{storage.get(), index(key)}
-		                     : iterator{storage.get(), key_range};
+		return contains(key) ? iterator{storage.get(), index(key)} : end();
 	}
 	KBLIB_NODISCARD constexpr auto find(Key key) const& noexcept
 	    -> const_iterator {
-		return contains(key) ? iterator{storage.get(), index(key)}
-		                     : iterator{storage.get(), key_range};
+		return contains(key) ? iterator{storage.get(), index(key)} : end();
 	}
 
 	KBLIB_NODISCARD constexpr auto equal_range(Key key) & noexcept
@@ -615,7 +614,7 @@ class direct_map {
 
 	KBLIB_NODISCARD constexpr static auto index(Key key) noexcept
 	    -> std::ptrdiff_t {
-		return to_unsigned(key);
+		return to_signed(key);
 	}
 	KBLIB_NODISCARD constexpr static auto uindex(Key key) noexcept
 	    -> std::size_t {
@@ -714,26 +713,26 @@ class direct_map<Key, T, void> {
 		using iterator_category = std::bidirectional_iterator_tag;
 
 		KBLIB_NODISCARD constexpr auto operator*() const -> reference {
-			return *map->elems[kblib::to_unsigned(pos)].get();
+			return *map->elems[uindex(pos)].get();
 		}
 		KBLIB_NODISCARD constexpr auto operator->() const -> pointer {
-			return map->elems[kblib::to_unsigned(pos)].get();
+			return map->elems[uindex(pos)].get();
 		}
 
 		constexpr auto operator++() -> iter& {
-			if (pos == key_range) {
+			if (pos == max()) {
 				// not required in general, but direct_map::iterator guarantees that
 				// ++end() == end() because it simplifies the implementation and is
 				// unlikely to be a significant performance impact
 				return *this;
 			}
-			for (auto i : range(++pos, key_range)) {
-				if (map->active_elems.test(kblib::to_unsigned(i))) {
+			for (auto i : range(++pos, index(max()))) {
+				if (map->active_elems.test(uindex(i))) {
 					pos = i;
 					return *this;
 				}
 			}
-			pos = key_range;
+			pos = max();
 			return *this;
 		}
 		constexpr auto operator++(int) -> iter {
@@ -743,8 +742,8 @@ class direct_map<Key, T, void> {
 		}
 
 		constexpr auto operator--() -> iter& {
-			for (auto i : range(pos - 1, std::ptrdiff_t(-1))) {
-				if (map->active_elems.test(kblib::to_unsigned(i))) {
+			for (auto i : range(pos - 1, index(min()), -1)) {
+				if (map->active_elems.test(uindex(i))) {
 					pos = i;
 					return *this;
 				}
@@ -806,8 +805,7 @@ class direct_map<Key, T, void> {
 	    , _size(other._size) {
 		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
-				construct(k, other.unsafe_at(k).get()->second);
-				++_size;
+				do_construct(k, other.unsafe_at(k).get()->second);
 				bitmap().set(uindex(k));
 			}
 		}
@@ -819,8 +817,7 @@ class direct_map<Key, T, void> {
 	    , _size(other._size) {
 		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
-				construct(k, std::move(other.unsafe_at(k).get()->second));
-				++_size;
+				do_construct(k, std::move(other.unsafe_at(k).get()->second));
 				bitmap().set(uindex(k));
 			}
 		}
@@ -839,10 +836,10 @@ class direct_map<Key, T, void> {
 		}
 		clear();
 		active_elems = other.active_elems;
+		_size = other._size;
 		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
-				construct(k, other.unsafe_at(k).get()->second);
-				++_size;
+				do_construct(k, other.unsafe_at(k).get()->second);
 				bitmap().set(uindex(k));
 			}
 		}
@@ -854,10 +851,10 @@ class direct_map<Key, T, void> {
 			return *this;
 		}
 		active_elems = other.active_elems;
+		_size = other._size;
 		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) { // the bitmap is already copied from other
-				construct(k, std::move(other.unsafe_at(k).get()->second));
-				++_size;
+				do_construct(k, std::move(other.unsafe_at(k).get()->second));
 				bitmap().set(uindex(k));
 			}
 		}
@@ -914,24 +911,24 @@ class direct_map<Key, T, void> {
 	}
 	KBLIB_NODISCARD constexpr auto cbegin() const& noexcept -> const_iterator {
 		if (not empty()) {
-			if (contains(to_key(0))) {
-				return {this, 0};
+			if (contains(to_key(min()))) {
+				return {this, min()};
 			} else {
-				return ++const_iterator{this, 0};
+				return ++const_iterator{this, min()};
 			}
 		} else {
-			return {this, key_range};
+			return end();
 		}
 	}
 
 	KBLIB_NODISCARD constexpr auto end() & noexcept -> iterator {
-		return {this, key_range};
+		return {this, max()};
 	}
 	KBLIB_NODISCARD constexpr auto end() const& noexcept -> const_iterator {
-		return {this, key_range};
+		return {this, max()};
 	}
 	KBLIB_NODISCARD constexpr auto cend() const& noexcept -> const_iterator {
-		return {this, key_range};
+		return {this, max()};
 	}
 
 	KBLIB_NODISCARD constexpr auto rbegin() & noexcept -> reverse_iterator {
@@ -1034,10 +1031,12 @@ class direct_map<Key, T, void> {
 	}
 
 	constexpr auto erase(iterator pos) noexcept -> iterator {
+		assert(contains(to_key(pos.pos)));
 		destroy(to_key(pos.pos));
 		return ++pos;
 	}
 	constexpr auto erase(const_iterator pos) noexcept -> iterator {
+		assert(contains(to_key(pos.pos)));
 		destroy(to_key(pos.pos));
 		return ++pos;
 	}
@@ -1093,13 +1092,11 @@ class direct_map<Key, T, void> {
 	}
 
 	KBLIB_NODISCARD constexpr auto find(Key key) & noexcept -> iterator {
-		return contains(key) ? iterator{this, index(key)}
-		                     : iterator{this, key_range};
+		return contains(key) ? iterator{this, index(key)} : end();
 	}
 	KBLIB_NODISCARD constexpr auto find(Key key) const& noexcept
 	    -> const_iterator {
-		return contains(key) ? iterator{this, index(key)}
-		                     : iterator{this, key_range};
+		return contains(key) ? iterator{this, index(key)} : end();
 	}
 
 	KBLIB_NODISCARD constexpr auto equal_range(Key key) & noexcept
@@ -1210,7 +1207,7 @@ class direct_map<Key, T, void> {
 
 	KBLIB_NODISCARD constexpr static auto index(Key key) noexcept
 	    -> std::ptrdiff_t {
-		return to_unsigned(key);
+		return to_signed(key);
 	}
 	KBLIB_NODISCARD constexpr static auto uindex(Key key) noexcept
 	    -> std::size_t {

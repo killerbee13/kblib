@@ -2,6 +2,9 @@
 
 #include <kblib/direct_map.h>
 
+// these tests assume char min != 0
+static_assert(std::is_signed_v<char>);
+
 TEST_CASE("direct_map") {
 	kblib::direct_map<char, std::string> map;
 	REQUIRE(map.begin() == map.end());
@@ -20,9 +23,11 @@ TEST_CASE("direct_map") {
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE_FALSE(b == n);
-		REQUIRE(b->second == "42");
 		REQUIRE(n == e);
+		CHECK(b->first == 'a');
+		CHECK(b->second == "42");
 	}
+	REQUIRE(++map.begin() == map.end());
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
@@ -54,23 +59,39 @@ TEST_CASE("direct_map") {
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
 	map[decltype(map)::min()] = "2";
+	REQUIRE(map.contains('a'));
 	REQUIRE(map.at('a') == "42");
+	REQUIRE(map.contains(map.min()));
 	REQUIRE(map.at(map.min()) == "2");
 	{
 		auto b = map.begin();
 		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
+		REQUIRE(b == f);
 		REQUIRE(f->second == "2");
 		REQUIRE_FALSE(b == n);
 		REQUIRE_FALSE(b == e);
 		REQUIRE_FALSE(n == e);
 	}
+	REQUIRE(map.size() == 3);
 	REQUIRE_FALSE(++map.begin() == map.end());
+	{
+		auto b = map.begin();
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == decltype(map)::min());
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 0);
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 'a');
+		++b;
+		REQUIRE(b == map.end());
+	}
 	REQUIRE(std::next(map.begin(), 3) == map.end());
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
 	REQUIRE(std::distance(map.begin(), map.end()) == 3);
-#if 0
 	{
 		auto map2 = map;
 		REQUIRE(map == map2);
@@ -79,7 +100,6 @@ TEST_CASE("direct_map") {
 		map2.swap(map);
 		REQUIRE(map == map3);
 	}
-#endif
 }
 
 KBLIB_UNUSED static constexpr auto l(kblib::direct_map<char, int>& map,
@@ -179,9 +199,11 @@ TEST_CASE("direct_map<trivial>") {
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE_FALSE(b == n);
-		REQUIRE(b->second == 42);
 		REQUIRE(n == e);
+		CHECK(b->first == 'a');
+		CHECK(b->second == 42);
 	}
+	REQUIRE(++map.begin() == map.end());
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
@@ -213,19 +235,36 @@ TEST_CASE("direct_map<trivial>") {
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
 	map[decltype(map)::min()] = 2;
+	REQUIRE(map.contains('a'));
 	REQUIRE(map.at('a') == 42);
+	REQUIRE(map.contains(map.min()));
 	REQUIRE(map.at(map.min()) == 2);
 	{
 		auto b = map.begin();
 		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
+		REQUIRE(b == f);
 		REQUIRE(f->second == 2);
 		REQUIRE_FALSE(b == n);
 		REQUIRE_FALSE(b == e);
 		REQUIRE_FALSE(n == e);
 	}
+	REQUIRE(map.size() == 3);
 	REQUIRE_FALSE(++map.begin() == map.end());
+	{
+		auto b = map.begin();
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == decltype(map)::min());
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 0);
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 'a');
+		++b;
+		REQUIRE(b == map.end());
+	}
 	REQUIRE(std::next(map.begin(), 3) == map.end());
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
 	REQUIRE(std::distance(map.begin(), map.end()) == 3);
@@ -259,9 +298,11 @@ TEST_CASE("direct_map (heap)") {
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE_FALSE(b == n);
-		REQUIRE(b->second == "42");
 		REQUIRE(n == e);
+		CHECK(b->first == 'a');
+		CHECK(b->second == "42");
 	}
+	REQUIRE(++map.begin() == map.end());
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
@@ -293,19 +334,36 @@ TEST_CASE("direct_map (heap)") {
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
 	map[decltype(map)::min()] = "2";
+	REQUIRE(map.contains('a'));
 	REQUIRE(map.at('a') == "42");
+	REQUIRE(map.contains(map.min()));
 	REQUIRE(map.at(map.min()) == "2");
 	{
 		auto b = map.begin();
 		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
+		REQUIRE(b == f);
 		REQUIRE(f->second == "2");
 		REQUIRE_FALSE(b == n);
 		REQUIRE_FALSE(b == e);
 		REQUIRE_FALSE(n == e);
 	}
+	REQUIRE(map.size() == 3);
 	REQUIRE_FALSE(++map.begin() == map.end());
+	{
+		auto b = map.begin();
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == decltype(map)::min());
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 0);
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 'a');
+		++b;
+		REQUIRE(b == map.end());
+	}
 	REQUIRE(std::next(map.begin(), 3) == map.end());
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
 	REQUIRE(std::distance(map.begin(), map.end()) == 3);
@@ -340,9 +398,11 @@ TEST_CASE("direct_map<trivial> (heap)") {
 		auto e = map.end();
 		auto n = std::next(map.begin());
 		REQUIRE_FALSE(b == n);
-		REQUIRE(b->second == 42);
 		REQUIRE(n == e);
+		CHECK(b->first == 'a');
+		CHECK(b->second == 42);
 	}
+	REQUIRE(++map.begin() == map.end());
 	REQUIRE(map.begin() == --map.end());
 	REQUIRE(map.lower_bound('a') == map.find('a'));
 	REQUIRE(map.upper_bound('a') == map.end());
@@ -374,19 +434,36 @@ TEST_CASE("direct_map<trivial> (heap)") {
 	REQUIRE(map.upper_bound('\t') == map.find('a'));
 
 	map[decltype(map)::min()] = 2;
+	REQUIRE(map.contains('a'));
 	REQUIRE(map.at('a') == 42);
+	REQUIRE(map.contains(map.min()));
 	REQUIRE(map.at(map.min()) == 2);
 	{
 		auto b = map.begin();
 		auto f = map.find(decltype(map)::min());
 		auto e = map.end();
 		auto n = std::next(map.begin());
+		REQUIRE(b == f);
 		REQUIRE(f->second == 2);
 		REQUIRE_FALSE(b == n);
 		REQUIRE_FALSE(b == e);
 		REQUIRE_FALSE(n == e);
 	}
+	REQUIRE(map.size() == 3);
 	REQUIRE_FALSE(++map.begin() == map.end());
+	{
+		auto b = map.begin();
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == decltype(map)::min());
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 0);
+		++b;
+		REQUIRE_FALSE(b == map.end());
+		CHECK(b->first == 'a');
+		++b;
+		REQUIRE(b == map.end());
+	}
 	REQUIRE(std::next(map.begin(), 3) == map.end());
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
 	REQUIRE(std::distance(map.begin(), map.end()) == 3);
