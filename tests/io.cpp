@@ -33,18 +33,18 @@ TEST_CASE("nl") {
 	                      "shd sgdf ");
 	std::string v;
 	is >> v;
-	REQUIRE(v == "abc");
+	CHECK(v == "abc");
 	is >> kblib::nl;
-	REQUIRE(is.peek() == ' ');
+	CHECK(is.peek() == ' ');
 	std::getline(is, v);
-	REQUIRE(v == " xyz  ");
+	CHECK(v == " xyz  ");
 	is >> v;
-	REQUIRE(v == "shd");
+	CHECK(v == "shd");
 	is >> kblib::nl;
 	is >> v;
-	REQUIRE(v == "sgdf");
+	CHECK(v == "sgdf");
 	is >> kblib::nl;
-	REQUIRE(is.eof());
+	CHECK(is.eof());
 }
 
 TEST_CASE("nl(wchar_t)") {
@@ -333,36 +333,39 @@ TEST_CASE("tee_stream") {
 
 	os << "test" << std::flush;
 	REQUIRE(os);
-	REQUIRE(a.str() == "test");
-	REQUIRE(a.str() == b.str());
+	CHECK(a.str() == "test");
+	CHECK(b.str() == "test");
+	CHECK(a.str() == b.str());
 
 	os << 's' << std::flush;
 	REQUIRE(os);
-	REQUIRE(a.str() == "tests");
-	REQUIRE(a.str() == b.str());
+	CHECK(a.str() == "tests");
+	CHECK(b.str() == "tests");
+	CHECK(a.str() == b.str());
 
 	os << std::setw(8) << 42 << std::flush;
 	REQUIRE(os);
-	REQUIRE(a.str() == "tests      42");
-	REQUIRE(a.str() == b.str());
+	CHECK(a.str() == "tests      42");
+	CHECK(b.str() == "tests      42");
+	CHECK(a.str() == b.str());
 
 	{
 		auto len = a.str().length();
 		for (KBLIB_UNUSED auto _ : kblib::range(2048)) {
 			os << '.' << std::flush;
-			REQUIRE(a.str() == b.str());
-			REQUIRE(a.str().length() == ++len);
-			REQUIRE(a.str().back() == '.');
+			CHECK(a.str() == b.str());
+			CHECK(a.str().length() == ++len);
+			CHECK(a.str().back() == '.');
 		}
-		a.str("");
-		b.str("");
 	}
+	a.str("");
+	b.str("");
 
 	{
 		auto big_str = std::string(2048, '?');
 		os << big_str << std::flush;
 		REQUIRE(os);
-		REQUIRE(a.str() == big_str);
-		REQUIRE(a.str() == b.str());
+		CHECK(a.str() == big_str);
+		CHECK(a.str() == b.str());
 	}
 }

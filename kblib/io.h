@@ -437,37 +437,14 @@ namespace detail_io {
 
 		basic_teestreambuf() = delete;
 		basic_teestreambuf(SB1_t* a, SB2_t* b)
-		    : buffer(1024)
-		    , a(a)
+		    : a(a)
 		    , b(b) {
-			this->setp(buffer.data(), buffer.data() + buffer.size() - 1);
+			this->setp(nullptr, nullptr);
 		}
 
 	 private:
-		auto flush() -> bool {
-			std::streamsize count = this->pptr() - this->pbase();
-			auto a_ct = a->sputn(this->pbase(), count);
-			auto b_ct = b->sputn(this->pbase(), count);
-
-			std::streamsize successful = std::min(a_ct, b_ct);
-
-			if (successful == count) {
-				this->pbump(static_cast<int>(-count));
-				return true;
-			} else {
-				fail();
-				return false;
-			}
-		}
-
 		auto bool_to_failure(bool B) const noexcept -> int_type {
 			return B ? traits_type::to_int_type(char_type{}) : traits_type::eof();
-		}
-
-		auto fail() noexcept -> void {
-			this->setp(buffer.data(), buffer.data() + buffer.size() - 1);
-			this->pbump(static_cast<int>(buffer.size() - 1));
-			return;
 		}
 
 	 protected:
@@ -479,38 +456,28 @@ namespace detail_io {
 
 		auto sync() -> int override { return a->pubsync() | b->pubsync(); }
 
-		auto uflow() -> int_type override { return traits_type::eof(); }
-
-		auto xsgetn(char_type*, std::streamsize) -> std::streamsize override {
-			return 0;
-		}
-
-		std::streamsize xsputn(const char_type* s,
-		                       std::streamsize count) override {
-			bool success = flush();
+		auto xsputn(const char_type* s, std::streamsize count)
+		    -> std::streamsize override {
 			auto a_ct = a->sputn(s, count);
 			auto b_ct = b->sputn(s, count);
 
-			std::streamsize successful = success ? std::min(a_ct, b_ct) : 0;
+			std::streamsize successful = std::min(a_ct, b_ct);
 
 			if (successful == count) {
 				return count;
 			} else {
-				fail();
 				return 0;
 			}
 		}
 
 		auto overflow(int_type ch) -> int_type override {
 			if (not traits_type::eq_int_type(ch, traits_type::eof())) {
-				traits_type::assign(*this->pptr(), traits_type::to_char_type(ch));
-				this->pbump(1);
+				a->sputc(traits_type::to_char_type(ch));
+				b->sputc(traits_type::to_char_type(ch));
 			}
-			return bool_to_failure(flush());
 		}
 
 	 private:
-		std::vector<char_type> buffer;
 		SB1_t* a;
 		SB2_t* b;
 	};
