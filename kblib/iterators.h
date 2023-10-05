@@ -1237,6 +1237,12 @@ class transform_iterator {
 
 	auto base() const noexcept -> base_iterator { return it; }
 
+	auto from_base(base_iterator it_) const
+	    noexcept(std::is_nothrow_copy_constructible_v<operation>)
+	        -> transform_iterator {
+		return {it_, op};
+	}
+
 	/**
 	 * @brief Compares the base iterators of lhs and rhs.
 	 */

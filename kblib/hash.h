@@ -530,7 +530,7 @@ struct FNV_hash<
 		                       key.size() * sizeof(*key.begin()), offset);
 	}
 
-	KBLIB_NODISCARD auto operator()(
+	KBLIB_NODISCARD constexpr auto operator()(
 	    const Container& key,
 	    HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
@@ -566,9 +566,14 @@ struct FNV_hash<
 	KBLIB_NODISCARD KBLIB_CXX20(constexpr) auto operator()(
 	    T key, HashInt offset = fnv::fnv_offset<HashInt>::value) const noexcept
 	    -> HashInt {
+#if KBLIB_USE_CXX20
+		auto tmp = std::bit_cast<std::array<char, sizeof(T)>>(key);
+		return FNVa_s(tmp.data(), tmp.size(), offset);
+#else
 		char tmp[sizeof(T)];
 		std::memcpy(tmp, &key, sizeof(T));
 		return FNVa_a(tmp, offset);
+#endif
 	}
 };
 
