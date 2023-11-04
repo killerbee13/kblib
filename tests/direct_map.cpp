@@ -89,9 +89,9 @@ TEST_CASE("direct_map") {
 		++b;
 		REQUIRE(b == map.end());
 	}
+	REQUIRE(std::distance(map.begin(), map.end()) == 3);
 	REQUIRE(std::next(map.begin(), 3) == map.end());
 	REQUIRE(std::prev(map.end(), 3) == map.begin());
-	REQUIRE(std::distance(map.begin(), map.end()) == 3);
 	{
 		auto map2 = map;
 		REQUIRE(map == map2);

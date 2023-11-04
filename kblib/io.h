@@ -472,9 +472,15 @@ namespace detail_io {
 
 		auto overflow(int_type ch) -> int_type override {
 			if (not traits_type::eq_int_type(ch, traits_type::eof())) {
-				a->sputc(traits_type::to_char_type(ch));
-				b->sputc(traits_type::to_char_type(ch));
+				auto r_a = a->sputc(traits_type::to_char_type(ch));
+				auto r_b = b->sputc(traits_type::to_char_type(ch));
+				if (traits_type::not_eof(r_a) and traits_type::not_eof(r_b)) {
+					return traits_type::to_int_type({});
+				} else {
+					return traits_type::eof();
+				}
 			}
+			return traits_type::to_int_type({});
 		}
 
 	 private:

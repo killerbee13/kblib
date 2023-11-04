@@ -436,18 +436,25 @@ inline auto memswap(void* A, void* B, std::size_t size) noexcept -> void {
 template <unsigned offset, unsigned size, typename Storage>
 struct bitfield {
 	auto operator()() const noexcept -> Storage {
-		return (raw >> offset) & ((1u << size) - 1);
+		return (get() >> offset) & ((1u << size) - 1);
 	}
 	auto operator()(const Storage val) noexcept -> Storage {
 		// Clear the bits for this field
-		raw &= ~(((1u << size) - 1) << offset);
+		get() &= ~(((1u << size) - 1) << offset);
 		// Set the field
-		raw |= (val & ((1u << size) - 1)) << offset;
+		get() |= (val & ((1u << size) - 1)) << offset;
 		return val;
 	}
 	operator Storage() const noexcept { return (*this)(); }
 	auto operator=(Storage val) noexcept -> Storage { return (*this)(val); }
-	Storage raw;
+
+	// allowed by pointer-interconvertibility when placed in a union
+	Storage& get() noexcept { return *reinterpret_cast<Storage*>(this); }
+	const Storage& get() const noexcept {
+		return *reinterpret_cast<const Storage*>(this);
+	}
+	// ensure that there is an object for pointer-interconvertibility to find
+	Storage raw_;
 	// Is this a good idea?
 	auto operator&() -> void = delete;
 };

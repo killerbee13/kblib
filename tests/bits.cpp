@@ -3,6 +3,8 @@
 #include "catch.hpp"
 #include "kblib/hash.h"
 
+#include <type_traits>
+
 template <typename T>
 struct print;
 
@@ -103,6 +105,11 @@ union Addr1 {
 
 	bitfield<0, 14, uint16_t> addr;
 };
+#if __cpp_lib_is_pointer_interconvertible
+static_assert(std::is_pointer_interconvertible_with_class(&Addr1::raw));
+static_assert(
+    std::is_pointer_interconvertible_with_class(&decltype(Addr1::raw)::raw_));
+#endif
 
 TEST_CASE("bitfields1") {
 	static_assert(sizeof(Addr1) == 2, "");

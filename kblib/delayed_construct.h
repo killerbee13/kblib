@@ -39,79 +39,106 @@
 
 #	include <optional>
 
+#	if KBLIB_USE_CXX20
+
+#		include <compare>
+
+#	endif
+
 namespace kblib {
 
 template <typename T>
-class delayed_construct : protected std::optional<T> {
+class delayed_construct {
  private:
 	using Base = std::optional<T>;
 
- public:
-	using Base::Base;
+ protected:
+	Base storage;
 
+ public:
+	template <typename... Ts>
+	KBLIB_CXX20(requires(std::constructible_from<Base, Ts...>))
+	delayed_construct(Ts&&... args)
+	    : storage(std::forward<Ts>(args)...) {}
 	template <typename U,
 	          std::enable_if_t<std::is_assignable_v<T&, U&&>, int> = 0>
 	auto operator=(U&& t) -> delayed_construct& {
-		Base::operator=(std::forward<U>(t));
+		storage = std::forward<U>(t);
 		return *this;
 	}
+	auto operator=(std::nullopt_t) -> delayed_construct& = delete;
 
-	using Base::operator->;
-	using Base::operator*;
-
-	using Base::operator bool;
-	KBLIB_NODISCARD constexpr auto is_constructed() const noexcept -> bool {
-		return Base::has_value();
+	template <typename... Ts>
+	auto emplace(Ts&&... args) const -> decltype(auto) {
+		return storage.emplace(std::forward<Ts>(args)...);
 	}
 
-	using Base::value;
+	delayed_construct(const delayed_construct&) = default;
+	delayed_construct(delayed_construct&&) = default;
+	auto operator=(const delayed_construct&) -> delayed_construct& = default;
+	auto operator=(delayed_construct&&) -> delayed_construct& = default;
+	~delayed_construct() = default;
 
-	using Base::emplace;
+	auto operator->() const -> decltype(auto) { return storage.operator->(); }
+	auto operator*() const -> decltype(auto) { return storage.operator*(); }
+	auto value() const -> decltype(auto) { return storage.value(); }
+	explicit operator bool() const { return static_cast<bool>(storage); }
+	KBLIB_NODISCARD constexpr auto is_constructed() const noexcept -> bool {
+		return storage.has_value();
+	}
 
 	// TODO(killerbee13): add C++20 operator<=> support to delayed_construct
 
-#	if 0 && KBLIB_USE_CXX20
+#	if KBLIB_USE_CXX20
 
-	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs,
-	                 const delayed_construct& rhs) = default;
-	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs, std::nullopt_t rhs);
-	KBLIB_NODISCARD auto operator<=>(const delayed_construct& lhs, const U& rhs);
+	template <std::three_way_comparable_with<Base> U>
+	requires(not std::same_as<U, delayed_construct>) KBLIB_NODISCARD auto
+	operator<=>(const U& other) const {
+		return storage <=> other;
+	}
+	template <std::equality_comparable_with<Base> U>
+	requires(not std::same_as<U, delayed_construct>) KBLIB_NODISCARD auto
+	operator==(const U& other) const {
+		return storage == other;
+	}
+	KBLIB_NODISCARD auto operator<=>(
+	    const delayed_construct& other) const = default;
+	KBLIB_NODISCARD auto operator==(const delayed_construct& other) const -> bool
+	    = default;
 
 #	else
 
-#		define OVERLOAD_DEFER_OP(op)                                         \
-			KBLIB_NODISCARD friend constexpr auto operator op(                 \
-			    const delayed_construct& lhs,                                  \
-			    const delayed_construct& rhs) noexcept->bool {                 \
-				return static_cast<const Base&>(lhs)                            \
-				    op static_cast<const Base&>(rhs);                           \
-			}                                                                  \
-			template <typename U>                                              \
-			KBLIB_NODISCARD friend constexpr auto operator op(                 \
-			    const delayed_construct& lhs,                                  \
-			    const delayed_construct<U>& rhs) noexcept->bool {              \
-				return static_cast<const Base&>(lhs)                            \
-				    op static_cast<const std::optional<U>&>(rhs);               \
-			}                                                                  \
-			KBLIB_NODISCARD friend constexpr auto operator op(                 \
-			    const delayed_construct& lhs,                                  \
-			    std::nullopt_t rhs) noexcept->bool {                           \
-				return static_cast<const Base&>(lhs) op rhs;                    \
-			}                                                                  \
-			KBLIB_NODISCARD friend constexpr auto operator op(                 \
-			    std::nullopt_t lhs,                                            \
-			    const delayed_construct& rhs) noexcept->bool {                 \
-				return lhs op static_cast<const Base&>(rhs);                    \
-			}                                                                  \
-			template <typename U>                                              \
-			KBLIB_NODISCARD friend constexpr auto operator op(                 \
-			    const delayed_construct& opt, const U& value) noexcept->bool { \
-				return static_cast<const Base&>(opt) op value;                  \
-			}                                                                  \
-			template <typename U>                                              \
-			KBLIB_NODISCARD friend constexpr auto operator op(                 \
-			    const U& value, const delayed_construct& opt) noexcept->bool { \
-				return value op static_cast<const Base&>(opt);                  \
+#		define OVERLOAD_DEFER_OP(op)                                          \
+			KBLIB_NODISCARD friend constexpr auto operator op(                  \
+			    const delayed_construct& lhs,                                   \
+			    const delayed_construct& rhs) noexcept->bool {                  \
+				return lhs.storage op rhs.storage;                               \
+			}                                                                   \
+			template <typename U>                                               \
+			KBLIB_NODISCARD friend constexpr auto operator op(                  \
+			    const delayed_construct& lhs,                                   \
+			    const delayed_construct<U>& rhs) noexcept->bool {               \
+				return lhs.storage op static_cast<const std::optional<U>&>(rhs); \
+			}                                                                   \
+			KBLIB_NODISCARD friend constexpr auto operator op(                  \
+			    const delayed_construct& lhs,                                   \
+			    std::nullopt_t rhs) noexcept->bool {                            \
+				return lhs.storage op rhs;                                       \
+			}                                                                   \
+			KBLIB_NODISCARD friend constexpr auto operator op(                  \
+			    std::nullopt_t lhs,                                             \
+			    const delayed_construct& rhs) noexcept->bool {                  \
+				return lhs op rhs.storage;                                       \
+			}                                                                   \
+			template <typename U>                                               \
+			KBLIB_NODISCARD friend constexpr auto operator op(                  \
+			    const delayed_construct& opt, const U& value) noexcept->bool {  \
+				return opt.storage op value;                                     \
+			}                                                                   \
+			template <typename U>                                               \
+			KBLIB_NODISCARD friend constexpr auto operator op(                  \
+			    const U& value, const delayed_construct& opt) noexcept->bool {  \
+				return value op opt.storage;                                     \
 			}
 
 	/**

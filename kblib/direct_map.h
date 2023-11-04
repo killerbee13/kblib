@@ -185,7 +185,7 @@ class direct_map {
 					return *this;
 				}
 			}
-			pos = max();
+			pos = index(max());
 			return *this;
 		}
 		constexpr auto operator++(int) noexcept -> iter {
@@ -201,8 +201,8 @@ class direct_map {
 					return *this;
 				}
 			}
-			// going past the beginning is UB
-			__builtin_unreachable();
+			pos = index(min());
+			return *this;
 		}
 		constexpr auto operator--(int) noexcept -> iter {
 			iter it = *this;
@@ -762,7 +762,7 @@ class direct_map<Key, T, void> {
 					return *this;
 				}
 			}
-			pos = max();
+			pos = index(max());
 			return *this;
 		}
 		constexpr auto operator++(int) -> iter {
@@ -778,8 +778,8 @@ class direct_map<Key, T, void> {
 					return *this;
 				}
 			}
-			// going past the beginning is UB
-			__builtin_unreachable();
+			pos = index(min());
+			return *this;
 		}
 		constexpr auto operator--(int) -> iter {
 			iter it = *this;

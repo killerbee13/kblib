@@ -53,14 +53,14 @@
  * @brief This internal macro is used to determine if kblib can use C++17
  * features.
  */
-#define KBLIB_USE_CXX17 __cplusplus >= 201703L
+#define KBLIB_USE_CXX17 (__cplusplus >= 201703L)
 
 /**
  * @def KBLIB_USE_CXX20
  * @brief This internal macro is used to determine if kblib can use C++20
  * features.
  */
-#define KBLIB_USE_CXX20 __cplusplus >= 202002L
+#define KBLIB_USE_CXX20 (__cplusplus >= 202002L)
 /**
  * @def KBLIB_USE_STRING_VIEW
  * @brief This internal macro is used to determine if kblib can use C++17's
