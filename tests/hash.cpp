@@ -12,6 +12,10 @@ struct has_padding {
 	int i;
 };
 
+struct no_padding {
+	int i, j;
+};
+
 struct empty_t {};
 
 static_assert(
@@ -20,6 +24,25 @@ static_assert(
             string> and kblib::is_contiguous_v<std::string> and kblib::is_trivially_hashable_v<std::string::value_type> and kblib::is_trivially_hashable_v<int*>,
     "");
 static_assert(kblib::asserts::is_trivial_container<std::vector<char>>, "");
+
+#if KBLIB_USE_CXX17
+static_assert(kblib::is_trivially_hashable_v<no_padding>);
+static_assert(std::is_same_v<decltype(kblib::FNV_hash<no_padding>{}(
+                                 std::declval<no_padding&>())),
+                             std::size_t>);
+static_assert(
+    std::is_default_constructible_v<kblib::FNV_hash<
+        no_padding>> and std::is_invocable_r_v<std::size_t, kblib::FNV_hash<no_padding>, const no_padding&>);
+#endif
+
+template <typename T>
+static constexpr bool is_disabled_hash
+    = not (std::is_nothrow_default_constructible_v<kblib::FNV_hash<
+               T>> and std::is_invocable_v<kblib::FNV_hash<T>, const T&>);
+template <typename T>
+static constexpr bool is_enabled_hash
+    = std::is_nothrow_default_constructible_v<kblib::FNV_hash<T>>and
+        std::is_invocable_r_v<std::size_t, kblib::FNV_hash<T>, const T&>;
 
 TEST_CASE("FNV_hash") {
 	(void)kblib::FNV_hash<int*>{}({});
@@ -66,9 +89,9 @@ TEST_CASE("FNV_hash") {
 	(void)kblib::FNV_hash<std::vector<int>>{}({});
 	(void)kblib::FNV_hash<std::vector<empty_t>>{}({});
 	// fails because of padding:
-	// kblib::FNV_hash<std::vector<has_padding>>{}({});
+	static_assert(is_disabled_hash<std::vector<has_padding>>);
 	// fails because of unorderedness:
-	// kblib::FNV_hash<std::unordered_map<int, int>>{}({});
+	static_assert(is_disabled_hash<std::unordered_map<int, int>>);
 
 	kblib::FNV_hash<int has_padding::*> test_hash4;
 	CHECK(test_hash4(nullptr) != test_hash4(&has_padding::i));

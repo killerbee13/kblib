@@ -47,7 +47,7 @@
 #	include <optional>
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief Constructs a container by applying a UnaryFunction to every element of
@@ -623,6 +623,6 @@ KBLIB_NODISCARD auto build_copy_n_if(
 // transform_accumulate
 // transform_partial_sum
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_BUILD_H

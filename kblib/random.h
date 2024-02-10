@@ -47,7 +47,7 @@
 #	include <iostream>
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief Given a categorical distribution cats, selects one category
@@ -368,6 +368,6 @@ inline namespace lcgs {
 
 } // namespace lcgs
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // RANDOM_H

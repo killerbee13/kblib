@@ -80,17 +80,17 @@ DISTFILES += \
     doc/Doxyfile \
     doc/algorithm_intuition_named_ops.html
 
-VERSION = 0.2.1
+VERSION = 0.3.0
 
 QMAKE_CXXFLAGS += -std=c++20 -g
 QMAKE_CXXFLAGS += -march=native
-QMAKE_CXXFLAGS += -Wall -Wextra -Wpedantic -Wshadow
-QMAKE_CXXFLAGS += -Wno-missing-braces
 INCLUDEPATH += /mnt/Vers1/include
 
-#QMAKE_LFLAGS += -v
+QMAKE_LFLAGS += -v
 
 #QMAKE_CXXFLAGS += -stdlib=libc++ -fstandalone-debug
+QMAKE_CXXFLAGS += -Wall -Wextra -Wpedantic -Wshadow
+QMAKE_CXXFLAGS += -Wno-missing-braces
 QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations \
  -Wold-style-cast -Wzero-as-null-pointer-constant \
  -Wno-mismatched-tags -Wimplicit-fallthrough -fmax-errors=500

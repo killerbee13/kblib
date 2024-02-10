@@ -48,7 +48,7 @@
 #	include <string_view>
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 #if true or KBLIB_USE_CXX17
 /**
@@ -692,6 +692,6 @@ KBLIB_NODISCARD inline auto starts_with(std::string_view haystack, char needle)
 
 #endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_STRINGOPS_H

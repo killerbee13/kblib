@@ -37,7 +37,7 @@
 #include <deque>
 #include <unordered_map>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 #if KBLIB_USE_CXX17
 
@@ -102,6 +102,6 @@ class intrusive_dual_map {
 
 #endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // INTRUSIVE_CONTAINERS_H

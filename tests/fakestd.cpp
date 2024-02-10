@@ -24,7 +24,7 @@ KBLIB_UNUSED static auto blah() -> void {
 
 TEST_CASE("to_unique(lambda)") {
 	// to_unique can make unique_ptrs to anonymous types
-	auto p = kblib::to_unique(new auto([] {}), [](auto) {});
+	auto p = kblib::to_unique(new auto([] {}), [](auto p) { delete p; });
 }
 
 TEST_CASE("signed_cast") {

@@ -35,7 +35,7 @@
 
 #include <type_traits>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief A metafunction for logical implication. That is, if A, then B. If not
@@ -61,6 +61,6 @@ template <bool... args>
 constexpr inline bool conjunction_v = (args and ...);
 #endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_LOGIC_H

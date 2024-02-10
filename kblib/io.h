@@ -57,7 +57,7 @@
 
 #include <iostream>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename D = std::string,
           typename std::enable_if_t<is_contiguous_v<D>, int> = 0>
@@ -574,6 +574,6 @@ template <typename File = std::fstream>
 
 #endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_IO_H

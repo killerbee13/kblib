@@ -44,7 +44,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename C>
 KBLIB_NODISCARD constexpr auto pop(C& s) -> typename C::value_type {
@@ -324,7 +324,7 @@ class KBLIB_NODISCARD build_iterator<Container, true> {
 	std::size_t index{};
 };
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 namespace std {
 #if defined(__clang__)
@@ -342,7 +342,7 @@ struct tuple_size<::kblib::construct_with_size<C, Size>>
 #endif
 } // namespace std
 
-namespace kblib {
+namespace KBLIB_NS {
 namespace detail {
 
 	template <typename Container, std::size_t N>
@@ -478,6 +478,6 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 	}
 };
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_CONTAINERS_H

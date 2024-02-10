@@ -45,7 +45,7 @@
 
 #	endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename T>
 class delayed_construct {
@@ -89,7 +89,7 @@ class delayed_construct {
 
 	// TODO(killerbee13): add C++20 operator<=> support to delayed_construct
 
-#	if KBLIB_USE_CXX20
+#	if 0
 
 	template <std::three_way_comparable_with<Base> U>
 	requires(not std::same_as<U, delayed_construct>) KBLIB_NODISCARD auto
@@ -187,7 +187,7 @@ struct FNV_hash<delayed_construct<T>, void> {
 	}
 };
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 namespace std {
 

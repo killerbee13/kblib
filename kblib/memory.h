@@ -38,7 +38,7 @@
 #include <utility>
 #include <vector>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename T, bool = std::is_class<T>::value>
 struct null_construct {
@@ -803,6 +803,6 @@ KBLIB_NODISCARD auto make_cond_ptr(T* arg, bool owner, Deleter del) noexcept
 	return cond_ptr<T, Deleter>(arg, owner, del);
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // MEMORY_H

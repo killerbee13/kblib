@@ -42,7 +42,7 @@
 #	include <bitset>
 #	include <vector>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 enum class extractor_policy {
 	forward_iteration,
@@ -273,7 +273,7 @@ template <typename Key, typename Value,
           typename Extractor = default_extract<Key>>
 class sparse_trie_map {};
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_USE_CXX17
 

@@ -43,7 +43,7 @@
 #include <new>
 #include <optional>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @namespace detail_direct_map
@@ -1307,6 +1307,6 @@ class direct_map<Key, T, void> {
 	std::size_t _size{};
 };
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // DIRECT_MAP_H

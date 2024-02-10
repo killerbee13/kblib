@@ -41,7 +41,7 @@
 #include <cmath>
 #include <tuple>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief Invoke a function N times.
@@ -1729,6 +1729,6 @@ namespace detail_algorithm {
 
 } // namespace detail_algorithm
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // ALGORITHM_H

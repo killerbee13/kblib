@@ -43,7 +43,7 @@
 #	include <variant>
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 #if KBLIB_USE_CXX17
 
@@ -337,6 +337,6 @@ KBLIB_NODISCARD constexpr auto visit(V& v) -> auto {
 
 #endif // KBLIB_USE_CXX17
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_VARIANT_H

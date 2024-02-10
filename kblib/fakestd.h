@@ -48,7 +48,7 @@
 #	define KBLIB_FAKESTD (__cplusplus < 201703L)
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <bool B, typename T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
@@ -1300,6 +1300,6 @@ class heap_value2<T[], D> : private std::unique_ptr<T[], D> {
 	~heap_value2() = default;
 };
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_FAKESTD_H

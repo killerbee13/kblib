@@ -42,7 +42,7 @@
 #include "logic.h"
 #include "tdecl.h"
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename T, typename U>
 KBLIB_NODISCARD constexpr auto div(T num, U den) noexcept
@@ -557,6 +557,6 @@ KBLIB_NODISCARD constexpr auto quantize_range(F low, F high, F val) noexcept
 	return static_cast<T>((val - low) * static_cast<T>(max) * delta);
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_STATS_H

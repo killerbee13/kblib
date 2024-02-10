@@ -50,7 +50,7 @@
 #	include <variant>
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename Integral, typename CharT>
 constexpr auto to_bytes_le(Integral ival,
@@ -426,7 +426,7 @@ struct FNV_hash<T, HashInt, void_if_t<std::is_empty<T>::value>> {
 template <typename T>
 KBLIB_CONSTANT_V is_trivially_hashable_v
     = (std::is_trivially_copyable_v<
-           T> and std::has_unique_object_representations_v<T> and not std::is_empty<T>::value);
+           T> and std::has_unique_object_representations_v<T>);
 #else
 template <typename T>
 KBLIB_CONSTANT_V is_trivially_hashable_v
@@ -438,7 +438,8 @@ template <typename T>
 struct is_trivially_hashable : bool_constant<is_trivially_hashable_v<T>> {};
 
 /**
- * @brief Hasher for any trivially hashable type not explicitly mentioned above.
+ * @brief Hasher for any integral type without padding type not explicitly
+ * mentioned above.
  *
  */
 template <typename T, typename HashInt>
@@ -560,7 +561,7 @@ struct FNV_hash<
 template <typename T, typename HashInt>
 struct FNV_hash<
     T, HashInt,
-    void_if_t<not is_contiguous<T>::value and not std::is_integral<T>::value
+    void_if_t<not is_contiguous_v<T> and not std::is_integral<T>::value
               and not std::is_pointer<T>::value
               and is_trivially_hashable_v<T>>> {
 	KBLIB_NODISCARD KBLIB_CXX20(constexpr) auto operator()(
@@ -769,6 +770,6 @@ using hash_set = std::unordered_set<T, FNV_hash<>, std::equal_to<>>;
 template <typename T, typename HashInt>
 using hash_multiset = std::unordered_set<T, FNV_hash<>, std::equal_to<>>;
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // HASH_H

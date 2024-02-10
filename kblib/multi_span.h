@@ -45,7 +45,7 @@
 #	include <boost/iterator/iterator_facade.hpp>
 #	include <gsl/gsl>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename T>
 class multi_span;
@@ -318,7 +318,7 @@ class multi_span {
 	std::vector<multi_impl::subspan_t<T>> spans;
 };
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif
 

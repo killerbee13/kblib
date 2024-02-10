@@ -31,7 +31,7 @@
 
 #if KBLIB_USE_CXX17
 
-namespace kblib {
+namespace KBLIB_NS {
 /**
  * @internal
  */
@@ -147,7 +147,7 @@ namespace detail_cry {
 		iterator end_;
 	};
 } // namespace detail_cry
-} // namespace kblib
+} // namespace KBLIB_NS
 namespace std {
 #	if defined(__clang__)
 // Fix from: https://github.com/nlohmann/json/issues/1401
@@ -174,7 +174,7 @@ struct tuple_element<1, kblib::detail_cry::value_index_pair<T>> {
 #	endif
 } // namespace std
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief
@@ -187,7 +187,7 @@ auto cry_enumerate(Range&& range) -> auto {
 	return detail_cry::value_and_index_impl<Range>(range);
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif
 

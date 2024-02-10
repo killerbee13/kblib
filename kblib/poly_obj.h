@@ -35,7 +35,7 @@
 #include "hash.h"
 #include "variant.h"
 
-namespace kblib {
+namespace KBLIB_NS {
 
 enum class construct_type : unsigned {
 	none = 0,
@@ -1108,6 +1108,6 @@ KBLIB_NODISCARD auto make_poly_obj(
 	                Traits>::template make<D>(std::forward<Args>(args)...);
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // POLY_OBJ_H

@@ -31,7 +31,7 @@
 #include <iterator>
 #include <utility>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief
@@ -77,12 +77,12 @@ struct enumerate_iterator {
 		return it != rhs;
 	}
 
-	constexpr friend auto operator==(enumerate_iterator lhs, enumerate_iterator rhs)
-	    -> bool {
+	constexpr friend auto operator==(enumerate_iterator lhs,
+	                                 enumerate_iterator rhs) -> bool {
 		return lhs.it == rhs.it;
 	}
-	constexpr friend auto operator!=(enumerate_iterator lhs, enumerate_iterator rhs)
-	    -> bool {
+	constexpr friend auto operator!=(enumerate_iterator lhs,
+	                                 enumerate_iterator rhs) -> bool {
 		return lhs.it != rhs.it;
 	}
 };
@@ -110,7 +110,8 @@ struct enumerate_t<Range, void> {
 	using nested_const_iterator = typename range_t::const_iterator;
 	using const_iterator = enumerate_iterator<nested_const_iterator>;
 
-	constexpr auto begin() const& noexcept(noexcept(r.cbegin())) -> const_iterator {
+	constexpr auto begin() const& noexcept(noexcept(r.cbegin()))
+	    -> const_iterator {
 		return {r.cbegin(), 0};
 	}
 	constexpr auto begin() & noexcept(noexcept(r.begin())) -> iterator {
@@ -169,6 +170,6 @@ constexpr auto enumerate(It begin, EIt end) -> enumerate_t<It, EIt> {
 	return {begin, end};
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // ENUMERATECONTRIBTW_H

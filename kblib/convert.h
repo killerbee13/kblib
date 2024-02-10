@@ -65,7 +65,7 @@
 
 #	include <iostream>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <int base, typename Int>
 KBLIB_NODISCARD auto to_string(Int num) -> std::string {
@@ -862,6 +862,6 @@ KBLIB_NODISCARD auto lexical_cast(const From& val,
 }
 #	endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_CONVERT_H

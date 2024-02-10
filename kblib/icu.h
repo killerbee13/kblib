@@ -38,7 +38,7 @@
 #include <typeinfo>
 #include <unicode/unistr.h>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief Convert a UnicodeString to a UTF-8 string.
@@ -151,6 +151,6 @@ auto fromStr(const icu::UnicodeString& val, const char* type = typeid(T).name())
 	return fromStr<T>(toUTF8(val), type);
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_ICU_H

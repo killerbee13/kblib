@@ -40,7 +40,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 // contains_types adapted from code by Maarten Bamelis,
 // https://stackoverflow.com/a/42581257/1924641
@@ -470,6 +470,6 @@ struct is_aliasing_type<std::byte> : std::true_type {};
 template <typename T>
 KBLIB_CONSTANT_V is_aliasing_type_v = is_aliasing_type<T>::value;
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_TRAITS_H_INCLUDED_

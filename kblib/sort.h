@@ -39,7 +39,7 @@
 #include <bitset>
 #include <numeric>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief In-place insertion sort. As is usual, it is stable.
@@ -736,6 +736,6 @@ constexpr auto sort(RandomAccessIt begin, RandomAccessIt end) -> void {
 	                                                         std::less<>{});
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // SORT_H

@@ -37,7 +37,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @brief Calculates the number of decimal digits needed to represent a number,
@@ -152,6 +152,6 @@ auto max_count_digits(ForwardIt first, ForwardIt last, int base) -> int {
 	return count_digits(*std::max_element(first, last), base);
 }
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_FORMAT_H

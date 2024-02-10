@@ -47,7 +47,7 @@
 #	include <iostream>
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 namespace detail_simple {
 	template <typename T>
@@ -278,7 +278,7 @@ struct zero_t {
 
 #endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #undef KBLIB_DEBUG_LOG_RANGES
 

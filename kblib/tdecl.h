@@ -37,73 +37,53 @@
 #	error kblib requires C++14 or higher
 #endif
 
-// 1MMmmrr
-#define KBLIB_VERS 1000203
+#define KBLIB_X(X) X
 
-#define KBLIB_VERS_MAJ 0
-#define KBLIB_VERS_MIN 2
-#define KBLIB_VERS_REV 3
-// MM_mm_rr
-#define KBLIB_VERS_S KBLIB_VERS_MAJ##_##KBLIB_VERS_MIN##_##KBLIB_VERS_REV
-// api_vMM_mm_rr
-#define KBLIB_VERS_NS api_v##KBLIB_VERS_S
+#define KBLIB_VERS_MAJ 00
+#define KBLIB_VERS_MIN 03
+#define KBLIB_VERS_REV 00
+#define KBLIB_VERS_I(P, MAJ, MIN, REV) KBLIB_VERS_I2(P, MAJ, MIN, REV)
+#define KBLIB_VERS_I2(P, MAJ, MIN, REV) P##MAJ##MIN##REV
+
+// VMMmmrr
+#define KBLIB_VERS_S \
+	KBLIB_VERS_I(V, KBLIB_VERS_MAJ, KBLIB_VERS_MIN, KBLIB_VERS_REV)
+// 1MMmmrr
+#define KBLIB_VERS \
+	KBLIB_VERS_I(1, KBLIB_VERS_MAJ, KBLIB_VERS_MIN, KBLIB_VERS_REV)
 
 /**
  * @def KBLIB_USE_CXX17
  * @brief This internal macro is used to determine if kblib can use C++17
  * features.
  */
-#define KBLIB_USE_CXX17 (__cplusplus >= 201703L)
+#if (__cplusplus >= 201703L)
+#	define KBLIB_USE_CXX17 1
+#else
+#	define KBLIB_USE_CXX17 0
+#endif
 
 /**
  * @def KBLIB_USE_CXX20
  * @brief This internal macro is used to determine if kblib can use C++20
  * features.
  */
-#define KBLIB_USE_CXX20 (__cplusplus >= 202002L)
+#if (__cplusplus >= 202002L)
+#	define KBLIB_USE_CXX20 1
+#else
+#	define KBLIB_USE_CXX20 0
+#endif
 /**
  * @def KBLIB_USE_STRING_VIEW
  * @brief This internal macro is used to determine if kblib can use C++17's
  * std::string_view.
  */
 #ifndef KBLIB_USE_STRING_VIEW
-#	define KBLIB_USE_STRING_VIEW __cpp_lib_string_view
-#endif
-
-// Note that __has_cpp_attribute(nodiscard) does not work with at least certain
-// versions of Clang
-/**
- * @def KBLIB_NODISCARD
- * @brief This internal macro is used to provide a fallback for [[nodiscard]]
- * in C++14.
- */
-#if KBLIB_USE_CXX17
-#	define KBLIB_NODISCARD [[nodiscard]]
-#else
-#	define KBLIB_NODISCARD [[gnu::warn_unused_result]]
-#endif
-
-/**
- * @def KBLIB_UNUSED
- * @brief This internal macro is used to provide a fallback for [[maybe_unused]]
- * in C++14.
- */
-#if KBLIB_USE_CXX17
-#	define KBLIB_UNUSED [[maybe_unused]]
-#else
-#	define KBLIB_UNUSED [[gnu::unused]]
-#endif
-
-#if KBLIB_USE_CXX17
-#	define KBLIB_CONSTANT constexpr
-#	define KBLIB_CONSTANT_V constexpr bool
-#	define KBLIB_CONSTANT_M constexpr inline static
-#	define KBLIB_CONSTANT_MV constexpr inline static bool
-#else
-#	define KBLIB_CONSTANT constexpr static
-#	define KBLIB_CONSTANT_V constexpr static bool
-#	define KBLIB_CONSTANT_M constexpr static
-#	define KBLIB_CONSTANT_MV constexpr static bool
+#	if KBLIB_USE_CXX17
+#		define KBLIB_USE_STRING_VIEW 1
+#	else
+#		define KBLIB_USE_STRING_VIEW 0
+#	endif
 #endif
 
 /**
@@ -114,6 +94,53 @@
 #	define KBLIB_CXX20(args) args
 #else
 #	define KBLIB_CXX20(args)
+#endif
+
+// used to prevent cross-linkage between incompatible library versions
+#define KBLIB_VERS_NS_I(VS, CXX17, CXX_SV, CXX20) \
+	KBLIB_VERS_NS_I2(VS, CXX17, CXX_SV, CXX20)
+#define KBLIB_VERS_NS_I2(VS, CXX17, CXX_SV, CXX20) VS##_##CXX17##CXX_SV##CXX20
+
+#define KBLIB_VERS_NS                                                    \
+	KBLIB_VERS_NS_I(KBLIB_VERS_S, KBLIB_USE_CXX17, KBLIB_USE_STRING_VIEW, \
+	                KBLIB_USE_CXX20)
+
+#ifndef _DOXYGEN_
+#	define KBLIB_NS kblib::inline KBLIB_VERS_NS
+#else
+#	define KBLIB_NS kblib
+#endif
+
+// Note that __has_cpp_attribute(nodiscard) does not work with at least certain
+// versions of Clang
+/**
+ * @def KBLIB_NODISCARD
+ * @brief This internal macro is used to provide a fallback for [[nodiscard]]
+ * in C++14.
+ */
+/**
+ * @def KBLIB_UNUSED
+ * @brief This internal macro is used to provide a fallback for [[maybe_unused]]
+ * in C++14.
+ */
+#if KBLIB_USE_CXX17
+#	define KBLIB_NODISCARD [[nodiscard]]
+#	define KBLIB_UNUSED [[maybe_unused]]
+#else
+#	define KBLIB_NODISCARD [[gnu::warn_unused_result]]
+#	define KBLIB_UNUSED [[gnu::unused]]
+#endif
+
+#if KBLIB_USE_CXX17
+#	define KBLIB_CONSTANT constexpr inline
+#	define KBLIB_CONSTANT_V constexpr inline bool
+#	define KBLIB_CONSTANT_M constexpr inline static
+#	define KBLIB_CONSTANT_MV constexpr inline static bool
+#else
+#	define KBLIB_CONSTANT constexpr
+#	define KBLIB_CONSTANT_V constexpr bool
+#	define KBLIB_CONSTANT_M constexpr static
+#	define KBLIB_CONSTANT_MV constexpr static bool
 #endif
 
 #if defined(_DOXYGEN_) and not defined(KBLIB_DEF_MACROS)
@@ -129,7 +156,7 @@
  * @namespace kblib
  * @brief The main namespace in which all entities from kblib are defined.
  */
-namespace kblib {
+namespace KBLIB_NS {
 
 /**
  * @namespace kblib::detail
@@ -203,6 +230,6 @@ using std::byte;
 using byte = unsigned char;
 #endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_TDECL_H

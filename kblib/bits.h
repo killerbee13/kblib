@@ -47,7 +47,7 @@
 #include "tdecl.h"
 #include "traits.h"
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename Int>
 constexpr int bits_of = std::numeric_limits<Int>::digits;
@@ -716,7 +716,7 @@ struct punner
 	}
 };
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 namespace std {
 
@@ -731,7 +731,7 @@ struct tuple_size<kblib::punner<Types...>>
 
 } // namespace std
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <std::size_t I, typename... Types>
 KBLIB_NODISCARD auto get(punner<Types...>& p) noexcept -> decltype(auto) {
@@ -827,7 +827,7 @@ class union_pun<Type[N], Storage> {
 };
 #endif
 
-} // namespace kblib
+} // namespace KBLIB_NS
 
 #endif // KBLIB_BITS_H
 

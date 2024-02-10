@@ -45,7 +45,7 @@
 #	include <optional>
 #endif
 
-namespace kblib {
+namespace KBLIB_NS {
 
 template <typename ptr>
 struct to_pointer_impl {
@@ -816,7 +816,7 @@ class tuple_element<1, const ::kblib::enumeration<T>> {
 
 } // namespace std
 
-namespace kblib {
+namespace KBLIB_NS {
 
 // When a structured binding is created by value, this function is called as if
 // by get<i>(std::move(e)), so it does not call the lvalue reference function.
