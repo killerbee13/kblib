@@ -80,7 +80,7 @@ DISTFILES += \
     doc/Doxyfile \
     doc/algorithm_intuition_named_ops.html
 
-VERSION = 0.3.0
+VERSION = 0.4.0
 
 QMAKE_CXXFLAGS += -std=c++20 -g
 QMAKE_CXXFLAGS += -march=native

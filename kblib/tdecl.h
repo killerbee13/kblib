@@ -40,14 +40,14 @@
 #define KBLIB_X(X) X
 
 #define KBLIB_VERS_MAJ 00
-#define KBLIB_VERS_MIN 03
+#define KBLIB_VERS_MIN 04
 #define KBLIB_VERS_REV 00
 #define KBLIB_VERS_I(P, MAJ, MIN, REV) KBLIB_VERS_I2(P, MAJ, MIN, REV)
 #define KBLIB_VERS_I2(P, MAJ, MIN, REV) P##MAJ##MIN##REV
 
 // VMMmmrr
 #define KBLIB_VERS_S \
-	KBLIB_VERS_I(V, KBLIB_VERS_MAJ, KBLIB_VERS_MIN, KBLIB_VERS_REV)
+	KBLIB_VERS_I(KBV, KBLIB_VERS_MAJ, KBLIB_VERS_MIN, KBLIB_VERS_REV)
 // 1MMmmrr
 #define KBLIB_VERS \
 	KBLIB_VERS_I(1, KBLIB_VERS_MAJ, KBLIB_VERS_MIN, KBLIB_VERS_REV)
@@ -106,7 +106,9 @@
 	                KBLIB_USE_CXX20)
 
 #ifndef _DOXYGEN_
-#	define KBLIB_NS kblib::inline KBLIB_VERS_NS
+#	define KBLIB_NS KBLIB_VERS_NS
+namespace KBLIB_NS {}
+namespace kblib = KBLIB_NS;
 #else
 #	define KBLIB_NS kblib
 #endif
@@ -156,6 +158,7 @@
  * @namespace kblib
  * @brief The main namespace in which all entities from kblib are defined.
  */
+
 namespace KBLIB_NS {
 
 /**
