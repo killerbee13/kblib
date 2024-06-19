@@ -32,6 +32,21 @@ TEST_CASE("visit") {
 	//	kblib::visit2(var, [](int) {});
 }
 
+TEST_CASE("visit2") {
+	std::variant<std::monostate, int, std::string> var = 10;
+
+	// standard syntax (with visitor helper):
+	std::visit(kblib::visitor{[](std::monostate) { REQUIRE(false); },
+	                          [](int) { REQUIRE(true); },
+	                          [](const std::string&) { REQUIRE(false); }},
+	           var);
+
+	// Basic single-variant syntax:
+	kblib::visit2(
+	    var, [](std::monostate) { REQUIRE(false); }, [](int) { REQUIRE(true); },
+	    [](const std::string&) { REQUIRE(false); });
+}
+
 TEST_CASE("visit_indexed") {
 	std::variant<std::monostate, int, std::string> var(std::in_place_type<int>,
 	                                                   10);

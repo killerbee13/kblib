@@ -141,7 +141,7 @@ namespace detail {
 	 */
 	template <typename Variant, typename F, std::size_t... Is>
 	constexpr auto indexed_visitor_impl(std::index_sequence<Is...>) -> auto {
-		return std::array{+[](Variant&& variant, F&& f) {
+		return std::array{+[](Variant&& variant, F&& f) -> decltype(auto) {
 			return std::forward<F>(f)(
 			    kblib::constant<std::size_t, Is>{},
 			    std::get<Is>(std::forward<Variant>(variant)));
