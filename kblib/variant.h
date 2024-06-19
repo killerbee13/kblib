@@ -135,6 +135,82 @@ namespace detail {
 	template <typename T>
 	using tuple_type_t = typename tuple_type<T>::type;
 
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V invocable_with_all_v
+	    = (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value and ...);
+
+	template <typename Callable, typename Variant>
+	KBLIB_CONSTANT_V v_invocable_with_all_v = false;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_v<
+	    F, std::variant<Ts...>> = invocable_with_all_v<F, Ts...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_v<
+	    F, const std::variant<Ts...>> = invocable_with_all_v<F, const Ts...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_v<
+	    F, std::variant<Ts...>&> = invocable_with_all_v<F, Ts&...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_v<
+	    F, const std::variant<Ts...>&> = invocable_with_all_v<F, const Ts&...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_v<
+	    F, std::variant<Ts...>&&> = invocable_with_all_v<F, Ts&&...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_v<
+	    F, const std::variant<Ts...>&&> = invocable_with_all_v<F, const Ts&&...>;
+
+	template <typename I, typename F, typename... Ts>
+	KBLIB_CONSTANT_V invocable_with_all_I_v_h = false;
+
+	template <std::size_t... Is, typename F, typename... Ts>
+	KBLIB_CONSTANT_V invocable_with_all_I_v_h<
+	    std::index_sequence<Is...>, F,
+	    Ts...> = (ignore_t<std::invoke_result_t<F,
+	                                            kblib::constant<std::size_t, Is>,
+	                                            Ts>,
+	                       std::true_type>::value
+	              and ...);
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V invocable_with_all_I_v
+	    = invocable_with_all_I_v_h<std::make_index_sequence<sizeof...(Ts)>, F,
+	                               Ts...>;
+
+	template <typename Callable, typename Variant>
+	KBLIB_CONSTANT_V v_invocable_with_all_I_v = false;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_I_v<
+	    F, std::variant<Ts...>> = invocable_with_all_I_v<F, Ts...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_I_v<
+	    F, const std::variant<Ts...>> = invocable_with_all_I_v<F, const Ts...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_I_v<
+	    F, std::variant<Ts...>&> = invocable_with_all_I_v<F, Ts&...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_I_v<
+	    F, const std::variant<Ts...>&> = invocable_with_all_I_v<F, const Ts&...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_I_v<
+	    F, std::variant<Ts...>&&> = invocable_with_all_I_v<F, Ts&&...>;
+
+	template <typename F, typename... Ts>
+	KBLIB_CONSTANT_V v_invocable_with_all_I_v<
+	    F, const std::variant<Ts...>&&> = invocable_with_all_I_v<F,
+	                                                             const Ts&&...>;
+
 	/**
 	 * @brief Generates an array of function pointers which will unwrap the
 	 * variant and pass the index to the function.
@@ -172,7 +248,10 @@ inline namespace literals {
  * and A = std::get<variant.index()>(variant).
  * Note that kblib::constant implicitly converts to std::integral_constant.
  */
-template <typename Variant, typename... Fs>
+template <typename Variant, typename... Fs,
+          enable_if_t<detail::v_invocable_with_all_I_v<
+                          decltype(visitor{std::declval<Fs>()...}), Variant&&>,
+                      int> = 0>
 constexpr auto visit_indexed(Variant&& variant, Fs&&... fs) -> decltype(auto) {
 	if (variant.valueless_by_exception()) {
 		throw std::bad_variant_access();
@@ -191,11 +270,10 @@ constexpr auto visit_indexed(Variant&& variant, Fs&&... fs) -> decltype(auto) {
  * @return To A super-variant with the same value as v.
  */
 template <typename To, typename From>
-KBLIB_NODISCARD constexpr auto variant_cast(From&& v) -> To {
-	static_assert(contains_types_v<detail::tuple_type_t<std::decay_t<To>>,
-	                               detail::tuple_type_t<std::decay_t<From>>>,
-	              "To must include all types in From");
-
+KBLIB_NODISCARD constexpr auto variant_cast(From&& v)
+    -> enable_if_t<contains_types_v<detail::tuple_type_t<std::decay_t<To>>,
+                                    detail::tuple_type_t<std::decay_t<From>>>,
+                   To> {
 	return visit_indexed(std::forward<From>(v), [](auto constant, auto&& x) {
 		return To(std::in_place_type<
 		              std::variant_alternative_t<constant, std::decay_t<From>>>,
@@ -214,8 +292,8 @@ KBLIB_NODISCARD constexpr auto variant_cast(From&& v) -> To {
  * readability.
  *
  * @param v The variant to visit over.
- * @param fs Any number of functors, which taken together as an overload set can
- * be unambiguously called with any type in V.
+ * @param f,fs Any number of functors, which taken together as an overload set
+ * can be unambiguously called with any type in V.
  */
 template <typename V, typename F, typename... Fs>
 KBLIB_NODISCARD constexpr auto visit(V&& v, F&& f, Fs&&... fs)
@@ -225,41 +303,9 @@ KBLIB_NODISCARD constexpr auto visit(V&& v, F&& f, Fs&&... fs)
 }
 
 namespace detail {
-
-	template <typename F, typename... Ts>
-	constexpr bool invocable_with_all_v
-	    = (ignore_t<std::invoke_result_t<F, Ts>, std::true_type>::value and ...);
-
-	template <typename Callable, typename Variant>
-	constexpr bool v_invocable_with_all_v = false;
-
-	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, std::variant<Ts...>> = invocable_with_all_v<F, Ts...>;
-
-	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, const std::variant<Ts...>> = invocable_with_all_v<F, const Ts...>;
-
-	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, std::variant<Ts...>&> = invocable_with_all_v<F, Ts&...>;
-
-	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, const std::variant<Ts...>&> = invocable_with_all_v<F, const Ts&...>;
-
-	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, std::variant<Ts...>&&> = invocable_with_all_v<F, Ts&&...>;
-
-	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, const std::variant<Ts...>&&> = invocable_with_all_v<F, const Ts&&...>;
-
 	template <typename V, typename F, std::size_t I, std::size_t... Is>
-	[[gnu::always_inline]] constexpr decltype(auto) visit_impl(
-	    V&& v, F&& f, std::index_sequence<I, Is...>) {
+	[[gnu::always_inline]] constexpr auto visit_impl(
+	    V&& v, F&& f, std::index_sequence<I, Is...>) -> decltype(auto) {
 		static_assert(I < std::variant_size_v<std::decay_t<V>>);
 		if (auto* p = std::get_if<I>(&v)) {
 			return std::forward<F>(f)(
@@ -291,23 +337,29 @@ namespace detail {
 
 } // namespace detail
 
-template <typename V, typename F, typename... Fs>
+template <
+    typename V, typename F, typename... Fs,
+    enable_if_t<
+        detail::v_invocable_with_all_v<
+            decltype(visitor{std::declval<F>(), std::declval<Fs>()...}), V&&>,
+        int> = 0>
 [[gnu::always_inline]] constexpr auto visit2(V&& v, F&& f, Fs&&... fs)
     -> decltype(auto) {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
-	static_assert(detail::v_invocable_with_all_v<decltype(visitor_obj), V&&>,
-	              "Some variant types not accepted by any visitors.");
 	return detail::visit_impl(
 	    std::forward<V>(v), std::move(visitor_obj),
 	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
 }
 
-template <typename V, typename F, typename... Fs>
+template <
+    typename V, typename F, typename... Fs,
+    enable_if_t<
+        detail::v_invocable_with_all_v<
+            decltype(visitor{std::declval<F>(), std::declval<Fs>()...}), V&&>,
+        int> = 0>
 [[gnu::always_inline]] constexpr auto visit2_nop(V&& v, F&& f, Fs&&... fs)
     -> void {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
-	static_assert(detail::v_invocable_with_all_v<decltype(visitor_obj), V&&>,
-	              "Some variant types not accepted by any visitors.");
 	return detail::visit_nop_impl(
 	    std::forward<V>(v), visitor_obj,
 	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
@@ -330,7 +382,8 @@ template <typename V, typename F, typename... Fs>
  */
 template <typename V>
 KBLIB_NODISCARD constexpr auto visit(V& v) -> auto {
-	return [&v](auto... fs) -> decltype(auto) {
+	return [&v](auto&&... fs) -> decltype(kblib::visit(
+	                              v, std::forward<decltype(fs)>(fs)...)) {
 		return kblib::visit(v, std::forward<decltype(fs)>(fs)...);
 	};
 }
