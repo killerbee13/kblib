@@ -357,8 +357,8 @@ struct default_destroy {
 	              "Obj must have a virtual destructor");
 };
 
-// TODO(killerbee13): Distinguish between pointers to T and to
-// most-derived-object
+// TODO(killerbee13): Distinguish between pointers to T and to most-derived
+// object
 
 /**
  * @brief poly_obj_traits is a traits class template which abstracts the allowed

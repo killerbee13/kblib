@@ -417,6 +417,9 @@ KBLIB_NODISCARD auto split_tokens(const String& in, Predicate spacer)
 		}
 		endpos = &c;
 	}
+	if (not std::exchange(delim_run, true)) {
+		ret.emplace_back(begpos, endpos + 1);
+	}
 	if (not delim_run and begpos != endpos) {
 		ret.emplace_back(begpos, endpos - begpos + 1);
 	}

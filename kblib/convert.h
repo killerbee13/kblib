@@ -605,7 +605,20 @@ KBLIB_NODISCARD inline auto calculate_translated_index(const char* value,
 	return counter;
 }
 
-template <typename string>
+template <typename character, enable_if_t<is_character_v<character>>* = nullptr>
+KBLIB_NODISCARD auto quoted(character c) -> std::string {
+	if (c < ' ' or c >= '\x7F') {
+		return escapify(c);
+	} else if (c == '"') {
+		return "\\\"";
+	} else if (c == '\\') {
+		return "\\\\";
+	} else {
+		return {1, c};
+	}
+}
+
+template <typename string, enable_if_t<not is_character_v<string>>* = nullptr>
 KBLIB_NODISCARD auto quoted(string&& in) -> std::string {
 	std::ostringstream ret;
 	ret << '"';
