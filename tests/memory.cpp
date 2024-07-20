@@ -136,7 +136,7 @@ TEST_CASE("cond_ptr") {
 }
 
 TEST_CASE("cond_ptr fptr") {
-	auto del = [](gsl::owner<const int*> p) noexcept { delete p; };
+	auto del = [](kblib::owner<const int*> p) noexcept { delete p; };
 	int a{42};
 	auto op = kblib::cond_ptr<int, decltype(+del)>(
 	    std::unique_ptr<int, decltype(+del)>(new int{42}, del));
@@ -164,7 +164,7 @@ TEST_CASE("cond_ptr fptr") {
 }
 
 TEST_CASE("cond_ptr rfptr") {
-	auto del = [](gsl::owner<const int*> p) noexcept { delete p; };
+	auto del = [](kblib::owner<const int*> p) noexcept { delete p; };
 	int a{42};
 	auto op = kblib::cond_ptr<int, decltype(*+del)>(
 	    std::unique_ptr<int, decltype(*+del)>(new int{42}, *del));

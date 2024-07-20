@@ -50,6 +50,13 @@
 
 namespace KBLIB_NS {
 
+#if __has_include("gsl/pointers")
+using gsl::owner;
+#else
+template <class T, class = std::enable_if_t<std::is_pointer<T>::value>>
+using owner = T;
+#endif
+
 template <bool B, typename T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
 
@@ -570,12 +577,11 @@ constexpr auto apply(F&& f, Arg&& arg) noexcept(
 }
 
 template <typename T>
-KBLIB_NODISCARD auto to_unique(gsl::owner<T*> p) -> std::unique_ptr<T> {
+KBLIB_NODISCARD auto to_unique(owner<T*> p) -> std::unique_ptr<T> {
 	return std::unique_ptr<T>(p);
 }
 template <typename T, typename D>
-KBLIB_NODISCARD auto to_unique(gsl::owner<T*> p, D&& d)
-    -> std::unique_ptr<T, D> {
+KBLIB_NODISCARD auto to_unique(owner<T*> p, D&& d) -> std::unique_ptr<T, D> {
 	return std::unique_ptr<T, D>(p, d);
 }
 

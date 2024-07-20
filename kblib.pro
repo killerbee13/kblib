@@ -110,12 +110,3 @@ CONFIG(build_trace) {
 
 #QMAKE_CXXFLAGS_RELEASE += -flto
 #QMAKE_LFLAGS_RELEASE += -flto
-
-medfile.target = medfile
-medfile.commands = rm $$medfile.target; \
-    ln -s /mnt/Vers1/assets/medfile $$medfile.target
-
-QMAKE_EXTRA_TARGETS += medfile
-QMAKE_DISTCLEAN += medfile
-
-PRE_TARGETDEPS += medfile

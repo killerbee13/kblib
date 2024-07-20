@@ -298,7 +298,7 @@ TEST_CASE("expect(narrowing, fail)") {
 
 #if KBLIB_USE_CXX17
 TEST_CASE("get_file_contents") {
-	auto filename = "medfile";
+	auto filename = "kblib";
 	auto filestr = kblib::get_file_contents(filename);
 	if (filestr) {
 		std::cout << "FNV32a(" << filename << "): " << kblib::FNV32a(*filestr)
