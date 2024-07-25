@@ -82,7 +82,7 @@ DISTFILES += \
 
 VERSION = 0.4.0
 
-QMAKE_CXXFLAGS += -std=c++20 -g
+QMAKE_CXXFLAGS += -std=c++2b -g
 QMAKE_CXXFLAGS += -march=native
 INCLUDEPATH += /mnt/Vers1/include
 

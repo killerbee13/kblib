@@ -40,7 +40,6 @@
 #	include <array>
 #	include <cassert>
 #	include <chrono>
-#	include <exception>
 #	include <iomanip>
 #	include <sstream>
 #	include <stdexcept>
@@ -54,10 +53,22 @@
 #	if KBLIB_USE_STRING_VIEW
 
 #		include <string_view>
-#		pragma GCC diagnostic push
-#		pragma GCC diagnostic ignored "-W#warnings"
-#		include <strstream>
-#		pragma GCC diagnostic pop
+
+/**
+ * @def KBLIB_USE_SPANSTREAM
+ * @brief This internal macro is used to determine if kblib can use C++17's
+ * std::string_view.
+ */
+#		if KBLIB_USE_SPANSTREAM
+
+#			include <spanstream>
+#		else
+
+#			pragma GCC diagnostic push
+#			pragma GCC diagnostic ignored "-W#warnings"
+#			include <strstream>
+#			pragma GCC diagnostic pop
+#		endif
 
 #		include "stringops.h"
 
@@ -708,7 +719,11 @@ inline auto fromStr(std::string&&, const char*) -> std::string_view = delete;
 template <typename T>
 KBLIB_NODISCARD auto fromStr(std::string_view val,
                              const char* type = typeid(T).name()) -> T {
+#		if KBLIB_USE_SPANSTREAM
+	std::ispanstream ss(std::span<const char>(val.data(), val.size()));
+#		else
 	std::istrstream ss(val.data(), kblib::to_signed(val.size()));
+#		endif
 	T ret;
 	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;

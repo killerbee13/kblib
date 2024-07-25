@@ -32,6 +32,9 @@
 #define KBLIB_TDECL_H
 
 #include <cstddef>
+#if __has_include(<version>)
+#	include <version>
+#endif
 
 #if __cplusplus < 201402L
 #	error kblib requires C++14 or higher
@@ -87,6 +90,19 @@
 #endif
 
 /**
+ * @def KBLIB_USE_SPANSTREAM
+ * @brief This internal macro is used to determine if kblib can use C++17's
+ * std::string_view.
+ */
+#ifndef KBLIB_USE_SPANSTREAM
+#	if __cpp_lib_spanstream
+#		define KBLIB_USE_SPANSTREAM 1
+#	else
+#		define KBLIB_USE_SPANSTREAM 0
+#	endif
+#endif
+
+/**
  * @def KBLIB_CXX20
  * @brief This internal macro is used to selectively use C++20 features.
  */
@@ -97,13 +113,14 @@
 #endif
 
 // used to prevent cross-linkage between incompatible library versions
-#define KBLIB_VERS_NS_I(VS, CXX17, CXX_SV, CXX20) \
-	KBLIB_VERS_NS_I2(VS, CXX17, CXX_SV, CXX20)
-#define KBLIB_VERS_NS_I2(VS, CXX17, CXX_SV, CXX20) VS##_##CXX17##CXX_SV##CXX20
+#define KBLIB_VERS_NS_I(VS, CXX17, CXX_SV, CXX_SS, CXX20) \
+	KBLIB_VERS_NS_I2(VS, CXX17, CXX_SV, CXX_SS, CXX20)
+#define KBLIB_VERS_NS_I2(VS, CXX17, CXX_SV, CXX_SS, CXX20) \
+	VS##_##CXX17##CXX_SV##CXX_SS##CXX20
 
 #define KBLIB_VERS_NS                                                    \
 	KBLIB_VERS_NS_I(KBLIB_VERS_S, KBLIB_USE_CXX17, KBLIB_USE_STRING_VIEW, \
-	                KBLIB_USE_CXX20)
+	                KBLIB_USE_SPANSTREAM, KBLIB_USE_CXX20)
 
 #ifndef _DOXYGEN_
 #	define KBLIB_NS KBLIB_VERS_NS

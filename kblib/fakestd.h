@@ -35,6 +35,7 @@
 #include "tdecl.h"
 
 #include <array>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <type_traits>
