@@ -485,6 +485,7 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
                    A> {
 	if (x < 0) {
 		return 0;
+		// TODO: verify
 	} else if (to_unsigned(x) > A(max)) {
 		return max;
 	} else {
@@ -501,7 +502,7 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
                    A> {
 	if (x < A(min)) {
 		return min;
-	} else if (to_unsigned(x) > A(max)) {
+	} else if (x > A(max)) {
 		return max;
 	} else {
 		return x;
