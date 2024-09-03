@@ -45,20 +45,18 @@ enum class construct_type : unsigned {
 	throw_move = 4,
 	both_throw = 5,
 };
-KBLIB_NODISCARD constexpr auto operator|(construct_type l,
-                                         construct_type r) noexcept
-    -> construct_type {
+KBLIB_NODISCARD constexpr auto operator|(
+    construct_type l, construct_type r) noexcept -> construct_type {
 	return static_cast<construct_type>(etoi(l) | etoi(r));
 }
 
-KBLIB_NODISCARD constexpr auto operator&(construct_type l,
-                                         construct_type r) noexcept
-    -> construct_type {
+KBLIB_NODISCARD constexpr auto operator&(
+    construct_type l, construct_type r) noexcept -> construct_type {
 	return static_cast<construct_type>(etoi(l) & etoi(r));
 }
 
-KBLIB_NODISCARD constexpr auto operator*(construct_type l, bool r) noexcept
-    -> construct_type {
+KBLIB_NODISCARD constexpr auto operator*(construct_type l,
+                                         bool r) noexcept -> construct_type {
 	return r ? l : construct_type::none;
 }
 
@@ -83,9 +81,8 @@ namespace detail_poly {
 		       and (type & construct_type::throw_move) == construct_type::none;
 	}
 
-	KBLIB_NODISCARD constexpr auto make_ctype(bool copyable, bool movable,
-	                                          bool nothrow_movable)
-	    -> construct_type {
+	KBLIB_NODISCARD constexpr auto make_ctype(
+	    bool copyable, bool movable, bool nothrow_movable) -> construct_type {
 		if (copyable) {
 			if (not movable) {
 				return construct_type::copy_only;
@@ -174,11 +171,11 @@ namespace detail_poly {
 
 	template <typename T>
 	constexpr construct_type construct_traits
-	    = construct_type::copy_only* std::is_copy_constructible<T>::value
-	      | construct_type::move* std::is_move_constructible<T>::value
-	      | construct_type::throw_move*(
-	          std::is_move_constructible<T>::value
-	          & not std::is_nothrow_move_constructible<T>::value);
+	    = construct_type::copy_only * std::is_copy_constructible<T>::value
+	      | construct_type::move * std::is_move_constructible<T>::value
+	      | construct_type::throw_move
+	            * (std::is_move_constructible<T>::value
+	               & not std::is_nothrow_move_constructible<T>::value);
 
 	template <typename T, typename hash = void>
 	struct erased_hash_t {};
@@ -287,7 +284,7 @@ struct default_copy<Obj, false> {
  * @brief Implements copy construction using a virtual clone method.
  * This type is provided mostly as an example.
  */
-template <typename Obj, auto (Obj::*clone)(void*) const->Obj*>
+template <typename Obj, auto (Obj::* clone)(void*) const->Obj*>
 struct clone_copy {
 	/// Does nothing
 	clone_copy() = default;
@@ -309,8 +306,8 @@ struct default_move {
 		return static_cast<Obj*>(new (dest) T(std::move(*static_cast<T*>(from))));
 	}
 	// noexcept isn't working here on clang
-	auto (*p_move)(void* dest, Obj* from) noexcept(false)
-	    -> Obj* = &noop<Obj, nothrow>;
+	auto (*p_move)(void* dest,
+	               Obj* from) noexcept(false) -> Obj* = &noop<Obj, nothrow>;
 
  public:
 	/// Constructs an object which does nothing.
@@ -338,8 +335,8 @@ struct default_move<Obj, false, nothrow, true>
     : private default_copy<Obj, true> {
 	using default_copy<Obj, true>::default_copy;
 
-	KBLIB_NODISCARD auto move(void* dest, const Obj* from) noexcept(nothrow)
-	    -> Obj* {
+	KBLIB_NODISCARD auto move(void* dest,
+	                          const Obj* from) noexcept(nothrow) -> Obj* {
 		return this->copy(dest, from);
 	}
 };
@@ -520,7 +517,7 @@ class poly_obj
 	 * @param obj The object to copy.
 	 */
 	constexpr poly_obj(const Obj& obj)
-	    : ptr(new (data) Obj(obj)) {}
+	    : ptr(new(data) Obj(obj)) {}
 	/**
 	 * @brief Move-constructs the contained object from obj.
 	 *
@@ -529,7 +526,7 @@ class poly_obj
 	 * @param obj The object to move from.
 	 */
 	constexpr poly_obj(Obj&& obj) noexcept(Traits::nothrow_movable)
-	    : ptr(new (data) Obj(std::move(obj))) {}
+	    : ptr(new(data) Obj(std::move(obj))) {}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
@@ -539,11 +536,12 @@ class poly_obj
 	 */
 	template <typename... Args,
 	          typename std::enable_if_t<
-	              std::is_constructible<Obj, Args...>::value, int> = 0>
+	              std::is_constructible<Obj, Args...>::value, int>
+	          = 0>
 	constexpr explicit poly_obj(fakestd::in_place_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
 	    : ops_t(detail_poly::make_ops_t<Obj, Traits>())
-	    , ptr(new (data) Obj(std::forward<Args>(args)...)) {}
+	    , ptr(new(data) Obj(std::forward<Args>(args)...)) {}
 
 	/**
 	 * @brief Constructs the contained object in-place without copying or moving.
@@ -553,11 +551,51 @@ class poly_obj
 	 */
 	template <typename... Args,
 	          typename std::enable_if_t<
-	              std::is_constructible<Obj, Args...>::value, int> = 0>
+	              std::is_constructible<Obj, Args...>::value, int>
+	          = 0>
 	constexpr explicit poly_obj(kblib::in_place_agg_t, Args&&... args) noexcept(
 	    std::is_nothrow_constructible<Obj, Args&&...>::value)
 	    : ops_t(detail_poly::make_ops_t<Obj, Traits>())
-	    , ptr(new (data) Obj{std::forward<Args>(args)...}) {}
+	    , ptr(new(data) Obj{std::forward<Args>(args)...}) {}
+
+ private:
+	template <typename U>
+	constexpr static void assert_emplaceable() {
+		static_assert(sizeof(U) <= capacity,
+		              "U must fit inside of the inline capacity.");
+		static_assert(alignof(U) <= Traits::alignment,
+		              "U must be no more aligned than Traits::alignment");
+		static_assert(std::is_base_of<Obj, U>::value
+		                  and std::is_convertible<U*, Obj*>::value,
+		              "Obj must be an accessible base of U.");
+		static_assert(
+		    implies<Traits::copyable,
+		            std::is_copy_constructible<U>::value>::value,
+		    "U must be copy constructible if Traits::copyable is true.");
+		static_assert(
+		    implies<Traits::movable, std::is_move_constructible<U>::value>::value,
+		    "U must be move constructible if Traits::movable is true.");
+	}
+
+ public:
+	template <typename U, bool aggregate = false>
+	struct tag {};
+
+	template <typename U, typename... Args>
+	poly_obj(tag<U>, Args&&... args) noexcept(
+	    std::is_nothrow_constructible<U, Args&&...>::value)
+	    : ops_t(detail_poly::make_ops_t<U, Traits>())
+	    , ptr(new(data) U(std::forward<Args>(args)...)) {
+		assert_emplaceable<U>();
+	}
+
+	template <typename U, typename... Args>
+	poly_obj(tag<U, true>, Args&&... args) noexcept(
+	    std::is_nothrow_constructible<U, Args&&...>::value)
+	    : ops_t(detail_poly::make_ops_t<U, Traits>())
+	    , ptr(new(data) U{std::forward<Args>(args)...}) {
+		assert_emplaceable<U>();
+	}
 
 	/**
 	 * @brief Constructs a poly_obj containing an object of derived type.
@@ -574,20 +612,7 @@ class poly_obj
 	template <typename U, typename... Args>
 	KBLIB_NODISCARD static auto make(Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
-		static_assert(sizeof(U) <= capacity,
-		              "U must fit inside of the inline capacity.");
-		static_assert(alignof(U) <= Traits::alignment,
-		              "U must be no more aligned than Traits::alignment");
-		static_assert(std::is_base_of<Obj, U>::value
-		                  and std::is_convertible<U*, Obj*>::value,
-		              "Obj must be an accessible base of Obj.");
-		static_assert(
-		    implies<Traits::copyable,
-		            std::is_copy_constructible<U>::value>::value,
-		    "U must be copy constructible if Traits::copyable is true.");
-		static_assert(
-		    implies<Traits::movable, std::is_move_constructible<U>::value>::value,
-		    "U must be move constructible if Traits::movable is true.");
+		assert_emplaceable<U>();
 		return {tag<U>{}, std::forward<Args>(args)...};
 	}
 
@@ -606,23 +631,22 @@ class poly_obj
 	template <typename U, typename... Args>
 	KBLIB_NODISCARD static auto make_aggregate(Args&&... args) noexcept(
 	    std::is_nothrow_constructible<U, Args&&...>::value) -> poly_obj {
-		static_assert(sizeof(U) <= capacity,
-		              "U must fit inside of the inline capacity.");
-		static_assert(alignof(U) <= Traits::alignment,
-		              "U must be no more aligned than Traits::alignment");
-		static_assert(std::is_base_of<Obj, U>::value
-		                  and std::is_convertible<U*, Obj*>::value,
-		              "Obj must be an accessible base of Obj.");
-		static_assert(
-		    implies<Traits::copyable,
-		            std::is_copy_constructible<U>::value>::value,
-		    "U must be copy constructible if Traits::copyable is true.");
-		static_assert(
-		    implies<Traits::movable, std::is_move_constructible<U>::value>::value,
-		    "U must be move constructible if Traits::movable is true.");
+		assert_emplaceable<U>();
 		return {tag<U, true>{}, std::forward<Args>(args)...};
 	}
 	///@}
+
+	template <typename U, typename... Args>
+	constexpr auto emplace(Args&&... args) noexcept(
+	    std::is_nothrow_constructible<U, Args&&...>::value) -> U* {
+		assert_emplaceable<U>();
+		clear();
+
+		static_cast<ops_t&>(*this) = detail_poly::make_ops_t<U, Traits>();
+		auto r = new (data) U(std::forward<Args>(args)...);
+		ptr = r;
+		return r;
+	}
 
 	/**
 	 * @name Copy/move operators
@@ -880,7 +904,7 @@ class poly_obj
 	template <typename member_type>
 	enable_if_t<not std::is_member_function_pointer<member_type Obj::*>::value,
 	            member_type>&
-	operator->*(member_type Obj::*member) & noexcept {
+	operator->*(member_type Obj::* member) & noexcept {
 		return get()->*member;
 	}
 
@@ -891,7 +915,7 @@ class poly_obj
 	const enable_if_t<
 	    not std::is_member_function_pointer<member_type Obj::*>::value,
 	    member_type>&
-	operator->*(member_type Obj::*member) const& noexcept {
+	operator->*(member_type Obj::* member) const& noexcept {
 		return get()->*member;
 	}
 
@@ -901,7 +925,7 @@ class poly_obj
 	template <typename member_type>
 	enable_if_t<not std::is_member_function_pointer<member_type Obj::*>::value,
 	            member_type>&&
-	operator->*(member_type Obj::*member) && noexcept {
+	operator->*(member_type Obj::* member) && noexcept {
 		return std::move(get()->*member);
 	}
 
@@ -912,7 +936,7 @@ class poly_obj
 	const enable_if_t<
 	    not std::is_member_function_pointer<member_type Obj::*>::value,
 	    member_type>&&
-	operator->*(member_type Obj::*member) const&& noexcept {
+	operator->*(member_type Obj::* member) const&& noexcept {
 		return std::move(get()->*member);
 	}
 
@@ -922,7 +946,7 @@ class poly_obj
 	 */
 	template <typename member_type, typename... Args>
 	KBLIB_NODISCARD auto operator->*(
-	    member_type (Obj::*member)(Args...)) & noexcept {
+	    member_type (Obj::* member)(Args...)) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
@@ -933,7 +957,7 @@ class poly_obj
 	 * @remark const on &
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -945,7 +969,7 @@ class poly_obj
 	 * @remark const on const&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const) const& noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -957,7 +981,7 @@ class poly_obj
 	 * @remark const on &&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -970,7 +994,7 @@ class poly_obj
 	 */
 	template <typename member_type, typename... Args>
 	KBLIB_NODISCARD auto operator->*(
-	    member_type (Obj::*member)(Args...) &) & noexcept {
+	    member_type (Obj::* member)(Args...) &) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
@@ -981,7 +1005,7 @@ class poly_obj
 	 * @remark const& on &
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const&) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -993,7 +1017,7 @@ class poly_obj
 	 * @remark const& on const&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const&) const& noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -1005,8 +1029,8 @@ class poly_obj
 	 * @remark && on &&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
-	                                 &&) && noexcept {
+	KBLIB_NODISCARD auto operator->*(
+	    member_type (Obj::* member)(Args...) &&) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
 		};
@@ -1017,7 +1041,7 @@ class poly_obj
 	 * @remark const& on &&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const&) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -1030,7 +1054,7 @@ class poly_obj
 	 */
 	template <typename member_type, typename... Args>
 	KBLIB_NODISCARD auto operator->*(
-	    member_type (Obj::*member)(Args...)) && noexcept {
+	    member_type (Obj::* member)(Args...)) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
@@ -1041,7 +1065,7 @@ class poly_obj
 	 * @remark const&& on &&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const&&) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
@@ -1053,7 +1077,7 @@ class poly_obj
 	 * @remark const&& on const&&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
 	                                     const&&) const&& noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
@@ -1063,21 +1087,6 @@ class poly_obj
  private:
 	alignas(Traits::alignment) byte data[capacity]{};
 	Obj* ptr{};
-
-	template <typename U, bool = false>
-	struct tag {};
-
-	template <typename U, typename... Args>
-	poly_obj(tag<U>, Args&&... args) noexcept(
-	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<U, Traits>())
-	    , ptr(new (data) U(std::forward<Args>(args)...)) {}
-
-	template <typename U, typename... Args>
-	poly_obj(tag<U, true>, Args&&... args) noexcept(
-	    std::is_nothrow_constructible<U, Args&&...>::value)
-	    : ops_t(detail_poly::make_ops_t<U, Traits>())
-	    , ptr(new (data) U{std::forward<Args>(args)...}) {}
 };
 
 template <bool warn>

@@ -30,7 +30,7 @@
  */
 
 #if KBLIB_DEF_MACROS and not defined(pFromStr)
-#	define pFromStr(type, val) ::kblib::fromStr<type>((val), #   type)
+#	define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
 #endif
 
 #ifndef KBLIB_CONVERT_H
@@ -79,7 +79,7 @@
 namespace KBLIB_NS {
 
 template <int base, typename Int>
-KBLIB_NODISCARD auto to_string(Int num) -> std::string {
+KBLIB_NODISCARD constexpr auto to_string(Int num) -> std::string {
 	static_assert(base <= 62 and base > 0, "Supported bases are 1 thru 62.");
 	constexpr auto digits = remove_null_terminator(
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
@@ -102,7 +102,7 @@ KBLIB_NODISCARD auto to_string(Int num) -> std::string {
 }
 
 template <typename Int>
-KBLIB_NODISCARD auto to_string(Int num, int base) -> std::string {
+KBLIB_NODISCARD constexpr auto to_string(Int num, int base) -> std::string {
 	assert(base <= 62 and base > 0);
 	constexpr auto digits = remove_null_terminator(
 	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
@@ -130,10 +130,9 @@ KBLIB_NODISCARD auto to_string(Int num, int base) -> std::string {
 namespace detail_convert {
 
 	template <typename Result, unsigned variants, std::size_t N>
-	KBLIB_NODISCARD constexpr auto read_digits(const char* begin,
-	                                           const char* end, unsigned base,
-	                                           const char (&digits)[N])
-	    -> Result {
+	KBLIB_NODISCARD constexpr auto read_digits(
+	    const char* begin, const char* end, unsigned base,
+	    const char (&digits)[N]) -> Result {
 		if (begin == end) {
 			throw std::invalid_argument("\"\" is not an integer");
 		}
@@ -202,8 +201,8 @@ KBLIB_NODISCARD constexpr auto parse_integer(const char* begin, const char* end,
 }
 
 template <typename Result, std::size_t N>
-KBLIB_NODISCARD constexpr auto parse_integer(const char (&in)[N], int base = 0)
-    -> Result {
+KBLIB_NODISCARD constexpr auto parse_integer(const char (&in)[N],
+                                             int base = 0) -> Result {
 	char t = in[N - 1];
 	return parse_integer<Result>(std::begin(in), std::end(in) - +(t == '\0'),
 	                             base);
@@ -219,8 +218,8 @@ KBLIB_NODISCARD constexpr auto parse_integer(const std::string& in,
 #	if KBLIB_USE_STRING_VIEW
 
 template <typename Result>
-KBLIB_NODISCARD constexpr auto parse_integer(std::string_view in, int base = 0)
-    -> Result {
+KBLIB_NODISCARD constexpr auto parse_integer(std::string_view in,
+                                             int base = 0) -> Result {
 	return parse_integer<Result>(to_pointer(begin(in)), to_pointer(end(in)),
 	                             base);
 }
@@ -258,8 +257,8 @@ KBLIB_NODISCARD constexpr auto etoi(E e) -> auto {
 
 template <int maxBufLen = 4096, typename clock, typename duration>
 KBLIB_NODISCARD auto time_to_str(std::chrono::time_point<clock, duration>& tp,
-                                 const std::string& fmt = "%F %T")
-    -> std::string {
+                                 const std::string& fmt
+                                 = "%F %T") -> std::string {
 	std::time_t time = clock::to_time_t(tp);
 	std::tm* tmb = std::localtime(&time);
 	std::string ret{maxBufLen, '\0'};
@@ -459,7 +458,7 @@ namespace detail_units {
 	};
 
 	template <std::intmax_t Num, std::intmax_t Den>
-	auto ratio_to_SI() noexcept -> unit_conversion<std::intmax_t> {
+	constexpr auto ratio_to_SI() noexcept -> unit_conversion<std::intmax_t> {
 		return {};
 	}
 
@@ -470,21 +469,23 @@ namespace detail_units {
 	using nearest_ratio_t = typename nearest_ratio<Num, Den>::type;
 
 } // namespace detail_units
-
-template <
-    typename Rep, typename Ratio,
-    enable_if_t<detail_units::is_si_ratio<typename Ratio::type>::value>* = 0>
-KBLIB_NODISCARD auto duration_to_str(std::chrono::duration<Rep, Ratio>& d)
-    -> std::string {
+// TODO: duration_to_str autoscaling
+template <typename Rep, typename Ratio,
+          enable_if_t<detail_units::is_si_ratio<
+              typename Ratio::type>::value>* = nullptr>
+KBLIB_NODISCARD constexpr auto duration_to_str(
+    std::chrono::duration<Rep, Ratio>& d) -> std::string {
 	using ratio = typename Ratio::type;
-	auto cv = detail_units::ratio_to_SI<ratio::num, ratio::den>();
-	return concat(d.count() * cv.multiplier, ' ', cv.abbr, 's');
+	auto n = detail_units::name_of(ratio{});
+	return concat(d.count() / (static_cast<double>(ratio{}.num) / ratio{}.den),
+	              ' ', n.abbr, 's');
 }
 
 template <typename Rep, typename Ratio,
-          enable_if_t<std::is_floating_point<Rep>::value>* = 0>
-KBLIB_NODISCARD auto duration_to_str(std::chrono::duration<Rep, Ratio>& d)
-    -> std::string {
+          enable_if_t<not detail_units::is_si_ratio<typename Ratio::type>::value
+                      and std::is_floating_point<Rep>::value>* = nullptr>
+KBLIB_NODISCARD constexpr auto duration_to_str(
+    std::chrono::duration<Rep, Ratio>& d) -> std::string {
 	using ratio = typename Ratio::type;
 	using n_r = detail_units::nearest_ratio_t<ratio::num, ratio::den>;
 	auto u = detail_units::name_of(n_r{});
@@ -495,18 +496,18 @@ KBLIB_NODISCARD auto duration_to_str(std::chrono::duration<Rep, Ratio>& d)
 }
 
 template <typename Rep>
-KBLIB_NODISCARD auto duration_to_str(
+KBLIB_NODISCARD constexpr auto duration_to_str(
     std::chrono::duration<Rep, std::ratio<60>> d) -> std::string {
 	return concat(d.count(), " min");
 }
 template <typename Rep>
-KBLIB_NODISCARD auto duration_to_str(
+KBLIB_NODISCARD constexpr auto duration_to_str(
     std::chrono::duration<Rep, std::ratio<3600>> d) -> std::string {
 	return concat(d.count(), " hr");
 }
 
 template <typename string>
-KBLIB_NODISCARD auto url_encode(const string& value) -> std::string {
+KBLIB_NODISCARD constexpr auto url_encode(const string& value) -> std::string {
 	std::ostringstream escaped;
 	escaped.fill('0');
 	escaped << std::hex;
@@ -527,7 +528,7 @@ KBLIB_NODISCARD auto url_encode(const string& value) -> std::string {
 }
 
 template <typename string>
-KBLIB_NODISCARD auto html_encode(const string& data) -> std::string {
+KBLIB_NODISCARD constexpr auto html_encode(const string& data) -> std::string {
 	std::string buffer;
 	// Arbitrary estimate for amount of growth caused by the escaping is 12.5%.
 	buffer.reserve(data.size() + data.size() / 8);
@@ -556,7 +557,7 @@ KBLIB_NODISCARD auto html_encode(const string& data) -> std::string {
 	return buffer;
 }
 
-KBLIB_NODISCARD inline auto escapify(char c) -> std::string {
+KBLIB_NODISCARD constexpr auto escapify(char c) -> std::string {
 	auto value = to_unsigned(c);
 	if (value < ' ' or value == '\x7F' or value & to_unsigned('\x80')) {
 		constexpr std::array<char, 16> digits{
@@ -572,7 +573,7 @@ KBLIB_NODISCARD inline auto escapify(char c) -> std::string {
 
 // Accepts any sequence of char, returns printable string
 template <typename string>
-KBLIB_NODISCARD auto escapify(const string& value) -> std::string {
+KBLIB_NODISCARD constexpr auto escapify(const string& value) -> std::string {
 	std::ostringstream ret;
 	for (char c : value) {
 		if (c < ' ' or c >= '\x7F') {
@@ -587,8 +588,8 @@ KBLIB_NODISCARD auto escapify(const string& value) -> std::string {
 // Given a string and a pointer into it, calculate the effective index of that
 // pointer into a string such as created by kblib::escapify(value)
 template <typename string>
-KBLIB_NODISCARD auto calculate_translated_index(string&& value, const char* p)
-    -> std::ptrdiff_t {
+KBLIB_NODISCARD constexpr auto calculate_translated_index(
+    string&& value, const char* p) -> std::ptrdiff_t {
 	std::ptrdiff_t counter = 0;
 	for (auto&& c : value) {
 		if (&c == p) {
@@ -599,9 +600,8 @@ KBLIB_NODISCARD auto calculate_translated_index(string&& value, const char* p)
 	return counter;
 }
 
-KBLIB_NODISCARD inline auto calculate_translated_index(const char* value,
-                                                       const char* p)
-    -> std::ptrdiff_t {
+KBLIB_NODISCARD constexpr auto calculate_translated_index(
+    const char* value, const char* p) -> std::ptrdiff_t {
 	if (not value) {
 		throw std::invalid_argument(
 		    "calculate_translated_index can't take a nullptr");
@@ -617,7 +617,7 @@ KBLIB_NODISCARD inline auto calculate_translated_index(const char* value,
 }
 
 template <typename character, enable_if_t<is_character_v<character>>* = nullptr>
-KBLIB_NODISCARD auto quoted(character c) -> std::string {
+KBLIB_NODISCARD constexpr auto quoted(character c) -> std::string {
 	if (c < ' ' or c >= '\x7F') {
 		return escapify(c);
 	} else if (c == '"') {
@@ -630,7 +630,7 @@ KBLIB_NODISCARD auto quoted(character c) -> std::string {
 }
 
 template <typename string, enable_if_t<not is_character_v<string>>* = nullptr>
-KBLIB_NODISCARD auto quoted(string&& in) -> std::string {
+KBLIB_NODISCARD constexpr auto quoted(string&& in) -> std::string {
 	std::ostringstream ret;
 	ret << '"';
 	for (char c : in) {
@@ -651,8 +651,9 @@ KBLIB_NODISCARD auto quoted(string&& in) -> std::string {
 // This only uses RTTI because C++ has no other means to get "int" from a
 // template parameter.
 template <typename T>
-KBLIB_NODISCARD auto fromStr(const std::string& val,
-                             const char* type = typeid(T).name()) -> T {
+KBLIB_NODISCARD constexpr auto fromStr(const std::string& val,
+                                       const char* type
+                                       = typeid(T).name()) -> T {
 	std::stringstream ss(val);
 	T ret{};
 	if (not (ss >> std::boolalpha >> ret).fail()) {
@@ -662,13 +663,13 @@ KBLIB_NODISCARD auto fromStr(const std::string& val,
 	}
 }
 template <>
-KBLIB_NODISCARD inline auto fromStr(const std::string& val, const char*)
-    -> std::string {
+KBLIB_NODISCARD constexpr auto fromStr(const std::string& val,
+                                       const char*) -> std::string {
 	return val;
 }
 template <>
-KBLIB_NODISCARD inline auto fromStr(const std::string& val, const char* type)
-    -> bool {
+KBLIB_NODISCARD constexpr auto fromStr(const std::string& val,
+                                       const char* type) -> bool {
 	if (val == "1" or val == "true") {
 		return true;
 	} else if (val == "0" or val == "false") {
@@ -679,8 +680,9 @@ KBLIB_NODISCARD inline auto fromStr(const std::string& val, const char* type)
 }
 
 template <typename T>
-KBLIB_NODISCARD auto fromStr(std::string&& val,
-                             const char* type = typeid(T).name()) -> T {
+KBLIB_NODISCARD constexpr auto fromStr(std::string&& val,
+                                       const char* type
+                                       = typeid(T).name()) -> T {
 	std::stringstream ss(val);
 	T ret;
 	if (not (ss >> std::boolalpha >> ret).fail()) {
@@ -690,13 +692,13 @@ KBLIB_NODISCARD auto fromStr(std::string&& val,
 	}
 }
 template <>
-KBLIB_NODISCARD inline auto fromStr(std::string&& val, const char*)
-    -> std::string {
+KBLIB_NODISCARD constexpr auto fromStr(std::string&& val,
+                                       const char*) -> std::string {
 	return std::move(val);
 }
 template <>
-KBLIB_NODISCARD inline auto fromStr(std::string&& val, const char* type)
-    -> bool {
+KBLIB_NODISCARD constexpr auto fromStr(std::string&& val,
+                                       const char* type) -> bool {
 	if (val == "1" or val == "true") {
 		return true;
 	} else if (val == "0" or val == "false") {
@@ -709,16 +711,17 @@ KBLIB_NODISCARD inline auto fromStr(std::string&& val, const char* type)
 #	if KBLIB_USE_STRING_VIEW
 
 template <>
-KBLIB_NODISCARD inline auto fromStr(const std::string& val, const char*)
-    -> std::string_view {
+KBLIB_NODISCARD constexpr auto fromStr(const std::string& val,
+                                       const char*) -> std::string_view {
 	return val;
 }
 template <>
 inline auto fromStr(std::string&&, const char*) -> std::string_view = delete;
 
 template <typename T>
-KBLIB_NODISCARD auto fromStr(std::string_view val,
-                             const char* type = typeid(T).name()) -> T {
+KBLIB_NODISCARD constexpr auto fromStr(std::string_view val,
+                                       const char* type
+                                       = typeid(T).name()) -> T {
 #		if KBLIB_USE_SPANSTREAM
 	std::ispanstream ss(std::span<const char>(val.data(), val.size()));
 #		else
@@ -732,18 +735,18 @@ KBLIB_NODISCARD auto fromStr(std::string_view val,
 	}
 }
 template <>
-KBLIB_NODISCARD inline auto fromStr(std::string_view val, const char*)
-    -> std::string_view {
+KBLIB_NODISCARD constexpr auto fromStr(std::string_view val,
+                                       const char*) -> std::string_view {
 	return val;
 }
 template <>
-KBLIB_NODISCARD inline auto fromStr(std::string_view val, const char*)
-    -> std::string {
+KBLIB_NODISCARD constexpr auto fromStr(std::string_view val,
+                                       const char*) -> std::string {
 	return std::string(val);
 }
 template <>
-KBLIB_NODISCARD inline auto fromStr(std::string_view val, const char* type)
-    -> bool {
+KBLIB_NODISCARD constexpr auto fromStr(std::string_view val,
+                                       const char* type) -> bool {
 	if (val == "1" or val == "true") {
 		return true;
 	} else if (val == "0" or val == "false") {
@@ -754,34 +757,35 @@ KBLIB_NODISCARD inline auto fromStr(std::string_view val, const char* type)
 }
 
 template <typename To, std::size_t N>
-KBLIB_NODISCARD auto fromStr(const char (&val)[N],
-                             const char* type = typeid(To).name()) -> To {
+KBLIB_NODISCARD constexpr auto fromStr(const char (&val)[N],
+                                       const char* type
+                                       = typeid(To).name()) -> To {
 	// N - 1: remove null terminator
 	return fromStr<To>(std::string_view(val, N - 1), type);
 }
 
 template <typename To, typename _>
-KBLIB_NODISCARD auto fromStr(const char* val,
-                             const char* type = typeid(To).name(), _ = 0)
-    -> To {
+KBLIB_NODISCARD constexpr auto fromStr(const char* val,
+                                       const char* type = typeid(To).name(),
+                                       _ = 0) -> To {
 	return fromStr<To>(std::string_view(val), type);
 }
 
 #	endif
 
 template <typename T>
-KBLIB_NODISCARD auto toStr(T val) -> std::string {
+KBLIB_NODISCARD constexpr auto toStr(T val) -> std::string {
 	std::stringstream ss;
 	ss << val;
 	return ss.str();
 }
-KBLIB_NODISCARD inline auto toStr(std::string val) -> std::string {
+KBLIB_NODISCARD constexpr auto toStr(std::string val) -> std::string {
 	return val;
 }
 
 template <typename To, typename From>
 struct lexical_caster {
-	static auto cast(const From& val, const char* type) -> To {
+	static constexpr auto cast(const From& val, const char* type) -> To {
 		std::stringstream ss;
 		ss << val;
 		To ret;
@@ -796,26 +800,29 @@ struct lexical_caster {
 
 template <typename Same>
 struct lexical_caster<Same, Same> {
-	static auto cast(const Same& val, const char*) -> Same { return val; }
+	static constexpr auto cast(const Same& val, const char*) -> Same {
+		return val;
+	}
 };
 
 template <>
 struct lexical_caster<std::string, std::string> {
-	static auto cast(const std::string& val, const char*) -> std::string {
+	static constexpr auto cast(const std::string& val,
+	                           const char*) -> std::string {
 		return val;
 	}
 };
 
 template <typename From>
 struct lexical_caster<std::string, From> {
-	static auto cast(const From& val, const char*) -> std::string {
+	static constexpr auto cast(const From& val, const char*) -> std::string {
 		return toStr(val);
 	}
 };
 
 template <typename To>
 struct lexical_caster<To, std::string> {
-	static auto cast(const std::string& val, const char* type) -> To {
+	static constexpr auto cast(const std::string& val, const char* type) -> To {
 		return fromStr<To>(val, type);
 	}
 };
@@ -824,23 +831,24 @@ struct lexical_caster<To, std::string> {
 
 template <>
 struct lexical_caster<std::string_view, std::string_view> {
-	static auto cast(const std::string_view& val, const char*)
-	    -> std::string_view {
+	static constexpr auto cast(const std::string_view& val,
+	                           const char*) -> std::string_view {
 		return val;
 	}
 };
 
 template <>
 struct lexical_caster<std::string_view, std::string> {
-	static auto cast(const std::string& val, const char*) -> std::string_view {
+	static constexpr auto cast(const std::string& val,
+	                           const char*) -> std::string_view {
 		return val;
 	}
 };
 
 template <typename From>
 struct lexical_caster<std::string_view, From> {
-	static std::enable_if_t<std::is_convertible_v<From, std::string_view>,
-	                        std::string_view>
+	static constexpr std::enable_if_t<
+	    std::is_convertible_v<From, std::string_view>, std::string_view>
 	cast(const From& val, const char*) {
 		return From(val);
 	}
@@ -853,7 +861,7 @@ struct lexical_caster<std::string_view, From> {
 
 template <typename To>
 struct lexical_caster<To, std::string_view> {
-	static auto cast(std::string_view val, const char* type) -> To {
+	static constexpr auto cast(std::string_view val, const char* type) -> To {
 		return fromStr<To>(val, type);
 	}
 };
@@ -861,14 +869,15 @@ struct lexical_caster<To, std::string_view> {
 #	endif
 
 template <typename To, typename From>
-KBLIB_NODISCARD auto lexical_cast(const From& val,
-                                  const char* type = typeid(To).name()) -> To {
+KBLIB_NODISCARD constexpr auto lexical_cast(const From& val,
+                                            const char* type
+                                            = typeid(To).name()) -> To {
 	return lexical_caster<To, From>::cast(val, type);
 }
 
 #	if 0
 template <typename To, typename From>
-KBLIB_NODISCARD auto lexical_cast(const From& val,
+KBLIB_NODISCARD constexpr auto lexical_cast(const From& val,
                                   const char* type = typeid(To).name()) -> To {
 	using namespace std::literals;
 	if constexpr (std::is_same_v<std::decay_t<To>, std::decay_t<From>>) {

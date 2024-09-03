@@ -72,7 +72,7 @@ template <typename... Ts>
 constexpr bool any_void = (std::is_void_v<Ts> or ...);
 
 template <typename F, typename... T>
-KBLIB_NODISCARD auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
+KBLIB_NODISCARD constexpr auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
     kblib::apply(f, std::forward<T>(t))...}))
     -> enable_if_t<
         not any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>,
@@ -81,7 +81,7 @@ KBLIB_NODISCARD auto map(F f, T&&... t) noexcept(noexcept(std::tuple{
 }
 
 template <typename F, typename... T>
-auto map(F f, T&&... t) noexcept(
+constexpr auto map(F f, T&&... t) noexcept(
     noexcept((static_cast<void>(kblib::apply(f, std::forward<T>(t))), ...)))
     -> enable_if_t<any_void<decltype(kblib::apply(f, std::forward<T>(t)))...>,
                    void> {
@@ -92,20 +92,20 @@ auto map(F f, T&&... t) noexcept(
 template <typename T>
 struct KBLIB_NODISCARD RAII_wrapper {
 	T t;
-	~RAII_wrapper() noexcept(noexcept(t())) { t(); }
+	constexpr ~RAII_wrapper() noexcept(noexcept(t())) { t(); }
 
-	RAII_wrapper(T&& t_)
+	constexpr RAII_wrapper(T&& t_)
 	    : t(std::move(t_)) {}
-	RAII_wrapper(const T& t_)
+	constexpr RAII_wrapper(const T& t_)
 	    : t(t_) {}
-	RAII_wrapper(const RAII_wrapper&) = delete;
-	RAII_wrapper(RAII_wrapper&&) = delete;
-	RAII_wrapper& operator=(const RAII_wrapper&) = delete;
-	RAII_wrapper& operator=(RAII_wrapper&&) = delete;
+	constexpr RAII_wrapper(const RAII_wrapper&) = delete;
+	constexpr RAII_wrapper(RAII_wrapper&&) = delete;
+	constexpr RAII_wrapper& operator=(const RAII_wrapper&) = delete;
+	constexpr RAII_wrapper& operator=(RAII_wrapper&&) = delete;
 };
 
 template <typename F>
-auto defer(F f) {
+constexpr auto defer(F f) {
 	return RAII_wrapper<F>{std::move(f)};
 }
 
@@ -167,8 +167,9 @@ KBLIB_NODISCARD constexpr auto filg2(
     const std::bitset<std::numeric_limits<std::uintmax_t>::digits> val) noexcept
     -> int {
 	for (auto i : range<int>(to_signed(val.size()) - 1, 0, -1)) {
-		if (val[to_unsigned(i)])
+		if (val[to_unsigned(i)]) {
 			return i;
+		}
 	}
 	return 0;
 }
@@ -205,7 +206,7 @@ using int_smallest_t = typename int_smallest<I>::type;
  */
 struct identity {
 	template <typename T>
-	KBLIB_NODISCARD auto operator()(T&& in) -> T&& {
+	KBLIB_NODISCARD constexpr auto operator()(T&& in) -> T&& {
 		return static_cast<T&&>(in);
 	}
 };
@@ -214,7 +215,7 @@ struct identity {
  * @brief Safely propagate an xvalue or lvalue without dangling references
  */
 template <typename T>
-auto safe_auto(T&& in) -> T {
+constexpr auto safe_auto(T&& in) -> T {
 	return std::forward<T>(in);
 }
 
@@ -222,7 +223,7 @@ auto safe_auto(T&& in) -> T {
  * @brief Safely propagate an xvalue or lvalue without dangling references
  */
 template <typename T>
-auto safe_auto(T& in) -> T& {
+constexpr auto safe_auto(T& in) -> T& {
 	return in;
 }
 
@@ -234,7 +235,7 @@ auto safe_auto(T& in) -> T& {
  * order.
  */
 template <typename LeftContainer, typename RightContainer>
-auto arraycat(LeftContainer A, RightContainer&& B) noexcept(
+constexpr auto arraycat(LeftContainer A, RightContainer&& B) noexcept(
     noexcept(A.insert(A.end(), B.begin(), B.end()))
     and std::is_nothrow_move_constructible<LeftContainer>::value)
     -> LeftContainer {
@@ -262,7 +263,7 @@ KBLIB_NODISCARD constexpr auto a(const std::initializer_list<T>& a) -> auto {
 
 template <typename T>
 concept zero_constructible = requires(T t) {
-	{t = 0};
+	{ t = 0 };
 };
 
 struct zero_t {

@@ -18,11 +18,11 @@ struct no_padding {
 
 struct empty_t {};
 
-static_assert(
-    kblib::is_linear_container_v<
-        std::
-            string> and kblib::is_contiguous_v<std::string> and kblib::is_trivially_hashable_v<std::string::value_type> and kblib::is_trivially_hashable_v<int*>,
-    "");
+static_assert(kblib::is_linear_container_v<std::string>
+                  and kblib::is_contiguous_v<std::string>
+                  and kblib::is_trivially_hashable_v<std::string::value_type>
+                  and kblib::is_trivially_hashable_v<int*>,
+              "");
 static_assert(kblib::asserts::is_trivial_container<std::vector<char>>, "");
 
 #if KBLIB_USE_CXX17
@@ -30,19 +30,19 @@ static_assert(kblib::is_trivially_hashable_v<no_padding>);
 static_assert(std::is_same_v<decltype(kblib::FNV_hash<no_padding>{}(
                                  std::declval<no_padding&>())),
                              std::size_t>);
-static_assert(
-    std::is_default_constructible_v<kblib::FNV_hash<
-        no_padding>> and std::is_invocable_r_v<std::size_t, kblib::FNV_hash<no_padding>, const no_padding&>);
+static_assert(std::is_default_constructible_v<kblib::FNV_hash<no_padding>>
+              and std::is_invocable_r_v<
+                  std::size_t, kblib::FNV_hash<no_padding>, const no_padding&>);
 #endif
 
 template <typename T>
 static constexpr bool is_disabled_hash
-    = not (std::is_nothrow_default_constructible_v<kblib::FNV_hash<
-               T>> and std::is_invocable_v<kblib::FNV_hash<T>, const T&>);
+    = not (std::is_nothrow_default_constructible_v<kblib::FNV_hash<T>>
+           and std::is_invocable_v<kblib::FNV_hash<T>, const T&>);
 template <typename T>
 static constexpr bool is_enabled_hash
-    = std::is_nothrow_default_constructible_v<kblib::FNV_hash<T>>and
-        std::is_invocable_r_v<std::size_t, kblib::FNV_hash<T>, const T&>;
+    = std::is_nothrow_default_constructible_v<kblib::FNV_hash<T>>
+      and std::is_invocable_r_v<std::size_t, kblib::FNV_hash<T>, const T&>;
 
 TEST_CASE("FNV_hash") {
 	(void)kblib::FNV_hash<int*>{}({});
@@ -59,11 +59,11 @@ TEST_CASE("FNV_hash") {
 	(void)kblib::FNV_hash<std::set<int>::iterator>{}({});
 
 	std::unordered_map<std::tuple<std::wstring, int*>,
-	                   std::vector<std::basic_string<bool>>, kblib::FNV_hash<>,
+	                   std::vector<std::array<bool, 16>>, kblib::FNV_hash<>,
 	                   std::equal_to<>>
 	    test_map;
 	using map_t = kblib::hash_map<std::tuple<std::wstring, int*>,
-	                              std::vector<std::basic_string<bool>>>;
+	                              std::vector<std::array<bool, 16>>>;
 	static_assert(std::is_same<decltype(test_map), map_t>::value, "");
 	KBLIB_UNUSED kblib::FNV_hash<std::map<int, int>> test_hash1;
 	KBLIB_UNUSED kblib::FNV_hash<std::tuple<int, int*>> test_hash1a;
@@ -71,15 +71,13 @@ TEST_CASE("FNV_hash") {
 	KBLIB_UNUSED kblib::FNV_hash<std::pair<const std::tuple<int, int*>, int>>
 	    test_hash1c;
 	KBLIB_UNUSED kblib::FNV_hash<std::map<std::tuple<std::wstring, int*>,
-	                                      std::vector<std::basic_string<bool>>>>
+	                                      std::vector<std::array<bool, 16>>>>
 	    test_hash2;
-	KBLIB_UNUSED kblib::FNV_hash<std::array<std::basic_string<bool>, 4>>
-	    test_hash3;
+	KBLIB_UNUSED kblib::FNV_hash<std::array<std::array<bool, 16>, 4>> test_hash3;
 	KBLIB_UNUSED auto call = &decltype(test_hash1)::operator();
 	//	std::hash<
-	//	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,
-	//	                       std::hash<std::wstring>>>
-	//	    std_hash;
+	//	    std::unordered_map<std::wstring,
+	// std::vector<std::array<bool, 16>>, std::hash<std::wstring>>> 	    std_hash;
 	using namespace kblib::literals;
 	kblib::FNV_hash<std::uint64_t> h_i;
 	static_assert(3452452_fnv64 == h_i(3452452ull),
@@ -130,18 +128,18 @@ TEST_CASE("FNV_hash (32 bit)") {
 	KBLIB_UNUSED kblib::FNV_hash<std::pair<const std::tuple<int, int*>, int>,
 	                             std::uint32_t>
 	    test_hash1c;
-	KBLIB_UNUSED kblib::FNV_hash<std::map<std::tuple<std::wstring, int*>,
-	                                      std::vector<std::basic_string<bool>>>,
-	                             std::uint32_t>
+	KBLIB_UNUSED
+	kblib::FNV_hash<std::map<std::tuple<std::wstring, int*>,
+	                         std::vector<std::array<bool, 16>>>,
+	                std::uint32_t>
 	    test_hash2;
 	KBLIB_UNUSED
-	kblib::FNV_hash<std::array<std::basic_string<bool>, 4>, std::uint32_t>
+	kblib::FNV_hash<std::array<std::array<bool, 16>, 4>, std::uint32_t>
 	    test_hash3;
 	KBLIB_UNUSED auto call = &decltype(test_hash1)::operator();
 	//	std::hash<
-	//	    std::unordered_map<std::wstring, std::vector<std::basic_string<bool>>,
-	//	                       std::hash<std::wstring>>>
-	//	    std_hash;
+	//	    std::unordered_map<std::wstring,
+	// std::vector<std::array<bool, 16>>, std::hash<std::wstring>>> 	    std_hash;
 	using namespace kblib::literals;
 	kblib::FNV_hash<std::uint64_t, std::uint32_t> h_i;
 	static_assert(3452452_fnv32 == h_i(3452452u),

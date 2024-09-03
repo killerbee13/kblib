@@ -215,27 +215,27 @@ inline namespace nums {
 			                               : std::forward<L>(lhs);
 		}
 
-		KBLIB_NODISCARD constexpr inline friend auto operator==(max_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator==(max_t, max_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator!=(max_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator!=(max_t, max_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<(max_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator<(max_t, max_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>(max_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator>(max_t, max_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<=(max_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator<=(max_t, max_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>=(max_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator>=(max_t, max_t)
 		    -> std::true_type {
 			return {};
 		}
@@ -377,76 +377,76 @@ inline namespace nums {
 			return of<T>() >= t;
 		}
 
-		KBLIB_NODISCARD constexpr inline friend auto operator==(min_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator==(min_t, min_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator!=(min_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator!=(min_t, min_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<(min_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator<(min_t, min_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>(min_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator>(min_t, min_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<=(min_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator<=(min_t, min_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>=(min_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator>=(min_t, min_t)
 		    -> std::true_type {
 			return {};
 		}
 
-		KBLIB_NODISCARD constexpr inline friend auto operator==(max_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator==(max_t, min_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator==(min_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator==(min_t, max_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator!=(max_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator!=(max_t, min_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator!=(min_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator!=(min_t, max_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<(max_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator<(max_t, min_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<(min_t, max_t)
-		    -> std::true_type {
+		KBLIB_NODISCARD constexpr friend auto operator<(min_t,
+		                                                max_t) -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>(max_t, min_t)
-		    -> std::true_type {
+		KBLIB_NODISCARD constexpr friend auto operator>(max_t,
+		                                                min_t) -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>(min_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator>(min_t, max_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<=(max_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator<=(max_t, min_t)
 		    -> std::false_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator<=(min_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator<=(min_t, max_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>=(max_t, min_t)
+		KBLIB_NODISCARD constexpr friend auto operator>=(max_t, min_t)
 		    -> std::true_type {
 			return {};
 		}
-		KBLIB_NODISCARD constexpr inline friend auto operator>=(min_t, max_t)
+		KBLIB_NODISCARD constexpr friend auto operator>=(min_t, max_t)
 		    -> std::false_type {
 			return {};
 		}
@@ -535,8 +535,8 @@ KBLIB_NODISCARD constexpr auto saturating_cast(F x) noexcept
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-KBLIB_NODISCARD constexpr auto quantize_step(F low, F delta, F val) noexcept
-    -> T {
+KBLIB_NODISCARD constexpr auto quantize_step(F low, F delta,
+                                             F val) noexcept -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
 	return static_cast<T>((val - low) * static_cast<T>(max) * delta);
 }
@@ -551,8 +551,8 @@ KBLIB_NODISCARD constexpr auto quantize_step(F low, F delta, F val) noexcept
  * @return The quantized value of the input.
  */
 template <typename T, typename F>
-KBLIB_NODISCARD constexpr auto quantize_range(F low, F high, F val) noexcept
-    -> T {
+KBLIB_NODISCARD constexpr auto quantize_range(F low, F high,
+                                              F val) noexcept -> T {
 	static_assert(std::is_unsigned<T>::value, "Destination must be unsigned.");
 	auto delta = (high - low) / static_cast<T>(max);
 	return static_cast<T>((val - low) * static_cast<T>(max) * delta);
