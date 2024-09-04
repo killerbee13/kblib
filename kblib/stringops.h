@@ -104,8 +104,13 @@ namespace detail {
 	using arithmetic_type_t = typename arithmetic_type<T>::type;
 
 	/**
-	 * @brief Converts arithmetic types to strings, but provides the identity
-	 * transformation for all other types.
+	 * @brief Converts types to strings.
+	 *
+	 * The primary specialization handles arithmetic types.
+	 *
+	 * A natural conversion for an arithmetic type is std::to_string. For any
+	 * other type, a natural conversion is an implicit conversion, if it exists.
+	 * If it does not, it is passed through unchanged.
 	 *
 	 * This is primarily an implementation detail of concat, provided in the main
 	 * namespace because it might be generally useful.
@@ -130,8 +135,8 @@ namespace detail {
 	 * @brief Performs a natural conversion to a stringlike type.
 	 *
 	 * A natural conversion for an arithmetic type is std::to_string. For any
-	 * other type, there is no assumed transformation, so they are passed through
-	 * unchanged.
+	 * other type, a natural conversion is an implicit conversion, if it exists.
+	 * If it does not, it is passed through unchanged.
 	 *
 	 * @note This is primarily an implementation detail of concat, provided in
 	 * the main namespace because it might be generally useful. This partial
@@ -140,12 +145,14 @@ namespace detail {
 	template <typename T>
 	struct str_type<T, void> {
 		/**
-		 * @brief Non-arithmetic types are either already stringlike, or have no
-		 * natural conversion to std::string.
+		 * @brief Non-arithmetic types are either already stringlike, are
+		 * convertible to std::string, or have no natural conversion to
+		 *	std::string.
 		 */
-		using type = T;
+		using type = std::conditional_t<std::is_convertible_v<T, std::string>,
+		                                std::string, T>;
 		/**
-		 * @brief Returns the argument unchanged.
+		 * @brief Returns the potentially-converted argument.
 		 */
 		KBLIB_NODISCARD static auto convert(T&& in) -> type {
 			return std::forward<T>(in);
