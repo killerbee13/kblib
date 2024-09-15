@@ -18,7 +18,7 @@
 #include "kblib/poly_obj.h"
 
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 
 //#define FAST_TEST
 

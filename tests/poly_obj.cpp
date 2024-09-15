@@ -1,6 +1,6 @@
 #include "kblib/poly_obj.h"
 
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 
 #if KBLIB_USE_CXX17
 

@@ -1,5 +1,5 @@
 #include "kblib/stringops.h"
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 
 using namespace std::literals;
 
