@@ -1,5 +1,5 @@
 #include "kblib/build.h"
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 #include <array>
 #include <iostream>
 

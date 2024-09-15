@@ -1,6 +1,6 @@
 #define KBLIB_DEF_MACROS 1
 #include "kblib/bits.h"
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 #include "kblib/hash.h"
 
 #include <type_traits>

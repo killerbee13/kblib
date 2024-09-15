@@ -1,7 +1,7 @@
 #include "kblib/iterators.h"
 #include "kblib/build.h"
 
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 
 #include <iterator>
 #include <list>

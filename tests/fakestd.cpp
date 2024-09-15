@@ -1,5 +1,5 @@
 #include "kblib/fakestd.h"
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 
 template <class... Args>
 struct Ref {

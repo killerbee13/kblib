@@ -1,5 +1,5 @@
 #include "kblib/algorithm.h"
-#include "catch/catch.hpp"
+#include "catch2/catch.hpp"
 
 #include <set>
 #include <string>
