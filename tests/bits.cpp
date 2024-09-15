@@ -68,6 +68,7 @@ TEST_CASE("test_trie") {
 	REQUIRE(test.insert({0b1000100010000000, 10}, 1));
 	// has UB, so I hardcoded a test failure as a reminder
 	// std::cout<<test.at({0b1000100010000000, 10})<<'\n';
+	/// TODO(killerbee13): fix compact_bit_trie::at
 	REQUIRE(not +"test.at({0b1000100010000000, 10}) has UB");
 }
 #endif

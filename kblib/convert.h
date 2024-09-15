@@ -29,6 +29,7 @@
  * @copyright GNU General Public Licence v3.0
  */
 
+#include "kblib/stats.h"
 #if KBLIB_DEF_MACROS and not defined(pFromStr)
 #	define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
 #endif
@@ -139,6 +140,9 @@ namespace detail_convert {
 		Result result{};
 		for (auto c : indirect(begin, end)) {
 			if (c != '\'') {
+				if (result > static_cast<Result>(max.of<Result>() / base)) {
+					throw std::invalid_argument("Integer out of range for type");
+				}
 				result *= base;
 				auto pos = find_in(std::begin(digits),
 				                   std::begin(digits) + base * variants, c);
@@ -154,19 +158,39 @@ namespace detail_convert {
 
 } // namespace detail_convert
 
+/// TODO(killerbee13): implement parsing for signed min (the value with no
+/// positive counterpart)
 template <typename Result>
 KBLIB_NODISCARD constexpr auto parse_integer(const char* begin, const char* end,
                                              int base = 0) -> Result {
 	if (begin == end) {
 		throw std::invalid_argument("\"\" is not an integer");
 	} else if (*begin == '-') {
+		if (begin + 1 == end) {
+			throw std::invalid_argument("\"-\" is not an integer");
+		}
+		if (begin[1] == '-' or begin[1] == '+') {
+			throw std::invalid_argument("Too many signs in integer");
+		}
 		return -parse_integer<Result>(begin + 1, end, base);
-	} else if (base == 0) {
+	}
+	if (begin[0] == '+') {
+		if (begin + 1 == end) {
+			throw std::invalid_argument("\"+\" is not an integer");
+		}
+		if (begin[1] == '+' or begin[1] == '-') {
+			throw std::invalid_argument("Too many signs in integer");
+		}
+		++begin;
+	}
+	if (base == 0) {
 		if (*begin == '0') {
 			if (begin + 1 == end) {
 				return 0;
 			} else if (begin[1] == '-' or (begin + 2 != end and begin[2] == '-')) {
 				throw std::invalid_argument("unexpected - in integer");
+			} else if (begin[1] == '+' or (begin + 2 != end and begin[2] == '+')) {
+				throw std::invalid_argument("unexpected + in integer");
 			} else {
 				switch (begin[1]) {
 				case 'x':

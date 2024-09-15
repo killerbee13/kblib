@@ -108,6 +108,7 @@ constexpr auto count_digits(Number val, int base) -> int {
 	if (val == 0) {
 		return 1;
 	} else if (std::is_floating_point<Number>::value) {
+		/// TODO(killerbee13): implement floating-point count_digits
 		return static_cast<int>(
 		    std::ceil(std::numeric_limits<Number>::digits * std::logb(base)));
 	} else {

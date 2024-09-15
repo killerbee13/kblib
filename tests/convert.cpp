@@ -33,12 +33,27 @@ TEST_CASE("parse_integer") {
 	                     Message("\"\" is not an integer"));
 	CHECK(kblib::parse_integer<long>("0") == 0);
 	CHECK(kblib::parse_integer<long>("1") == 1);
+	CHECK(kblib::parse_integer<long>("+1") == 1);
 	CHECK(kblib::parse_integer<long>("-1") == -1);
 	CHECK(kblib::parse_integer<long>("10") == 10);
 	CHECK(kblib::parse_integer<long>("010") == 010);
 	CHECK(kblib::parse_integer<long>("0x10") == 0x10);
 	CHECK(kblib::parse_integer<long>("0b10") == 0b10);
-	CHECK(kblib::parse_integer<long>("0b1'0000'0000'0000'0000") == 65536);
+	CHECK(kblib::parse_integer<long>("0b1'0000'0000'0000'0000")
+	      == 0b1'0000'0000'0000'0000);
+	CHECK(kblib::parse_integer<long>("-10") == -10);
+	CHECK(kblib::parse_integer<long>("+10") == 10);
+	// octal literals
+	CHECK(kblib::parse_integer<long>("-010") == -010);
+	CHECK(kblib::parse_integer<long>("+010") == 010);
+	CHECK(kblib::parse_integer<long>("-0x10") == -0x10);
+	CHECK(kblib::parse_integer<long>("+0x10") == 0x10);
+	CHECK(kblib::parse_integer<long>("-0b10") == -0b10);
+	CHECK(kblib::parse_integer<long>("+0b10") == 0b10);
+	CHECK(kblib::parse_integer<long>("-0b1'0000'0000'0000'0000")
+	      == -0b1'0000'0000'0000'0000);
+	CHECK(kblib::parse_integer<long>("+0b1'0000'0000'0000'0000")
+	      == 0b1'0000'0000'0000'0000);
 
 	CHECK_THROWS_AS(kblib::parse_integer<long>("", 1), std::invalid_argument);
 	CHECK_THROWS_MATCHES(
@@ -56,12 +71,27 @@ TEST_CASE("parse_integer") {
 	CHECK_THROWS_MATCHES(kblib::parse_integer<long>("0-1"),
 	                     std::invalid_argument,
 	                     Message("unexpected - in integer"));
+	CHECK_THROWS_MATCHES(kblib::parse_integer<long>("0-"), std::invalid_argument,
+	                     Message("unexpected - in integer"));
 	CHECK_THROWS_MATCHES(kblib::parse_integer<long>("0x-1"),
 	                     std::invalid_argument,
 	                     Message("unexpected - in integer"));
 	CHECK_THROWS_MATCHES(kblib::parse_integer<long>("0b-1"),
 	                     std::invalid_argument,
 	                     Message("unexpected - in integer"));
+	CHECK_THROWS_AS(kblib::parse_integer<long>("0+"), std::invalid_argument);
+	CHECK_THROWS_AS(kblib::parse_integer<long>("0+1"), std::invalid_argument);
+	CHECK_THROWS_AS(kblib::parse_integer<long>("0x+1"), std::invalid_argument);
+	CHECK_THROWS_AS(kblib::parse_integer<long>("0b+1"), std::invalid_argument);
+	CHECK_THROWS_AS(kblib::parse_integer<long>("--1"), std::invalid_argument);
+	CHECK_THROWS_AS(kblib::parse_integer<long>("-+1"), std::invalid_argument);
+	CHECK_THROWS_AS(kblib::parse_integer<long>("+-1"), std::invalid_argument);
+	CHECK_THROWS_AS(kblib::parse_integer<long>("++1"), std::invalid_argument);
+
+	// signed min: (NYI)
+	CHECK(kblib::parse_integer<std::int16_t>("-32768") == -32768);
+	CHECK(kblib::parse_integer<std::int32_t>("-0x80'00'00'00")
+	      == static_cast<std::int32_t>(-0x80'00'00'00));
 }
 
 TEST_CASE("fromStr") {

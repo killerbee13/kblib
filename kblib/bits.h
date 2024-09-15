@@ -39,8 +39,6 @@
 #include <utility>
 #include <vector>
 
-#include <iostream>
-
 #include "fakestd.h"
 #include "simple.h"
 #include "stats.h"
