@@ -68,6 +68,7 @@ HEADERS += \
     kblib/enumerate-contrib-tw.h
 
 DISTFILES += \
+    .clang-format \
     LICENSE.txt \
     README.md \
     doc/table_ana.yml \
