@@ -83,13 +83,15 @@ DISTFILES += \
 
 VERSION = 0.4.02
 
-QMAKE_CXXFLAGS += -std=c++2b -g
+QMAKE_CXXFLAGS += -std=c++23 -g
 QMAKE_CXXFLAGS += -march=native
 
 QMAKE_LFLAGS += -v
 
 #QMAKE_CXXFLAGS += -stdlib=libc++ -fstandalone-debug
-QMAKE_CXXFLAGS += -Wall -Wextra -Wpedantic -Wshadow
+QMAKE_CXXFLAGS += -Wall -Wextra -Wpedantic
+QMAKE_CXXFLAGS += -Wshadow # clang
+#QMAKE_CXXFLAGS += -Wshadow=compatible-local # gcc
 QMAKE_CXXFLAGS += -Wno-missing-braces
 QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations \
  -Wold-style-cast -Wzero-as-null-pointer-constant \

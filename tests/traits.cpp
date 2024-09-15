@@ -9,7 +9,7 @@ static_assert(not std::is_reference<kblib::member_of_t<decltype(&k::c)>>::value,
               "");
 static_assert(kblib::is_iterable<int[10]>::value, "");
 
-static void f(int i, std::string s) {}
+static void f(int, std::string) {}
 
 TEST_CASE("type_constant") {
 	auto fw = kblib::type_constant<decltype(f)*, f>{};
