@@ -1,5 +1,5 @@
 #include "kblib/delayed_construct.h"
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #if KBLIB_USE_CXX17
 

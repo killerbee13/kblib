@@ -1,5 +1,5 @@
 #include "kblib/io.h"
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #include "kblib/hash.h"
 

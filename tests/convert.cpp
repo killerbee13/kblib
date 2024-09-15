@@ -1,5 +1,5 @@
 #include "kblib/convert.h"
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 using namespace std::literals;
 

@@ -1,5 +1,5 @@
 #include "kblib/containers.h"
-#include "catch.hpp"
+#include "catch/catch.hpp"
 #include "kblib/algorithm.h"
 
 #include <iostream>

@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #include "kblib/format.h"
 #include "kblib/iterators.h"

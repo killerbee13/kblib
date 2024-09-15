@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #if KBLIB_USE_CXX17
 

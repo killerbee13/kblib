@@ -2,7 +2,7 @@
 
 #if KBLIB_USE_CXX17
 
-#	include "catch.hpp"
+#	include "catch/catch.hpp"
 
 #	include <string>
 

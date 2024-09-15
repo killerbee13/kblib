@@ -1,7 +1,7 @@
 #if KBLIB_USE_CXX17
 
 #	include "kblib/multi_span.h"
-#	include "catch.hpp"
+#	include "catch/catch.hpp"
 
 #	include <array>
 #	include <sstream>

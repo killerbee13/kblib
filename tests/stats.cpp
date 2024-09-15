@@ -1,6 +1,6 @@
 #include "kblib/stats.h"
 
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #include <array>
 #include <cmath>

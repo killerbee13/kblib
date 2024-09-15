@@ -1,7 +1,7 @@
 #define KBLIB_DEBUG_SEED_SEQ 1
 
 #include "kblib/random.h"
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #include <iostream>
 #include <sstream>

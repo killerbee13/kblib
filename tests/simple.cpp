@@ -1,5 +1,5 @@
 #include "kblib/simple.h"
-#include "catch.hpp"
+#include "catch/catch.hpp"
 #include "kblib/stats.h"
 
 template <typename>

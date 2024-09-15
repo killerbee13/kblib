@@ -1,6 +1,6 @@
 #include "kblib/hash.h"
 
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #include <deque>
 #include <map>

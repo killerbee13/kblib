@@ -9,7 +9,7 @@
 #include <set>
 #include <string_view>
 
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
 #if KBLIB_USE_CXX17
 template <class T>

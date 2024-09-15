@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "catch/catch.hpp"
 #include <chrono>
 #include <iostream>
 #include <map>

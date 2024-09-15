@@ -1,6 +1,6 @@
 #include "kblib/memory.h"
 
-#include "catch.hpp"
+#include "catch/catch.hpp"
 #include "kblib/fakestd.h"
 
 TEST_CASE("live_ptr<int>") {

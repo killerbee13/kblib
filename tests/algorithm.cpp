@@ -1,7 +1,6 @@
 #include "kblib/algorithm.h"
-#include "catch.hpp"
+#include "catch/catch.hpp"
 
-#include <iostream>
 #include <set>
 #include <string>
 #include <vector>
