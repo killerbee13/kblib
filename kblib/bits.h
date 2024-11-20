@@ -141,8 +141,8 @@ class compact_bit_trie {
 	static_assert(std::is_nothrow_destructible<mapped_type>::value,
 	              "mapped_type must be nothrow destructible.");
 
-	KBLIB_NODISCARD auto at(key_type key) const noexcept(false)
-	    -> const_reference {
+	KBLIB_NODISCARD auto at(key_type key) const
+	    noexcept(false) -> const_reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -211,8 +211,8 @@ class compact_bit_trie {
 	}
 
 	KBLIB_NODISCARD auto find_deep(key_type key,
-	                               size_type depth = -1) noexcept(false)
-	    -> reference {
+	                               size_type depth
+	                               = -1) noexcept(false) -> reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -486,59 +486,59 @@ namespace detail_bits {
  * @note This macro is defined unconditionally.
  * @note This macro resets the access level to public:
  */
-#define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)                 \
-	static_assert(offset >= 0 and size > 0,                                     \
-	              "BITFIELD cannot have negative offset or size");              \
-                                                                               \
- private:                                                                      \
-	constexpr auto name##_get_impl() const noexcept->decltype(raw) {            \
-		return (raw >> kblib::to_unsigned(offset))                               \
-		       & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u);          \
-	}                                                                           \
-                                                                               \
- public:                                                                       \
-	KBLIB_NODISCARD constexpr auto name() const noexcept->decltype(raw) {       \
-		return name##_get_impl();                                                \
-	}                                                                           \
-                                                                               \
- private:                                                                      \
-	constexpr auto name##_set_impl(const decltype(raw) val) noexcept->decltype( \
-	    raw) {                                                                  \
-		/* Clear the bits for this field */                                      \
-		raw &= ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u)           \
-		         << kblib::to_unsigned(offset));                                 \
-		/* Set the field */                                                      \
-		raw |= (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u))     \
-		       << kblib::to_unsigned(offset);                                    \
-		return val;                                                              \
-	}                                                                           \
-                                                                               \
- public:                                                                       \
-	constexpr auto name(const decltype(raw) val) noexcept->decltype(raw) {      \
-		return name##_set_impl(val);                                             \
-	}                                                                           \
-                                                                               \
-	KBLIB_NODISCARD constexpr auto name() noexcept->auto {                      \
-		using Parent = std::remove_pointer<decltype(this)>::type;                \
-		return kblib::detail_bits::bitfield_proxy<Parent, decltype(raw),         \
-		                                          &Parent::name##_set_impl,      \
-		                                          &Parent::name##_get_impl>{     \
-		    this};                                                               \
-	}                                                                           \
-                                                                               \
-	template <decltype(raw) val, decltype(raw) basis = 0>                       \
-	constexpr static decltype(raw) set_##name##_v                               \
-	    = (basis                                                                \
-	       & ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u)            \
-	           << kblib::to_unsigned(offset)))                                  \
-	      | (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u))       \
-	            << kblib::to_unsigned(offset);                                  \
-                                                                               \
-	template <decltype(raw) basis>                                              \
-	constexpr static decltype(raw) get_##name##_v                               \
-	    = (basis >> kblib::to_unsigned(offset))                                 \
-	      & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u);              \
-	constexpr static std::size_t name##_shift_v = offset;                       \
+#define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)              \
+	static_assert(offset >= 0 and size > 0,                                  \
+	              "BITFIELD cannot have negative offset or size");           \
+                                                                            \
+ private:                                                                   \
+	constexpr auto name##_get_impl() const noexcept -> decltype(raw) {       \
+		return (raw >> kblib::to_unsigned(offset))                            \
+		       & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u);       \
+	}                                                                        \
+                                                                            \
+ public:                                                                    \
+	KBLIB_NODISCARD constexpr auto name() const noexcept -> decltype(raw) {  \
+		return name##_get_impl();                                             \
+	}                                                                        \
+                                                                            \
+ private:                                                                   \
+	constexpr auto name##_set_impl(                                          \
+	    const decltype(raw) val) noexcept -> decltype(raw) {                 \
+		/* Clear the bits for this field */                                   \
+		raw &= ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u)        \
+		         << kblib::to_unsigned(offset));                              \
+		/* Set the field */                                                   \
+		raw |= (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u))  \
+		       << kblib::to_unsigned(offset);                                 \
+		return val;                                                           \
+	}                                                                        \
+                                                                            \
+ public:                                                                    \
+	constexpr auto name(const decltype(raw) val) noexcept -> decltype(raw) { \
+		return name##_set_impl(val);                                          \
+	}                                                                        \
+                                                                            \
+	KBLIB_NODISCARD constexpr auto name() noexcept -> auto {                 \
+		using Parent = std::remove_pointer<decltype(this)>::type;             \
+		return kblib::detail_bits::bitfield_proxy<Parent, decltype(raw),      \
+		                                          &Parent::name##_set_impl,   \
+		                                          &Parent::name##_get_impl>{  \
+		    this};                                                            \
+	}                                                                        \
+                                                                            \
+	template <decltype(raw) val, decltype(raw) basis = 0>                    \
+	constexpr static decltype(raw) set_##name##_v                            \
+	    = (basis                                                             \
+	       & ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u)         \
+	           << kblib::to_unsigned(offset)))                               \
+	      | (val & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u))    \
+	            << kblib::to_unsigned(offset);                               \
+                                                                            \
+	template <decltype(raw) basis>                                           \
+	constexpr static decltype(raw) get_##name##_v                            \
+	    = (basis >> kblib::to_unsigned(offset))                              \
+	      & ((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u);           \
+	constexpr static std::size_t name##_shift_v = offset;                    \
 	constexpr static std::size_t name##_width_v = size;
 
 namespace detail_bits {
