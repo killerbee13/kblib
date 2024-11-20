@@ -1,5 +1,5 @@
 #include "kblib/traits.h"
-#include <catch.hpp>
+#include "catch/catch.hpp"
 
 struct k {
 	char c[10];

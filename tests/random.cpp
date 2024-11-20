@@ -113,3 +113,7 @@ TEST_CASE("transform_engine") {
 	std::uniform_int_distribution<int> dist;
 	(void)dist(gen);
 }
+
+TEST_CASE("LCG verification") {
+	//
+}

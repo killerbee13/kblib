@@ -76,10 +76,13 @@ struct small_base {
 	virtual auto id() const -> int { return 0; }
 };
 struct big_derived : small_base {
-	std::size_t x
-	    = (static_cast<void>(x = 1),
-	       kblib::FNVa_a<std::size_t>(
-	           reinterpret_cast<const char (&)[sizeof(big_derived)]>(*this)));
+	std::size_t x;
+	big_derived()
+	    : x(1) {
+
+		x = kblib::FNVa_a<std::size_t>(
+		    reinterpret_cast<const char(&)[sizeof(big_derived)]>(*this));
+	}
 	auto bark() const -> void override { bark_log.push_back(vbig_derived); }
 	~big_derived() noexcept override = default;
 	auto id() const -> int override { return 1; }

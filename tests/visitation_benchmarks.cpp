@@ -24,6 +24,8 @@
 
 #if KBLIB_USE_CXX17
 
+#	ifndef FAST_TEST
+
 namespace {
 struct Base {
 	virtual auto operator()() const noexcept -> unsigned = 0;
@@ -36,34 +38,6 @@ struct Base {
 	// file
 	[[maybe_unused]] constexpr static inline std::size_t max_derived_size
 	    = sizeof(unsigned);
-};
-
-struct Derived1 final : Base {
-	auto operator()() const noexcept -> unsigned override { return member; }
-	unsigned member;
-	Derived1(unsigned i)
-	    : member(i) {}
-};
-
-struct Derived2 final : Base {
-	auto operator()() const noexcept -> unsigned override { return member * 2; }
-	unsigned member;
-	Derived2(unsigned i)
-	    : member(i) {}
-};
-
-struct Derived3 final : Base {
-	auto operator()() const noexcept -> unsigned override { return member / 2; }
-	unsigned member;
-	Derived3(unsigned i)
-	    : member(i) {}
-};
-
-struct Derived4 final : Base {
-	auto operator()() const noexcept -> unsigned override { return ~member; }
-	unsigned member;
-	Derived4(unsigned i)
-	    : member(i) {}
 };
 
 struct thrower final : Base {
@@ -95,13 +69,126 @@ struct fptr {
 	auto operator()() const noexcept -> unsigned { return p(this); }
 };
 
-auto fptr_d1(const fptr* p) noexcept -> unsigned { return p->member; }
-auto fptr_d2(const fptr* p) noexcept -> unsigned { return p->member * 2; }
-auto fptr_d3(const fptr* p) noexcept -> unsigned { return p->member / 2; }
-auto fptr_d4(const fptr* p) noexcept -> unsigned { return ~p->member; }
+#		define MAKE_DERIVED2(Number, Expr)                           \
+			auto fptr_d##Number(const fptr* p) noexcept->unsigned {    \
+				const auto x = p->member;                               \
+				return Expr;                                            \
+			}                                                          \
+			struct Derived##Number final : Base {                      \
+				auto operator()() const noexcept -> unsigned override { \
+					return Expr;                                         \
+				}                                                       \
+				unsigned x;                                             \
+				Derived##Number(unsigned i)                             \
+				    : x(i) {}                                           \
+			}
+#		define MAKE_DERIVED(Number, Expr) MAKE_DERIVED2(Number, Expr)
 
+constexpr auto big_number = kblib::fnv::fnv_prime<unsigned>::value;
+
+MAKE_DERIVED(__COUNTER__, x);
+MAKE_DERIVED(__COUNTER__, x * 2);
+MAKE_DERIVED(__COUNTER__, x / 2);
+MAKE_DERIVED(__COUNTER__, ~x);
+MAKE_DERIVED(__COUNTER__, x + 42);
+MAKE_DERIVED(__COUNTER__, x * 2 + 42);
+MAKE_DERIVED(__COUNTER__, -x);
+MAKE_DERIVED(__COUNTER__, x - 42);
+MAKE_DERIVED(__COUNTER__, 42 - x);
+MAKE_DERIVED(__COUNTER__, (x * x));
+MAKE_DERIVED(__COUNTER__, (x * x * 2));
+MAKE_DERIVED(__COUNTER__, -x - 42);
+MAKE_DERIVED(__COUNTER__, x & 42);
+MAKE_DERIVED(__COUNTER__, x | 42);
+MAKE_DERIVED(__COUNTER__, x << 2);
+MAKE_DERIVED(__COUNTER__, x >> 2);
+MAKE_DERIVED(__COUNTER__, ~x << 2);
+MAKE_DERIVED(__COUNTER__, ~x >> 2);
+MAKE_DERIVED(__COUNTER__, (x >> 8) | (x << 24));
+MAKE_DERIVED(__COUNTER__, (x >> 16) | (x << 16));
+MAKE_DERIVED(__COUNTER__, (x >> 24) | (x << 8));
+MAKE_DERIVED(__COUNTER__, (~x >> 8) | (~x << 24));
+MAKE_DERIVED(__COUNTER__, (~x >> 16) | (~x << 16));
+MAKE_DERIVED(__COUNTER__, (~x >> 24) | (~x << 8));
+MAKE_DERIVED(__COUNTER__, (static_cast<void>(x), 42));
+MAKE_DERIVED(__COUNTER__, (x >> 16) | (~x << 16));
+MAKE_DERIVED(__COUNTER__, (~x >> 16) | (x << 16));
+MAKE_DERIVED(__COUNTER__, x ^ 42);
+MAKE_DERIVED(__COUNTER__, x ^ ((x >> 16) | (x << 16)));
+MAKE_DERIVED(__COUNTER__, -~x);
+MAKE_DERIVED(__COUNTER__, ~-x);
+MAKE_DERIVED(__COUNTER__, x * 42);
+MAKE_DERIVED(__COUNTER__, -x * 42);
+MAKE_DERIVED(__COUNTER__, -x / 42);
+MAKE_DERIVED(__COUNTER__, x % 42);
+MAKE_DERIVED(__COUNTER__, -(x % 42));
+MAKE_DERIVED(__COUNTER__, (x * big_number));
+MAKE_DERIVED(__COUNTER__, x ^ big_number);
+MAKE_DERIVED(__COUNTER__, x + big_number);
+MAKE_DERIVED(__COUNTER__, x - big_number);
+MAKE_DERIVED(__COUNTER__, big_number - x);
+MAKE_DERIVED(__COUNTER__, x / big_number);
+MAKE_DERIVED(__COUNTER__, x % big_number);
+MAKE_DERIVED(__COUNTER__, big_number / x);
+MAKE_DERIVED(__COUNTER__, big_number % x);
+MAKE_DERIVED(__COUNTER__, (void(x), big_number));
+MAKE_DERIVED(__COUNTER__, x + (big_number >> 16));
+MAKE_DERIVED(__COUNTER__, x + (big_number >> 24));
+MAKE_DERIVED(__COUNTER__, (x << 16) + big_number);
+MAKE_DERIVED(__COUNTER__, (x << 16) - big_number);
+MAKE_DERIVED(__COUNTER__, big_number - (x << 16));
+MAKE_DERIVED(__COUNTER__, (x << 16) ^ big_number);
+MAKE_DERIVED(__COUNTER__, (x << 16) / big_number);
+MAKE_DERIVED(__COUNTER__, big_number / (x << 16));
+MAKE_DERIVED(__COUNTER__, (x << 16) & big_number);
+MAKE_DERIVED(__COUNTER__, (x << 16) + (big_number & 0x0000FFFF));
+MAKE_DERIVED(__COUNTER__, (x << 16) % big_number);
+MAKE_DERIVED(__COUNTER__, big_number % (x << 16));
+MAKE_DERIVED(__COUNTER__, x * 42 + big_number);
+MAKE_DERIVED(__COUNTER__, (x * (big_number % 42)));
+MAKE_DERIVED(__COUNTER__, (x * (-big_number % 42)));
+MAKE_DERIVED(__COUNTER__, (x * 14 + (big_number >> 16)));
+MAKE_DERIVED(__COUNTER__, (x * 14 - (big_number >> 16)));
+MAKE_DERIVED(__COUNTER__, (x * 14 ^ (big_number >> 16)));
+
+using variant_type = std::variant<
+    Derived0, Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
+    Derived7, Derived8, Derived9, Derived10, Derived11, Derived12, Derived13,
+    Derived14, Derived15, Derived16, Derived17, Derived18, Derived19, Derived20,
+    Derived21, Derived22, Derived23, Derived24, Derived25, Derived26, Derived27,
+    Derived28, Derived29, Derived30, Derived31, Derived32, Derived33, Derived34,
+    Derived35, Derived36, Derived37, Derived38, Derived39, Derived40, Derived41,
+    Derived42, Derived43, Derived44, Derived45, Derived46, Derived47, Derived48,
+    Derived49, Derived50, Derived51, Derived52, Derived53, Derived54, Derived55,
+    Derived56, Derived57, Derived58, Derived59, Derived60, Derived61, Derived62,
+    Derived63>;
+using variant_type_throws = std::variant<
+    Derived0, Derived1, Derived2, Derived3, Derived4, Derived5, Derived6,
+    Derived7, Derived8, Derived9, Derived10, Derived11, Derived12, Derived13,
+    Derived14, Derived15, Derived16, Derived17, Derived18, Derived19, Derived20,
+    Derived21, Derived22, Derived23, Derived24, Derived25, Derived26, Derived27,
+    Derived28, Derived29, Derived30, Derived31, Derived32, Derived33, Derived34,
+    Derived35, Derived36, Derived37, Derived38, Derived39, Derived40, Derived41,
+    Derived42, Derived43, Derived44, Derived45, Derived46, Derived47, Derived48,
+    Derived49, Derived50, Derived51, Derived52, Derived53, Derived54, Derived55,
+    Derived56, Derived57, Derived58, Derived59, Derived60, Derived61, Derived62,
+    Derived63, thrower>;
+constexpr std::array<decltype(&fptr_d0), 64> fptrs{
+    fptr_d0,  fptr_d1,  fptr_d2,  fptr_d3,  fptr_d4,  fptr_d5,  fptr_d6,
+    fptr_d7,  fptr_d8,  fptr_d9,  fptr_d10, fptr_d11, fptr_d12, fptr_d13,
+    fptr_d14, fptr_d15, fptr_d16, fptr_d17, fptr_d18, fptr_d19, fptr_d20,
+    fptr_d21, fptr_d22, fptr_d23, fptr_d24, fptr_d25, fptr_d26, fptr_d27,
+    fptr_d28, fptr_d29, fptr_d30, fptr_d31, fptr_d32, fptr_d33, fptr_d34,
+    fptr_d35, fptr_d36, fptr_d37, fptr_d38, fptr_d39, fptr_d40, fptr_d41,
+    fptr_d42, fptr_d43, fptr_d44, fptr_d45, fptr_d46, fptr_d47, fptr_d48,
+    fptr_d49, fptr_d50, fptr_d51, fptr_d52, fptr_d53, fptr_d54, fptr_d55,
+    fptr_d56, fptr_d57, fptr_d58, fptr_d59, fptr_d60, fptr_d61, fptr_d62,
+    fptr_d63,
+};
+
+template <unsigned N = 4u>
 auto make_fptr(unsigned v) noexcept -> fptr {
-	switch (v % 4u) {
+	switch (v % N) {
 	case 0:
 		return {v, &fptr_d1};
 	case 1:
@@ -113,12 +200,34 @@ auto make_fptr(unsigned v) noexcept -> fptr {
 	default:
 		__builtin_unreachable();
 	}
+	return {v, fptrs[v % N]};
+}
+
+template <std::size_t Num, std::size_t... Is, typename T, typename F>
+auto do_push_elem(std::index_sequence<Is...>, T& d, unsigned v, F f) {
+	const auto i = v % Num;
+	((i == Is
+	  and (d.emplace_back(f(kblib::constant<std::size_t, Is>{}, v)), true))
+	 or ...);
+	return;
+}
+
+template <std::size_t Num, typename T, typename F>
+auto push_elem(T& d, unsigned v, F f) {
+	return do_push_elem<Num>(std::make_index_sequence<Num>{}, d, v, f);
+};
+
+template <typename... Ts>
+auto baseline_generic(std::vector<Ts>... args) {
+	return (
+	    std::accumulate(args.begin(), args.end(), 0u,
+	                    [](unsigned accum, const Ts& x) { return accum + x(); })
+	    + ... + 0);
 }
 
 } // namespace
 
-#	ifndef FAST_TEST
-TEST_CASE("poly_obj performance") {
+TEST_CASE("poly_obj performance(4_old)") {
 	const auto start = std::chrono::steady_clock::now();
 #		ifdef NDEBUG
 	constexpr unsigned count = 1000;
@@ -213,11 +322,11 @@ TEST_CASE("poly_obj performance") {
 	 *
 	 */
 
-	BENCHMARK_ADVANCED("baseline")(Catch::Benchmark::Chronometer meter) {
-		std::vector<Derived1> d1;
-		std::vector<Derived2> d2;
-		std::vector<Derived3> d3;
-		std::vector<Derived4> d4;
+	{
+		std::vector<Derived0> d1;
+		std::vector<Derived1> d2;
+		std::vector<Derived2> d3;
+		std::vector<Derived3> d4;
 		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
@@ -236,24 +345,32 @@ TEST_CASE("poly_obj performance") {
 			}
 		}
 
-		unsigned accum{};
-		meter.measure([&] {
-			for (const auto& x : d1) {
-				accum += x();
-			}
-			for (const auto& x : d2) {
-				accum += x();
-			}
-			for (const auto& x : d3) {
-				accum += x();
-			}
-			for (const auto& x : d4) {
-				accum += x();
-			}
-			return accum;
-		});
-		// push_checksum(accum, "baseline");
-	};
+		BENCHMARK_ADVANCED("baseline")(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			meter.measure([&] {
+				for (const auto& x : d1) {
+					accum += x();
+				}
+				for (const auto& x : d2) {
+					accum += x();
+				}
+				for (const auto& x : d3) {
+					accum += x();
+				}
+				for (const auto& x : d4) {
+					accum += x();
+				}
+				return accum;
+			});
+			push_checksum(accum, "baseline");
+		};
+		BENCHMARK_ADVANCED("baseline_generic")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			meter.measure([&] { accum = baseline_generic(d1, d2, d3, d4); });
+			push_checksum(accum, "baseline_generic");
+		};
+	}
 	BENCHMARK_ADVANCED("raw pointer")(Catch::Benchmark::Chronometer meter) {
 		std::vector<Base*> d;
 		kblib::FNV32_hash<unsigned> h;
@@ -261,16 +378,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
-				d.push_back(new Derived1(v));
+				d.push_back(new Derived0(v));
 				break;
 			case 1:
-				d.push_back(new Derived2(v));
+				d.push_back(new Derived1(v));
 				break;
 			case 2:
-				d.push_back(new Derived3(v));
+				d.push_back(new Derived2(v));
 				break;
 			case 3:
-				d.push_back(new Derived4(v));
+				d.push_back(new Derived3(v));
 			}
 		}
 
@@ -294,16 +411,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = h(i);
 			switch (v % 4) {
 			case 0:
-				d.push_back(std::make_unique<Derived1>(v));
+				d.push_back(std::make_unique<Derived0>(v));
 				break;
 			case 1:
-				d.push_back(std::make_unique<Derived2>(v));
+				d.push_back(std::make_unique<Derived1>(v));
 				break;
 			case 2:
-				d.push_back(std::make_unique<Derived3>(v));
+				d.push_back(std::make_unique<Derived2>(v));
 				break;
 			case 3:
-				d.push_back(std::make_unique<Derived4>(v));
+				d.push_back(std::make_unique<Derived3>(v));
 			}
 		}
 
@@ -323,16 +440,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = h(i);
 			switch (v % 4) {
 			case 0:
-				d.push_back(poly_t::make<Derived1>(v));
+				d.push_back(poly_t::make<Derived0>(v));
 				break;
 			case 1:
-				d.push_back(poly_t::make<Derived2>(v));
+				d.push_back(poly_t::make<Derived1>(v));
 				break;
 			case 2:
-				d.push_back(poly_t::make<Derived3>(v));
+				d.push_back(poly_t::make<Derived2>(v));
 				break;
 			case 3:
-				d.push_back(poly_t::make<Derived4>(v));
+				d.push_back(poly_t::make<Derived3>(v));
 			}
 		}
 
@@ -387,16 +504,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
-				d.emplace_back(Derived1(v));
+				d.emplace_back(Derived0(v));
 				break;
 			case 1:
-				d.emplace_back(Derived2(v));
+				d.emplace_back(Derived1(v));
 				break;
 			case 2:
-				d.emplace_back(Derived3(v));
+				d.emplace_back(Derived2(v));
 				break;
 			case 3:
-				d.emplace_back(Derived4(v));
+				d.emplace_back(Derived3(v));
 			}
 		}
 
@@ -410,22 +527,22 @@ TEST_CASE("poly_obj performance") {
 		push_checksum(accum, "std::function");
 	};
 	{
-		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4>> d;
+		std::vector<std::variant<Derived0, Derived1, Derived2, Derived3>> d;
 		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 4) {
 			case 0:
-				d.emplace_back(Derived1(v));
+				d.emplace_back(Derived0(v));
 				break;
 			case 1:
-				d.emplace_back(Derived2(v));
+				d.emplace_back(Derived1(v));
 				break;
 			case 2:
-				d.emplace_back(Derived3(v));
+				d.emplace_back(Derived2(v));
 				break;
 			case 3:
-				d.emplace_back(Derived4(v));
+				d.emplace_back(Derived3(v));
 				break;
 			}
 		}
@@ -501,13 +618,13 @@ TEST_CASE("poly_obj performance") {
 			unsigned accum{};
 			meter.measure([&] {
 				for (const auto& x : d) {
-					if (auto* p = std::get_if<0>(&x)) {
+					if (auto* const p = std::get_if<0>(&x)) {
 						accum += (*p)();
-					} else if (auto* p = std::get_if<1>(&x)) {
+					} else if (auto* const p = std::get_if<1>(&x)) {
 						accum += (*p)();
-					} else if (auto* p = std::get_if<2>(&x)) {
+					} else if (auto* const p = std::get_if<2>(&x)) {
 						accum += (*p)();
-					} else if (auto* p = std::get_if<3>(&x)) {
+					} else if (auto* const p = std::get_if<3>(&x)) {
 						accum += (*p)();
 					}
 				}
@@ -552,16 +669,16 @@ TEST_CASE("poly_obj performance") {
 				auto v = static_cast<unsigned>(h(i));
 				switch (v % 5) {
 				case 0:
-					d.push_back(new Derived1(v));
+					d.emplace_back(new Derived0(v));
 					break;
 				case 1:
-					d.push_back(new Derived2(v));
+					d.emplace_back(new Derived1(v));
 					break;
 				case 2:
-					d.push_back(new Derived3(v));
+					d.emplace_back(new Derived2(v));
 					break;
 				case 3:
-					d.push_back(new Derived4(v));
+					d.emplace_back(new Derived3(v));
 					break;
 				case 4:
 					try {
@@ -593,16 +710,16 @@ TEST_CASE("poly_obj performance") {
 				auto v = h(i);
 				switch (v % 4) {
 				case 0:
-					d.push_back(std::make_unique<Derived1>(v));
+					d.push_back(std::make_unique<Derived0>(v));
 					break;
 				case 1:
-					d.push_back(std::make_unique<Derived2>(v));
+					d.push_back(std::make_unique<Derived1>(v));
 					break;
 				case 2:
-					d.push_back(std::make_unique<Derived3>(v));
+					d.push_back(std::make_unique<Derived2>(v));
 					break;
 				case 3:
-					d.push_back(std::make_unique<Derived4>(v));
+					d.push_back(std::make_unique<Derived3>(v));
 					break;
 				case 4:
 					try {
@@ -630,16 +747,16 @@ TEST_CASE("poly_obj performance") {
 				auto v = h(i);
 				switch (v % 5) {
 				case 0:
-					d.push_back(poly_t::make<Derived1>(v));
+					d.push_back(poly_t::make<Derived0>(v));
 					break;
 				case 1:
-					d.push_back(poly_t::make<Derived2>(v));
+					d.push_back(poly_t::make<Derived1>(v));
 					break;
 				case 2:
-					d.push_back(poly_t::make<Derived3>(v));
+					d.push_back(poly_t::make<Derived2>(v));
 					break;
 				case 3:
-					d.push_back(poly_t::make<Derived4>(v));
+					d.push_back(poly_t::make<Derived3>(v));
 					break;
 				case 4:
 					try {
@@ -661,34 +778,34 @@ TEST_CASE("poly_obj performance") {
 			});
 		};
 		std::vector<std::function<unsigned()>> df;
-		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4, thrower>>
+		std::vector<std::variant<Derived0, Derived1, Derived2, Derived3, thrower>>
 		    d;
 		kblib::FNV32_hash<unsigned> h;
 		for (auto i : kblib::range(count)) {
 			auto v = static_cast<unsigned>(h(i));
 			switch (v % 5) {
 			case 0:
+				df.emplace_back(Derived0(v));
+				d.emplace_back(Derived0(v));
+				break;
+			case 1:
 				df.emplace_back(Derived1(v));
 				d.emplace_back(Derived1(v));
 				break;
-			case 1:
+			case 2:
 				df.emplace_back(Derived2(v));
 				d.emplace_back(Derived2(v));
 				break;
-			case 2:
+			case 3:
 				df.emplace_back(Derived3(v));
 				d.emplace_back(Derived3(v));
-				break;
-			case 3:
-				df.emplace_back(Derived4(v));
-				d.emplace_back(Derived4(v));
 				break;
 				// Test speed of exception throwing and catching
 			case 4:
 				try {
-					df.emplace_back(thrower(v));
+					auto& b = df.emplace_back(thrower());
+					b = thrower(v);
 				} catch (int) {
-					d.emplace_back(thrower());
 				}
 				// These have to be done in separate try blocks because otherwise
 				// df would throw and d wouldn't get pushed
@@ -699,6 +816,9 @@ TEST_CASE("poly_obj performance") {
 				}
 			}
 		}
+		CHECK(d.size() == df.size());
+		CHECK(df.size() == count);
+		CHECK(d.size() == count);
 		BENCHMARK_ADVANCED("std::function, ch")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
@@ -726,15 +846,15 @@ TEST_CASE("poly_obj performance") {
 			unsigned accum{};
 			meter.measure([&] {
 				for (const auto& x : d) {
-					if (auto* p = std::get_if<0>(&x)) {
+					if (auto* const p = std::get_if<0>(&x)) {
 						accum += (*p)();
-					} else if (auto* p = std::get_if<1>(&x)) {
+					} else if (auto* const p = std::get_if<1>(&x)) {
 						accum += (*p)();
-					} else if (auto* p = std::get_if<2>(&x)) {
+					} else if (auto* const p = std::get_if<2>(&x)) {
 						accum += (*p)();
-					} else if (auto* p = std::get_if<3>(&x)) {
+					} else if (auto* const p = std::get_if<3>(&x)) {
 						accum += (*p)();
-					} else if (auto* p = std::get_if<4>(&x)) {
+					} else if (auto* const p = std::get_if<4>(&x)) {
 						accum += (*p)();
 					}
 				}
@@ -854,10 +974,15 @@ TEST_CASE("poly_obj performance") {
 
 	// All runs should produce identical results
 	unsigned expected_value = reproducibility_test[0].first;
+
+	std::cout << "Checksum: " << expected_value;
+
 	for (auto i : kblib::range(std::size_t(1), reproducibility_test.size())) {
 		const auto& run = reproducibility_test[i];
-		INFO(i << ": " << run.second << ": " << run.first
-		       << " != " << expected_value);
+		if (run.first != expected_value) {
+			WARN(i << ": " << run.second << ": " << run.first
+			       << " != " << expected_value);
+		}
 		REQUIRE(run.first == expected_value);
 	}
 }
