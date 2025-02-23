@@ -89,18 +89,21 @@ auto get_contents(std::istream& in, D& out) -> auto {
  * into contiguous containers, as opposed to non-contiguous containers.
  *
  * @param filename The filename to open.
+ * @param mode The mode to open the file in.
  * @tparam D A contiguous sequence container, which will be created and filled
  * with the contents of the file to be read.
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
 template <typename D = std::string, typename string>
-auto get_file_contents(const string& filename) -> std::optional<D> {
+auto get_file_contents(const string& filename,
+                       std::ios::openmode mode
+                       = std::ios::in | std::ios::binary) -> std::optional<D> {
 	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
 	              "D must be a sequence of char-sized objects.");
 	std::optional<D> out;
-	if (std::ifstream in(filename, std::ios::in | std::ios::binary); in) {
+	if (std::ifstream in(filename, mode); in) {
 		const auto fsize = get_contents(in, out.emplace());
 		if (fsize != to_signed(out->size())) {
 		}
@@ -115,18 +118,21 @@ auto get_file_contents(const string& filename) -> std::optional<D> {
  * into contiguous containers, as opposed to non-contiguous containers.
  *
  * @param filename The filename to open.
+ * @param mode The mode to open the file in.
  * @tparam D A contiguous sequence container, which will be created and filled
  * with the contents of the file to be read.
- * @return std::optional<D> The contents of the file, if reading was successful.
+ * @return D The contents of the file, if reading was successful.
  */
 template <typename D = std::string, typename string>
-auto try_get_file_contents(const string& filename) -> D {
+auto try_get_file_contents(const string& filename,
+                           std::ios::openmode mode
+                           = std::ios::in | std::ios::binary) -> D {
 	static_assert(std::is_trivially_copyable<typename D::value_type>::value,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
 	              "D must be a sequence of char-sized objects.");
 	D out;
-	std::ifstream in(filename, std::ios::in | std::ios::binary);
+	std::ifstream in(filename, mode);
 	if (in) {
 		in.exceptions(std::ios_base::failbit | std::ios_base::badbit);
 		get_contents(in, out);
