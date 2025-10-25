@@ -94,10 +94,10 @@ auto get_contents(std::istream& in, D& out) -> auto {
  * with the contents of the file to be read.
  * @return std::optional<D> The contents of the file, if reading was successful.
  */
-template <typename D = std::string, typename Path>
-auto get_file_contents(const Path& filename, std::ios::openmode mode
-                                             = std::ios::in | std::ios::binary)
-    -> std::optional<D> {
+template <typename D = std::string>
+auto get_file_contents(const std::filesystem::path& filename,
+                       std::ios::openmode mode
+                       = std::ios::in | std::ios::binary) -> std::optional<D> {
 	static_assert(std::is_trivially_copyable_v<typename D::value_type>,
 	              "D must be a sequence of trivial types");
 	static_assert(sizeof(typename D::value_type) == 1,
@@ -123,8 +123,8 @@ auto get_file_contents(const Path& filename, std::ios::openmode mode
  * with the contents of the file to be read.
  * @return D The contents of the file, if reading was successful.
  */
-template <typename D = std::string, typename Path>
-auto try_get_file_contents(const Path& filename,
+template <typename D = std::string>
+auto try_get_file_contents(const std::filesystem::path& filename,
                            std::ios::openmode mode
                            = std::ios::in | std::ios::binary) -> D {
 	static_assert(std::is_trivially_copyable<typename D::value_type>::value,
@@ -138,7 +138,7 @@ auto try_get_file_contents(const Path& filename,
 		get_contents(in, out);
 	} else {
 		throw std::system_error(std::make_error_code(std::errc::io_error),
-		                        "could not open file " + std::string(filename));
+		                        "could not open file " + filename.string());
 	}
 	return out;
 }
