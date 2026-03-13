@@ -328,10 +328,11 @@ class range_t {
 		 * *B) changes sign.
 		 */
 		constexpr friend auto operator<(iterator l, iterator r) noexcept -> bool {
-			if (l.step > 0)
+			if (l.step > 0) {
 				return l.val < r.val;
-			else
+			} else {
 				return l.val > r.val;
+			}
 		}
 		/**
 		 * @brief Compare two range iterators.
@@ -429,11 +430,10 @@ class range_t {
 	/**
 	 \brief Returns a linear container whose elements are this range
 	*/
-	template <
-	    typename Container,
-	    enable_if_t<
-	        is_linear_container_v<
-	            Container> and std::is_constructible<Container, iterator, iterator>::value>* = nullptr>
+	template <typename Container,
+	          enable_if_t<is_linear_container_v<Container>
+	                      and std::is_constructible<Container, iterator,
+	                                                iterator>::value>* = nullptr>
 	explicit operator Container() const
 	    noexcept(noexcept(Container(std::declval<iterator>(),
 	                                std::declval<iterator>()))) {
@@ -443,11 +443,10 @@ class range_t {
 	/**
 	 \brief Returns a setlike container whose elements are this range
 	*/
-	template <
-	    typename Container,
-	    enable_if_t<
-	        is_setlike_v<
-	            Container> and std::is_constructible<Container, iterator, iterator>::value>* = nullptr>
+	template <typename Container,
+	          enable_if_t<is_setlike_v<Container>
+	                      and std::is_constructible<Container, iterator,
+	                                                iterator>::value>* = nullptr>
 	explicit operator Container() const
 	    noexcept(noexcept(Container(std::declval<iterator>(),
 	                                std::declval<iterator>()))) {
@@ -607,6 +606,22 @@ constexpr auto operator+(T val, decrementer) -> T {
 	return --val;
 }
 
+namespace detail_iterators {
+
+	template <typename T, bool = std::is_convertible_v<int, T>>
+	struct delta_for {
+		using type = int;
+	};
+
+	template <typename T>
+	struct delta_for<T, true> {
+		using type = T;
+	};
+	template <typename T>
+	using delta_for_t = typename delta_for<T>::type;
+
+} // namespace detail_iterators
+
 /**
  * @brief Constructs a range from beginning, end, and step amount. The range is
  * half-open, that is min is in the range but max is not. If unspecified, the
@@ -617,14 +632,14 @@ constexpr auto operator+(T val, decrementer) -> T {
  * @param step The difference between values in the produced range.
  * @return range_t<Value, Delta> An iterable range [min, max).
  */
-template <typename Value, typename Delta = int>
+template <typename Value, typename Delta = detail_iterators::delta_for_t<Value>>
 constexpr auto range(Value min, Value max, Delta step = 0)
     -> range_t<Value, Delta> {
 	if (step == 0) {
 		if (min <= max) {
 			return {min, max, 1};
 		} else {
-			return {min, max, -1};
+			return {min, max, static_cast<Delta>(-1)};
 		}
 	} else {
 		return {min, max, step};
@@ -1168,9 +1183,9 @@ class transform_iterator {
 	 * @param _it An InputIterator to a range to be transformed.
 	 * @param _op The operation to apply to each element.
 	 */
-	transform_iterator(base_iterator _it,
-	                   operation _op) noexcept(noexcept(base_iterator{
-	    _it}) and noexcept(std::is_nothrow_move_constructible<operation>::value))
+	transform_iterator(base_iterator _it, operation _op) noexcept(
+	    noexcept(base_iterator{_it})
+	    and noexcept(std::is_nothrow_move_constructible<operation>::value))
 	    : it(_it)
 	    , op(std::move(_op)) {}
 
@@ -1341,8 +1356,8 @@ struct zip_iterator {
 		++pos2;
 		return *this;
 	}
-	auto operator++(int) noexcept(is_nothrow_copyable and noexcept(
-	    ++pos1) and noexcept(++pos2)) -> const zip_iterator {
+	auto operator++(int) noexcept(is_nothrow_copyable and noexcept(++pos1)
+	                              and noexcept(++pos2)) -> const zip_iterator {
 		auto tmp = *this;
 		++pos1;
 		++pos2;
@@ -1358,8 +1373,8 @@ struct zip_iterator {
 		return *this;
 	}
 	KBLIB_NODISCARD auto end() const
-	    noexcept(std::is_nothrow_copy_constructible<EndIt>::value and
-	                 std::is_nothrow_copy_constructible<InputIt2>::value)
+	    noexcept(std::is_nothrow_copy_constructible<EndIt>::value
+	             and std::is_nothrow_copy_constructible<InputIt2>::value)
 	        -> zip_iterator<EndIt, EndIt, InputIt2> {
 		return {end1, end1};
 	}

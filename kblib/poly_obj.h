@@ -45,18 +45,20 @@ enum class construct_type : unsigned {
 	throw_move = 4,
 	both_throw = 5,
 };
-KBLIB_NODISCARD constexpr auto operator|(
-    construct_type l, construct_type r) noexcept -> construct_type {
+KBLIB_NODISCARD constexpr auto operator|(construct_type l,
+                                         construct_type r) noexcept
+    -> construct_type {
 	return static_cast<construct_type>(etoi(l) | etoi(r));
 }
 
-KBLIB_NODISCARD constexpr auto operator&(
-    construct_type l, construct_type r) noexcept -> construct_type {
+KBLIB_NODISCARD constexpr auto operator&(construct_type l,
+                                         construct_type r) noexcept
+    -> construct_type {
 	return static_cast<construct_type>(etoi(l) & etoi(r));
 }
 
-KBLIB_NODISCARD constexpr auto operator*(construct_type l,
-                                         bool r) noexcept -> construct_type {
+KBLIB_NODISCARD constexpr auto operator*(construct_type l, bool r) noexcept
+    -> construct_type {
 	return r ? l : construct_type::none;
 }
 
@@ -81,8 +83,9 @@ namespace detail_poly {
 		       and (type & construct_type::throw_move) == construct_type::none;
 	}
 
-	KBLIB_NODISCARD constexpr auto make_ctype(
-	    bool copyable, bool movable, bool nothrow_movable) -> construct_type {
+	KBLIB_NODISCARD constexpr auto make_ctype(bool copyable, bool movable,
+	                                          bool nothrow_movable)
+	    -> construct_type {
 		if (copyable) {
 			if (not movable) {
 				return construct_type::copy_only;
@@ -284,7 +287,7 @@ struct default_copy<Obj, false> {
  * @brief Implements copy construction using a virtual clone method.
  * This type is provided mostly as an example.
  */
-template <typename Obj, auto (Obj::* clone)(void*) const->Obj*>
+template <typename Obj, auto (Obj::*clone)(void*) const->Obj*>
 struct clone_copy {
 	/// Does nothing
 	clone_copy() = default;
@@ -306,8 +309,8 @@ struct default_move {
 		return static_cast<Obj*>(new (dest) T(std::move(*static_cast<T*>(from))));
 	}
 	// noexcept isn't working here on clang
-	auto (*p_move)(void* dest,
-	               Obj* from) noexcept(false) -> Obj* = &noop<Obj, nothrow>;
+	auto (*p_move)(void* dest, Obj* from) noexcept(false)
+	    -> Obj* = &noop<Obj, nothrow>;
 
  public:
 	/// Constructs an object which does nothing.
@@ -335,8 +338,8 @@ struct default_move<Obj, false, nothrow, true>
     : private default_copy<Obj, true> {
 	using default_copy<Obj, true>::default_copy;
 
-	KBLIB_NODISCARD auto move(void* dest,
-	                          const Obj* from) noexcept(nothrow) -> Obj* {
+	KBLIB_NODISCARD auto move(void* dest, const Obj* from) noexcept(nothrow)
+	    -> Obj* {
 		return this->copy(dest, from);
 	}
 };
@@ -946,7 +949,7 @@ class poly_obj
 	 */
 	template <typename member_type, typename... Args>
 	KBLIB_NODISCARD auto operator->*(
-	    member_type (Obj::* member)(Args...)) & noexcept {
+	    member_type (Obj::*member)(Args...)) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
@@ -957,7 +960,7 @@ class poly_obj
 	 * @remark const on &
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -969,7 +972,7 @@ class poly_obj
 	 * @remark const on const&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const) const& noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -981,7 +984,7 @@ class poly_obj
 	 * @remark const on &&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -994,7 +997,7 @@ class poly_obj
 	 */
 	template <typename member_type, typename... Args>
 	KBLIB_NODISCARD auto operator->*(
-	    member_type (Obj::* member)(Args...) &) & noexcept {
+	    member_type (Obj::*member)(Args...) &) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
@@ -1005,7 +1008,7 @@ class poly_obj
 	 * @remark const& on &
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const&) & noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -1017,7 +1020,7 @@ class poly_obj
 	 * @remark const& on const&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const&) const& noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -1030,7 +1033,7 @@ class poly_obj
 	 */
 	template <typename member_type, typename... Args>
 	KBLIB_NODISCARD auto operator->*(
-	    member_type (Obj::* member)(Args...) &&) && noexcept {
+	    member_type (Obj::*member)(Args...) &&) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
 		};
@@ -1041,7 +1044,7 @@ class poly_obj
 	 * @remark const& on &&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const&) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
@@ -1054,7 +1057,7 @@ class poly_obj
 	 */
 	template <typename member_type, typename... Args>
 	KBLIB_NODISCARD auto operator->*(
-	    member_type (Obj::* member)(Args...)) && noexcept {
+	    member_type (Obj::*member)(Args...)) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (value->*member)(std::forward<Args>(args)...);
 		};
@@ -1065,7 +1068,7 @@ class poly_obj
 	 * @remark const&& on &&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const&&) && noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);
@@ -1077,7 +1080,7 @@ class poly_obj
 	 * @remark const&& on const&&
 	 */
 	template <typename member_type, typename... Args>
-	KBLIB_NODISCARD auto operator->*(member_type (Obj::* member)(Args...)
+	KBLIB_NODISCARD auto operator->*(member_type (Obj::*member)(Args...)
 	                                     const&&) const&& noexcept {
 		return [member, value = get()](Args... args) -> decltype(auto) {
 			return (std::move(*value).*member)(std::forward<Args>(args)...);

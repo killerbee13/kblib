@@ -455,8 +455,8 @@ KBLIB_NODISCARD constexpr auto split_tokens(const String& in) -> Container {
  */
 template <typename Container = std::vector<std::string>, typename String>
 KBLIB_NODISCARD constexpr auto split_tokens(
-    const String& in,
-    typename Container::value_type::value_type delim) -> Container {
+    const String& in, typename Container::value_type::value_type delim)
+    -> Container {
 	Container ret{};
 	bool delim_run = true;
 	using CharT = typename Container::value_type::value_type;
@@ -483,8 +483,8 @@ KBLIB_NODISCARD constexpr auto split_tokens(
 }
 
 template <typename Container = std::vector<std::string>, typename String>
-KBLIB_NODISCARD constexpr auto kbsplit2(const String& in,
-                                        char delim = ' ') -> Container {
+KBLIB_NODISCARD constexpr auto kbsplit2(const String& in, char delim = ' ')
+    -> Container {
 	Container ret{""};
 	bool delim_run = true;
 	for (char c : in) {
@@ -511,8 +511,8 @@ KBLIB_NODISCARD constexpr auto kbsplit2(const String& in,
  * @return Container A sequence container of all substrings in the split input.
  */
 template <typename Container = std::vector<std::string>, typename String>
-KBLIB_NODISCARD constexpr auto split_dsv(const String& str,
-                                         char delim) -> Container {
+KBLIB_NODISCARD constexpr auto split_dsv(const String& str, char delim)
+    -> Container {
 	Container ret;
 	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
 		ret.emplace_back(str, pos1, pos2 - pos1);
@@ -568,33 +568,30 @@ KBLIB_NODISCARD constexpr auto reverse_str(string val) -> string {
 	return val;
 }
 
-namespace detail {
+template <typename CharT>
+KBLIB_NODISCARD constexpr auto to_int_type(CharT ch) {
+	return std::char_traits<CharT>::to_int_type(ch);
+}
+template <typename CharT, typename IntT>
+KBLIB_NODISCARD constexpr auto to_char_type(IntT ch) {
+	return std::char_traits<CharT>::to_char_type(ch);
+}
 
-	template <typename CharT>
-	KBLIB_NODISCARD constexpr auto to_int_type(CharT ch) {
-		return std::char_traits<CharT>::to_int_type(ch);
-	}
-	template <typename CharT, typename IntT>
-	KBLIB_NODISCARD constexpr auto to_char_type(IntT ch) {
-		return std::char_traits<CharT>::to_char_type(ch);
-	}
+KBLIB_NODISCARD constexpr auto tolower(char ch) {
+	return to_char_type<char>(std::tolower(to_int_type(ch)));
+}
 
-	KBLIB_NODISCARD constexpr auto tolower(char ch) {
-		return to_char_type<char>(std::tolower(to_int_type(ch)));
-	}
+KBLIB_NODISCARD constexpr auto tolower(wchar_t ch) {
+	return to_char_type<wchar_t>(std::towlower(to_int_type(ch)));
+}
 
-	KBLIB_NODISCARD constexpr auto towlower(wchar_t ch) {
-		return to_char_type<wchar_t>(std::towlower(to_int_type(ch)));
-	}
+KBLIB_NODISCARD constexpr auto toupper(char ch) {
+	return to_char_type<char>(std::toupper(to_int_type(ch)));
+}
 
-	KBLIB_NODISCARD constexpr auto toupper(char ch) {
-		return to_char_type<char>(std::toupper(to_int_type(ch)));
-	}
-
-	KBLIB_NODISCARD constexpr auto towupper(wchar_t ch) {
-		return to_char_type<wchar_t>(std::towupper(to_int_type(ch)));
-	}
-} // namespace detail
+KBLIB_NODISCARD constexpr auto toupper(wchar_t ch) {
+	return to_char_type<wchar_t>(std::towupper(to_int_type(ch)));
+}
 /**
  * @brief Folds all characters in a string using the default execution character
  * set to lowercase.
@@ -604,7 +601,7 @@ namespace detail {
 template <typename string>
 KBLIB_NODISCARD constexpr auto tolower(string str) -> string {
 	std::transform(str.begin(), str.end(), str.begin(),
-	               [](auto c) { return detail::tolower(c); });
+	               [](auto c) { return kblib::tolower(c); });
 	return str;
 }
 
@@ -617,7 +614,7 @@ KBLIB_NODISCARD constexpr auto tolower(string str) -> string {
 template <typename string>
 KBLIB_NODISCARD constexpr auto toupper(string str) -> string {
 	std::transform(str.begin(), str.end(), str.begin(),
-	               [](auto c) { return detail::toupper(c); });
+	               [](auto c) { return kblib::toupper(c); });
 	return str;
 }
 
@@ -650,8 +647,8 @@ KBLIB_NODISCARD constexpr auto repeat(string val, std::size_t count) -> string {
  * @param val The character to be repeated.
  * @param count The number of times to repeat val.
  */
-KBLIB_NODISCARD constexpr auto repeat(char val,
-                                      std::size_t count) -> std::string {
+KBLIB_NODISCARD constexpr auto repeat(char val, std::size_t count)
+    -> std::string {
 	return std::string(count, val);
 }
 
@@ -677,8 +674,8 @@ KBLIB_NODISCARD constexpr auto ends_with(std::string_view haystack,
  * @param needle The suffix to check for.
  * @return bool If haystack ends with needle.
  */
-KBLIB_NODISCARD constexpr auto ends_with(std::string_view haystack,
-                                         char needle) -> bool {
+KBLIB_NODISCARD constexpr auto ends_with(std::string_view haystack, char needle)
+    -> bool {
 	return not haystack.empty() and haystack.back() == needle;
 }
 

@@ -146,8 +146,8 @@ constexpr auto max_count_digits(ForwardIt first, ForwardIt last) -> int {
  * input.
  */
 template <typename ForwardIt>
-constexpr auto max_count_digits(ForwardIt first, ForwardIt last,
-                                int base) -> int {
+constexpr auto max_count_digits(ForwardIt first, ForwardIt last, int base)
+    -> int {
 	if (first == last) {
 		return 0;
 	}

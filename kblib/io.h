@@ -67,10 +67,11 @@ auto get_contents(std::istream& in, D& out) -> auto {
 	out.resize(static_cast<std::size_t>(size));
 	in.seekg(0, std::ios::beg);
 	in.read(reinterpret_cast<char*>(out.data()), size);
+	out.resize(in.gcount());
 	return size;
 }
 
-template <typename D = std::string,
+template <typename D,
           typename std::enable_if_t<not is_contiguous_v<D>, int> = 0>
 auto get_contents(std::istream& in, D& out) -> auto {
 	in.seekg(0, std::ios::end);
@@ -79,6 +80,7 @@ auto get_contents(std::istream& in, D& out) -> auto {
 	in.seekg(0, std::ios::beg);
 	std::copy((std::istreambuf_iterator<char>(in)),
 	          std::istreambuf_iterator<char>(), out.begin());
+	out.resize(in.gcount());
 	return size;
 }
 
@@ -106,6 +108,12 @@ auto get_file_contents(const std::filesystem::path& filename,
 	if (std::ifstream in(filename, mode); in) {
 		const auto fsize = get_contents(in, out.emplace());
 		if (fsize != to_signed(out->size())) {
+			// seek/tell disagrees with gcount
+			// file truncated during read or attempted to read a directory or
+			// something
+
+			// doesn't feel right to return a nullopt here though, so there's not
+			// much to do
 		}
 	}
 	return out;
