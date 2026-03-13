@@ -40,8 +40,6 @@
 #	error kblib requires C++14 or higher
 #endif
 
-#define KBLIB_X(X) X
-
 #define KBLIB_VERS_MAJ 00
 #define KBLIB_VERS_MIN 04
 #define KBLIB_VERS_REV 02
@@ -75,6 +73,16 @@
 #	define KBLIB_USE_CXX20 1
 #else
 #	define KBLIB_USE_CXX20 0
+#endif
+/**
+ * @def KBLIB_USE_CXX20
+ * @brief This internal macro is used to determine if kblib can use C++20
+ * features.
+ */
+#if (__cplusplus >= 202302L)
+#	define KBLIB_USE_CXX23 1
+#else
+#	define KBLIB_USE_CXX23 0
 #endif
 /**
  * @def KBLIB_USE_STRING_VIEW
@@ -112,6 +120,22 @@
 #	define KBLIB_CXX20(args)
 #endif
 
+/**
+ * @def KBLIB_CXX23
+ * @brief This internal macro is used to selectively use C++20 features.
+ */
+#if KBLIB_USE_CXX23
+#	define KBLIB_CXX23(args) args
+#else
+#	define KBLIB_CXX23(args)
+#endif
+
+#if __cpp_static_call_operator
+#	define KBLIB_CALL_OP_STATIC static
+#else
+#	define KBLIB_CALL_OP_STATIC
+#endif
+
 // used to prevent cross-linkage between incompatible library versions
 #define KBLIB_VERS_NS_I(VS, CXX17, CXX_SV, CXX_SS, CXX20) \
 	KBLIB_VERS_NS_I2(VS, CXX17, CXX_SV, CXX_SS, CXX20)
@@ -129,6 +153,9 @@ namespace kblib = KBLIB_NS;
 #else
 #	define KBLIB_NS kblib
 #endif
+#define KBLIB_STR(X) #X
+#define KBLIB_XSTR(X) KBLIB_STR(X)
+#define KBLIB_NS_STR KBLIB_XSTR(KBLIB_NS)
 
 // Note that __has_cpp_attribute(nodiscard) does not work with at least certain
 // versions of Clang

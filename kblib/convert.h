@@ -29,7 +29,6 @@
  * @copyright GNU General Public Licence v3.0
  */
 
-#include "kblib/stats.h"
 #if KBLIB_DEF_MACROS and not defined(pFromStr)
 #	define pFromStr(type, val) ::kblib::fromStr<type>((val), #type)
 #endif
@@ -50,6 +49,7 @@
 #	include "algorithm.h"
 #	include "iterators.h"
 #	include "traits.h"
+#	include "stats.h"
 
 #	if KBLIB_USE_STRING_VIEW
 
@@ -78,6 +78,36 @@
 #	include <iostream>
 
 namespace KBLIB_NS {
+
+namespace detail_convert {
+	template <class T>
+	constexpr auto type_name() -> std::string_view {
+		using namespace std;
+		auto sz = sizeof(KBLIB_NS_STR "::detail_convert::type_name") - 1;
+#	ifdef __clang__
+		string_view p = __PRETTY_FUNCTION__;
+		auto begin = 25 + sz;
+		return string_view(p.data() + begin, p.size() - begin - 1);
+#	elif defined(__GNUC__)
+		string_view p = __PRETTY_FUNCTION__;
+#		ifdef __INTEL_COMPILER
+		auto begin = 76 + sz;
+		return string_view(p.data() + begin, p.size() - begin - 1);
+#		elif __cplusplus < 201402
+		auto begin = 17 + sz;
+		return string_view(p.data() + begin, p.size() - begin - 1);
+#		else
+		auto begin = 40 + sz;
+		return string_view(p.data() + begin, p.find(';', begin) - begin);
+#		endif
+#	elif defined(_MSC_VER)
+		string_view p = __FUNCSIG__;
+		auto begin = 75 + sz;
+		return string_view(p.data() + begin, p.size() - begin - 7);
+#	endif
+	}
+	static_assert(type_name<char>() == "char");
+} // namespace detail_convert
 
 template <int base, typename Int>
 KBLIB_NODISCARD constexpr auto to_string(Int num) -> std::string {
@@ -675,77 +705,79 @@ KBLIB_NODISCARD auto quoted(string&& in) -> std::string {
 	return ret.str();
 }
 
-// This only uses RTTI because C++ has no other means to get "int" from a
-// template parameter.
 template <typename T>
 KBLIB_NODISCARD auto fromStr(const std::string& val,
-                             const char* type = typeid(T).name()) -> T {
+                             std::string_view type
+                             = detail_convert::type_name<T>()) -> T {
 	std::stringstream ss(val);
 	T ret{};
 	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;
 	} else {
-		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+		throw std::runtime_error(concat(kblib::quoted(val), " is not a ", type));
 	}
 }
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(const std::string& val, const char*)
+KBLIB_NODISCARD constexpr auto fromStr(const std::string& val, std::string_view)
     -> std::string {
 	return val;
 }
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(const std::string& val, const char* type)
-    -> bool {
+KBLIB_NODISCARD constexpr auto fromStr(const std::string& val,
+                                       std::string_view type) -> bool {
 	if (val == "1" or val == "true") {
 		return true;
 	} else if (val == "0" or val == "false") {
 		return false;
 	} else {
-		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+		throw std::runtime_error(concat(kblib::quoted(val), " is not a ", type));
 	}
 }
 
 template <typename T>
 KBLIB_NODISCARD auto fromStr(std::string&& val,
-                             const char* type = typeid(T).name()) -> T {
+                             std::string_view type
+                             = detail_convert::type_name<T>()) -> T {
 	std::stringstream ss(val);
 	T ret;
 	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;
 	} else {
-		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+		throw std::runtime_error(concat(kblib::quoted(val), " is not a ", type));
 	}
 }
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(std::string&& val, const char*)
+KBLIB_NODISCARD constexpr auto fromStr(std::string&& val, std::string_view)
     -> std::string {
 	return std::move(val);
 }
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(std::string&& val, const char* type)
+KBLIB_NODISCARD constexpr auto fromStr(std::string&& val, std::string_view type)
     -> bool {
 	if (val == "1" or val == "true") {
 		return true;
 	} else if (val == "0" or val == "false") {
 		return false;
 	} else {
-		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+		throw std::runtime_error(concat(kblib::quoted(val), " is not a ", type));
 	}
 }
 
 #	if KBLIB_USE_STRING_VIEW
 
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(const std::string& val, const char*)
+KBLIB_NODISCARD constexpr auto fromStr(const std::string& val, std::string_view)
     -> std::string_view {
 	return val;
 }
 template <>
-inline auto fromStr(std::string&&, const char*) -> std::string_view = delete;
+inline auto fromStr(std::string&&, std::string_view) -> std::string_view
+    = delete;
 
 template <typename T>
 KBLIB_NODISCARD auto fromStr(std::string_view val,
-                             const char* type = typeid(T).name()) -> T {
+                             std::string_view type
+                             = detail_convert::type_name<T>()) -> T {
 #		if KBLIB_USE_SPANSTREAM
 	std::ispanstream ss(std::span<const char>(val.data(), val.size()));
 #		else
@@ -755,34 +787,35 @@ KBLIB_NODISCARD auto fromStr(std::string_view val,
 	if (not (ss >> std::boolalpha >> ret).fail()) {
 		return ret;
 	} else {
-		throw std::runtime_error(kblib::quoted(val) + " is not a " + type);
+		throw std::runtime_error(concat(kblib::quoted(val), " is not a ", type));
 	}
 }
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(std::string_view val, const char*)
+KBLIB_NODISCARD constexpr auto fromStr(std::string_view val, std::string_view)
     -> std::string_view {
 	return val;
 }
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(std::string_view val, const char*)
+KBLIB_NODISCARD constexpr auto fromStr(std::string_view val, std::string_view)
     -> std::string {
 	return std::string(val);
 }
 template <>
-KBLIB_NODISCARD constexpr auto fromStr(std::string_view val, const char* type)
-    -> bool {
+KBLIB_NODISCARD constexpr auto fromStr(std::string_view val,
+                                       std::string_view type) -> bool {
 	if (val == "1" or val == "true") {
 		return true;
 	} else if (val == "0" or val == "false") {
 		return false;
 	} else {
-		throw std::runtime_error("\"" + std::string(val) + "\" is not a " + type);
+		throw std::runtime_error(concat(kblib::quoted(val), " is not a ", type));
 	}
 }
 
 template <typename To, std::size_t N>
 KBLIB_NODISCARD constexpr auto fromStr(const char (&val)[N],
-                                       const char* type = typeid(To).name())
+                                       std::string_view type
+                                       = detail_convert::type_name<To>())
     -> To {
 	// N - 1: remove null terminator
 	return fromStr<To>(std::string_view(val, N - 1), type);
@@ -790,7 +823,8 @@ KBLIB_NODISCARD constexpr auto fromStr(const char (&val)[N],
 
 template <typename To, typename _>
 KBLIB_NODISCARD constexpr auto fromStr(const char* val,
-                                       const char* type = typeid(To).name(),
+                                       std::string_view type
+                                       = detail_convert::type_name<To>(),
                                        _ = 0) -> To {
 	return fromStr<To>(std::string_view(val), type);
 }
@@ -809,7 +843,10 @@ KBLIB_NODISCARD constexpr auto toStr(std::string val) -> std::string {
 
 template <typename To, typename From>
 struct lexical_caster {
-	static auto cast(const From& val, const char* type) -> To {
+	KBLIB_CALL_OP_STATIC auto operator()(const From& val,
+	                                     std::string_view type
+	                                     = detail_convert::type_name<To>())
+	    -> To {
 		std::stringstream ss;
 		ss << val;
 		To ret;
@@ -817,21 +854,24 @@ struct lexical_caster {
 			return ret;
 		} else {
 			throw std::runtime_error("Cannot convert \"" + toStr(val) + "\" to "
-			                         + type);
+			                         + std::string(type));
 		}
 	}
 };
 
 template <typename Same>
 struct lexical_caster<Same, Same> {
-	static constexpr auto cast(const Same& val, const char*) -> Same {
+	KBLIB_CALL_OP_STATIC constexpr auto operator()(const Same& val,
+	                                               std::string_view = {})
+	    -> Same {
 		return val;
 	}
 };
 
 template <>
 struct lexical_caster<std::string, std::string> {
-	static constexpr auto cast(const std::string& val, const char*)
+	KBLIB_CALL_OP_STATIC constexpr auto operator()(const std::string& val,
+	                                               std::string_view = {})
 	    -> std::string {
 		return val;
 	}
@@ -839,14 +879,18 @@ struct lexical_caster<std::string, std::string> {
 
 template <typename From>
 struct lexical_caster<std::string, From> {
-	static constexpr auto cast(const From& val, const char*) -> std::string {
+	KBLIB_CALL_OP_STATIC constexpr auto operator()(const From& val,
+	                                               std::string_view = {})
+	    -> std::string {
 		return toStr(val);
 	}
 };
 
 template <typename To>
 struct lexical_caster<To, std::string> {
-	static constexpr auto cast(const std::string& val, const char* type) -> To {
+	KBLIB_CALL_OP_STATIC constexpr auto operator()(
+	    const std::string& val,
+	    std::string_view type = detail_convert::type_name<To>()) -> To {
 		return fromStr<To>(val, type);
 	}
 };
@@ -855,7 +899,8 @@ struct lexical_caster<To, std::string> {
 
 template <>
 struct lexical_caster<std::string_view, std::string_view> {
-	static constexpr auto cast(const std::string_view& val, const char*)
+	KBLIB_CALL_OP_STATIC constexpr auto operator()(const std::string_view& val,
+	                                               std::string_view = {})
 	    -> std::string_view {
 		return val;
 	}
@@ -863,7 +908,8 @@ struct lexical_caster<std::string_view, std::string_view> {
 
 template <>
 struct lexical_caster<std::string_view, std::string> {
-	static constexpr auto cast(const std::string& val, const char*)
+	KBLIB_CALL_OP_STATIC constexpr auto operator()(const std::string& val,
+	                                               std::string_view = {})
 	    -> std::string_view {
 		return val;
 	}
@@ -871,21 +917,23 @@ struct lexical_caster<std::string_view, std::string> {
 
 template <typename From>
 struct lexical_caster<std::string_view, From> {
-	static constexpr std::enable_if_t<
+	KBLIB_CALL_OP_STATIC constexpr std::enable_if_t<
 	    std::is_convertible_v<From, std::string_view>, std::string_view>
-	cast(const From& val, const char*) {
+	operator()(const From& val, std::string_view = {}) {
 		return From(val);
 	}
 
 	// DCL50-CPP-EX2:
 	// As stated in the normative text, C-style variadic functions that are
 	// declared but never defined are permitted.
-	auto cast(...) -> std::string_view = delete;
+	KBLIB_CALL_OP_STATIC auto operator()(...) -> std::string_view = delete;
 };
 
 template <typename To>
 struct lexical_caster<To, std::string_view> {
-	static constexpr auto cast(std::string_view val, const char* type) -> To {
+	KBLIB_CALL_OP_STATIC constexpr auto operator()(
+	    std::string_view val,
+	    std::string_view type = detail_convert::type_name<To>()) -> To {
 		return fromStr<To>(val, type);
 	}
 };
@@ -894,15 +942,16 @@ struct lexical_caster<To, std::string_view> {
 
 template <typename To, typename From>
 KBLIB_NODISCARD constexpr auto lexical_cast(const From& val,
-                                            const char* type
-                                            = typeid(To).name()) -> To {
-	return lexical_caster<To, From>::cast(val, type);
+                                            std::string_view type
+                                            = detail_convert::type_name<To>())
+    -> To {
+	return lexical_caster<To, From>{}(val, type);
 }
 
 #	if 0
 template <typename To, typename From>
 KBLIB_NODISCARD constexpr auto lexical_cast(const From& val,
-                                  const char* type = typeid(To).name()) -> To {
+                                  std::string_view type = detail_convert::type_name_f<To>()) -> To {
 	using namespace std::literals;
 	if constexpr (std::is_same_v<std::decay_t<To>, std::decay_t<From>>) {
 		return val;
