@@ -141,8 +141,8 @@ class compact_bit_trie {
 	static_assert(std::is_nothrow_destructible<mapped_type>::value,
 	              "mapped_type must be nothrow destructible.");
 
-	KBLIB_NODISCARD auto at(key_type key) const
-	    noexcept(false) -> const_reference {
+	KBLIB_NODISCARD auto at(key_type key) const noexcept(false)
+	    -> const_reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -211,8 +211,8 @@ class compact_bit_trie {
 	}
 
 	KBLIB_NODISCARD auto find_deep(key_type key,
-	                               size_type depth
-	                               = -1) noexcept(false) -> reference {
+	                               size_type depth = -1) noexcept(false)
+	    -> reference {
 		if (empty()) {
 			throw std::out_of_range("searched in an empty compact_bit_trie");
 		}
@@ -420,13 +420,6 @@ inline auto memswap(void* A, void* B, std::size_t size) noexcept -> void {
  * @brief Implements a bitfield abstraction. May be used in a union with other
  * bitfields.
  *
- * In C++20, [[no_unique_address]] will enable a better implementation which
- * will work in non-union structs, as long as no two bitfields name the same
- * exact bits. ([[no_unique_address]] allows empty objects of different types to
- * be allocated at the same location, but distinct objects of the same type must
- * have distinct addresses, [[no_unique_address]] notwithstanding. This does
- * not apply to unions, though.)
- *
  * @tparam offset The number of bits less significant than the bitfield.
  * @tparam size The number of bits constituting this bitfield.
  * @tparam Storage The underlying type which stores the bits.
@@ -453,8 +446,6 @@ struct bitfield {
 	}
 	// ensure that there is an object for pointer-interconvertibility to find
 	Storage raw_;
-	// Is this a good idea?
-	auto operator&() -> void = delete;
 };
 
 namespace detail_bits {
@@ -481,12 +472,12 @@ namespace detail_bits {
 } // namespace detail_bits
 
 /**
- * @def KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
+ * @def KBLIB_BITFIELD(offset, size, name, raw)
  * @sa See #BITFIELD(offset, size, name, raw) for documentation.
  * @note This macro is defined unconditionally.
  * @note This macro resets the access level to public:
  */
-#define KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)              \
+#define KBLIB_BITFIELD(offset, size, name, raw)                             \
 	static_assert(offset >= 0 and size > 0,                                  \
 	              "BITFIELD cannot have negative offset or size");           \
                                                                             \
@@ -502,8 +493,8 @@ namespace detail_bits {
 	}                                                                        \
                                                                             \
  private:                                                                   \
-	constexpr auto name##_set_impl(                                          \
-	    const decltype(raw) val) noexcept -> decltype(raw) {                 \
+	constexpr auto name##_set_impl(const decltype(raw) val) noexcept         \
+	    -> decltype(raw) {                                                   \
 		/* Clear the bits for this field */                                   \
 		raw &= ~(((decltype(raw)(1) << kblib::to_unsigned(size)) - 1u)        \
 		         << kblib::to_unsigned(offset));                              \
@@ -850,7 +841,7 @@ class union_pun<Type[N], Storage> {
  * @note This macro is only defined if KBLIB_DEF_MACROS is true.
  * @note This macro always declares the member functions publically.
  *
- * @sa See #KBLIB_INTERNAL_BITFIELD_MACRO for definition.
+ * @sa See #KBLIB_BITFIELD for definition.
  *
  * @param offset The number of bits less significant than this bitfield.
  * @param size The number of bits in this bitfield.
@@ -859,5 +850,5 @@ class union_pun<Type[N], Storage> {
  * @param raw The name of the member variable in which the bitfield is stored.
  */
 #define BITFIELD(offset, size, name, raw) \
-	KBLIB_INTERNAL_BITFIELD_MACRO(offset, size, name, raw)
+	KBLIB_BITFIELD(offset, size, name, raw)
 #endif // KBLIB_DEF_MACROS and not defined(BITFIELD)
