@@ -43,6 +43,16 @@
 #	include <variant>
 #endif
 
+#if KBLIB_USE_CXX23
+#	define KBLIB_UNREACHABLE std::unreachable()
+#else
+#	if defined(_MSC_VER) && ! defined(__clang__) // MSVC
+#		define KBLIB_UNREACHABLE __assume(false)
+#	else // GCC, Clang
+#		define KBLIB_UNREACHABLE __builtin_unreachable()
+#	endif
+#endif
+
 namespace KBLIB_NS {
 
 #if KBLIB_USE_CXX17
@@ -135,19 +145,6 @@ namespace detail {
 	template <typename T>
 	using tuple_type_t = typename tuple_type<T>::type;
 
-	/**
-	 * @brief Generates an array of function pointers which will unwrap the
-	 * variant and pass the index to the function.
-	 */
-	template <typename Variant, typename F, std::size_t... Is>
-	constexpr auto indexed_visitor_impl(std::index_sequence<Is...>) -> auto {
-		return std::array{+[](Variant&& variant, F&& f) -> decltype(auto) {
-			return std::forward<F>(f)(
-			    kblib::constant<std::size_t, Is>{},
-			    std::get<Is>(std::forward<Variant>(variant)));
-		}...};
-	}
-
 } // namespace detail
 
 inline namespace literals {
@@ -159,30 +156,6 @@ inline namespace literals {
 	}
 
 } // namespace literals
-
-/**
- * @brief Visit a variant, but pass the index (as an integral_constant) to the
- * visitor. This allows for a visitor of a variant with duplicated types to
- * maintain index information.
- *
- * @param variant The variant to visit.
- * @param fs Any number of functors, which taken together as an overload set can
- * be unambiguously called with (I, A),
- * for I = kblib::constant<std::size_t, variant.index()>
- * and A = std::get<variant.index()>(variant).
- * Note that kblib::constant implicitly converts to std::integral_constant.
- */
-template <typename Variant, typename... Fs>
-constexpr auto visit_indexed(Variant&& variant, Fs&&... fs) -> decltype(auto) {
-	if (variant.valueless_by_exception()) {
-		throw std::bad_variant_access();
-	}
-	using visitor_t = decltype(visitor{std::forward<Fs>(fs)...});
-	return detail::indexed_visitor_impl<Variant, visitor_t>(
-	    std::make_index_sequence<
-	        std::variant_size_v<std::decay_t<Variant>>>())[variant.index()](
-	    std::forward<Variant>(variant), visitor{std::forward<Fs>(fs)...});
-}
 
 /**
  * @brief Promotes an input variant to a super-variant. That is, one which
@@ -234,43 +207,28 @@ namespace detail {
 	constexpr bool v_invocable_with_all_v = false;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, std::variant<Ts...>> = invocable_with_all_v<F, Ts...>;
+	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>>
+	    = invocable_with_all_v<F, Ts...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, const std::variant<Ts...>> = invocable_with_all_v<F, const Ts...>;
+	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>>
+	    = invocable_with_all_v<F, const Ts...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, std::variant<Ts...>&> = invocable_with_all_v<F, Ts&...>;
+	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&>
+	    = invocable_with_all_v<F, Ts&...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, const std::variant<Ts...>&> = invocable_with_all_v<F, const Ts&...>;
+	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&>
+	    = invocable_with_all_v<F, const Ts&...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, std::variant<Ts...>&&> = invocable_with_all_v<F, Ts&&...>;
+	constexpr bool v_invocable_with_all_v<F, std::variant<Ts...>&&>
+	    = invocable_with_all_v<F, Ts&&...>;
 
 	template <typename F, typename... Ts>
-	constexpr bool v_invocable_with_all_v<
-	    F, const std::variant<Ts...>&&> = invocable_with_all_v<F, const Ts&&...>;
-
-	template <typename V, typename F, std::size_t I, std::size_t... Is>
-	[[gnu::always_inline]] constexpr decltype(auto) visit_impl(
-	    V&& v, F&& f, std::index_sequence<I, Is...>) {
-		static_assert(I < std::variant_size_v<std::decay_t<V>>);
-		if (auto* p = std::get_if<I>(&v)) {
-			return std::forward<F>(f)(
-			    static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
-		} else if constexpr (sizeof...(Is) > 0) {
-			return visit_impl(std::forward<V>(v), std::forward<F>(f),
-			                  std::index_sequence<Is...>{});
-		} else {
-			throw std::bad_variant_access();
-		}
-	}
+	constexpr bool v_invocable_with_all_v<F, const std::variant<Ts...>&&>
+	    = invocable_with_all_v<F, const Ts&&...>;
 
 	template <typename V, typename F, std::size_t I, std::size_t... Is>
 	[[gnu::always_inline]] constexpr void visit_nop_impl(
@@ -289,6 +247,108 @@ namespace detail {
 		}
 	}
 
+	template <typename V, typename F, std::size_t I, std::size_t... Is>
+	[[gnu::always_inline]] constexpr decltype(auto) visit_impl(
+	    V&& v, F&& f, std::index_sequence<I, Is...>) {
+		static_assert(I < std::variant_size_v<std::decay_t<V>>);
+		if (auto* p = std::get_if<I>(&v)) {
+			return std::forward<F>(f)(
+			    static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
+		} else if constexpr (sizeof...(Is) > 0) {
+			return visit_impl(std::forward<V>(v), std::forward<F>(f),
+			                  std::index_sequence<Is...>{});
+		} else {
+			throw std::bad_variant_access();
+		}
+	}
+
+	template <bool can_throw, typename V, typename F, std::size_t I,
+	          std::size_t... Is>
+	[[gnu::always_inline]] constexpr decltype(auto) visitb_impl(
+	    V&& v, F&& f, std::index_sequence<I, Is...>) {
+		static_assert(I < std::variant_size_v<std::decay_t<V>>);
+		if constexpr (can_throw) {
+			if (v.valueless_by_exception()) [[unlikely]] {
+				throw std::bad_variant_access();
+			}
+		}
+		if (auto* p = std::get_if<I>(&v)) {
+			return std::forward<F>(f)(
+			    static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
+		} else if constexpr (sizeof...(Is) > 0) {
+			return visitb_impl<false>(std::forward<V>(v), std::forward<F>(f),
+			                          std::index_sequence<Is...>{});
+		} else {
+			KBLIB_UNREACHABLE;
+		}
+	}
+	template <std::size_t I, std::size_t Count, typename V, typename F>
+	[[gnu::always_inline]] constexpr decltype(auto) visit_impl_s(V&& v, F&& f) {
+		static_assert(I < Count);
+#	define CASE(i)                                                      \
+	case (i):                                                            \
+		if constexpr ((i) < Count) {                                      \
+			return static_cast<F&&>(f)(                                    \
+			    static_cast<decltype(std::get<(i)>(static_cast<V&&>(v)))>( \
+			        *std::get_if<(i)>(&v)));                               \
+		} else                                                            \
+			KBLIB_UNREACHABLE
+
+		switch (v.index()) {
+			CASE(I + 0);
+			CASE(I + 1);
+			CASE(I + 2);
+			CASE(I + 3);
+			CASE(I + 4);
+			CASE(I + 5);
+			CASE(I + 6);
+			CASE(I + 7);
+		default:
+			if constexpr (I + 8 < Count) {
+				return visit_impl_s<I + 8, Count>(std::forward<V>(v),
+				                                  std::forward<F>(f));
+			} else {
+				KBLIB_UNREACHABLE;
+			}
+		case std::variant_npos:
+			if constexpr (I + 8 >= Count) {
+				throw std::bad_variant_access();
+			} else {
+				KBLIB_UNREACHABLE;
+			}
+		}
+#	undef CASE
+	}
+
+	/**
+	 * @brief Generates an array of function pointers which will unwrap the
+	 * variant and pass the index to the function.
+	 */
+	template <typename Variant, typename F, std::size_t... Is>
+	constexpr auto indexed_visitor_impl(std::index_sequence<Is...>) -> auto {
+		return std::array{+[](Variant&& variant, F&& f) -> decltype(auto) {
+			return std::forward<F>(f)(
+			    kblib::constant<std::size_t, Is>{},
+			    std::get<Is>(std::forward<Variant>(variant)));
+		}...};
+	}
+
+	template <typename V, typename F, std::size_t I, std::size_t... Is>
+	[[gnu::always_inline]] constexpr decltype(auto) visit_indexed_impl(
+	    V&& v, F&& f, std::index_sequence<I, Is...>) {
+		static_assert(I < std::variant_size_v<std::decay_t<V>>);
+		if (auto* p = std::get_if<I>(&v)) {
+			return std::forward<F>(f)(
+			    kblib::constant<std::size_t, I>{},
+			    static_cast<decltype(std::get<I>(std::forward<V>(v)))>(*p));
+		} else if constexpr (sizeof...(Is) > 0) {
+			return visit_indexed_impl(std::forward<V>(v), std::forward<F>(f),
+			                          std::index_sequence<Is...>{});
+		} else {
+			throw std::bad_variant_access();
+		}
+	}
+
 } // namespace detail
 
 template <typename V, typename F, typename... Fs>
@@ -303,6 +363,27 @@ template <typename V, typename F, typename... Fs>
 }
 
 template <typename V, typename F, typename... Fs>
+[[gnu::always_inline]] constexpr auto visit2b(V&& v, F&& f, Fs&&... fs)
+    -> decltype(auto) {
+	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
+	static_assert(detail::v_invocable_with_all_v<decltype(visitor_obj), V&&>,
+	              "Some variant types not accepted by any visitors.");
+	return detail::visitb_impl<true>(
+	    std::forward<V>(v), std::move(visitor_obj),
+	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
+}
+
+template <typename V, typename F, typename... Fs>
+[[gnu::always_inline]] constexpr auto visit2s(V&& v, F&& f, Fs&&... fs)
+    -> decltype(auto) {
+	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
+	static_assert(detail::v_invocable_with_all_v<decltype(visitor_obj), V&&>,
+	              "Some variant types not accepted by any visitors.");
+	return detail::visit_impl_s<0, std::variant_size_v<std::decay_t<V>>>(
+	    std::forward<V>(v), std::move(visitor_obj));
+}
+
+template <typename V, typename F, typename... Fs>
 [[gnu::always_inline]] constexpr auto visit2_nop(V&& v, F&& f, Fs&&... fs)
     -> void {
 	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
@@ -311,6 +392,48 @@ template <typename V, typename F, typename... Fs>
 	return detail::visit_nop_impl(
 	    std::forward<V>(v), visitor_obj,
 	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
+}
+
+/**
+ * @brief Visit a variant, but pass the index (as an integral_constant) to the
+ * visitor. This allows for a visitor of a variant with duplicated types to
+ * maintain index information.
+ *
+ * @param variant The variant to visit.
+ * @param fs Any number of functors, which taken together as an overload set can
+ * be unambiguously called with (I, A),
+ * for I = kblib::constant<std::size_t, variant.index()>
+ * and A = std::get<variant.index()>(variant).
+ * Note that kblib::constant implicitly converts to std::integral_constant.
+ */
+template <typename V, typename F, typename... Fs>
+constexpr auto visit_indexed(V&& v, F&& f, Fs&&... fs) -> decltype(auto) {
+	auto visitor_obj = visitor{std::forward<F>(f), std::forward<Fs>(fs)...};
+	return detail::visit_indexed_impl(
+	    std::forward<V>(v), std::move(visitor_obj),
+	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>{});
+
+	//	if (variant.valueless_by_exception()) [[unlikely]] {
+	//		throw std::bad_variant_access();
+	//	}
+	//	using visitor_t = decltype(visitor{std::forward<Fs>(fs)...});
+	//	return detail::indexed_visitor_impl<Variant, visitor_t>(
+	//	    std::make_index_sequence<
+	//	        std::variant_size_v<std::decay_t<Variant>>>())[variant.index()](
+	//	    std::forward<Variant>(variant), visitor{std::forward<Fs>(fs)...});
+}
+template <typename V, typename F, typename... Fs>
+constexpr auto visit_indexed_old(V&& v, F&& f, Fs&&... fs) -> decltype(auto) {
+	if (v.valueless_by_exception()) [[unlikely]] {
+		throw std::bad_variant_access();
+	}
+	using visitor_t
+	    = decltype(visitor{std::forward<F>(f), std::forward<Fs>(fs)...});
+	constexpr auto table = detail::indexed_visitor_impl<V, visitor_t>(
+	    std::make_index_sequence<std::variant_size_v<std::decay_t<V>>>());
+	return table[v.index()](
+	    std::forward<V>(v),
+	    visitor{std::forward<F>(f), std::forward<Fs>(fs)...});
 }
 
 /**
@@ -331,7 +454,7 @@ template <typename V, typename F, typename... Fs>
 template <typename V>
 KBLIB_NODISCARD constexpr auto visit(V& v) -> auto {
 	return [&v](auto... fs) -> decltype(auto) {
-		return kblib::visit(v, std::forward<decltype(fs)>(fs)...);
+		return kblib::visit2(v, std::move(fs)...);
 	};
 }
 

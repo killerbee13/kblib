@@ -20,7 +20,7 @@
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include "catch2/catch.hpp"
 
-//#define FAST_TEST
+// #define FAST_TEST
 
 #if KBLIB_USE_CXX17
 
@@ -28,8 +28,10 @@ namespace {
 struct Base {
 	virtual auto operator()() const noexcept -> unsigned = 0;
 	Base() = default;
-	Base(const Base&) = default;
-	Base(Base&&) noexcept = default;
+	Base(const Base&) noexcept {}
+	Base(Base&&) noexcept {}
+	Base& operator=(const Base&) noexcept { return *this; }
+	Base& operator=(Base&&) noexcept { return *this; };
 	virtual ~Base() = default;
 
 	// this is used, but the compiler doesn't think so because it's in a .cpp
@@ -72,10 +74,23 @@ struct thrower final : Base {
 	unsigned member;
 
 	thrower(unsigned i = 0)
+	    : member(i) {
+		check_throw(i);
+	}
+	// delay throwing until move
+	thrower(unsigned i, std::nothrow_t)
 	    : member(i) {}
 	thrower(const thrower&) = default;
-
-	auto operator=(const thrower& other) & -> thrower& {
+	thrower(thrower&& other)
+	    : member(other.member) {
+		check_throw(other.member);
+	}
+	auto operator=(const thrower& other) -> thrower& {
+		check_throw(other.member);
+		member = other.member;
+		return *this;
+	}
+	auto operator=(thrower&& other) -> thrower& {
 		check_throw(other.member);
 		member = other.member;
 		return *this;
@@ -83,11 +98,17 @@ struct thrower final : Base {
 
  private:
 	static auto check_throw(unsigned v) -> void {
-		if ((v & 7u) == 0) {
+		if ((v & 3u) == 0) {
 			throw 0;
 		}
 	}
 };
+
+static_assert(std::is_move_constructible_v<Derived1>);
+static_assert(std::is_move_constructible_v<Derived2>);
+static_assert(std::is_move_constructible_v<Derived3>);
+static_assert(std::is_move_constructible_v<Derived4>);
+static_assert(std::is_move_constructible_v<thrower>);
 
 struct fptr {
 	unsigned member;
@@ -123,31 +144,84 @@ TEST_CASE("poly_obj performance") {
 #		ifdef NDEBUG
 	constexpr unsigned count = 1000;
 #		else
-	constexpr unsigned count = 100;
+	constexpr unsigned count = 500;
 #		endif
 
 #		ifdef SANITIZERS
-#			define STR(s) #         s
+#			define STR(s) #s
 	std::cout << "Sanitizers active\n";
 #		endif
 
-	std::vector<std::pair<unsigned, std::string_view>> reproducibility_test;
-	using poly_t = kblib::poly_obj<
-	    Base, sizeof(Derived1),
-	    kblib::poly_obj_traits<Base, kblib::construct_type::both>>;
-
-	auto push_checksum = [&](unsigned s, std::string_view name) {
-		auto begin = reproducibility_test.begin();
-		auto end = reproducibility_test.end();
-		// Take only the first result for each run type
-		if (std::find_if(begin, end,
-		                 [&](const auto& p) { return p.second == name; })
-		    == end) {
-			reproducibility_test.emplace_back(s, name);
-		}
+	struct repro_entry {
+		unsigned accum;
+		std::string_view name;
+		unsigned line;
 	};
 
+	std::vector<repro_entry> repro_test;
+	std::vector<repro_entry> repro_test_ch;
+	std::vector<repro_entry> repro_test_sk;
+	using poly_t = kblib::poly_obj<
+	    Base, sizeof(Derived1),
+	    kblib::poly_obj_traits<Base,
+	                           kblib::detail_poly::construct_traits<thrower>>>;
+
+	auto push_checksum
+	    = [&](auto& vec, unsigned s, std::string_view name, unsigned line) {
+		      auto begin = vec.begin();
+		      auto end = vec.end();
+		      // Take only the first result for each run type
+		      if (std::find_if(begin, end,
+		                       [&](const auto& p) { return p.line == line; })
+		          == end) {
+			      vec.push_back({s, name, line});
+		      }
+	      };
+#		define push_checksum(vec, s, name) push_checksum(vec, s, name, __LINE__)
+
 	/*
+	 * 2024-02-24:
+	 * Release / Debug, all times in nanoseconds:
+	 *
+	 *   Four separate contiguous arrays
+	 * baseline:                   37.6897 / 3977.27
+	 *   Polymorphism, always valid
+	 * raw pointer:                279.219 / 5350.22
+	 * unique_ptr:                 220.259 / 6114.19
+	 * poly_obj:                   219.71  / 7592.35
+	 * function pointer            227.07  / 4866.43
+	 * function pointer (wrapped)  220.759 / 5473.22
+	 *   Type erasure, always valid
+	 * std::function:              219.991 / 8519.65
+	 * std::visit(v, f):           220.499 / 23276.3
+	 * kblib::visit(v, f...):      220.814 / 25983.3
+	 * kblib::visit(v)(f...):      248.823 / 26336.9
+	 * visit_indexed:              220.866 / 19938.9
+	 * kblib::visit2:              132.788 / 15481.0
+	 * visit2_nop:          204.583 / 16972.3
+	 * std::get_if:                198.42  / 13370.1
+	 * switch (v.index):           202.93  / 12705.9
+	 *   Polymorphism, checking for invalid
+	 * raw pointer, ch:            693.886 / 5174.58
+	 * unique_ptr, ch:             (incorrect test)
+	 * poly_obj, ch:               694.705 / 7683.41
+	 *   Type erasure, checking for invalid
+	 * std::function, ch:          632.045 / 9070.61
+	 * visit2_nop, ch:      547.768 / 19497.8
+	 * std::get_if, ch:            539.255 / 15197.5
+	 * switch(v.index()), ch:      560.278 / 13331.7
+	 *   Type erasure, exceptions for invalid
+	 * std::function, ex:          756.938 / 8813.42
+	 * std::visit(v, f), ex:       769.363 / 23981.1
+	 * kblib::visit(v, f...), ex:  774.633 / 27869.6
+	 * kblib::visit(v)(f...), ex:  769.774 / 28470.2
+	 * visit_indexed, ex:          642.899 / 20355.8
+	 * kblib::visit2, ex:          447.362 / 17819.4
+	 *
+	 * Overall test runtime:  33.3043s / 324.342s
+	 *
+	 * Conclusions:
+	 *
 	 * Release / Debug, all times in microseconds:
 	 *
 	 *   Four separate contiguous arrays
@@ -163,7 +237,7 @@ TEST_CASE("poly_obj performance") {
 	 * kblib::visit(v)(f...):      37.253 / 288.355
 	 * visit_indexed:              30.203 / 208.894
 	 * kblib::visit2:               8.407 / 211.649
-	 * kblib::visit2_nop:           8.650 / 222.502
+	 * visit2_nop:           8.650 / 222.502
 	 * std::get_if:                 8.580 / 158.164
 	 * switch (v.index):            8.984 / 170.739
 	 *   Polymorphism, checking for invalid
@@ -172,7 +246,7 @@ TEST_CASE("poly_obj performance") {
 	 * poly_obj, ch:               18.290 /  96.168
 	 *   Type erasure, checking for invalid
 	 * std::function, ch:          25.200 / 122.038
-	 * kblib::visit2_nop, ch:      12.327 / 322.764
+	 * visit2_nop, ch:      12.327 / 322.764
 	 * std::get_if, ch:            12.386 / 232.006
 	 * switch(v.index()), ch:      16.817 / 203.752
 	 *   Type erasure, exceptions for invalid
@@ -252,7 +326,7 @@ TEST_CASE("poly_obj performance") {
 			}
 			return accum;
 		});
-		// push_checksum(accum, "baseline");
+		push_checksum(repro_test, accum, "baseline");
 	};
 	BENCHMARK_ADVANCED("raw pointer")(Catch::Benchmark::Chronometer meter) {
 		std::vector<Base*> d;
@@ -281,7 +355,7 @@ TEST_CASE("poly_obj performance") {
 			}
 			return accum;
 		});
-		push_checksum(accum, "raw pointer");
+		push_checksum(repro_test, accum, "raw pointer");
 		for (auto x : d) {
 			delete x;
 		}
@@ -314,7 +388,7 @@ TEST_CASE("poly_obj performance") {
 			}
 			return accum;
 		});
-		push_checksum(accum, "unique pointer");
+		push_checksum(repro_test, accum, "unique pointer");
 	};
 	BENCHMARK_ADVANCED("poly_obj")(Catch::Benchmark::Chronometer meter) {
 		std::vector<poly_t> d;
@@ -323,16 +397,16 @@ TEST_CASE("poly_obj performance") {
 			auto v = h(i);
 			switch (v % 4) {
 			case 0:
-				d.push_back(poly_t::make<Derived1>(v));
+				d.emplace_back(poly_t::tag<Derived1>{}, v);
 				break;
 			case 1:
-				d.push_back(poly_t::make<Derived2>(v));
+				d.emplace_back(poly_t::tag<Derived2>{}, v);
 				break;
 			case 2:
-				d.push_back(poly_t::make<Derived3>(v));
+				d.emplace_back(poly_t::tag<Derived3>{}, v);
 				break;
 			case 3:
-				d.push_back(poly_t::make<Derived4>(v));
+				d.emplace_back(poly_t::tag<Derived4>{}, v);
 			}
 		}
 
@@ -343,7 +417,7 @@ TEST_CASE("poly_obj performance") {
 			}
 			return accum;
 		});
-		push_checksum(accum, "poly_obj");
+		push_checksum(repro_test, accum, "poly_obj");
 	};
 	BENCHMARK_ADVANCED("function pointer")(Catch::Benchmark::Chronometer meter) {
 		std::vector<fptr> d;
@@ -360,7 +434,7 @@ TEST_CASE("poly_obj performance") {
 			}
 			return accum;
 		});
-		push_checksum(accum, "raw pointer");
+		push_checksum(repro_test, accum, "function pointer");
 	};
 	BENCHMARK_ADVANCED("function pointer (wrapped)")
 	(Catch::Benchmark::Chronometer meter) {
@@ -378,7 +452,7 @@ TEST_CASE("poly_obj performance") {
 			}
 			return accum;
 		});
-		push_checksum(accum, "raw pointer");
+		push_checksum(repro_test, accum, "function pointer (wrapped)");
 	};
 	BENCHMARK_ADVANCED("std::function")(Catch::Benchmark::Chronometer meter) {
 		std::vector<std::function<unsigned()>> d;
@@ -407,7 +481,7 @@ TEST_CASE("poly_obj performance") {
 			}
 			return accum;
 		});
-		push_checksum(accum, "std::function");
+		push_checksum(repro_test, accum, "std::function");
 	};
 	{
 		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4>> d;
@@ -438,7 +512,7 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "std::visit(v, f)");
+			push_checksum(repro_test, accum, "std::visit(v, f)");
 		};
 		BENCHMARK_ADVANCED("kblib::visit(v, f...)")
 		(Catch::Benchmark::Chronometer meter) {
@@ -449,7 +523,7 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "kblib::visit(v, f...)");
+			push_checksum(repro_test, accum, "kblib::visit(v, f...)");
 		};
 		BENCHMARK_ADVANCED("kblib::visit(v)(f...)")
 		(Catch::Benchmark::Chronometer meter) {
@@ -460,7 +534,7 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "kblib::visit(v)(f...)");
+			push_checksum(repro_test, accum, "kblib::visit(v)(f...)");
 		};
 		BENCHMARK_ADVANCED("visit_indexed(v, f...)")
 		(Catch::Benchmark::Chronometer meter) {
@@ -472,7 +546,19 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "visit_indexed(v, f...)");
+			push_checksum(repro_test, accum, "visit_indexed(v, f...)");
+		};
+		BENCHMARK_ADVANCED("visit_indexed_old(v, f...)")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			meter.measure([&] {
+				for (const auto& x : d) {
+					accum += kblib::visit_indexed_old(
+					    x, [](auto, const auto& v) { return v(); });
+				}
+				return accum;
+			});
+			push_checksum(repro_test, accum, "visit_indexed_old(v, f...)");
 		};
 		BENCHMARK_ADVANCED("kblib::visit2(v, f...)")
 		(Catch::Benchmark::Chronometer meter) {
@@ -483,9 +569,31 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "kblib::visit2(v, f...)");
+			push_checksum(repro_test, accum, "kblib::visit2(v, f...)");
 		};
-		BENCHMARK_ADVANCED("kblib::visit2_nop(v, f...)")
+		BENCHMARK_ADVANCED("kblib::visit2b(v, f...)")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			meter.measure([&] {
+				for (const auto& x : d) {
+					accum += kblib::visit2b(x, [](const auto& v) { return v(); });
+				}
+				return accum;
+			});
+			push_checksum(repro_test, accum, "kblib::visit2b(v, f...)");
+		};
+		BENCHMARK_ADVANCED("kblib::visit2s(v, f...)")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			meter.measure([&] {
+				for (const auto& x : d) {
+					accum += kblib::visit2s(x, [](const auto& v) { return v(); });
+				}
+				return accum;
+			});
+			push_checksum(repro_test, accum, "kblib::visit2s(v, f...)");
+		};
+		BENCHMARK_ADVANCED("visit2_nop(v, f...)")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
 			meter.measure([&] {
@@ -494,7 +602,7 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "kblib::visit2_nop(v, f...)");
+			push_checksum(repro_test, accum, "visit2_nop(v, f...)");
 		};
 		BENCHMARK_ADVANCED("std::get_if")
 		(Catch::Benchmark::Chronometer meter) {
@@ -513,9 +621,9 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "std::get_if");
+			push_checksum(repro_test, accum, "std::get_if");
 		};
-		BENCHMARK_ADVANCED("switch (v.index())")
+		BENCHMARK_ADVANCED("switch")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
 			meter.measure([&] {
@@ -538,7 +646,32 @@ TEST_CASE("poly_obj performance") {
 				}
 				return accum;
 			});
-			push_checksum(accum, "switch (v.index())");
+			push_checksum(repro_test, accum, "switch");
+		};
+		BENCHMARK_ADVANCED("unsafe_get switch")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			meter.measure([&] {
+				for (const auto& x : d) {
+					switch (x.index()) {
+					case 0:
+						accum += (*std::get_if<0>(&x))();
+						break;
+					case 1:
+						accum += (*std::get_if<1>(&x))();
+						break;
+					case 2:
+						accum += (*std::get_if<2>(&x))();
+						break;
+					case 3:
+						accum += (*std::get_if<3>(&x))();
+						break;
+					default:;
+					}
+				}
+				return accum;
+			});
+			push_checksum(repro_test, accum, "unsafe_get switch");
 		};
 	}
 
@@ -573,10 +706,13 @@ TEST_CASE("poly_obj performance") {
 			}
 
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (auto x : d) {
 					if (x) {
 						accum += (*x)();
+					} else {
+						++sk;
 					}
 				}
 				return accum;
@@ -584,6 +720,8 @@ TEST_CASE("poly_obj performance") {
 			for (auto x : d) {
 				delete x;
 			}
+			push_checksum(repro_test_ch, accum, "raw pointer, ch");
+			push_checksum(repro_test_sk, sk, "raw pointer, ch");
 		};
 		BENCHMARK_ADVANCED("unique_ptr, ch")
 		(Catch::Benchmark::Chronometer meter) {
@@ -591,7 +729,7 @@ TEST_CASE("poly_obj performance") {
 			kblib::FNV32_hash<unsigned> h;
 			for (auto i : kblib::range(count)) {
 				auto v = h(i);
-				switch (v % 4) {
+				switch (v % 5) {
 				case 0:
 					d.push_back(std::make_unique<Derived1>(v));
 					break;
@@ -614,14 +752,19 @@ TEST_CASE("poly_obj performance") {
 			}
 
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					if (x) {
 						accum += (*x)();
+					} else {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "unique_ptr, ch");
+			push_checksum(repro_test_sk, sk, "unique_ptr, ch");
 		};
 		BENCHMARK_ADVANCED("poly_obj, ch")(Catch::Benchmark::Chronometer meter) {
 			std::vector<poly_t> d;
@@ -651,14 +794,19 @@ TEST_CASE("poly_obj performance") {
 			}
 
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					if (x) {
 						accum += x();
+					} else {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "poly_obj, ch");
+			push_checksum(repro_test_sk, sk, "poly_obj, ch");
 		};
 		std::vector<std::function<unsigned()>> df;
 		std::vector<std::variant<Derived1, Derived2, Derived3, Derived4, thrower>>
@@ -688,42 +836,59 @@ TEST_CASE("poly_obj performance") {
 				try {
 					df.emplace_back(thrower(v));
 				} catch (int) {
-					d.emplace_back(thrower());
+					df.emplace_back();
 				}
 				// These have to be done in separate try blocks because otherwise
-				// df would throw and d wouldn't get pushed
+				// df would throw and d wouldn't get pushed. this uses assignment
+				// instead of construction because that's the only way to make a
+				// variant valueless_by_exception
 				try {
-					auto& b = d.emplace_back(std::in_place_type_t<thrower>{}, 0);
-					b = thrower(v);
+					auto& b = d.emplace_back(std::in_place_type_t<Derived1>{}, 0);
+					decltype(d)::value_type tmp{std::in_place_type_t<thrower>{}, v,
+					                            std::nothrow};
+					b = std::move(tmp);
 				} catch (int) {
+					REQUIRE(d.back().valueless_by_exception());
 				}
 			}
 		}
 		BENCHMARK_ADVANCED("std::function, ch")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : df) {
 					if (x) {
 						accum += x();
+					} else {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "std::function, ch");
+			push_checksum(repro_test_sk, sk, "std::function, ch");
 		};
-		BENCHMARK_ADVANCED("kblib::visit2_nop(v, f...), ch")
+		BENCHMARK_ADVANCED("visit2_nop(v, f...), ch")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					kblib::visit2_nop(x, [&](const auto& v) { accum += v(); });
+					if (x.valueless_by_exception()) {
+						++sk;
+					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "visit2_nop(v, f...), ch");
+			push_checksum(repro_test_sk, sk, "visit2_nop(v, f...), ch");
 		};
 		BENCHMARK_ADVANCED("std::get_if, ch")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					if (auto* p = std::get_if<0>(&x)) {
@@ -736,14 +901,19 @@ TEST_CASE("poly_obj performance") {
 						accum += (*p)();
 					} else if (auto* p = std::get_if<4>(&x)) {
 						accum += (*p)();
+					} else {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "std::get_if, ch");
+			push_checksum(repro_test_sk, sk, "std::get_if, ch");
 		};
-		BENCHMARK_ADVANCED("switch (v.index()), ch")
+		BENCHMARK_ADVANCED("switch, ch")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					switch (x.index()) {
@@ -762,90 +932,182 @@ TEST_CASE("poly_obj performance") {
 					case 4:
 						accum += std::get<4>(x)();
 						break;
-					default:;
+					default:
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "switch, ch");
+			push_checksum(repro_test_sk, sk, "switch, ch");
+		};
+		BENCHMARK_ADVANCED("unsafe_get switch, ch")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			unsigned sk{};
+			meter.measure([&] {
+				for (const auto& x : d) {
+					switch (x.index()) {
+					case 0:
+						accum += (*std::get_if<0>(&x))();
+						break;
+					case 1:
+						accum += (*std::get_if<1>(&x))();
+						break;
+					case 2:
+						accum += (*std::get_if<2>(&x))();
+						break;
+					case 3:
+						accum += (*std::get_if<3>(&x))();
+						break;
+					case 4:
+						accum += (*std::get_if<4>(&x))();
+						break;
+					default:
+						++sk;
+					}
+				}
+				return accum;
+			});
+			push_checksum(repro_test_ch, accum, "switch, ch");
+			push_checksum(repro_test_sk, sk, "switch, ch");
 		};
 		BENCHMARK_ADVANCED("std::function, ex")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : df) {
 					try {
 						accum += x();
 					} catch (const std::bad_function_call&) {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "std::function, ex");
+			push_checksum(repro_test_sk, sk, "std::function, ex");
 		};
 		BENCHMARK_ADVANCED("std::visit(v, f), ex")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					try {
 						accum += std::visit([](const auto& v) { return v(); }, x);
 					} catch (const std::bad_variant_access&) {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "std::visit(v, f), ex");
+			push_checksum(repro_test_sk, sk, "std::visit(v, f), ex");
 		};
 		BENCHMARK_ADVANCED("kblib::visit(v, f...), ex")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					try {
 						accum += kblib::visit(x, [](const auto& v) { return v(); });
 					} catch (const std::bad_variant_access&) {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "kblib::visit(v, f...), ex");
+			push_checksum(repro_test_sk, sk, "kblib::visit(v, f...), ex");
 		};
 		BENCHMARK_ADVANCED("kblib::visit(v)(f...), ex")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					try {
 						accum += kblib::visit(x)([](const auto& v) { return v(); });
 					} catch (const std::bad_variant_access&) {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "kblib::visit(v)(f...), ex");
+			push_checksum(repro_test_sk, sk, "kblib::visit(v)(f...), ex");
 		};
 		BENCHMARK_ADVANCED("visit_indexed(v, f...), ex")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					try {
 						accum += kblib::visit_indexed(
 						    x, [](auto, const auto& v) { return v(); });
 					} catch (const std::bad_variant_access&) {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "visit_indexed(v, f...), ex");
+			push_checksum(repro_test_sk, sk, "visit_indexed(v, f...), ex");
 		};
 		BENCHMARK_ADVANCED("kblib::visit2(v, f...), ex")
 		(Catch::Benchmark::Chronometer meter) {
 			unsigned accum{};
+			unsigned sk{};
 			meter.measure([&] {
 				for (const auto& x : d) {
 					try {
 						accum += kblib::visit2(x, [](const auto& v) { return v(); });
 					} catch (const std::bad_variant_access&) {
+						++sk;
 					}
 				}
 				return accum;
 			});
+			push_checksum(repro_test_ch, accum, "kblib::visit2(v, f...), ex");
+			push_checksum(repro_test_sk, sk, "kblib::visit2(v, f...), ex");
+		};
+		BENCHMARK_ADVANCED("kblib::visit2b(v, f...), ex")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			unsigned sk{};
+			meter.measure([&] {
+				for (const auto& x : d) {
+					try {
+						accum += kblib::visit2b(x, [](const auto& v) { return v(); });
+					} catch (const std::bad_variant_access&) {
+						++sk;
+					}
+				}
+				return accum;
+			});
+			push_checksum(repro_test_ch, accum, "kblib::visit2b(v, f...), ex");
+			push_checksum(repro_test_sk, sk, "kblib::visit2b(v, f...), ex");
+		};
+		BENCHMARK_ADVANCED("kblib::visit2s(v, f...), ex")
+		(Catch::Benchmark::Chronometer meter) {
+			unsigned accum{};
+			unsigned sk{};
+			meter.measure([&] {
+				for (const auto& x : d) {
+					try {
+						accum += kblib::visit2s(x, [](const auto& v) { return v(); });
+					} catch (const std::bad_variant_access&) {
+						++sk;
+					}
+				}
+				return accum;
+			});
+			push_checksum(repro_test_ch, accum, "kblib::visit2s(v, f...), ex");
+			push_checksum(repro_test_sk, sk, "kblib::visit2s(v, f...), ex");
 		};
 	}
 	auto end = std::chrono::steady_clock::now();
@@ -853,13 +1115,20 @@ TEST_CASE("poly_obj performance") {
 	std::cout << "\n\nProfiling took " << time.count() << " seconds\n";
 
 	// All runs should produce identical results
-	unsigned expected_value = reproducibility_test[0].first;
-	for (auto i : kblib::range(std::size_t(1), reproducibility_test.size())) {
-		const auto& run = reproducibility_test[i];
-		INFO(i << ": " << run.second << ": " << run.first
-		       << " != " << expected_value);
-		REQUIRE(run.first == expected_value);
-	}
+	auto check_repro = [&](auto& v, std::string_view name) {
+		unsigned expected_value = v[0].accum;
+		for (auto i : kblib::range(std::size_t(1), v.size())) {
+			const auto& run = v[i];
+			INFO(name << '[' << i << "]: " << run.name << '[' << run.line
+			          << "]: " << run.accum << " != " << expected_value);
+			CHECK(run.accum == expected_value);
+		}
+		// std::clog << name << ": expected " << expected_value << '\n';
+	};
+#		define check_repro(v) check_repro(v, #v)
+	check_repro(repro_test);
+	check_repro(repro_test_ch);
+	check_repro(repro_test_sk);
 }
 
 #	endif // not defined(FAST_TEST)
