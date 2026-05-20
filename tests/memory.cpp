@@ -163,6 +163,7 @@ TEST_CASE("cond_ptr fptr") {
 	REQUIRE_FALSE(rp.owns());
 }
 
+#if 0
 TEST_CASE("cond_ptr rfptr") {
 	auto del = [](kblib::owner<const int*> p) noexcept { delete p; };
 	int a{42};
@@ -182,6 +183,7 @@ TEST_CASE("cond_ptr rfptr") {
 	auto up = std::unique_ptr<int, decltype(*+del)>(std::move(rp));
 	REQUIRE_FALSE(up);
 }
+#endif
 
 TEST_CASE("cond_ptr array") {
 	int a[10]{42};

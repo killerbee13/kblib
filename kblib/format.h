@@ -72,7 +72,7 @@ constexpr auto count_digits(Number val)
 		return 1;
 	} else {
 		return static_cast<int>(std::ceil(
-		           std::nextafter(std::log10(std::fabs(val)), INFINITY)))
+		           std::nextafter(std::log10(std::fabs(val)), __builtin_inf())))
 		       + (val < 0);
 	}
 }

@@ -83,7 +83,7 @@ DISTFILES += \
 
 VERSION = 0.4.02
 
-QMAKE_CXXFLAGS += -std=c++23 -g
+QMAKE_CXXFLAGS += -std=c++2b -g
 QMAKE_CXXFLAGS += -march=native
 
 QMAKE_LFLAGS += -v
@@ -95,7 +95,7 @@ QMAKE_CXXFLAGS += -Wshadow # clang
 QMAKE_CXXFLAGS += -Wno-missing-braces
 QMAKE_CXXFLAGS += -Wconversion -Wno-deprecated-declarations \
  -Wold-style-cast -Wzero-as-null-pointer-constant \
- -Wno-mismatched-tags -Wimplicit-fallthrough -fmax-errors=500
+ -Wno-mismatched-tags -Wimplicit-fallthrough #-fmax-errors=500
 QMAKE_CXXFLAGS += -Wno-pragmas
 #QMAKE_CXXFLAGS += -Wduplicated-cond -Wlogical-op -Wreturn-std-move -Wpointer-to-int-cast
 #QMAKE_LFLAGS += -stdlib=libc++ -lc++ -lc++abi -fuse-ld=lld -L/usr/local/lib
@@ -105,6 +105,8 @@ CONFIG(debug, debug|release)|CONFIG(sanitize) {
 	QMAKE_LFLAGS += -fsanitize=address,undefined
 	DEFINES += "SANITIZERS=\\\"address,undefined\\\""
 }
+
+#QMAKE_CXXFLAGS_RELEASE += -DNDEBUG
 
 CONFIG(build_trace) {
 	QMAKE_CXXFLAGS += -ftime-trace

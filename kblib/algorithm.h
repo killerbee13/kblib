@@ -738,11 +738,11 @@ template <typename InputIt1, typename EndIt1, typename InputIt2,
 KBLIB_NODISCARD constexpr auto starts_with(InputIt1 begin1, EndIt1 end1,
                                            InputIt2 begin2, EndIt2 end2,
                                            BinaryPred pred)
-    -> enable_if_t<
-        (is_input_iterator_v<InputIt1> and is_input_iterator_v<InputIt2>) //
-        and not (is_random_access_iterator_v<
-                     InputIt1> and is_random_access_iterator_v<InputIt2>),
-        bool> {
+    -> enable_if_t<(is_input_iterator_v<InputIt1>
+                    and is_input_iterator_v<InputIt2>) //
+                   and not (is_random_access_iterator_v<InputIt1>
+                            and is_random_access_iterator_v<InputIt2>),
+                   bool> {
 	while (begin1 != end1 and begin2 != end2) {
 		if (not kblib::invoke(pred, *begin1++, *begin2++)) {
 			return false;
@@ -761,10 +761,9 @@ KBLIB_NODISCARD constexpr auto starts_with(RandomAccessIt1 begin1,
                                            RandomAccessIt2 begin2,
                                            RandomAccessIt2 end2,
                                            BinaryPred pred = {})
-    -> enable_if_t<
-        is_random_access_iterator_v<
-            RandomAccessIt1> and is_random_access_iterator_v<RandomAccessIt2>,
-        bool> {
+    -> enable_if_t<is_random_access_iterator_v<RandomAccessIt1>
+                       and is_random_access_iterator_v<RandomAccessIt2>,
+                   bool> {
 	if (end2 - begin2 > end1 - begin1) {
 		return false;
 	} else {
@@ -781,12 +780,11 @@ template <typename BidirIt1, typename BidirIt2,
 KBLIB_NODISCARD constexpr auto ends_with(BidirIt1 begin1, BidirIt1 end1,
                                          BidirIt2 begin2, BidirIt2 end2,
                                          BinaryPred pred = {})
-    -> enable_if_t<
-        (is_bidirectional_iterator_v<BidirIt1>      //
-         and is_bidirectional_iterator_v<BidirIt2>) //
-        and not (is_random_access_iterator_v<
-                     BidirIt1> and is_random_access_iterator_v<BidirIt2>),
-        bool> {
+    -> enable_if_t<(is_bidirectional_iterator_v<BidirIt1>      //
+                    and is_bidirectional_iterator_v<BidirIt2>) //
+                   and not (is_random_access_iterator_v<BidirIt1>
+                            and is_random_access_iterator_v<BidirIt2>),
+                   bool> {
 	while (begin1 != end1 and begin2 != end2) {
 		if (not kblib::invoke(pred, *--end1, *--end2)) {
 			return false;
@@ -805,10 +803,9 @@ KBLIB_NODISCARD constexpr auto ends_with(RandomAccessIt1 begin1,
                                          RandomAccessIt2 begin2,
                                          RandomAccessIt2 end2,
                                          BinaryPred pred = {})
-    -> enable_if_t<
-        is_random_access_iterator_v<
-            RandomAccessIt1> and is_random_access_iterator_v<RandomAccessIt2>,
-        bool> {
+    -> enable_if_t<is_random_access_iterator_v<RandomAccessIt1>
+                       and is_random_access_iterator_v<RandomAccessIt2>,
+                   bool> {
 	if (end2 - begin2 > end1 - begin1) {
 		return false;
 	} else {
@@ -1144,13 +1141,15 @@ constexpr auto max_element(ForwardIt first, EndIt last, Compare comp = {})
 template <typename SequenceContainer, typename Comp = std::less<>, typename It,
           enable_if_t<is_linear_container_v<SequenceContainer>, int> = 0>
 KBLIB_NODISCARD constexpr auto get_max_n_old(It first, It last,
-                                             std::size_t count, Comp cmp = {})
+                                             std::ptrdiff_t count,
+                                             Comp cmp = {})
     -> SequenceContainer {
 	using std::begin;
 	using std::end;
-	assert(first + count <= last);
-	SequenceContainer c{first, first + count};
-	std::for_each(first + count, last, [&](const auto& v) {
+	auto part = first + std::min(count, std::distance(first, last));
+	assert(part <= last);
+	SequenceContainer c{first, part};
+	std::for_each(part, last, [&](const auto& v) {
 		auto& min_v = *std::min_element(begin(c), end(c), cmp);
 		if (kblib::invoke(cmp, min_v, v)) {
 			min_v = v;
@@ -1204,7 +1203,8 @@ KBLIB_NODISCARD constexpr auto get_max_n(It first, It last, std::size_t count,
                                          Comp cmp = {}) -> SequenceContainer {
 	using std::begin;
 	using std::end;
-	SequenceContainer c(count);
+	SequenceContainer c(
+	    std::min(count, static_cast<std::size_t>(std::distance(first, last))));
 	std::partial_sort_copy(first, last, begin(c), end(c),
 	                       [&](auto&& a, auto&& b) -> decltype(auto) {
 		                       return kblib::invoke(cmp,
@@ -1509,18 +1509,21 @@ template <class ForwardIt>
 constexpr auto rotate(ForwardIt first, ForwardIt n_first,
                       ForwardIt last) noexcept(noexcept(swap(*first, *first)))
     -> ForwardIt {
-	if (first == n_first)
+	if (first == n_first) {
 		return last;
-	if (n_first == last)
+	}
+	if (n_first == last) {
 		return first;
+	}
 
 	ForwardIt read = n_first;
 	ForwardIt write = first;
 	ForwardIt next_read = first; // read position for when "read" hits "last"
 
 	while (read != last) {
-		if (write == next_read)
+		if (write == next_read) {
 			next_read = read; // track where "first" went
+		}
 		// iter_swap is not constexpr
 		// std::iter_swap(write++, read++);
 		swap(*(write++), *(read++));
@@ -1572,8 +1575,9 @@ constexpr auto generate_n(OutputIt first, Size count,
 }
 
 template <typename ForwardIt, typename T>
-constexpr auto iota(ForwardIt first, ForwardIt last, T value) noexcept(
-    noexcept(*first++ = value) and noexcept(++value)) -> void {
+constexpr auto iota(ForwardIt first, ForwardIt last,
+                    T value) noexcept(noexcept(*first++ = value)
+                                      and noexcept(++value)) -> void {
 	while (first != last) {
 		*first++ = value;
 		++value;
@@ -1714,8 +1718,9 @@ namespace detail_algorithm {
 	constexpr auto shift_backward(
 	    ForwardIt first, ForwardIt n_first,
 	    ForwardIt last) noexcept(noexcept(*first = std::move(*first))) -> void {
-		if (first == n_first or n_first == last)
+		if (first == n_first or n_first == last) {
 			return;
+		}
 
 		ForwardIt read = n_first;
 		ForwardIt write = first;

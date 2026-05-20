@@ -273,7 +273,8 @@ KBLIB_NODISCARD auto build_dy(Functor f, size_t size) -> Container {
  */
 template <typename Container, typename Range, typename UnaryFunction,
           enable_if_t<is_resizable_v<Container>, int> = 0>
-KBLIB_NODISCARD auto build_dy(Range&& r, UnaryFunction f) -> Container {
+KBLIB_NODISCARD auto build_dy(Range&& r, UnaryFunction f)
+    -> ignore_t<decltype(std::begin(r)), Container> {
 	using std::begin;
 	using std::end;
 	Container out(kblib::size(r));
