@@ -133,6 +133,13 @@ TEST_CASE("ranges overflow") {
 	CHECK(c == 254);
 }
 
+TEST_CASE("enum range") {
+	enum test : int {};
+	for (test i : kblib::range(test{100})) {
+	}
+	REQUIRE(kblib::range(test{100}).contains(test{50}));
+}
+
 #if KBLIB_USE_CXX17
 
 TEST_CASE("magic_enumerate") {

@@ -205,6 +205,89 @@ KBLIB_NODISCARD counting_back_insert_iterator<C> counting_back_inserter(
 	return counting_back_insert_iterator<C>{c, count};
 }
 
+namespace detail_iterators {
+	template <typename T, typename U, typename = void>
+	struct is_addable : std::false_type {};
+
+	template <typename T, typename U>
+	struct is_addable<T, U,
+	                  void_t<decltype(std::declval<T&>() + std::declval<U&>())>>
+	    : std::true_type {};
+} // namespace detail_iterators
+
+struct adjuster {
+	std::ptrdiff_t adj;
+	constexpr adjuster(std::ptrdiff_t adj_) noexcept
+	    : adj(adj_) {}
+	constexpr operator std::ptrdiff_t() const noexcept { return adj; }
+
+	template <typename T>
+	friend constexpr auto operator+(T val, adjuster a) noexcept -> enable_if_t<
+	    not detail_iterators::is_addable<T, std::ptrdiff_t>::value,
+	    decltype(std::advance(val, decltype(adj){}))> {
+		return std::advance(val, a.adj);
+	}
+};
+
+/**
+ * @brief A struct which increments anything it is added to. Suitable for use as
+ * a Delta type for range_t.
+ */
+struct incrementer {
+	constexpr incrementer() noexcept = default;
+	constexpr incrementer(int) noexcept {}
+	constexpr operator int() const noexcept { return 1; }
+	friend constexpr auto operator*(std::ptrdiff_t x, incrementer) {
+		return adjuster{x};
+	}
+
+	template <typename T>
+	constexpr auto operator()(T& val) const -> T& {
+		if constexpr (std::is_enum_v<T>) {
+			return val = static_cast<T>(etoi(val) + 1);
+		} else {
+			return ++val;
+		}
+	}
+
+	/**
+	 * @brief Increments val.
+	 */
+	template <typename T>
+	friend constexpr auto operator+(T val, incrementer f) -> T {
+		return f(val);
+	}
+};
+
+/**
+ * @brief A struct which decrements anything it is added to. Suitable for use as
+ * a Delta type for range_t.
+ */
+struct decrementer {
+	constexpr decrementer() noexcept = default;
+	constexpr decrementer(int) noexcept {}
+	constexpr operator int() const noexcept { return -1; }
+	friend constexpr auto operator*(std::ptrdiff_t x, decrementer) {
+		return adjuster{-x};
+	}
+	template <typename T>
+	constexpr auto operator()(T& val) const -> T& {
+		if constexpr (std::is_enum_v<T>) {
+			return val = static_cast<T>(etoi(val) - 1);
+		} else {
+			return --val;
+		}
+	}
+
+	/**
+	 * @brief Decrements val.
+	 */
+	template <typename T>
+	friend constexpr auto operator+(T val, decrementer f) -> T {
+		return f(val);
+	}
+};
+
 /**
  * @brief A range generator, similar to Python 3's range().
  *
@@ -221,36 +304,37 @@ KBLIB_NODISCARD counting_back_insert_iterator<C> counting_back_inserter(
 template <typename Value, typename Delta>
 class range_t {
  private:
-	Value min, max;
+	Value start, stop;
 	Delta step;
 
 	constexpr static bool nothrow_copyable
 	    = std::is_nothrow_copy_constructible<Value>::value;
-	constexpr static bool nothrow_steppable = noexcept(min + step);
+	constexpr static bool nothrow_steppable = noexcept(start + step);
 
  public:
 	/**
 	 * @brief 2- and 3-argument constructor. Explicitly specify start, end, and
 	 * optionally the step amount.
 	 *
-	 * @param min_ The first value in the range.
-	 * @param max_ The end of the range.
+	 * @param start_ The first value in the range.
+	 * @param stop_ The end of the range.
 	 * @param step_ The difference between values in the range.
 	 */
-	constexpr range_t(Value min_, Value max_, Delta step_ = 1)
-	    : min(min_)
-	    , max(max_)
+	constexpr range_t(Value start_, Value stop_, Delta step_ = 1)
+	    : start(start_)
+	    , stop(stop_)
 	    , step(step_) {
 		normalize();
 	}
 	/**
 	 * @brief 1-argument constructor. Start is implicitly zero and step is 1 or
-	 * -1, depending on the sign of max.
+	 * -1, depending on the sign of stop.
 	 *
-	 * @param max The end of the range.
+	 * @param stop The end of the range.
 	 */
-	constexpr range_t(Value max_)
-	    : range_t(Value{}, max_, (max_ >= Value{}) ? 1 : -1) {}
+	constexpr range_t(Value stop_)
+	    : range_t(Value{}, stop_,
+	              (stop_ >= Value{}) ? incrementer{} : decrementer{}) {}
 
 	/**
 	 * @brief A helper struct which acts as an iterator for the range elements,
@@ -375,37 +459,37 @@ class range_t {
 	/**
 	 * @brief Returns an iterator to the beginning of the range.
 	 */
-	constexpr auto begin() const noexcept -> iterator { return {min, step}; }
+	constexpr auto begin() const noexcept -> iterator { return {start, step}; }
 	/**
 	 * @brief Return an iterator to the end of the range.
 	 */
-	constexpr auto end() const noexcept -> iterator { return {max, step}; }
+	constexpr auto end() const noexcept -> iterator { return {stop, step}; }
 
 	/**
 	 * @brief Returns the distance between start() and stop().
 	 */
 	constexpr auto size() const noexcept -> std::size_t {
-		return static_cast<std::size_t>(std::abs(max - min) / step);
+		return static_cast<std::size_t>(std::abs(stop - start) / step);
 	}
 
 	/**
 	 * @brief Returns an iterator to the beginning of the range.
 	 */
 	friend constexpr auto begin(const range_t& r) noexcept -> iterator {
-		return {r.min, r.step};
+		return {r.start, r.step};
 	}
 	/**
 	 * @brief Return an iterator to the end of the range.
 	 */
 	friend constexpr auto end(const range_t& r) noexcept -> iterator {
-		return {r.max, r.step};
+		return {r.stop, r.step};
 	}
 
 	/**
 	 * @brief Returns the distance between start() and stop().
 	 */
 	friend constexpr auto size(const range_t& r) noexcept -> std::size_t {
-		return (r.max - r.min) / r.step;
+		return (r.stop - r.start) / r.step;
 	}
 
 	/**
@@ -420,11 +504,23 @@ class range_t {
 	}
 
 	constexpr auto lesser() const noexcept(nothrow_copyable) -> Value {
-		return (step > 0) ? max : min;
+		return (step > 0) ? stop : start;
 	}
 
 	constexpr auto greater() const noexcept(nothrow_copyable) -> Value {
-		return (step > 0) ? min : max;
+		return (step > 0) ? start : stop;
+	}
+
+	constexpr auto contains(const Value& v)
+	    -> std::enable_if_t<std::is_integral_v<Delta>
+	                            or std::is_same_v<Delta, incrementer>
+	                            or std::is_same_v<Delta, decrementer>,
+	                        bool> {
+		if (step > 0) {
+			return v >= start and v < stop and (v - start) % step == 0;
+		} else {
+			return v <= start and v > stop and (v - start) % step == 0;
+		}
 	}
 
 	/**
@@ -495,13 +591,22 @@ class range_t {
 		return v;
 	}
 
+	template <typename T>
+	static constexpr auto back_to_enum(T v) {
+		if constexpr (std::is_enum_v<Value>) {
+			return static_cast<Value>(v);
+		} else {
+			return v;
+		}
+	}
+
 	constexpr auto normalize() noexcept(nothrow_steppable) -> void {
-		if (min == max) {
+		if (start == stop) {
 		} else if (step == 0) {
-			if (min != std::numeric_limits<Value>::max()) {
-				max = min + 1;
+			if (start != std::numeric_limits<Value>::max()) {
+				stop = start + incrementer{};
 			} else {
-				max = min - 1;
+				stop = start + decrementer{};
 			}
 		} else {
 #pragma GCC diagnostic push
@@ -510,101 +615,26 @@ class range_t {
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wimplicit-int-conversion"
 #pragma GCC diagnostic ignored "-Wshorten-64-to-32"
-			auto difference = max - min;
+			auto difference = stop - start;
 			std::ptrdiff_t sign = (step > 0) ? 1 : -1;
 			if ((sign * to_signed(difference)) <= (sign * step)) {
 				step = sign;
-				max = min + step;
+				stop = back_to_enum(start + step);
 			} else {
 				auto remainder = difference % step;
 				if (remainder != 0) {
-					max = max - remainder;
-					assert(not (positive(max)
+					stop = back_to_enum(stop - remainder);
+					assert(not (positive(stop)
 					            and (signed_cast<Delta>(
-					                     std::numeric_limits<Value>::max() - max)
+					                     std::numeric_limits<Value>::max() - stop)
 					                 < step)));
-					max = max + step;
+					stop = back_to_enum(stop + step);
 				}
 			}
 #pragma GCC diagnostic pop
 		}
 	}
 };
-
-namespace detail_iterators {
-	template <typename T, typename U, typename = void>
-	struct is_addable : std::false_type {};
-
-	template <typename T, typename U>
-	struct is_addable<T, U,
-	                  void_t<decltype(std::declval<T&>() + std::declval<U&>())>>
-	    : std::true_type {};
-} // namespace detail_iterators
-
-struct adjuster {
-	std::ptrdiff_t adj;
-	constexpr adjuster(std::ptrdiff_t adj_) noexcept
-	    : adj(adj_) {}
-	constexpr operator std::ptrdiff_t() const noexcept { return adj; }
-};
-
-template <typename T>
-constexpr auto operator+(T val, adjuster a) noexcept
-    -> enable_if_t<not detail_iterators::is_addable<T, std::ptrdiff_t>::value,
-                   decltype(std::advance(val, a.adj))> {
-	return std::advance(val, a.adj);
-}
-
-/**
- * @brief A struct which increments anything it is added to. Suitable for use as
- * a Delta type for range_t.
- */
-struct incrementer {
-	constexpr incrementer() noexcept = default;
-	constexpr incrementer(int) noexcept {}
-	constexpr operator int() const noexcept { return 1; }
-	friend constexpr auto operator*(std::ptrdiff_t x, incrementer) {
-		return adjuster{x};
-	}
-
-	template <typename T>
-	constexpr auto operator()(T& t) -> T& {
-		return ++t;
-	}
-};
-
-/**
- * @brief Increments val.
- */
-template <typename T>
-constexpr auto operator+(T val, incrementer) -> T {
-	return ++val;
-}
-
-/**
- * @brief A struct which decrements anything it is added to. Suitable for use as
- * a Delta type for range_t.
- */
-struct decrementer {
-	constexpr decrementer() noexcept = default;
-	constexpr decrementer(int) noexcept {}
-	constexpr operator int() const noexcept { return -1; }
-	friend constexpr auto operator*(std::ptrdiff_t x, decrementer) {
-		return adjuster{-x};
-	}
-	template <typename T>
-	constexpr auto operator()(T& t) -> T& {
-		return --t;
-	}
-};
-
-/**
- * @brief Decrements val.
- */
-template <typename T>
-constexpr auto operator+(T val, decrementer) -> T {
-	return --val;
-}
 
 namespace detail_iterators {
 
@@ -637,7 +667,7 @@ constexpr auto range(Value min, Value max, Delta step = 0)
     -> range_t<Value, Delta> {
 	if (step == 0) {
 		if (min <= max) {
-			return {min, max, 1};
+			return {min, max, static_cast<Delta>(1)};
 		} else {
 			return {min, max, static_cast<Delta>(-1)};
 		}
