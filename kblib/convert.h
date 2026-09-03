@@ -304,12 +304,6 @@ inline namespace literals {
 
 } // namespace literals
 
-template <typename E,
-          typename = typename std::enable_if<std::is_enum<E>::value>::type>
-KBLIB_NODISCARD constexpr auto etoi(E e) -> auto {
-	return static_cast<std::underlying_type_t<E>>(e);
-}
-
 template <int maxBufLen = 4096, typename clock, typename duration>
 KBLIB_NODISCARD auto time_to_str(std::chrono::time_point<clock, duration>& tp,
                                  const std::string& fmt = "%F %T")
@@ -583,6 +577,26 @@ KBLIB_NODISCARD auto url_encode(const string& value) -> std::string {
 }
 
 template <typename string>
+KBLIB_NODISCARD auto url_decode(const string& value) -> std::string {
+	std::string ret;
+	for (auto it = value.begin(), end = value.end(); it != end; ++it) {
+		if (*it == '%') {
+			if (std::distance(it, end) < 3) {
+				throw std::invalid_argument("Percent escape too short");
+			}
+			char num[]{it[1], it[2]};
+			ret.push_back(detail_convert::read_digits<unsigned char, 2>(
+			    std::begin(num), std::end(num), 16u,
+			    "00112233445566778899AaBbCcDdEeFf"));
+			it += 2;
+		} else {
+			ret.push_back(*it);
+		}
+	}
+	return ret;
+}
+
+template <typename string>
 KBLIB_NODISCARD constexpr auto html_encode(const string& data) -> std::string {
 	std::string buffer;
 	// Arbitrary estimate for amount of growth caused by the escaping is 12.5%.
@@ -614,9 +628,9 @@ KBLIB_NODISCARD constexpr auto html_encode(const string& data) -> std::string {
 
 KBLIB_NODISCARD constexpr auto escapify(char c) -> std::string {
 	auto value = to_unsigned(c);
-	if (value < ' ' or value == '\x7F' or value & to_unsigned('\x80')) {
-		constexpr std::array<char, 16> digits{
-		    remove_null_terminator("0123456789ABCDEF")};
+	constexpr KBLIB_CXX23(static) std::array<char, 16> digits{
+	    remove_null_terminator("0123456789ABCDEF")};
+	if (value < ' ' or to_unsigned(value) >= 128) {
 		std::string rc("\\x  ");
 		rc[2] = digits[value >> 4u];
 		rc[3] = digits[value & 15u];
@@ -631,7 +645,7 @@ template <typename string>
 KBLIB_NODISCARD auto escapify(const string& value) -> std::string {
 	std::ostringstream ret;
 	for (char c : value) {
-		if (c < ' ' or c >= '\x7F') {
+		if (c < ' ' or to_unsigned(c) >= '\x7F') {
 			ret << escapify(c);
 		} else {
 			ret << c;
@@ -675,7 +689,8 @@ KBLIB_NODISCARD constexpr auto calculate_translated_index(const char* value,
 
 template <typename character, enable_if_t<is_character_v<character>>* = nullptr>
 KBLIB_NODISCARD constexpr auto quoted(character c) -> std::string {
-	if (c < ' ' or c >= '\x7F') {
+	static_assert(' ' == u8' ');
+	if (c < ' ' or to_unsigned(c) >= '\x7F') {
 		return escapify(c);
 	} else if (c == '"') {
 		return "\\\"";
@@ -686,23 +701,104 @@ KBLIB_NODISCARD constexpr auto quoted(character c) -> std::string {
 	}
 }
 
-template <typename string, enable_if_t<not is_character_v<string>>* = nullptr>
-KBLIB_NODISCARD auto quoted(string&& in) -> std::string {
+template <auto quote = '"', typename string,
+          enable_if_t<not is_character_v<string>>* = nullptr>
+KBLIB_NODISCARD auto quoted(const string& in) -> std::string {
+	static_assert(' ' == u8' ');
 	std::ostringstream ret;
-	ret << '"';
-	for (char c : in) {
-		if (c < ' ' or c >= '\x7F') {
+	ret << quote;
+	for (auto c : in) {
+		if (c < ' ' or to_unsigned(c) >= '\x7F') {
 			ret << escapify(c);
-		} else if (c == '"') {
-			ret << "\\\"";
+		} else if (c == quote) {
+			ret << "\\" << quote;
 		} else if (c == '\\') {
 			ret << "\\\\";
 		} else {
 			ret << c;
 		}
 	}
-	ret << '"';
+	ret << quote;
 	return ret.str();
+}
+
+KBLIB_NODISCARD constexpr auto escape_ustr(char c) -> std::string {
+	return escapify(c);
+}
+KBLIB_NODISCARD constexpr auto escape_ustr(char8_t c) -> std::string {
+	return escapify(static_cast<char>(c));
+}
+KBLIB_NODISCARD constexpr auto escape_ustr(char16_t value) -> std::string {
+	constexpr KBLIB_CXX23(static) std::array<char, 16> digits{
+	    remove_null_terminator("0123456789ABCDEF")};
+	if (value < ' ' or value >= u'\u007F') {
+		std::string rc("\\u    ");
+		rc[2] = digits[(value >> 12u) & 15u];
+		rc[3] = digits[(value >> 8u) & 15u];
+		rc[4] = digits[(value >> 4u) & 15u];
+		rc[5] = digits[value & 15u];
+		return rc;
+	} else {
+		return std::string(1, static_cast<char>(value));
+	}
+}
+KBLIB_NODISCARD constexpr auto escape_ustr(char32_t value) -> std::string {
+	constexpr KBLIB_CXX23(static) std::array<char, 16> digits{
+	    remove_null_terminator("0123456789ABCDEF")};
+	if (value < ' ' or (value >= U'\u007F' and value <= U'\uFFFF')) {
+		std::string rc{"\\u    "};
+		rc[2] = digits[(value >> 12u) & 15u];
+		rc[3] = digits[(value >> 8u) & 15u];
+		rc[4] = digits[(value >> 4u) & 15u];
+		rc[5] = digits[value & 15u];
+		return rc;
+	} else if (value > U'\uFFFF') {
+		std::string rc{"\\U        "};
+		rc[2] = digits[(value >> 28u) & 15u];
+		rc[3] = digits[(value >> 24u) & 15u];
+		rc[4] = digits[(value >> 20u) & 15u];
+		rc[5] = digits[(value >> 16u) & 15u];
+		rc[6] = digits[(value >> 12u) & 15u];
+		rc[7] = digits[(value >> 8u) & 15u];
+		rc[8] = digits[(value >> 4u) & 15u];
+		rc[9] = digits[value & 15u];
+		return rc;
+	} else {
+		return std::string(1, static_cast<char>(value));
+	}
+}
+template <typename string,
+          enable_if_t<is_character_v<typename string::value_type>>* = nullptr>
+KBLIB_NODISCARD auto escape_ustr(const string& in) -> std::string {
+	static_assert(' ' == u8' ');
+	std::string ret;
+	for (auto c : in) {
+		if (c < ' ' or to_unsigned(c) > 127u) {
+			append(ret, escape_ustr(c));
+		} else {
+			ret.push_back(static_cast<char>(c));
+		}
+	}
+	return ret;
+}
+template <auto quote = '"', typename string,
+          enable_if_t<is_character_v<typename string::value_type>>* = nullptr>
+KBLIB_NODISCARD auto quote_ustr(const string& in) -> std::string {
+	static_assert(' ' == u8' ');
+	std::string ret(1, quote);
+	for (auto c : in) {
+		if (c < ' ' or to_unsigned(c) > 127u) {
+			append(ret, escape_ustr(c));
+		} else if (c == quote) {
+			ret.append({'\\', quote});
+		} else if (c == '\\') {
+			ret.append("\\\\");
+		} else {
+			ret.push_back(static_cast<char>(c));
+		}
+	}
+	ret.push_back(quote);
+	return ret;
 }
 
 template <typename T>

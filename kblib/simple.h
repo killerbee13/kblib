@@ -92,7 +92,7 @@ constexpr auto map(F f, T&&... t) noexcept(
 template <typename T>
 struct KBLIB_NODISCARD RAII_wrapper {
 	T t;
-	constexpr ~RAII_wrapper() noexcept(noexcept(t())) { t(); }
+	KBLIB_CXX20(constexpr) ~RAII_wrapper() noexcept(noexcept(t())) { t(); }
 
 	constexpr RAII_wrapper(T&& t_)
 	    : t(std::move(t_)) {}
@@ -241,6 +241,16 @@ constexpr auto arraycat(LeftContainer A, RightContainer&& B) noexcept(
     -> LeftContainer {
 	A.insert(A.end(), B.begin(), B.end());
 	return std::move(A);
+}
+
+template <typename value_type, std::size_t LeftN, std::size_t RightN>
+constexpr auto arraycat(const std::array<value_type, LeftN>& A,
+                        const std::array<value_type, RightN>& B)
+    -> std::array<value_type, LeftN + RightN> {
+	std::array<value_type, LeftN + RightN> ret;
+	auto it = std::copy(begin(A), end(A), begin(ret));
+	std::copy(begin(B), end(B), it);
+	return ret;
 }
 
 /**

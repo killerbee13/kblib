@@ -79,8 +79,8 @@ using std::invoke;
 
 template <typename F, typename... Args>
 constexpr auto invoke(F&& f, Args&&... args) noexcept(noexcept(std::apply(
-    std::forward<F>(f),
-    std::forward_as_tuple(std::forward<Args>(args)...)))) -> decltype(auto) {
+    std::forward<F>(f), std::forward_as_tuple(std::forward<Args>(args)...))))
+    -> decltype(auto) {
 	return std::apply(std::forward<F>(f),
 	                  std::forward_as_tuple(std::forward<Args>(args)...));
 }
@@ -104,8 +104,8 @@ namespace detail {
 	                      int>
 	          = 0>
 	constexpr auto do_invoke(F f, Object&& obj, Args&&... args) noexcept(
-	    noexcept((std::forward<Object>(obj)
-	              .*f)(std::forward<Args>(args)...))) -> decltype(auto) {
+	    noexcept((std::forward<Object>(obj).*f)(std::forward<Args>(args)...)))
+	    -> decltype(auto) {
 		return (obj.*f)(std::forward<Args>(args)...);
 	}
 
@@ -124,8 +124,8 @@ namespace detail {
 	                          and std::is_member_object_pointer<Member>::value,
 	                      int>
 	          = 0>
-	constexpr auto do_invoke(Member mem,
-	                         Object&& obj) noexcept -> decltype(auto) {
+	constexpr auto do_invoke(Member mem, Object&& obj) noexcept
+	    -> decltype(auto) {
 		return std::forward<Object>(obj).*mem;
 	}
 
@@ -134,16 +134,16 @@ namespace detail {
 	                          and std::is_member_object_pointer<Member>::value,
 	                      int>
 	          = 0>
-	constexpr auto do_invoke(Member mem,
-	                         Pointer ptr) noexcept -> decltype(auto) {
+	constexpr auto do_invoke(Member mem, Pointer ptr) noexcept
+	    -> decltype(auto) {
 		return ptr.*mem;
 	}
 } // namespace detail
 
 template <typename F, typename... Args>
 constexpr auto invoke(F&& f, Args&&... args) noexcept(noexcept(
-    detail::do_invoke(std::forward<F>(f),
-                      std::forward<Args>(args)...))) -> decltype(auto) {
+    detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...)))
+    -> decltype(auto) {
 	return detail::do_invoke(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
@@ -363,8 +363,8 @@ namespace fakestd { // C++14 implementation of C++17 void_t, invoke_result,
 	}
 
 	template <class ForwardIt, class Compare>
-	constexpr auto max_element(ForwardIt first, ForwardIt last,
-	                           Compare comp) -> ForwardIt {
+	constexpr auto max_element(ForwardIt first, ForwardIt last, Compare comp)
+	    -> ForwardIt {
 		if (first == last) {
 			return last;
 		}
@@ -634,6 +634,12 @@ KBLIB_NODISCARD constexpr auto signed_cast(F x)
 	return to_unsigned(x);
 }
 
+template <typename E,
+          typename = typename std::enable_if<std::is_enum<E>::value>::type>
+KBLIB_NODISCARD constexpr auto etoi(E e) -> auto {
+	return static_cast<std::underlying_type_t<E>>(e);
+}
+
 template <typename T>
 struct has_member_swap {
  private:
@@ -666,8 +672,8 @@ namespace detail {
 	template <typename T, std::size_t... Is>
 	constexpr auto
 	swap_tuple_impl(T& a, T& b, std::index_sequence<Is...> /*unused*/) noexcept(
-	    noexcept(ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)),
-	                     0)...))) -> void {
+	    noexcept(ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)), 0)...)))
+	    -> void {
 		ignore(((void)swap(std::get<Is>(a), std::get<Is>(b)), 0)...);
 	}
 
@@ -994,8 +1000,8 @@ template <typename InputIt1, typename InputIt2, typename BinaryPredicate,
               not std::is_same<InputIt2, BinaryPredicate>::value, int>
           = 0>
 KBLIB_NODISCARD constexpr auto equal(InputIt1 first1, InputIt1 last1,
-                                     InputIt2 first2,
-                                     BinaryPredicate p) -> bool {
+                                     InputIt2 first2, BinaryPredicate p)
+    -> bool {
 	for (; first1 != last1; ++first1, ++first2) {
 		if (not p(*first1, *first2)) {
 			return false;
@@ -1014,8 +1020,8 @@ template <class RandomIt1, class RandomIt2,
               int>
           = 0>
 KBLIB_NODISCARD constexpr auto equal(RandomIt1 first1, RandomIt1 last1,
-                                     RandomIt2 first2,
-                                     RandomIt2 last2) -> bool {
+                                     RandomIt2 first2, RandomIt2 last2)
+    -> bool {
 	if (std::distance(first1, last1) == std::distance(first2, last2)) {
 		return false;
 	}

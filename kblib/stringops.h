@@ -647,7 +647,7 @@ KBLIB_NODISCARD constexpr auto repeat(string val, std::size_t count) -> string {
  * @param val The character to be repeated.
  * @param count The number of times to repeat val.
  */
-KBLIB_NODISCARD constexpr auto repeat(char val, std::size_t count)
+KBLIB_NODISCARD KBLIB_CXX20(constexpr) auto repeat(char val, std::size_t count)
     -> std::string {
 	return std::string(count, val);
 }
