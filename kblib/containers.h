@@ -40,16 +40,23 @@
 #include <deque>
 #include <iterator>
 #include <memory>
-#include <stack>
 #include <type_traits>
 #include <vector>
 
 namespace KBLIB_NS {
 
 template <typename C>
-KBLIB_NODISCARD constexpr auto pop(C& s) -> typename C::value_type {
+KBLIB_NODISCARD constexpr auto pop(C& s)
+    -> kblib::ignore_t<decltype(s.pop()), typename C::value_type> {
 	typename C::value_type ret = std::move(s.top());
 	s.pop();
+	return ret;
+}
+template <typename C>
+KBLIB_NODISCARD constexpr auto pop(C& s)
+    -> kblib::ignore_t<decltype(s.pop_back()), typename C::value_type> {
+	typename C::value_type ret = std::move(s.back());
+	s.pop_back();
 	return ret;
 }
 
@@ -57,20 +64,22 @@ template <class C, typename K, typename V>
 KBLIB_NODISCARD constexpr auto get_or(const C& m, const K& key, const V& defval)
     -> typename C::mapped_type {
 	auto it = m.find(key);
-	if (it == m.end())
+	if (it == m.end()) {
 		return defval;
-	else
+	} else {
 		return it->second;
+	}
 }
 
 template <typename Map, typename Key>
 KBLIB_NODISCARD constexpr auto try_get(Map& map, Key&& key)
     -> copy_const_t<Map, typename Map::mapped_type>* {
 	auto it = map.find(std::forward<Key>(key));
-	if (it == map.end())
+	if (it == map.end()) {
 		return nullptr;
-	else
+	} else {
 		return &it->second;
+	}
 }
 
 template <typename iterator>
@@ -408,7 +417,7 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 	          typename std::enable_if<
 	              std::uses_allocator<container_type, Alloc>::value, int>::type
 	          = 0>
-	stack(Container && cont, const Alloc& alloc);
+	stack(Container&& cont, const Alloc& alloc);
 	template <typename Alloc,
 	          typename std::enable_if<
 	              std::uses_allocator<container_type, Alloc>::value, int>::type
@@ -418,51 +427,53 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 	          typename std::enable_if<
 	              std::uses_allocator<container_type, Alloc>::value, int>::type
 	          = 0>
-	stack(stack && cont, const Alloc& alloc);
+	stack(stack&& cont, const Alloc& alloc);
 
 	// Element access
 
-	KBLIB_NODISCARD auto top()& noexcept(noexcept(backing.back()))->reference {
+	KBLIB_NODISCARD auto top() & noexcept(noexcept(backing.back()))
+	    -> reference {
 		return backing.back();
 	}
 	KBLIB_NODISCARD auto top() const& noexcept(noexcept(backing.back()))
-	    ->const_reference {
+	    -> const_reference {
 		return backing.back();
 	}
 
 	// Capacity
 
-	KBLIB_NODISCARD auto empty() const noexcept->bool { return backing.empty(); }
-	KBLIB_NODISCARD auto size() const noexcept->size_type {
+	KBLIB_NODISCARD auto empty() const noexcept -> bool {
+		return backing.empty();
+	}
+	KBLIB_NODISCARD auto size() const noexcept -> size_type {
 		return backing.size();
 	}
 
 	// Modifiers
 
-	auto push(const value_type& value)->decltype(auto) {
+	auto push(const value_type& value) -> decltype(auto) {
 		return backing.push_back(value);
 	}
-	auto push(value_type && value)->decltype(auto) {
+	auto push(value_type&& value) -> decltype(auto) {
 		return backing.push_back(std::move(value));
 	}
 
 	template <typename... Args>
-	auto emplace(Args && ... args)&->decltype(auto) {
+	auto emplace(Args&&... args) & -> decltype(auto) {
 		return backing.emplace_back(std::forward<Args>(args)...);
 	}
 
-	auto pop() noexcept(noexcept(backing.pop_back()))->void {
+	auto pop() noexcept(noexcept(backing.pop_back())) -> void {
 		backing.pop_back();
 		return;
 	}
-	auto clear() noexcept(noexcept(backing.clear()))->void {
+	auto clear() noexcept(noexcept(backing.clear())) -> void {
 		backing.clear();
 		return;
 	}
 
-	auto swap(stack
-	          & other) noexcept(fakestd::is_nothrow_swappable<Container>::value)
-	    ->void {
+	auto swap(stack& other) noexcept(
+	    fakestd::is_nothrow_swappable<Container>::value) -> void {
 		using std::swap;
 		swap(backing, other.backing);
 		return;
@@ -470,10 +481,12 @@ class [[deprecated("use a class derived from std::stack instead")]] stack {
 
 	// Container access
 
-	KBLIB_NODISCARD auto container() const&->container_type& { return backing; }
-	KBLIB_NODISCARD auto container()&->container_type& { return backing; }
+	KBLIB_NODISCARD auto container() const& -> container_type& {
+		return backing;
+	}
+	KBLIB_NODISCARD auto container() & -> container_type& { return backing; }
 
-	KBLIB_NODISCARD auto container()&&->container_type {
+	KBLIB_NODISCARD auto container() && -> container_type {
 		return std::move(backing);
 	}
 };
