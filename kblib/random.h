@@ -164,7 +164,9 @@ struct state_size<std::mersenne_twister_engine<UIntType, w, n, m, r, a, u, d, s,
 
 template <typename UIntType, UIntType a, UIntType c, UIntType m>
 struct state_size<std::linear_congruential_engine<UIntType, a, c, m>>
-    : std::integral_constant<std::size_t, (filg2(m) + 31) / 32> {
+    : std::integral_constant<
+          std::size_t, m == 0 ? (std::numeric_limits<UIntType>::digits + 1) / 32
+                              : filg2(m) / 32 + 1> {
 	// std::linear_congruential_engine discards 3 seed words due to hardcoded
 	// hack for std::seed_seq, so we work around that with this trait
 	KBLIB_CONSTANT_M std::size_t seed_discard = 3;
@@ -195,12 +197,15 @@ static_assert(state_size_v<std::mt19937_64> == std::mt19937_64::state_size * 2,
 template <typename T, typename = void>
 constexpr std::size_t seed_discard_v = 0;
 template <typename T>
-constexpr std::size_t seed_discard_v<
-    T, void_t<decltype(state_size<T>::seed_discard)>> = state_size<T>::
-    seed_discard;
+constexpr std::size_t
+    seed_discard_v<T, void_t<decltype(state_size<T>::seed_discard)>>
+    = state_size<T>::seed_discard;
 
 static_assert(seed_discard_v<std::minstd_rand> == 3,
               "linear_congruential_engines discard 3 words of seed data");
+static_assert(state_size_v<std::linear_congruential_engine<
+                  std::int64_t, 6364136223846793005U, 1442695040888963407U, 0U>>
+              == 2);
 
 template <typename Gen, typename Source>
 KBLIB_NODISCARD auto seeded(Source&& s) -> Gen {
@@ -328,6 +333,7 @@ inline namespace lcgs {
 	// shortcut alias for common case of m = 2^b
 	template <typename UIntType, UIntType a, UIntType c, UIntType b>
 	using lcg_p2 = std::linear_congruential_engine<UIntType, a, c, ipow2(b)>;
+	static_assert(ipow2(std::uint64_t(64)) == 0);
 
 	inline namespace common_lcgs {
 		using rand48
