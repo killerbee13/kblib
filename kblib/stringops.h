@@ -550,6 +550,18 @@ KBLIB_NODISCARD constexpr auto split_dsv(const String& str, Predicate delim)
 	return ret;
 }
 
+template <typename String>
+KBLIB_NODISCARD constexpr auto split_first(const String& str,
+                                           typename String::value_type delim)
+    -> std::pair<String, String> {
+	auto pos = str.find_first_of(delim);
+	if (pos == str.npos) {
+		return {str, {}};
+	} else {
+		return {str.substr(0, pos), str.substr(pos + 1)};
+	}
+}
+
 // TODO(killerbee13): figure out if any uses of reverseStr, toLower, toUpper
 // exist in current projects
 
