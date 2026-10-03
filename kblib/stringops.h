@@ -510,13 +510,13 @@ KBLIB_NODISCARD constexpr auto kbsplit2(const String& in, char delim = ' ')
  * @param delim The character to split on.
  * @return Container A sequence container of all substrings in the split input.
  */
-template <typename Container = std::vector<std::string>, typename String>
-KBLIB_NODISCARD constexpr auto split_dsv(const String& str, char delim)
-    -> Container {
+template <typename Container = std::vector<std::string>>
+KBLIB_NODISCARD constexpr auto split_dsv(std::string_view str,
+                                         std::string_view delim) -> Container {
 	Container ret;
-	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
+	for (std::size_t pos1{}, pos2{str.find_first_of(delim)}; pos1 != str.npos;) {
 		ret.emplace_back(str, pos1, pos2 - pos1);
-		pos1 = std::exchange(pos2, str.find(delim, pos2 + 1));
+		pos1 = std::exchange(pos2, str.find_first_of(delim, pos2 + 1));
 		if (pos1 != str.npos) {
 			++pos1;
 		}
@@ -531,20 +531,24 @@ KBLIB_NODISCARD constexpr auto split_dsv(const String& str, char delim)
  * @param delim A predicate for delimiters.
  * @return Container A sequence container of all substrings in the split input.
  */
-template <typename Container = std::vector<std::string>, typename String,
-          typename Predicate>
-KBLIB_NODISCARD constexpr auto split_dsv(const String& str, Predicate delim)
+template <typename Container = std::vector<std::string>, typename Predicate>
+KBLIB_NODISCARD constexpr auto split_dsv(std::string_view str, Predicate delim)
     -> return_assert_t<
         is_callable<Predicate,
                     typename Container::value_type::value_type>::value,
         Container> {
+	using std::begin;
 	Container ret;
-	for (std::size_t pos1{}, pos2{str.find(delim)}; pos1 != str.npos;) {
-		ret.emplace_back(str, pos1, pos2 - pos1);
-		pos1 = std::exchange(
-		    pos2, kblib::find_in_if(str.begin() + pos1 + 1, str.end(), delim));
-		if (pos1 != str.npos) {
-			++pos1;
+	bool last_is_delim{false};
+	for (auto span_begin = begin(str), span_end = span_begin;;) {
+		if (span_end == end(str)) {
+			ret.emplace_back(span_begin, span_end);
+			break;
+		} else if ((last_is_delim = delim(*span_end))) {
+			ret.emplace_back(span_begin, span_end);
+			span_begin = ++span_end;
+		} else {
+			++span_end;
 		}
 	}
 	return ret;

@@ -139,8 +139,14 @@ namespace detail_cry {
 		};
 
 		auto begin() -> iterator { return begin_; }
-
 		auto end() -> iterator { return end_; }
+
+		friend auto begin(value_and_index_impl& r) -> iterator {
+			return r.begin();
+		}
+		friend auto end(value_and_index_impl& r) -> iterator { //
+			return r.end();
+		}
 
 	 private:
 		iterator begin_;

@@ -62,13 +62,13 @@ namespace detail_direct_map {
 	static_assert(range_of<unsigned char> == 1u << to_unsigned(CHAR_BIT), "");
 	static_assert(range_of<signed char> == 1u << to_unsigned(CHAR_BIT), "");
 
-	template <typename T, bool
-	                      = std::is_trivially_default_constructible<T>::value and
-	                          std::is_trivially_destructible<T>::value>
+	template <typename T,
+	          bool = std::is_trivially_default_constructible<T>::value
+	                 and std::is_trivially_destructible<T>::value>
 	struct alignas(T) storage_for : private std::array<byte, sizeof(T)> {
-		template <
-		    typename... Args,
-		    enable_if_t<std::is_constructible<T, Args&&...>::value, int> = 0>
+		template <typename... Args,
+		          enable_if_t<std::is_constructible<T, Args&&...>::value, int>
+		          = 0>
 		constexpr auto construct(Args&&... args) noexcept(
 		    std::is_nothrow_constructible<T, Args&&...>::value) -> T& {
 			return *new (this->data()) T(std::forward<Args>(args)...);
@@ -103,9 +103,9 @@ namespace detail_direct_map {
 		T t;
 
 	 public:
-		template <
-		    typename... Args,
-		    enable_if_t<std::is_constructible<T, Args&&...>::value, int> = 0>
+		template <typename... Args,
+		          enable_if_t<std::is_constructible<T, Args&&...>::value, int>
+		          = 0>
 		constexpr auto construct(Args&&... args) noexcept(
 		    std::is_nothrow_constructible<T, Args&&...>::value) -> T& {
 			return *new (&t) T(std::forward<Args>(args)...);
@@ -219,8 +219,8 @@ class direct_map {
 			return not (l == r);
 		}
 #define DECL_OP(op)                                                           \
-	KBLIB_NODISCARD friend constexpr auto operator op(iter l,                  \
-	                                                  iter r) noexcept->bool { \
+	KBLIB_NODISCARD friend constexpr auto operator op(iter l, iter r) noexcept \
+	    -> bool {                                                              \
 		assert(l.storage == r.storage);                                         \
 		return l.pos op r.pos;                                                  \
 	}
@@ -797,8 +797,8 @@ class direct_map<Key, T, void> {
 		}
 
 #define DECL_OP(op)                                                           \
-	KBLIB_NODISCARD friend constexpr auto operator op(iter l,                  \
-	                                                  iter r) noexcept->bool { \
+	KBLIB_NODISCARD friend constexpr auto operator op(iter l, iter r) noexcept \
+	    -> bool {                                                              \
 		assert(l.map == r.map);                                                 \
 		return l.pos op r.pos;                                                  \
 	}
@@ -1090,8 +1090,8 @@ class direct_map<Key, T, void> {
 	}
 
 	constexpr auto swap(direct_map& other) noexcept(
-	    std::is_nothrow_move_constructible<value_type>::value and
-	        fakestd::is_nothrow_swappable<T>::value) -> void {
+	    std::is_nothrow_move_constructible<value_type>::value
+	    and fakestd::is_nothrow_swappable<T>::value) -> void {
 		using std::swap;
 		for (const key_type k : range(+min(), max() + 1)) {
 			if (contains(k)) {
